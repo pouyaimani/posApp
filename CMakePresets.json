@@ -24,8 +24,7 @@
       "cacheVariables": {
         "DEVICE": "trendit",
         "SDK_ROOT": "C:/greenPayment/trenditRtos/sdk",
-        "TRENDIT_BOARD": "T3",
-        "USE_RTOS": "ON",
+        "SCATTER_FILE": "C:/greenPayment/trendit/platform/rtos/t3rapp.sct",
         "CMAKE_VERBOSE_MAKEFILE": "OFF"
       },
 
