@@ -18,8 +18,11 @@ if (NOT DEFINED DEVICE)
     message(FATAL_ERROR "DEVICE not set. Use cmake preset.")
 endif()
 
-
 message(STATUS "  Building for device: ${DEVICE}")
+
+# Normalize macro name
+string(TOUPPER "${DEVICE}" DEVICE_NAME_UPPER)
+set(DEVICE_DEFINE "DEVICE_${DEVICE_NAME_UPPER}")
 
 # -------------------------------------------------------------
 # 2. Require Ninja or other generator from presets
@@ -67,6 +70,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Most embedded builds want compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        ${DEVICE_DEFINE}
+        DEVICE_NAME_STR="${DEVICE_NAME}"
+)
 
 # -------------------------------------------------------------
 # 7. Device SDK library (from device config file)
