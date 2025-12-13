@@ -1,0 +1,35 @@
+{
+  "version": 5,
+  "configurePresets": [
+    {
+      "name": "base-dev",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+
+    {
+      "name": "TrenditT3",
+      "displayName": "Trendit T3 (RTOS)",
+      "description": "Build for Trendit T3 with RTOS",
+      "inherits": "base-dev",
+
+      "environment": {
+        "TRENDIT_SDK_PATH": "C:/greenPayment/trenditRtos/sdk", 
+        "TRENDIT_TOOLCHAIN_ROOT": "C:/greenPayment/trenditRtos/toolchain"
+      },
+
+      "cacheVariables": {
+        "DEVICE": "trendit",
+        "SDK_ROOT": "C:/greenPayment/trenditRtos/sdk",
+        "TRENDIT_BOARD": "T3",
+        "USE_RTOS": "ON",
+        "CMAKE_VERBOSE_MAKEFILE": "OFF"
+      },
+
+      "toolchainFile": "cmake/toolchains/trendit_armcc.cmake"
+    }
+  ]
+}
