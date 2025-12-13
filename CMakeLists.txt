@@ -2,13 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 
 include(FetchContent)
 
-# LVGL: Download and make available
-FetchContent_Declare(
-  lvgl
-  GIT_REPOSITORY https://github.com/lvgl/lvgl.git
-  GIT_TAG release/v9.3
-)
-
 project(posapp LANGUAGES C)
 
 # -------------------------------------------------------------
@@ -121,11 +114,26 @@ target_link_options(${PROJECT_NAME} PRIVATE
 # -------------------------------------------------------------
 # 8. Optional modules (like LVGL)
 # -------------------------------------------------------------
-if(BUILD_LVGL_MODULE)
-    add_subdirectory(${LVGL_SOURCE_DIR})
-    target_link_libraries(${PROJECT_NAME} PRIVATE lvgl)
+
+# LVGL: Download and make available
+FetchContent_Declare(
+  lvgl
+  GIT_REPOSITORY https://github.com/lvgl/lvgl.git
+  GIT_TAG release/v9.3
+)
+
+set(LV_BUILD_CONF_PATH
+    "${CMAKE_SOURCE_DIR}/include/lv_conf.h"
+    CACHE STRING "LVGL configuration file"
+    FORCE
+)
+
+if(NOT EXISTS "${LV_BUILD_CONF_PATH}")
+    message(FATAL_ERROR "lv_conf.h not found at ${LV_BUILD_CONF_PATH}")
 endif()
 
+FetchContent_MakeAvailable(lvgl)
+target_link_libraries(${PROJECT_NAME} PRIVATE lvgl)
 
 # -------------------------------------------------------------
 # 9. Post-build actions: convert .elf → .bin (device-specific)
