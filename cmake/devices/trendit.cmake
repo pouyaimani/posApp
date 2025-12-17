@@ -9,23 +9,7 @@ set(TRENDIT_SDK_ROOT ENV{TRENDIT_SDK_PATH})
 #-------------------------------
 # Includes
 #-------------------------------
-# target_include_directories(${PROJECT_NAME} PRIVATE
-#     ${CMAKE_SOURCE_DIR}/src/app
-#     ${CMAKE_SOURCE_DIR}/src/app/lib
-#     ${CMAKE_SOURCE_DIR}/src/app/lib/dev
-#     ${CMAKE_SOURCE_DIR}/src/app/lib/disp
-#     ${CMAKE_SOURCE_DIR}/src/app/lib/trans
-#     ${CMAKE_SOURCE_DIR}/src/app/lib/transmit
-#     ${CMAKE_SOURCE_DIR}/src/app/lib/utils
-#     ${CMAKE_SOURCE_DIR}/src/app/lv_i18n
-
-#     ${TREND_IT_SDK_PATH}/inc
-#     ${TREND_IT_SDK_PATH}/src
-
-#     ${LVGL_PATH}
-#     ${CMAKE_SOURCE_DIR}/src/platform/rtos
-#     ${CMAKE_SOURCE_DIR}/src/platform/rtos/lv_port
-# )
+set(DEVICE_SDK_INCLUDE_DIRS ENV{TRENDIT_SDK_LIB_PATH}/inc)
 
 #-------------------------------
 # Sources
@@ -40,25 +24,44 @@ set(TRENDIT_SDK_ROOT ENV{TRENDIT_SDK_PATH})
 #-------------------------------
 # Compile definitions
 #-------------------------------
-target_compile_definitions(${PROJECT_NAME} PRIVATE
+set(DEVICE_COMPILE_DEFINITIONS 
     __MICROLIB
     POS_PLATFORM_RTOS
-    LV_CONF_INCLUDE_SIMPLE
-    LV_LVGL_H_INCLUDE_SIMPLE
 )
 
 #-------------------------------
 # Compiler flags
 #-------------------------------
-target_compile_options(${PROJECT_NAME} PRIVATE
-    --c99
-    --gnu
-    --cpu Cortex-M0
-    -Ospace
-    --apcs=interwork
-    --split_sections
-    --no-multibyte-chars
-)
+
+# set(DEVICE_C_FLAGS
+#     --c99
+#     --gnu
+#     --cpu Cortex-M0
+#     --Ospace
+#     --split_sections
+#     --no-multibyte-chars
+#     --diag_suppress=177
+#     --diag_suppress=1
+# )
+
+# set(DEVICE_ASM_FLAGS
+#     --cpu Cortex-M0
+# )
+
+# set(CMAKE_C_FLAGS 
+#     --c99
+#     --gnu
+#     --cpu Cortex-M0
+#     --Ospace
+#     --split_sections
+#     --no-multibyte-chars
+#     --diag_suppress=177
+#     --diag_suppress=1
+# )
+
+# set(CMAKE_ASM_FLAGS
+#     --cpu Cortex-M0
+# )
 
 #-------------------------------
 # ASM flags
@@ -70,7 +73,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY
 #-------------------------------
 # Linker flags
 #-------------------------------
-target_link_options(${PROJECT_NAME} PRIVATE
+set(DEVICE_LINK_FLAGS 
     --cpu Cortex-M0
     --strict
     --scatter ${SCATTER_FILE}
@@ -80,7 +83,5 @@ target_link_options(${PROJECT_NAME} PRIVATE
 # Libraries
 #-------------------------------
 # target_link_libraries(${PROJECT_NAME} PRIVATE
-#     ${CMAKE_SOURCE_DIR}/src/platform/rtos/lib/EMVL2.lib
-#     ${CMAKE_SOURCE_DIR}/src/platform/rtos/lib/libtrenditsdk.a
-#     ${CMAKE_SOURCE_DIR}/src/platform/rtos/lib/liblvgl.a
+#     ${TRENDIT_SDK_PATH}libsdk1.0.18/libtrenditsdk.a
 # )

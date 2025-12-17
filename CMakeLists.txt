@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.20)
 
 include(FetchContent)
 
-project(posapp LANGUAGES C)
-
 # -------------------------------------------------------------
 # 1. Verify that DEVICE was provided by CMakePresets.json
 # -------------------------------------------------------------
 if (NOT DEFINED DEVICE)
     message(FATAL_ERROR "DEVICE not set. Use cmake preset.")
+endif()
+
+if(NOT MCU_CORE)
+    message(FATAL_ERROR "MCU_CORE not set. Use cmake preset.")
 endif()
 
 message(STATUS "  Building for device: ${DEVICE}")
@@ -36,6 +38,9 @@ message(STATUS "Preset build directory: ${CMAKE_BINARY_DIR}")
 # -------------------------------------------------------------
 # 6. Application source code (device-independent)
 # -------------------------------------------------------------
+
+project(posapp LANGUAGES C)
+
 file(GLOB_RECURSE APP_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
 )
@@ -80,6 +85,7 @@ target_compile_definitions(${PROJECT_NAME}
 #   DEVICE_SDK_LIBRARIES
 #   DEVICE_COMPILE_DEFINITIONS
 #   DEVICE_C_FLAGS
+#   DEVICE_ASM_FLAGS
 #   DEVICE_LINK_FLAGS
 #
 # These come from presets → device.cmake
@@ -94,13 +100,15 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${DEVICE_SDK_SOURCES}
 )
 
+target_compile_options(${PROJECT_NAME} PRIVATE 
+    ${DEVICE_C_FLAGS}
+)
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     ${DEVICE_COMPILE_DEFINITIONS}
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE
-    ${DEVICE_C_FLAGS}
-)
+set_property(TARGET ${PROJECT_NAME} PROPERTY ASM_FLAGS "--cpu=Cortex-M0 --apcs=interwork")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${DEVICE_SDK_LIBRARIES}
@@ -109,7 +117,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_link_options(${PROJECT_NAME} PRIVATE
     ${DEVICE_LINK_FLAGS}
 )
-
 
 # -------------------------------------------------------------
 # 8. Optional modules (like LVGL)
@@ -133,6 +140,24 @@ if(NOT EXISTS "${LV_BUILD_CONF_PATH}")
 endif()
 
 FetchContent_MakeAvailable(lvgl)
+
+if(CMAKE_C_COMPILER_ID STREQUAL "ARMCC")
+    # Remove Helium ASM from LVGL build
+    list(REMOVE_ITEM LVGL_SOURCES
+        ${LVGL_DIR}/src/draw/sw/blend/helium/lv_blend_helium.S
+        # add any other .S files for GCC-only
+    )
+endif()
+
+
+set(LVGL_ROOT_DIR ${lvgl_SOURCE_DIR})
+set(CONFIG_LV_USE_THORVG_INTERNAL OFF CACHE BOOL "" FORCE)
+set(LV_USE_THORVG OFF CACHE BOOL "" FORCE)
+set(LV_USE_VG_LITE OFF CACHE BOOL "" FORCE)
+set(LV_USE_CPU_HELIUM OFF CACHE BOOL "" FORCE)
+set(LV_USE_NATIVE_HELIUM_ASM 0 CACHE BOOL "" FORCE)
+set(LV_USE_DRAW_SW_ASM 0 CACHE BOOL "" FORCE)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE lvgl)
 
 # -------------------------------------------------------------
