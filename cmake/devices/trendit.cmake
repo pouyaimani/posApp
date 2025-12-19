@@ -33,36 +33,6 @@ set(DEVICE_COMPILE_DEFINITIONS
 # Compiler flags
 #-------------------------------
 
-# set(DEVICE_C_FLAGS
-#     --c99
-#     --gnu
-#     --cpu Cortex-M0
-#     --Ospace
-#     --split_sections
-#     --no-multibyte-chars
-#     --diag_suppress=177
-#     --diag_suppress=1
-# )
-
-# set(DEVICE_ASM_FLAGS
-#     --cpu Cortex-M0
-# )
-
-# set(CMAKE_C_FLAGS 
-#     --c99
-#     --gnu
-#     --cpu Cortex-M0
-#     --Ospace
-#     --split_sections
-#     --no-multibyte-chars
-#     --diag_suppress=177
-#     --diag_suppress=1
-# )
-
-# set(CMAKE_ASM_FLAGS
-#     --cpu Cortex-M0
-# )
-
 #-------------------------------
 # ASM flags
 #-------------------------------

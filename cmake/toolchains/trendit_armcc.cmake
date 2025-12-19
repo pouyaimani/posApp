@@ -12,7 +12,7 @@ set(CMAKE_C_FLAGS_INIT "--c99 --cpu=Cortex-M0 -Ospace --apcs=interwork --split_s
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_INIT}" CACHE STRING "C compiler flags" FORCE)
 
 set(CMAKE_CXX_FLAGS_INIT "--c99 --cpu=Cortex-M0 -Ospace --apcs=interwork --split_sections --no-multibyte-chars --diag_suppress=177 --diag_suppress=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS_INIT}" CACHE STRING "C compiler flags" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS_INIT}" CACHE STRING "CXX compiler flags" FORCE)
 
 set(CMAKE_ASM_FLAGS_INIT "--cpu=Cortex-M0 --apcs=interwork")
 set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS_INIT}" CACHE STRING "ASM compiler flags" FORCE)
