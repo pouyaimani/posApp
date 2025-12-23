@@ -9,7 +9,10 @@ set(TRENDIT_SDK_ROOT ENV{TRENDIT_SDK_PATH})
 #-------------------------------
 # Includes
 #-------------------------------
-set(DEVICE_SDK_INCLUDE_DIRS ENV{TRENDIT_SDK_LIB_PATH}/inc)
+set(DEVICE_SDK_INCLUDE_DIRS 
+    ENV{TRENDIT_SDK_LIB_PATH}/inc
+    ENV{TRENDIT_PLATFORM_PATH}/ddi
+)
 
 #-------------------------------
 # Sources
@@ -27,17 +30,6 @@ set(DEVICE_SDK_INCLUDE_DIRS ENV{TRENDIT_SDK_LIB_PATH}/inc)
 set(DEVICE_COMPILE_DEFINITIONS 
     __MICROLIB
     POS_PLATFORM_RTOS
-)
-
-#-------------------------------
-# Compiler flags
-#-------------------------------
-
-#-------------------------------
-# ASM flags
-#-------------------------------
-set_property(TARGET ${PROJECT_NAME} PROPERTY
-    ASM_FLAGS "--cpu Cortex-M0 --apcs=interwork"
 )
 
 #-------------------------------

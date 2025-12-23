@@ -8,9 +8,47 @@ file(GLOB_RECURSE APP_SRC
 
 add_executable(${PROJECT_NAME} ${APP_SRC})
 
+# -------------------------------------------------------------
+# Device SDK library (from device config file)
+# -------------------------------------------------------------
+# Every device config file should define:
+#
+#   DEVICE_SDK_INCLUDE_DIRS
+#   DEVICE_SDK_SOURCES
+#   DEVICE_SDK_LIBRARIES
+#   DEVICE_COMPILE_DEFINITIONS
+#   DEVICE_C_FLAGS
+#   DEVICE_ASM_FLAGS
+#   DEVICE_LINK_FLAGS
+#
+# These come from presets → device.cmake
+#
+# -------------------------------------------------------------
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+    ${DEVICE_SDK_INCLUDE_DIRS}
+)
+
+target_sources(${PROJECT_NAME} PRIVATE
+    ${DEVICE_SDK_SOURCES}
+)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    ${DEVICE_COMPILE_DEFINITIONS}
+    ${DEVICE_DEFINE}
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    ${DEVICE_SDK_LIBRARIES}
+)
+
+target_link_options(${PROJECT_NAME} PRIVATE
+    ${DEVICE_LINK_FLAGS}
+)
+
 
 # -------------------------------------------------------------
-# 8. Optional modules (like LVGL)
+# Optional modules (like LVGL)
 # -------------------------------------------------------------
 
 # LVGL: Download and make available
@@ -50,3 +88,15 @@ set(LV_USE_NATIVE_HELIUM_ASM 0 CACHE BOOL "" FORCE)
 set(LV_USE_DRAW_SW_ASM 0 CACHE BOOL "" FORCE)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE lvgl)
+
+# -------------------------------------------------------------
+# Post-build actions: convert .elf → .bin (device-specific)
+# Device config must define a variable:
+#     DEVICE_POST_BUILD_COMMANDS
+# -------------------------------------------------------------
+if(DEVICE_POST_BUILD_COMMANDS)
+    add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        ${DEVICE_POST_BUILD_COMMANDS}
+    )
+endif()
