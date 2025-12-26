@@ -48,6 +48,20 @@ option(LVGL_ENABLE_ASM "Enable ASM for LVGL" OFF)
 
 FetchContent_MakeAvailable(lvgl)
 
+if(EXISTS $ENV{DEVICE_LVGL_CONFIG_FILE})
+    message(STATUS "LVGL custom enviorment support file detected.")
+    set(LVGL_ENV_CUSTOM_DST
+        ${lvgl_SOURCE_DIR}/env_support/cmake/os_desktop.cmake
+    )
+
+    configure_file(
+        $ENV{DEVICE_LVGL_CONFIG_FILE}
+        ${LVGL_ENV_CUSTOM_DST}
+        COPYONLY
+    )
+endif()
+
+
 if(CMAKE_C_COMPILER_ID STREQUAL "ARMCC")
     # Remove Helium ASM from LVGL build
     list(REMOVE_ITEM LVGL_SOURCES

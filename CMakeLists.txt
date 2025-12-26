@@ -36,13 +36,11 @@ message(STATUS "Preset build directory: ${CMAKE_BINARY_DIR}")
 # -------------------------------------------------------------
 # Device selection (each device has its own .cmake file)
 # -------------------------------------------------------------
-set(DEVICE_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/devices/${DEVICE}.cmake")
-
-if(NOT EXISTS "${DEVICE_CONFIG_FILE}")
+if(NOT EXISTS "$ENV{DEVICE_CONFIG_FILE}")
     message(FATAL_ERROR "Device configuration file not found: ${DEVICE_CONFIG_FILE}")
 endif()
 
-include(${DEVICE_CONFIG_FILE})   # <--- THIS loads all device paths, flags, sources, etc.
+include($ENV{DEVICE_CONFIG_FILE})   # <--- THIS loads all device paths, flags, sources, etc.
 
 
 # -------------------------------------------------------------
