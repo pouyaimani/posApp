@@ -29,7 +29,6 @@ endif()
 # -------------------------------------------------------------
 # Optionally print all environment variables useful to device
 # -------------------------------------------------------------
-message(STATUS "SDK_ROOT = ${SDK_ROOT}")
 message(STATUS "Preset build directory: ${CMAKE_BINARY_DIR}")
 
 

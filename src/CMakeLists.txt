@@ -48,6 +48,10 @@ option(LVGL_ENABLE_ASM "Enable ASM for LVGL" OFF)
 
 FetchContent_MakeAvailable(lvgl)
 
+target_include_directories(lvgl PUBLIC
+    ${DEVICE_PLATFORM_INCLUDE_DIRS}
+)
+
 if(EXISTS $ENV{DEVICE_LVGL_CONFIG_FILE})
     message(STATUS "LVGL custom enviorment support file detected.")
     set(LVGL_ENV_CUSTOM_DST

@@ -17,17 +17,13 @@
       "inherits": "base-dev",
 
       "environment": {
-        "TRENDIT_PLATFORM_PATH": "C:/greenPayment/trendit/platform/rtos", 
-        "TRENDIT_SDK_PATH": "C:/greenPayment/trendit/platform/rtos/sdk",
-        "TRENDIT_TOOLCHAIN_ROOT": "C:/greenPayment/trendit/platform/rtos/toolchain",
-        "TRENDIT_SDK_LIB_PATH": "C:/greenPayment/trendit/platform/rtos/sdk/libsdk1.0.18",
         "DEVICE_CONFIG_FILE": "C:/greenPayment/trendit/platform/rtos/cmake/trenditT3Rtos.cmake",
-        "DEVICE_LVGL_CONFIG_FILE": "C:/greenPayment/trendit/platform/rtos/cmake/lv_env_custom.cmake"
+        "DEVICE_LVGL_CONFIG_FILE": "C:/greenPayment/trendit/platform/rtos/cmake/lv_env_custom.cmake",
+        "DEVICE_CONFIG_HEADER": "C:/greenPayment/trendit/platform/rtos/device_config.h"
       },
 
       "cacheVariables": {
         "DEVICE": "trenditT3Rtos",
-        "SDK_ROOT": "C:/greenPayment/trendit/platform/rtos/sdk",
         "SCATTER_FILE": "C:/greenPayment/trendit/platform/rtos/t3rapp.sct",
         "CMAKE_VERBOSE_MAKEFILE": "OFF",
         "MCU_CORE": "Cortex-M0"
