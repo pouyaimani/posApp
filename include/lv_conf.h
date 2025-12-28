@@ -4,7 +4,7 @@
 #ifndef LV_CONF_H
 #define LV_CONF_H
 
-#include "device_config.h"
+#include "config.h"
 
 /* If you need to include anything here, do it inside the `__ASSEMBLY__` guard */
 #if  0 && defined(__ASSEMBLY__)
@@ -16,7 +16,7 @@
  *====================*/
 
 /** Color depth: 1 (I1), 8 (L8), 16 (RGB565), 24 (RGB888), 32 (XRGB8888) */
-#define LV_COLOR_DEPTH 16
+#define LV_COLOR_DEPTH COLOR_DEPTH
 
 /*=========================
    STDLIB WRAPPER SETTINGS
