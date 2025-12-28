@@ -2,7 +2,8 @@
 
 int main() {
     Device *dev = getDevice();
-    dev->vtable->init(dev);
+    OOP_CALL(dev, init);
+    // dev->vtable->init(dev);
     while (1) {
         /* code */
     }

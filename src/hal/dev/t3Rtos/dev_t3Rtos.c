@@ -2,7 +2,6 @@
 
 #include "dev_t3Rtos.h"
 #include "posplatform.h"
-// #include "LibGlobal.h"
 
 static void loadIng(void)
 {
@@ -31,11 +30,20 @@ static void appInit(void)
 
 static void T3Rtos_init(Device* dev) {
     appInit();
+}
 
+static void T3Rtos_getTick(Device* dev) {
+    return sdkSysGetTicks();
+}
+
+static unsigned int T3Rtos_getMemory(Device* dev, unsigned int size) {
+    return sdkSysGetMem(size);
 }
 
 static const DeviceVTable t3Rtos_vtable = {
-    .init = T3Rtos_init
+    .init = T3Rtos_init,
+    .getTick = T3Rtos_getTick,
+    .getMemory = T3Rtos_getMemory
 };
 
 void T3Rtos_ctor(T3Rtos* self, const char* name) {

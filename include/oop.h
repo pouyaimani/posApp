@@ -19,11 +19,11 @@
 
 /* ===== Methods ===== */
 
-#define OOP_METHOD(type, name, ...) \
-    void type##_##name(type* self, ##__VA_ARGS__)
+#define OOP_METHOD(ret_type, type, name, ...) \
+    ret_type type##_##name(type* self, ##__VA_ARGS__)
 
-#define OOP_IMETHOD(type, name, ...) \
-    void (*name)(type* self, ##__VA_ARGS__)
+#define OOP_IMETHOD(ret_type, type, name, ...) \
+    ret_type (*name)(type* self, ##__VA_ARGS__)
 
 /* ===== Constructors / destructors ===== */
 
@@ -52,5 +52,14 @@
 #define OOP_CONTAINER_OF(ptr, type, member) \
     ((type*)((char*)(ptr) - offsetof(type, member)))
 
+
+#define CALL_ONCE(code)        \
+    do {                       \
+        static int _called;    \
+        if (!_called) {        \
+            _called = 1;       \
+            code;              \
+        }                      \
+    } while (0)
 
 #endif

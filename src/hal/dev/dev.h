@@ -6,7 +6,9 @@
 OOP_DECLARE_CLASS(Device)
 
 OOP_VTABLE(Device) {
-    OOP_IMETHOD(Device, init);
+    OOP_IMETHOD(void, Device, init);
+    OOP_IMETHOD(unsigned int, Device, getTick);
+    OOP_IMETHOD(unsigned int, Device, getMemory, unsigned int);
 };
 
 OOP_CLASS(Device) {
