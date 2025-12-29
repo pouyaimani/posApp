@@ -1,14 +1,43 @@
+#include "config.h"
 #include "display.h"
 #include "../hal/dev/dev.h"
 
+#define SCREEN_SIZE         DISP_HOR_RES * DISP_VER_RES
+#define BYTES_PER_PIXEL     2
+
 static Display display;
 static Device *dev;
+// Display buffer
+static uint8_t *buffer;
 // Previous tick
 static uint32_t ptick = 0;
 
+static volatile bool isFlushEnabled;
+
+static lv_display_t *lv_disp;
+
+static void initBuffer() {
+    buffer = OOP_CALL(dev, getMemory, (SCREEN_SIZE / 10) * BYTES_PER_PIXEL);
+    memset(buffer, 0, sizeof(buffer));
+}
+
+static void disp_flush(lv_display_t *disp, const lv_area_t *area, lv_color_t *color_p)
+{
+    OOP_CALL(dev, flushDisplay, area->x1, area->x2, area->y1, area->y2, color_p);
+    // Inform the graphics library that you are ready with the flushing
+    lv_display_flush_ready(disp);
+}
+
 static void displayInit(Display* ui) { 
+
+    initBuffer();
     // init LVGL
     lv_init();
+
+    lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
+    lv_display_set_buffers(lv_disp, buffer, NULL, sizeof(buffer), LV_DISPLAY_RENDER_MODE_PARTIAL);
+
+    lv_display_set_flush_cb(lv_disp, disp_flush);
 }
 
 static void displayUpdate(Display* ui) {

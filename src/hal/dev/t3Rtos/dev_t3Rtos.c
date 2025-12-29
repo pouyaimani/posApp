@@ -2,7 +2,8 @@
 
 #include "dev_t3Rtos.h"
 #include "posplatform.h"
-#include "ddi_lcd.h"
+#include "ddi.h"
+#include "ddiapi.h"
 
 static void loadIng(void)
 {
@@ -53,7 +54,7 @@ static unsigned int T3Rtos_flushDisplay(Device* dev, int32_t x0, int32_t x1, int
         .m_height = y1 - y0 + 1,
         .m_pic = color
     };
-    // ddi_lcd_show_picture(&rect, &pic);
+    ddi_lcd_show_picture(&rect, &pic);
 }
 
 static const DeviceVTable t3Rtos_vtable = {
