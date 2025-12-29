@@ -2,6 +2,7 @@
 
 #include "dev_t3Rtos.h"
 #include "posplatform.h"
+#include "ddi_lcd.h"
 
 static void loadIng(void)
 {
@@ -40,10 +41,26 @@ static unsigned int T3Rtos_getMemory(Device* dev, unsigned int size) {
     return sdkSysGetMem(size);
 }
 
+static unsigned int T3Rtos_flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint32_t color) {
+    strRect rect = {
+        .m_x0 = x0,
+        .m_x1 = x1,
+        .m_y0 = y0,
+        .m_y1 = y1
+    };
+    strPicture pic = {
+        .m_width = x1 - x0 + 1,
+        .m_height = y1 - y0 + 1,
+        .m_pic = color
+    };
+    // ddi_lcd_show_picture(&rect, &pic);
+}
+
 static const DeviceVTable t3Rtos_vtable = {
     .init = T3Rtos_init,
     .getTick = T3Rtos_getTick,
-    .getMemory = T3Rtos_getMemory
+    .getMemory = T3Rtos_getMemory,
+    .flushDisplay = T3Rtos_flushDisplay
 };
 
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
