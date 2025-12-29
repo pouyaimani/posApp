@@ -33,6 +33,9 @@
 #define OOP_DTOR(type) \
     void type##_dtor(type* self)
 
+#define OOP_CALL_CTOR(type, ...) \
+    type##_ctor(##__VA_ARGS__)
+
 /* ===== Interface (vtable) ===== */
 
 #define OOP_VTABLE(name) \
@@ -40,12 +43,12 @@
     struct name##VTable
 
 #define OOP_IMPLEMENTS(name) \
-    const name##VTable* vtable
+    name##VTable vtable 
 
 /* ===== Virtual call ===== */
 
 #define OOP_CALL(obj, method, ...) \
-    ((obj)->vtable->method((obj), ##__VA_ARGS__))
+    ((obj)->vtable.method((obj), ##__VA_ARGS__))
 
 /* ===== container_of (safe inheritance cast) ===== */
 

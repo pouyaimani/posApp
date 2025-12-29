@@ -31,12 +31,12 @@ OOP_DECLARE_CLASS(Keypad)
 OOP_VTABLE(Keypad) {
     OOP_IMETHOD(void, Keypad, init);
     OOP_IMETHOD(void, Keypad, read);
+    OOP_IMETHOD(Key_t, Keypad, getKey);
+    OOP_IMETHOD(bool, Keypad, isPressed);
 };
 
 OOP_CLASS(Keypad) {
     OOP_IMPLEMENTS(Keypad);
-    OOP_IMETHOD(Key_t, Keypad, getKey);
-    OOP_IMETHOD(bool, Keypad, isPressed);
     Key_t key;
 };
 

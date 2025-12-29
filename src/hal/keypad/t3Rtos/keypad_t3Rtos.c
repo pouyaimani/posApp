@@ -41,13 +41,9 @@ static void KeypadT3Rtos_read(KeypadT3Rtos* keypad) {
     }
 }
 
-static const KeypadVTable t3Rtos_vtable = {
-    .init = KeypadT3Rtos_init,
-    .read = KeypadT3Rtos_read,
-};
-
 void KeypadT3Rtos_ctor(KeypadT3Rtos* self) {
-    self->base.vtable = &t3Rtos_vtable;
+    self->base.vtable.init = KeypadT3Rtos_init;
+    self->base.vtable.read = KeypadT3Rtos_read;
 }
 
 #endif

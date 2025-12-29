@@ -57,15 +57,11 @@ static unsigned int T3Rtos_flushDisplay(Device* dev, int32_t x0, int32_t x1, int
     ddi_lcd_show_picture(&rect, &pic);
 }
 
-static const DeviceVTable t3Rtos_vtable = {
-    .init = T3Rtos_init,
-    .getTick = T3Rtos_getTick,
-    .getMemory = T3Rtos_getMemory,
-    .flushDisplay = T3Rtos_flushDisplay
-};
-
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
-    self->base.vtable = &t3Rtos_vtable;
+    self->base.vtable.init = T3Rtos_init;
+    self->base.vtable.getTick = T3Rtos_getTick;
+    self->base.vtable.getMemory = T3Rtos_getMemory;
+    self->base.vtable.flushDisplay = T3Rtos_flushDisplay;
     self->base.name = name;
 }
 
