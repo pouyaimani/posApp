@@ -4,12 +4,6 @@
 #include "t3Rtos/keypad_t3Rtos.h"
 #endif
 
-#define KEYPAD_REGISTER(type)       \
-    static type obj;                \
-    Keypad_ctor(keypad);            \
-    type##_ctor(&obj);              \
-    keypad = (Keypad*)&obj;
-
 static Keypad *keypad;
 
 static Key_t getKey() {
@@ -31,7 +25,7 @@ void Keypad_ctor(Keypad* self) {
 Keypad *getKeypad() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
-    KEYPAD_REGISTER(KeypadT3Rtos)
+    DEVICE_REGISTER(Keypad, KeypadT3Rtos, keypad)
 #else
 #error Deivce keypad is undefined. Make sure correct device is chosen and its keypad driver is developed.
 #endif

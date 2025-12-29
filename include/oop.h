@@ -65,4 +65,10 @@
         }                      \
     } while (0)
 
+#define DEVICE_REGISTER(device, type, object, ...)      \
+    static type obj;                                    \
+    object## = (device##*)&obj;                         \
+    device##_ctor(object##, ##__VA_ARGS__);             \
+    type##_ctor(&obj, ##__VA_ARGS__);                   \
+
 #endif

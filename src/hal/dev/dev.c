@@ -13,9 +13,7 @@ void Device_ctor(Device* self, const char* name) {
 Device *getDevice() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
-        static T3Rtos t3Rtos;
-        T3Rtos_ctor(&t3Rtos, "");
-        device = (Device*)&t3Rtos;
+    DEVICE_REGISTER(Device, T3Rtos, device, "")
 #else
 #error Deivce is undefined. Make sure correct device is chosen and developed.
 #endif
