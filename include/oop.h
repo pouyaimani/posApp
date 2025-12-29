@@ -19,8 +19,8 @@
 
 /* ===== Methods ===== */
 
-#define OOP_METHOD(ret_type, type, name, ...) \
-    ret_type type##_##name(type* self, ##__VA_ARGS__)
+#define OOP_METHOD(ret_type, name, ...) \
+    ret_type (*name)(##__VA_ARGS__)
 
 #define OOP_IMETHOD(ret_type, type, name, ...) \
     ret_type (*name)(type* self, ##__VA_ARGS__)

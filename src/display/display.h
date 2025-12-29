@@ -7,8 +7,8 @@
 OOP_DECLARE_CLASS(Display)
 
 OOP_CLASS(Display) {
-    OOP_IMETHOD(void, Display, init);
-    OOP_IMETHOD(void, Display, update);
+    OOP_METHOD(void, init);
+    OOP_METHOD(void, update);
     const char *name;
 };
 
