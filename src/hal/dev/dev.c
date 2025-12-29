@@ -16,6 +16,8 @@ Device *getDevice() {
         static T3Rtos t3Rtos;
         T3Rtos_ctor(&t3Rtos, "");
         device = (Device*)&t3Rtos;
+#else
+#error Deivce is undefined. Make sure correct device is chosen and developed.
 #endif
     );
     return device;
