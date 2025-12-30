@@ -27,11 +27,11 @@ static MagReaderErr_t translateSdkErr(int err) {
     return magErr;
 }
 
-static void MagReaderT3Rtos_init(MagReaderT3Rtos* mag) {
+static void init(MagReaderT3Rtos* mag) {
     mag->base.error = translateSdkErr(sdkMagOpen());
 }
 
-static void MagReaderT3Rtos_read(MagReaderT3Rtos* mag) {
+static void read(MagReaderT3Rtos* mag) {
     mag->base.error = translateSdkErr(sdkMagRead(&magData));
     if (mag->base.error == MAG_ERR_SWIPED) {
         mag->base.data.track1.len = magData.track1Len;
@@ -41,8 +41,8 @@ static void MagReaderT3Rtos_read(MagReaderT3Rtos* mag) {
 }
 
 void MagReaderT3Rtos_ctor(MagReaderT3Rtos* self) {
-    self->base.vtable.init = MagReaderT3Rtos_init;
-    self->base.vtable.read = MagReaderT3Rtos_read;
+    self->base.vtable.init = init;
+    self->base.vtable.read = read;
     self->base.data.track1.data = magData.track1Data;
     self->base.data.track2.data = magData.track2Data;
     self->base.data.track3.data = magData.track3Data;

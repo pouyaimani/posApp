@@ -30,19 +30,19 @@ static void appInit(void)
     loadAidCapk();
 }
 
-static void T3Rtos_init(Device* dev) {
+static void init(Device* dev) {
     appInit();
 }
 
-static void T3Rtos_getTick(Device* dev) {
+static void getTick(Device* dev) {
     return sdkSysGetTicks();
 }
 
-static unsigned int T3Rtos_getMemory(Device* dev, unsigned int size) {
+static unsigned int getMemory(Device* dev, unsigned int size) {
     return sdkSysGetMem(size);
 }
 
-static unsigned int T3Rtos_flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint32_t color) {
+static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint32_t color) {
     strRect rect = {
         .m_x0 = x0,
         .m_x1 = x1,
@@ -58,10 +58,10 @@ static unsigned int T3Rtos_flushDisplay(Device* dev, int32_t x0, int32_t x1, int
 }
 
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
-    self->base.vtable.init = T3Rtos_init;
-    self->base.vtable.getTick = T3Rtos_getTick;
-    self->base.vtable.getMemory = T3Rtos_getMemory;
-    self->base.vtable.flushDisplay = T3Rtos_flushDisplay;
+    self->base.vtable.init = init;
+    self->base.vtable.getTick = getTick;
+    self->base.vtable.getMemory = getMemory;
+    self->base.vtable.flushDisplay = flushDisplay;
     self->base.name = name;
 }
 

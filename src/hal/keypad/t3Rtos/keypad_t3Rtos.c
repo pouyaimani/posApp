@@ -4,7 +4,7 @@
 #include "posplatform.h"
 #include <sdkKey.h>
 
-static void KeypadT3Rtos_init(KeypadT3Rtos* keypad) {
+static void init(KeypadT3Rtos* keypad) {
 }
 
 static Key_t sdk_key_to_key(SDK_KEY_VALUE sdk_key)
@@ -35,15 +35,15 @@ static Key_t sdk_key_to_key(SDK_KEY_VALUE sdk_key)
     }
 }
 
-static void KeypadT3Rtos_read(KeypadT3Rtos* keypad) {
+static void read(KeypadT3Rtos* keypad) {
     if (keypad->base.key == KEY_NONE) {
         keypad->base.key = sdk_key_to_key(sdkKeyGet());
     }
 }
 
 void KeypadT3Rtos_ctor(KeypadT3Rtos* self) {
-    self->base.vtable.init = KeypadT3Rtos_init;
-    self->base.vtable.read = KeypadT3Rtos_read;
+    self->base.vtable.init = init;
+    self->base.vtable.read = read;
 }
 
 #endif
