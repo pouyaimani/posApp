@@ -47,7 +47,7 @@ MagReader *getMagReader() {
 #ifdef DEVICE_TRENDITT3RTOS
     DEVICE_REGISTER(MagReader, MagReaderT3Rtos, magReader)
 #else
-#error Deivce keypad is undefined. Make sure correct device is chosen and its keypad driver is developed.
+#error Deivce mag reader is undefined. Make sure correct device is chosen and its mag reader driver is developed.
 #endif
     );
     return magReader;
