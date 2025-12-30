@@ -9,7 +9,7 @@ OOP_CLASS(PrinterT3Rtos) {
     OOP_EXTENDS(Printer);
 };
 
-OOP_CTOR(PrinterT3Rtos, const char* name);
+OOP_CTOR(PrinterT3Rtos);
 
 #endif
 

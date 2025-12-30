@@ -5,8 +5,7 @@
 
 static Printer *printer;
 
-void Printer_ctor(Printer* self, const char* name) {
-    self->name = name;
+void Printer_ctor(Printer* self) {
 }
 
 Printer *getPrinter() {
