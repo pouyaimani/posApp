@@ -40,14 +40,14 @@ PrinterErr_t translateSdkErr(int err) {
     return error;
 }
 
-static void init(PrinterT3Rtos* dev) {
+static void init(Printer* dev) {
 }
 
-static PrinterStatus_t getStatus() {
+static PrinterStatus_t getStatus(Printer* priter) {
     return translateSdkStatus(sdkPrintGetStatus());
 }
 
-static PrinterErr_t setGray(PrinterGrayLevel_t level) {
+static PrinterErr_t setGray(Printer* priter, PrinterGrayLevel_t level) {
     PRINTER_GRAY_LEVEL lv = SDK_PRINT_GRAY_M;
     if (level == PRNT_GRAY_LVL_LOW) {
         lv = SDK_PRINT_GRAY_L;
@@ -57,14 +57,14 @@ static PrinterErr_t setGray(PrinterGrayLevel_t level) {
     return translateSdkErr(sdkPrintSetGray(lv));
 }
 
-PrinterGrayLevel_t getGray() {
+PrinterGrayLevel_t getGray(Printer* priter) {
     PRINTER_GRAY_LEVEL g = sdkPrintGetGray();
     PrinterGrayLevel_t gray = g == SDK_PRINT_GRAY_M ? PRNT_GRAY_LVL_MEDIUM : PRNT_GRAY_LVL_LOW;
     gray = g == SDK_PRINT_GRAY_L ? PRNT_GRAY_LVL_LOW : PRNT_GRAY_LVL_HIGH;
     return gray;
 }
 
-static PrinterErr_t print(unsigned char *bmp, uint16_t width, uint16_t height) {
+static PrinterErr_t print(Printer* priter, unsigned char *bmp, uint16_t width, uint16_t height) {
     PrintFormat format = {0};
     format.mAlign = PRINT_ALIGN_MIDDLE;
     format.mReverse = PRINT_REV_LINE_FILL;

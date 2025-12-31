@@ -42,6 +42,10 @@ static unsigned int getMemory(Device* dev, unsigned int size) {
     return sdkSysGetMem(size);
 }
 
+static void freeMemory(Device* dev, void *mem) {
+    sdkSysFreeMem(mem);
+}
+
 static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint32_t color) {
     strRect rect = {
         .m_x0 = x0,
@@ -62,6 +66,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.getTick = getTick;
     self->base.vtable.getMemory = getMemory;
     self->base.vtable.flushDisplay = flushDisplay;
+    self->base.vtable.freeMemory = freeMemory;
     self->base.name = name;
 }
 

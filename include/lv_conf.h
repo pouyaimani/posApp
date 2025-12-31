@@ -4,7 +4,7 @@
 #ifndef LV_CONF_H
 #define LV_CONF_H
 
-#include "config.h"
+#include "dcfg.h"
 
 /* If you need to include anything here, do it inside the `__ASSEMBLY__` guard */
 #if  0 && defined(__ASSEMBLY__)

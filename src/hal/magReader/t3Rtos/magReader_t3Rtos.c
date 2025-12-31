@@ -27,16 +27,16 @@ static MagReaderErr_t translateSdkErr(int err) {
     return magErr;
 }
 
-static void init(MagReaderT3Rtos* mag) {
-    mag->base.error = translateSdkErr(sdkMagOpen());
+static void init(MagReader* mag) {
+    mag->error = translateSdkErr(sdkMagOpen());
 }
 
-static void read(MagReaderT3Rtos* mag) {
-    mag->base.error = translateSdkErr(sdkMagRead(&magData));
-    if (mag->base.error == MAG_ERR_SWIPED) {
-        mag->base.data.track1.len = magData.track1Len;
-        mag->base.data.track2.len = magData.track2Len;
-        mag->base.data.track3.len = magData.track3Len;
+static void read(MagReader* mag) {
+    mag->error = translateSdkErr(sdkMagRead(&magData));
+    if (mag->error == MAG_ERR_SWIPED) {
+        mag->data.track1.len = magData.track1Len;
+        mag->data.track2.len = magData.track2Len;
+        mag->data.track3.len = magData.track3Len;
     }
 }
 

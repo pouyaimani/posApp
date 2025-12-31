@@ -10,6 +10,7 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(void, Device, init);
     OOP_IMETHOD(unsigned int, Device, getTick);
     OOP_IMETHOD(unsigned int, Device, getMemory, unsigned int);
+    OOP_IMETHOD(void, Device, freeMemory, void *);
     OOP_IMETHOD(unsigned int, Device, flushDisplay, int32_t, int32_t, int32_t, int32_t, uint32_t);
 };
 
