@@ -7,7 +7,22 @@
 
 static Wifi *wifi;
 
+static WifiApList_t *getApList(Wifi *wifi) {
+    return &wifi->apList;
+}
+
+static WifiScanSt_t getScanStatus(Wifi *wifi) {
+    return wifi->scanSt;
+}
+
+static WifiSigStrength_t getSignalStrength(Wifi *wifi) {
+
+}
+
 void Wifi_ctor(Wifi* self) {
+    wifi->vtable.getApList = getApList;
+    wifi->vtable.getScanStatus = getScanStatus;
+    wifi->vtable.getSignalStrength = getSignalStrength;
 }
 
 Wifi *getWifi() {
