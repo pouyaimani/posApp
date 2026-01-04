@@ -71,4 +71,12 @@
     device##_ctor(object##, ##__VA_ARGS__);             \
     type##_ctor(&obj, ##__VA_ARGS__);                   \
 
+// TODO: add log
+#define RETURN_IF_NULL(ptr) \
+    do { if ((ptr) == NULL) return; } while (0)
+
+#define RETURN_VAL_IF_NULL(ptr, ret) \
+    do { if ((ptr) == NULL) return (ret); } while (0)
+
+
 #endif
