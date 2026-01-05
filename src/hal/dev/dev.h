@@ -3,6 +3,17 @@
 
 #include "oop.h"
 #include <stdint.h>
+#include <stdbool.h>
+
+typedef struct ModuleExist_t {
+    bool wifi;
+    bool gprs;
+    bool printer;
+    bool audio;
+    bool scanner;
+    bool bt;
+} ModuleExist_t;
+
 
 OOP_DECLARE_CLASS(Device)
 
@@ -16,6 +27,7 @@ OOP_VTABLE(Device) {
 
 OOP_CLASS(Device) {
     OOP_IMPLEMENTS(Device);
+    ModuleExist_t module;
     const char *name;
 };
 

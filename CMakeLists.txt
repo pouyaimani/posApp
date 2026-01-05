@@ -50,7 +50,6 @@ include($ENV{DEVICE_CONFIG_FILE})   # <--- THIS loads all device paths, flags, s
 
 add_subdirectory(src)
 
-
 message(STATUS "----------------------------------------------------")
 message(STATUS " Completed configuration for device: ${DEVICE}")
 message(STATUS " Build directory: ${CMAKE_BINARY_DIR}")
