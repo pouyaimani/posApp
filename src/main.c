@@ -4,7 +4,9 @@
 #include "core/stateMachine/core.h"
 #include "states/states.h"
 
-int main() {
+//RTOS entry point
+void appMain(void)
+{
     Device *dev = getDevice();
     OOP_CALL(dev, init);
     Display *disp = getDisplay();
@@ -15,3 +17,11 @@ int main() {
     core->registerCallback(getEventloop()->runCycle);
     core->exec();
 }
+
+#ifdef DEVICE_USES_LINUX
+
+int main() {
+    appMain();
+}
+
+#endif
