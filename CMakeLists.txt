@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
+project(posapp LANGUAGES C)
+
 # -------------------------------------------------------------
 # Verify that DEVICE was provided by CMakePresets.json
 # -------------------------------------------------------------
@@ -45,8 +47,6 @@ include($ENV{DEVICE_CONFIG_FILE})   # <--- THIS loads all device paths, flags, s
 # -------------------------------------------------------------
 # Project and CMake subdirectiries
 # -------------------------------------------------------------
-
-project(posapp LANGUAGES C)
 
 add_subdirectory(src)
 
