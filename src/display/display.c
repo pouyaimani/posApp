@@ -28,7 +28,7 @@ static void disp_flush(lv_display_t *disp, const lv_area_t *area, lv_color_t *co
     lv_display_flush_ready(disp);
 }
 
-static void displayInit(Display* ui) { 
+static void displayInit(Display* disp) { 
 
     initBuffer();
     // init LVGL
@@ -38,6 +38,11 @@ static void displayInit(Display* ui) {
     lv_display_set_buffers(lv_disp, buffer, NULL, sizeof(buffer), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
     lv_display_set_flush_cb(lv_disp, disp_flush);
+
+    // main screen
+    disp->screen = lv_obj_create(NULL);
+    lv_screen_load(disp->screen);
+
 }
 
 static void displayUpdate(Display* ui) {
@@ -50,7 +55,7 @@ static void displayUpdate(Display* ui) {
     lv_timer_handler();
 }
 
-void Display_ctor(Display* self, const char* name) {
+void Display_ctor(Display* self) {
     self->init = displayInit;
     self->update = displayUpdate;
     dev = getDevice();
@@ -58,7 +63,7 @@ void Display_ctor(Display* self, const char* name) {
 
 Display *getDisplay(void) {
     CALL_ONCE(
-        Display_ctor(&display, "");
+        Display_ctor(&display);
     );
     return &display;
 }

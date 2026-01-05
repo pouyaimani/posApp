@@ -9,10 +9,10 @@ OOP_DECLARE_CLASS(Display)
 OOP_CLASS(Display) {
     OOP_METHOD(void, init);
     OOP_METHOD(void, update);
-    const char *name;
+    lv_obj_t *screen;
 };
 
-OOP_CTOR(Display, const char* name);
+OOP_CTOR(Display);
 
 Display *getDisplay(void);
 
