@@ -3,12 +3,20 @@
 #include "core/eventloop/eventloop.h"
 #include "core/stateMachine/core.h"
 #include "states/states.h"
+#include "logger.h"
 
 //RTOS entry point
 void appMain(void)
 {
     Device *dev = getDevice();
     OOP_CALL(dev, init);
+    initLogger(&(log_Config)  {
+        .level = LOG_INFO,
+        .writer = {
+            .write = dev->vtable.logOut,
+            .udata = NULL
+        }
+    });
     Display *disp = getDisplay();
     disp->init();
     Core *core = getSmCore();

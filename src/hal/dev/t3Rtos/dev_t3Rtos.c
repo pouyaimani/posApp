@@ -6,6 +6,7 @@
 #include "appVersion.h"
 #include "LibProperties.h"
 #include "sdkUtils.h"
+#include "sdkLog.h"
 
 #define DEVICE_MACHINE_ID  "33"
 #define USER_DATA_ROOT_DIR "/mtd0/"
@@ -95,12 +96,17 @@ static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0
     ddi_lcd_show_picture(&rect, &pic);
 }
 
+static void logOut(Device* dev, const char *data, size_t len, void *udata) {
+    sdkLogOut(data);
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.init = init;
     self->base.vtable.getTick = getTick;
     self->base.vtable.getMemory = getMemory;
     self->base.vtable.flushDisplay = flushDisplay;
     self->base.vtable.freeMemory = freeMemory;
+    self->base.vtable.logOut = logOut;
     self->base.name = name;
 }
 
