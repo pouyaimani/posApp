@@ -2,11 +2,13 @@
 #include "state.h"
 #include "event.h"
 #include <stdlib.h>
+#include "logger.h"
 
 static Core core;
 
 static void init(State *initial)
 {
+    LOG_TRACE("SM: initialization starts.");
     RETURN_IF_NULL(initial);
     core.current = initial;
     core.current->inner = STATE_ENTRY;
@@ -14,6 +16,7 @@ static void init(State *initial)
 
 static void raiseEvent(Event *ev)
 {
+    LOG_TRACE("SM: Event is going to raise.");
     RETURN_IF_NULL(ev);
     if (!ev->target)
         ev->target = core.current;
@@ -33,6 +36,7 @@ static void runCycle()
 
     switch (s->inner) {
     case STATE_ENTRY:
+        LOG_TRACE("SM: on entry to ", s->name, " state.");
         s->inner = STATE_EVENT;
         OOP_CALL(s, enter);
         break;
@@ -41,6 +45,7 @@ static void runCycle()
         for (size_t i = 0; i < core.qsize; ) {
             Event *ev = core.queue[i];
             if (ev->target == s) {
+                LOG_TRACE("SM: Event came to ", s->name, " state.");
                 OOP_CALL(ev, dispatchTo, s);
                 free(ev);
                 core.queue[i] = core.queue[--core.qsize];
@@ -51,6 +56,7 @@ static void runCycle()
         break;
 
     case STATE_EXIT:
+        LOG_TRACE("SM: on exit to ", s->name, " state.");
         OOP_CALL(s, exit);
         for (size_t i = 0; i < core.qsize; ) {
             Event *ev = core.queue[i];
@@ -69,6 +75,7 @@ static void runCycle()
 
 static void exec()
 {
+    LOG_TRACE("SM: starts execution.");
     while (1) {
         runCycle();
         for (size_t i = 0; i < core.cbSize ; ++i) {
@@ -79,8 +86,11 @@ static void exec()
 
 void registerCallback(CoreCallback cb)
 {
+    LOG_TRACE("SM: new callback is registered.");
     if (core.cbSize < 16) {
         core.callbacks[core.cbSize++] = cb;
+    } else {
+        LOG_FATAL("SM: call back queue is full.");
     }
 }
 
