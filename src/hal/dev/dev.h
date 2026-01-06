@@ -20,6 +20,19 @@ OOP_CLASS(DateTime) {
     char time[6 + 1];
 };
 
+typedef enum BatteryLevel_t {
+    DEV_BAT_LEV_LOW,
+    DEV_BAT_LEV_1,
+    DEV_BAT_LEV_2,
+    DEV_BAT_LEV_3
+} BatteryLevel_t;
+
+OOP_CLASS(BatteryStat) {
+    BatteryLevel_t level;
+    bool isChanrging;
+    uint16_t percent;
+};
+
 OOP_DECLARE_CLASS(Device)
 
 OOP_VTABLE(Device) {
@@ -30,6 +43,7 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(unsigned int, Device, flushDisplay, int32_t, int32_t, int32_t, int32_t, uint32_t);
     OOP_IMETHOD(void, Device, logOut, const char *, size_t, void *);
     OOP_IMETHOD(DateTime*, Device, getDateTime);
+    OOP_IMETHOD(BatteryStat*, Device, getBatteryStatus);
 };
 
 OOP_CLASS(Device) {

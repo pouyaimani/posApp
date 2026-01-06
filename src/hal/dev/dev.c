@@ -5,9 +5,18 @@
 #endif
 
 static Device *device;
+BatteryStat batterySt;
 
-void Device_ctor(Device* self, const char* name) {
+OOP_CTOR(Device, const char* name) {
     self->name = name;
+    self->vtable.flushDisplay = NULL;
+    self->vtable.freeMemory = NULL;
+    self->vtable.getDateTime = NULL;
+    self->vtable.getMemory = NULL;
+    self->vtable.getTick = NULL;
+    self->vtable.init = NULL;
+    self->vtable.logOut = NULL;
+    self->vtable.getBatteryStatus = NULL;
 }
 
 Device *getDevice() {

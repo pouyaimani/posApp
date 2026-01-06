@@ -9,6 +9,7 @@
 #include "sdkLog.h"
 
 static DateTime dateTime;
+extern BatteryStat batterySt;
 
 #define DEVICE_MACHINE_ID  "33"
 #define USER_DATA_ROOT_DIR "/mtd0/"
@@ -111,7 +112,25 @@ static DateTime *getDateTime(Device* dev) {
     return &dateTime;
 }
 
+static BatteryStat* getBatteryStatus(Device *dev) {
+    BatteryStatus st;
+    int ret = sdkSysGetBatteryStatus(&st);
+    if (st.mBatteryLevel == SYS_BATTERY_LEVEL_NULL) {
+        batterySt.level = DEV_BAT_LEV_LOW;
+    } else if (st.mBatteryLevel < SYS_BATTERY_LEVEL_3) {
+        batterySt.level = DEV_BAT_LEV_1;
+    } else if (st.mBatteryLevel == SYS_BATTERY_LEVEL_3) {
+        batterySt.level = DEV_BAT_LEV_2;
+    } else {
+        batterySt.level = DEV_BAT_LEV_3;
+    }
+    batterySt.isChanrging = st.mIsCharging;
+    batterySt.percent = st.mBatteryPercent;
+    return &batterySt;
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
+    self->base.name = name;
     self->base.vtable.init = init;
     self->base.vtable.getTick = getTick;
     self->base.vtable.getMemory = getMemory;
@@ -119,7 +138,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.freeMemory = freeMemory;
     self->base.vtable.logOut = logOut;
     self->base.vtable.getDateTime = getDateTime;
-    self->base.name = name;
+    self->base.vtable.getBatteryStatus = getBatteryStatus;
 }
 
 #endif
