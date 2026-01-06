@@ -9,6 +9,7 @@ OOP_DECLARE_CLASS(Core);
 OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
 OOP_DECLARE_CLASS(KeypadEvent);
+OOP_DECLARE_CLASS(MagEvent);
 OOP_DECLARE_CLASS(State);
 
 /* ===== Inner state ===== */
@@ -27,6 +28,7 @@ OOP_VTABLE(State)
     OOP_IMETHOD(void, State, exit);
     OOP_IMETHOD(void, State, handleTimeout, TimeOutEvent *ev);
     OOP_IMETHOD(void, State, handleKeypad, KeypadEvent *ev);
+    OOP_IMETHOD(void, State, handleMag, MagEvent *ev);
     // This one shall not be overrided
     OOP_IMETHOD(void, State, goTo, State *);
 };

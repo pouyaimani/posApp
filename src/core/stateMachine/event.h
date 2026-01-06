@@ -5,7 +5,8 @@
 
 typedef enum SmEventType_t {
     SM_EVENT_TIME_OUT,
-    SM_EVENT_KEYPAD
+    SM_EVENT_KEYPAD,
+    SM_EVENT_MAG
 } SmEventType_t;
 
 /* Forward declarations */
@@ -14,6 +15,7 @@ OOP_DECLARE_CLASS(Core);
 OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
 OOP_DECLARE_CLASS(KeypadEvent);
+OOP_DECLARE_CLASS(MagEvent);
 
 /* ===== Event vtable ===== */
 
@@ -82,5 +84,16 @@ OOP_CLASS(KeypadEvent)
 
 /* ctor */
 OOP_CTOR(KeypadEvent);
+
+/* ===== Magreader ===== */
+
+OOP_CLASS(MagEvent)
+{
+    OOP_EXTENDS(Event);
+    int dummy;
+};
+
+/* ctor */
+OOP_CTOR(MagEvent);
 
 #endif

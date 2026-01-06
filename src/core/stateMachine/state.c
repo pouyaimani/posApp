@@ -32,12 +32,19 @@ static void default_keypad(State *s, KeypadEvent *ev)
     printf("%s keypad not handled\n", s->name);
 }
 
+static void default_mag(State *s, MagEvent *ev)
+{
+    (void)ev;
+    printf("%s Mag not handled\n", s->name);
+}
+
 OOP_CTOR(State, State *parent, const char *name)
 {
     self->vtable.enter = default_enter;
     self->vtable.exit = default_exit;
     self->vtable.handleTimeout = default_timeout;
     self->vtable.handleKeypad = default_keypad;
+    self->vtable.handleMag = default_mag;
     self->parent = parent;
     self->name = name;
     self->inner = STATE_ENTRY;

@@ -56,3 +56,15 @@ OOP_CTOR(KeypadEvent)
 {
     self->base.vtable.dispatchTo = Keypad_dispatchTo;
 }
+
+/* ================= MagReader ================= */
+
+static void mag_dispatchTo(Event *self, State *state)
+{
+    OOP_CALL(state, handleKeypad, self);
+}
+
+OOP_CTOR(MagEvent)
+{
+    self->base.vtable.dispatchTo = mag_dispatchTo;
+}

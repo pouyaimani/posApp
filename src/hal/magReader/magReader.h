@@ -4,6 +4,7 @@
 #include "oop.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include "core/stateMachine/event.h"
 
 typedef enum MagReaderErr_t {
     MAG_ERR_SWIPED,
@@ -35,6 +36,7 @@ OOP_VTABLE(MagReader) {
     OOP_IMETHOD(TrackData_t, MagReader, getTrack1);
     OOP_IMETHOD(TrackData_t, MagReader, getTrack2);
     OOP_IMETHOD(TrackData_t, MagReader, getTrack3);
+    OOP_IMETHOD(void, MagReader, readIo);
 };
 
 OOP_CLASS(MagReader) {

@@ -35,11 +35,19 @@ static TrackData_t getTrack3(MagReader *mag) {
     return mag->data.track3;
 }
 
+static void readIo(MagReader *mag) {
+    OOP_CALL(mag, read);
+    if(isSwiped(mag)) {
+        MagEvent **ev = (MagEvent**)createEvent(SM_EVENT_MAG);
+    }
+}
+
 void MagReader_ctor(MagReader* self) {
     self->vtable.isSwiped = isSwiped;
     self->vtable.getTrack1 = getTrack1;
     self->vtable.getTrack2 = getTrack2;
     self->vtable.getTrack3 = getTrack3;
+    self->vtable.readIo = readIo;
 }
 
 MagReader *getMagReader() {
