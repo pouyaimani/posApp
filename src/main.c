@@ -10,12 +10,13 @@ void appMain(void)
 {
     Device *dev = getDevice();
     OOP_CALL(dev, init);
-    initLogger(&(log_Config)  {
+    initLogger(&(LogConfig_t)  {
         .level = LOG_LEV_INFO,
         .writer = {
             .write = dev->vtable.logOut,
             .udata = NULL
-        }
+        },
+        .getDateTime = dev->vtable.getDateTime
     });
     Display *disp = getDisplay();
     disp->init();

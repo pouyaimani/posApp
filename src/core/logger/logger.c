@@ -2,43 +2,55 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "hal/dev/dev.h"
 
 #define LOG_BUFFER_SIZE 256
 
-static log_Config g_cfg;
+static LogConfig_t g_cfg;
 
 static const char *level_str[] = {
     "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
 };
 
-void initLogger(const log_Config *cfg) {
+void initLogger(const LogConfig_t *cfg) {
     g_cfg = *cfg;
 }
 
 static size_t format_log_line(char *buf,
                               size_t buf_size,
-                              log_Level level,
+                              LogLevel_t level,
                               const char *file,
                               int line,
                               const char *fmt,
                               va_list ap)
 {
-    time_t t = time(NULL);
-    struct tm tm;
-    localtime_r(&t, &tm);
+    size_t n = 0;
+    DateTime *dt;
+    bool has_time = false;
 
-    size_t n = strftime(
-        buf, buf_size,
-        "[%Y-%m-%d %H:%M:%S]", &tm
-    );
+    if (g_cfg.getDateTime) {
+        dt = g_cfg.getDateTime();
+    }
 
-    n += snprintf(
-        buf + n, buf_size - n,
-        "[%s][%s:%d] ",
-        level_str[level],
-        file,
-        line
-    );
+    if (has_time) {
+        /* date = YYMMDD, time = HHMMSS */
+        n += snprintf(buf + n, buf_size - n,
+                      "[%c%c-%c%c-%c%c %c%c:%c%c:%c%c]",
+                      dt->date[0], dt->date[1],
+                      dt->date[2], dt->date[3],
+                      dt->date[4], dt->date[5],
+                      dt->time[0], dt->time[1],
+                      dt->time[2], dt->time[3],
+                      dt->time[4], dt->time[5]);
+    } else {
+        n += snprintf(buf + n, buf_size - n, "[no-time]");
+    }
+
+    n += snprintf(buf + n, buf_size - n,
+                  "[%s][%s:%d] ",
+                  level_str[level],
+                  file,
+                  line);
 
     n += vsnprintf(buf + n, buf_size - n, fmt, ap);
     n += snprintf(buf + n, buf_size - n, "\n");
@@ -46,7 +58,7 @@ static size_t format_log_line(char *buf,
     return n;
 }
 
-void log_log(log_Level level,
+void log_log(LogLevel_t level,
              const char *file,
              int line,
              const char *fmt, ...)

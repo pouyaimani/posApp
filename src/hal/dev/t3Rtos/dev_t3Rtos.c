@@ -8,6 +8,8 @@
 #include "sdkUtils.h"
 #include "sdkLog.h"
 
+static DateTime dateTime;
+
 #define DEVICE_MACHINE_ID  "33"
 #define USER_DATA_ROOT_DIR "/mtd0/"
 #define APP_DIR             USER_DATA_ROOT_DIR APPID "/"
@@ -100,6 +102,15 @@ static void logOut(Device* dev, const char *data, size_t len, void *udata) {
     sdkLogOut(data);
 }
 
+static DateTime *getDateTime(Device* dev) {
+    uint8_t dt[6 + 6 + 1];
+    memset(dt, 0, sizeof(dt));
+    sdkSysGetRtcTime(dt);
+    memcpy(dateTime.date, dt, 6);
+    memcpy(dateTime.time, dt + 6, 6);
+    return &dateTime;
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.init = init;
     self->base.vtable.getTick = getTick;
@@ -107,6 +118,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.flushDisplay = flushDisplay;
     self->base.vtable.freeMemory = freeMemory;
     self->base.vtable.logOut = logOut;
+    self->base.vtable.getDateTime = getDateTime;
     self->base.name = name;
 }
 

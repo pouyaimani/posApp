@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <stddef.h>
+#include "oop.h"
 
 typedef enum {
     LOG_LEV_TRACE,
@@ -13,23 +14,26 @@ typedef enum {
     LOG_LEV_WARN,
     LOG_LEV_ERROR,
     LOG_LEV_FATAL
-} log_Level;
+} LogLevel_t;
+
+OOP_DECLARE_CLASS(DateTime);
 
 /* Writer interface (device-specific) */
 typedef struct {
     void (*write)(const char *data, size_t len, void *udata);
     void *udata;
-} log_Writer;
+} LogWriter_t;
 
 /* Logger configuration */
 typedef struct {
-    log_Writer writer;
-    log_Level  level;
-} log_Config;
+    LogWriter_t writer;
+    LogLevel_t  level;
+    DateTime *(*getDateTime)();
+} LogConfig_t;
 
 /* API */
-void initLogger(const log_Config *cfg);
-void log_log(log_Level level,
+void initLogger(const LogConfig_t *cfg);
+void log_log(LogLevel_t level,
              const char *file,
              int line,
              const char *fmt, ...);

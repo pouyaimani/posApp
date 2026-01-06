@@ -15,6 +15,11 @@ typedef struct ModuleExist_t {
 } ModuleExist_t;
 
 
+OOP_CLASS(DateTime) {
+    char date[6 + 1];
+    char time[6 + 1];
+};
+
 OOP_DECLARE_CLASS(Device)
 
 OOP_VTABLE(Device) {
@@ -24,6 +29,7 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(void, Device, freeMemory, void *);
     OOP_IMETHOD(unsigned int, Device, flushDisplay, int32_t, int32_t, int32_t, int32_t, uint32_t);
     OOP_IMETHOD(void, Device, logOut, const char *, size_t, void *);
+    OOP_IMETHOD(DateTime*, Device, getDateTime);
 };
 
 OOP_CLASS(Device) {
