@@ -129,6 +129,10 @@ static BatteryStat* getBatteryStatus(Device *dev) {
     return &batterySt;
 }
 
+static void sysSleep(Device *dev, uint32_t mili) {
+    sdkSysSleep(mili);
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.name = name;
     self->base.vtable.init = init;
@@ -139,6 +143,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.logOut = logOut;
     self->base.vtable.getDateTime = getDateTime;
     self->base.vtable.getBatteryStatus = getBatteryStatus;
+    self->base.vtable.getBatteryStatus = sysSleep;
 }
 
 #endif

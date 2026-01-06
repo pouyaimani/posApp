@@ -44,6 +44,7 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(void, Device, logOut, const char *, size_t, void *);
     OOP_IMETHOD(DateTime*, Device, getDateTime);
     OOP_IMETHOD(BatteryStat*, Device, getBatteryStatus);
+    OOP_IMETHOD(void, Device, sleep);
 };
 
 OOP_CLASS(Device) {
