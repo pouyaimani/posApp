@@ -3,6 +3,7 @@
 #include "core.h"
 #include <stdlib.h>
 #include "hal/dev/dev.h"
+#include "hal/keypad/keypad.h"
 
 /* ================= Event base ================= */
 static void dispatch(Event *self, State *state)
@@ -51,7 +52,7 @@ static void Keypad_dispatchTo(Event *self, State *state)
     OOP_CALL(state, handleKeypad, self);
 }
 
-OOP_CTOR(KeypadEvent, KeypadKey key, const char *str)
+OOP_CTOR(KeypadEvent)
 {
     self->base.vtable.dispatchTo = Keypad_dispatchTo;
 }

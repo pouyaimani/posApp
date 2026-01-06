@@ -35,7 +35,7 @@ static Key_t sdk_key_to_key(SDK_KEY_VALUE sdk_key)
     }
 }
 
-static void read(Keypad* keypad) {
+static void readKey(Keypad* keypad) {
     if (keypad->key == KEY_NONE) {
         keypad->key = sdk_key_to_key(sdkKeyGet());
     }
@@ -43,7 +43,7 @@ static void read(Keypad* keypad) {
 
 void KeypadT3Rtos_ctor(KeypadT3Rtos* self) {
     self->base.vtable.init = init;
-    self->base.vtable.read = read;
+    self->base.vtable.readKey = readKey;
 }
 
 #endif

@@ -36,6 +36,9 @@ OOP_CTOR(Event);
 
 Event **createEvent(SmEventType_t type);
 
+#define DISPATCH_EVENT(event) \
+    OOP_CALL((Event*)ev, dispatch, NULL);
+
 /* ===== TimeOut ===== */
 
 OOP_CLASS(TimeOutEvent)
@@ -48,9 +51,10 @@ OOP_CTOR(TimeOutEvent);
 
 /* ===== Keypad ===== */
 
-typedef enum
-{
-    KEY_1 = 1,
+typedef enum Key_t {
+    KEY_NONE = -1,
+    KEY_0,
+    KEY_1,
     KEY_2,
     KEY_3,
     KEY_4,
@@ -59,19 +63,24 @@ typedef enum
     KEY_7,
     KEY_8,
     KEY_9,
+    KEY_ENTER,
+    KEY_ESC,
+    KEY_UP,
+    KEY_DOWN,
     KEY_CLEAR,
-    KEY_0,
-    KEY_ENTER
-} KeypadKey;
+    KEY_ALPHA,
+    KEY_FUNCTION,
+    KEY_POWER
+} Key_t;
 
 OOP_CLASS(KeypadEvent)
 {
     OOP_EXTENDS(Event);
-    KeypadKey key;
+    Key_t key;
     const char *keyStr;
 };
 
 /* ctor */
-OOP_CTOR(KeypadEvent, KeypadKey key, const char *str);
+OOP_CTOR(KeypadEvent);
 
 #endif

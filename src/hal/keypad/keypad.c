@@ -4,6 +4,9 @@
 #include "t3Rtos/keypad_t3Rtos.h"
 #endif
 
+#include "core/stateMachine/event.h"
+#include "core/eventloop/eventloop.h"
+
 static Keypad *keypad;
 
 static Key_t getKey() {
@@ -12,14 +15,26 @@ static Key_t getKey() {
     return pressedKey;
 }
 
-static bool isPressed() {
+static bool isPressed(Keypad* self) {
     return keypad->key != KEY_NONE;
+}
+
+static void ioRead(Keypad* self) {
+    OOP_CALL(keypad, readKey);
+    if (isPressed(self)) {
+        KeypadEvent **ev = (KeypadEvent**)createEvent(SM_EVENT_KEYPAD);
+        (*ev)->key = getKey();
+        (*ev)->keyStr = "";
+        DISPATCH_EVENT(*ev);
+    }
 }
 
 void Keypad_ctor(Keypad* self) {
     self->key = KEY_NONE;
     self->vtable.getKey = getKey;
     self->vtable.isPressed = isPressed;
+    self->vtable.ioRead = ioRead;
+    getEventloop()->registerChecker(self->vtable.ioRead);
 }
 
 Keypad *getKeypad() {
