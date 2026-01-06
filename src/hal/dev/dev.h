@@ -45,6 +45,8 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(DateTime*, Device, getDateTime);
     OOP_IMETHOD(BatteryStat*, Device, getBatteryStatus);
     OOP_IMETHOD(void, Device, sleep);
+    OOP_IMETHOD(void, Device, reboot);
+    OOP_IMETHOD(void, Device, powerOff);
 };
 
 OOP_CLASS(Device) {

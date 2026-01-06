@@ -18,6 +18,8 @@ OOP_CTOR(Device, const char* name) {
     self->vtable.logOut = NULL;
     self->vtable.getBatteryStatus = NULL;
     self->vtable.sleep = NULL;
+    self->vtable.reboot = NULL;
+    self->vtable.powerOff = NULL;
 }
 
 Device *getDevice() {
