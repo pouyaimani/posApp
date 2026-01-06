@@ -6,6 +6,7 @@
 
 static Device *device;
 BatteryStat batterySt;
+SerialNumber sn;
 
 OOP_CTOR(Device, const char* name) {
     self->name = name;
@@ -20,6 +21,7 @@ OOP_CTOR(Device, const char* name) {
     self->vtable.sleep = NULL;
     self->vtable.reboot = NULL;
     self->vtable.powerOff = NULL;
+    self->vtable.getSN = NULL;
 }
 
 Device *getDevice() {

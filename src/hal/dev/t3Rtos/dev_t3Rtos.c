@@ -10,6 +10,7 @@
 
 static DateTime dateTime;
 extern BatteryStat batterySt;
+extern SerialNumber sn;
 
 #define DEVICE_MACHINE_ID  "33"
 #define USER_DATA_ROOT_DIR "/mtd0/"
@@ -70,6 +71,8 @@ static void init(Device* dev) {
     dev->module.audio = sdkSysIsDeviceExist(SYS_DEVICE_AUDIO);
     dev->module.scanner = sdkSysIsDeviceExist(SYS_DEVICE_CAMERA);
     dev->module.bt = sdkSysIsDeviceExist(SYS_DEVICE_BLUETOOTH);
+
+    sdkSysReadDeviceSN(SYS_SN_TYPE_MANUFACTURER, sn.data, SERIAL_NUMBER_MAX_LEN);
 }
 
 static void getTick(Device* dev) {
@@ -141,6 +144,10 @@ static void powerOff(Device *dev) {
     sdkSysDevicePowerOff();
 }
 
+static SerialNumber *getSN(Device *dev) {
+    return &sn;
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.name = name;
     self->base.vtable.init = init;
@@ -154,6 +161,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.sleep = sysSleep;
     self->base.vtable.reboot = reboot;
     self->base.vtable.powerOff = powerOff;
+    self->base.vtable.getSN = getSN;
 }
 
 #endif

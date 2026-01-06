@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define SERIAL_NUMBER_MAX_LEN   50
+
 typedef struct ModuleExist_t {
     bool wifi;
     bool gprs;
@@ -33,6 +35,10 @@ OOP_CLASS(BatteryStat) {
     uint16_t percent;
 };
 
+OOP_CLASS(SerialNumber) {
+    char data[SERIAL_NUMBER_MAX_LEN];
+};
+
 OOP_DECLARE_CLASS(Device)
 
 OOP_VTABLE(Device) {
@@ -47,6 +53,7 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(void, Device, sleep);
     OOP_IMETHOD(void, Device, reboot);
     OOP_IMETHOD(void, Device, powerOff);
+    OOP_IMETHOD(SerialNumber*, Device, getSN);
 };
 
 OOP_CLASS(Device) {
