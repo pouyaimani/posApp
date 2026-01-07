@@ -56,20 +56,14 @@
     ((type*)((char*)(ptr) - offsetof(type, member)))
 
 
-#define CALL_ONCE(code)        \
-    do {                       \
-        static int _called;    \
-        if (!_called) {        \
-            _called = 1;       \
-            code;              \
-        }                      \
+#define CALL_ONCE(code)                \
+    do {                               \
+        static volatile int done;      \
+        if (!done) {                   \
+            done = 1;                  \
+            code                       \
+        }                              \
     } while (0)
-
-#define DEVICE_REGISTER(device, type, object, ...)      \
-    static type obj;                                    \
-    object## = (device##*)&obj;                         \
-    device##_ctor(object##, ##__VA_ARGS__);             \
-    type##_ctor(&obj, ##__VA_ARGS__);                   \
 
 // TODO: add log
 #define RETURN_IF_NULL(ptr) \
