@@ -12,6 +12,23 @@ static DateTime dateTime;
 extern BatteryStat batterySt;
 extern SerialNumber sn;
 
+//app address in ram
+#define MCU_BASE_ADDR  (0x1000000)
+#define APP_START      (0xD8000)
+#define APP_CORE_START (APP_START + 0x200)
+//end
+
+//define APP_VER for coremanage to read
+#define APP_VER "V"APPID DEVICE_MACHINE_ID APPVERSION    //VHWCS33231218001
+const char ver[20] __attribute__((at(APP_START + MCU_BASE_ADDR))) = APP_VER;
+//end
+
+//define app_entry for coremanage to call
+void appMain(void);
+typedef void (*core_app_start)(void);
+const core_app_start app_entry __attribute__((at(APP_CORE_START + MCU_BASE_ADDR))) = appMain;
+//end
+
 #define DEVICE_MACHINE_ID  "33"
 #define USER_DATA_ROOT_DIR "/mtd0/"
 #define APP_DIR             USER_DATA_ROOT_DIR APPID "/"
