@@ -9,6 +9,7 @@ static Display display;
 static Device *dev;
 // Display buffer
 static uint8_t *buffer;
+#define LV_BUFFER_SIZE  (SCREEN_SIZE / 10) * BYTES_PER_PIXEL
 // Previous tick
 static uint32_t ptick = 0;
 
@@ -17,8 +18,8 @@ static volatile bool isFlushEnabled;
 static lv_display_t *lv_disp;
 
 static void initBuffer() {
-    buffer = OOP_CALL(dev, getMemory, (SCREEN_SIZE / 10) * BYTES_PER_PIXEL);
-    memset(buffer, 0, sizeof(buffer));
+    buffer = OOP_CALL(dev, getMemory, LV_BUFFER_SIZE);
+    memset(buffer, 0, LV_BUFFER_SIZE);
 }
 
 static void disp_flush(lv_display_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -35,7 +36,7 @@ static void displayInit(Display* disp) {
     lv_init();
 
     lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
-    lv_display_set_buffers(lv_disp, buffer, NULL, sizeof(buffer), LV_DISPLAY_RENDER_MODE_PARTIAL);
+    lv_display_set_buffers(lv_disp, buffer, NULL, LV_BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
     lv_display_set_flush_cb(lv_disp, disp_flush);
 
