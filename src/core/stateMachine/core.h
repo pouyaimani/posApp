@@ -19,8 +19,8 @@ OOP_CLASS(Core)
     OOP_METHOD(void, raiseEvent, Event *);
     OOP_METHOD(void, goTo, State *);
     OOP_METHOD(void, registerCallback, CoreCallback cb);
-    State *current;
-    State *next;
+    State **current;
+    State **next;
 
     Event *queue[16];
     size_t qsize;

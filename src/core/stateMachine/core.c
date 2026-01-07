@@ -10,8 +10,8 @@ static void init(State *initial)
 {
     LOG_TRACE("SM: initialization starts.");
     RETURN_IF_NULL(initial);
-    core.current = initial;
-    core.current->inner = STATE_ENTRY;
+    core.current = &initial;
+    (*core.current)->inner = STATE_ENTRY;
 }
 
 static void raiseEvent(Event *ev)
@@ -19,20 +19,20 @@ static void raiseEvent(Event *ev)
     LOG_TRACE("SM: Event is going to raise.");
     RETURN_IF_NULL(ev);
     if (!ev->target)
-        ev->target = core.current;
+        ev->target = *core.current;
     core.queue[core.qsize++] = ev;
 }
 
 static void goTo(State *next)
 {
     RETURN_IF_NULL(next);
-    core.current->inner = STATE_EXIT;
-    core.next = next;
+    (*core.current)->inner = STATE_EXIT;
+    core.next = &next;
 }
 
 static void runCycle()
 {
-    State *s = core.current;
+    State *s = *core.current;
 
     switch (s->inner) {
     case STATE_ENTRY:
