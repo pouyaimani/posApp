@@ -4,14 +4,14 @@
 #include <stdlib.h>
 #include "logger.h"
 
-static Core core;
+Core __core;
 
 static void init(State *initial)
 {
     LOG_TRACE("SM: initialization starts.");
     RETURN_IF_NULL(initial);
-    core.current = &initial;
-    (*core.current)->inner = STATE_ENTRY;
+    __core.current = &initial;
+    (*__core.current)->inner = STATE_ENTRY;
 }
 
 static void raiseEvent(Event *ev)
@@ -19,20 +19,20 @@ static void raiseEvent(Event *ev)
     LOG_TRACE("SM: Event is going to raise.");
     RETURN_IF_NULL(ev);
     if (!ev->target)
-        ev->target = *core.current;
-    core.queue[core.qsize++] = ev;
+        ev->target = *__core.current;
+    __core.queue[__core.qsize++] = ev;
 }
 
 static void goTo(State *next)
 {
     RETURN_IF_NULL(next);
-    (*core.current)->inner = STATE_EXIT;
-    core.next = &next;
+    (*__core.current)->inner = STATE_EXIT;
+    __core.next = &next;
 }
 
 static void runCycle()
 {
-    State *s = *core.current;
+    State *s = *__core.current;
 
     switch (s->inner) {
     case STATE_ENTRY:
@@ -42,13 +42,13 @@ static void runCycle()
         break;
 
     case STATE_EVENT:
-        for (size_t i = 0; i < core.qsize; ) {
-            Event *ev = core.queue[i];
+        for (size_t i = 0; i < __core.qsize; ) {
+            Event *ev = __core.queue[i];
             if (ev->target == s) {
                 LOG_TRACE("SM: Event came to ", s->name, " state.");
                 OOP_CALL(ev, dispatchTo, s);
                 free(ev);
-                core.queue[i] = core.queue[--core.qsize];
+                __core.queue[i] = __core.queue[--__core.qsize];
             } else {
                 i++;
             }
@@ -58,17 +58,17 @@ static void runCycle()
     case STATE_EXIT:
         LOG_TRACE("SM: on exit to ", s->name, " state.");
         OOP_CALL(s, exit);
-        for (size_t i = 0; i < core.qsize; ) {
-            Event *ev = core.queue[i];
+        for (size_t i = 0; i < __core.qsize; ) {
+            Event *ev = __core.queue[i];
             if (ev->target == s) {
                 free(ev);
-                core.queue[i] = core.queue[--core.qsize];
+                __core.queue[i] = __core.queue[--__core.qsize];
             } else {
                 i++;
             }
         }
         s->inner = STATE_ENTRY;
-        core.current = core.next;
+        __core.current = __core.next;
         break;
     }
 }
@@ -78,8 +78,8 @@ static void exec()
     LOG_TRACE("SM: starts execution.");
     while (1) {
         runCycle();
-        for (size_t i = 0; i < core.cbSize ; ++i) {
-            core.callbacks[i]();
+        for (size_t i = 0; i < __core.cbSize ; ++i) {
+            __core.callbacks[i]();
         }
     }
 }
@@ -87,29 +87,29 @@ static void exec()
 void registerCallback(CoreCallback cb)
 {
     LOG_TRACE("SM: new callback is registered.");
-    if (core.cbSize < 16) {
-        core.callbacks[core.cbSize++] = cb;
+    if (__core.cbSize < 16) {
+        __core.callbacks[__core.cbSize++] = cb;
     } else {
         LOG_FATAL("SM: call back queue is full.");
     }
 }
 
 OOP_CTOR(Core) {
-    core.init = init;
-    core.exec = exec;
-    core.goTo = goTo;
-    core.raiseEvent = raiseEvent;
-    core.runCycle = runCycle;
-    core.current = NULL;
-    core.next = NULL;
-    core.qsize = 0;
-    core.cbSize = 0;
+    __core.init = init;
+    __core.exec = exec;
+    __core.goTo = goTo;
+    __core.raiseEvent = raiseEvent;
+    __core.runCycle = runCycle;
+    __core.current = NULL;
+    __core.next = NULL;
+    __core.qsize = 0;
+    __core.cbSize = 0;
 }
 
 Core *getSmCore(void)
 {
     CALL_ONCE(
-        Core_ctor(&core);
+        OOP_CALL_CTOR(Core, &__core);
     );
-    return &core;
+    return &__core;
 }

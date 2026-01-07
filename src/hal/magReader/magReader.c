@@ -1,8 +1,18 @@
 #include "magReader.h"
 #include "../dev/dev.h"
 
+MagReader *__magReader;
+
 #ifdef DEVICE_TRENDITT3RTOS
 #include "t3Rtos/magReader_t3Rtos.h"
+
+static void constructT3Rtos() {
+    static MagReaderT3Rtos obj;
+    __magReader = (MagReader *)&obj;
+    OOP_CALL_CTOR(MagReader, __magReader);
+    OOP_CALL_CTOR(MagReaderT3Rtos, &obj);
+}
+
 #endif
 
 #ifndef MAG_READER_TRACK_1_SIZE
@@ -16,8 +26,6 @@
 #ifndef MAG_READER_TRACK_3_SIZE
 #error Please define mag reader track 3 size in magReader_<device>.h file (MAG_READER_TRACK_3_SIZE)
 #endif
-
-static MagReader *magReader;
 
 static bool isSwiped(MagReader *mag) {
     return mag->error == MAG_ERR_SWIPED;
@@ -42,7 +50,7 @@ static void readIo(MagReader *mag) {
     }
 }
 
-void MagReader_ctor(MagReader* self) {
+OOP_CTOR(MagReader) {
     self->vtable.isSwiped = isSwiped;
     self->vtable.getTrack1 = getTrack1;
     self->vtable.getTrack2 = getTrack2;
@@ -53,10 +61,10 @@ void MagReader_ctor(MagReader* self) {
 MagReader *getMagReader() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
-    DEVICE_REGISTER(MagReader, MagReaderT3Rtos, magReader)
+    constructT3Rtos();
 #else
 #error Deivce mag reader is undefined. Make sure correct device is chosen and its mag reader driver is developed.
 #endif
     );
-    return magReader;
+    return __magReader;
 }

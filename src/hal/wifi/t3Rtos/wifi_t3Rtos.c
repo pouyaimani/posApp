@@ -88,7 +88,7 @@ static WifiScanSt_t getScanStatus(Wifi *wifi) {
     return wifi->scanSt;
 }
 
-void WifiT3Rtos_ctor(WifiT3Rtos* self) {
+OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.init = init;
     self->base.vtable.startScan = startScan;
     self->base.vtable.connect = connect;

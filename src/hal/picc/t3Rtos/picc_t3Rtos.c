@@ -64,7 +64,7 @@ static ApduResp_t *getRespAdpu(Picc* picc) {
     picc->respAdpu.swb = &apduResp.mSWB;
 }
 
-void PiccT3Rtos_ctor(PiccT3Rtos* self) {
+OOP_CTOR(PiccT3Rtos) {
     self->base.vtable.init = init;
     self->base.vtable.detect = detect;
     self->base.vtable.exchangeApdu = exchangeApdu;

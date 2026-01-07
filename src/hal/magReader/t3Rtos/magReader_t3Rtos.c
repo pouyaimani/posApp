@@ -40,7 +40,7 @@ static void read(MagReader* mag) {
     }
 }
 
-void MagReaderT3Rtos_ctor(MagReaderT3Rtos* self) {
+OOP_CTOR(MagReaderT3Rtos) {
     self->base.vtable.init = init;
     self->base.vtable.read = read;
     self->base.data.track1.data = magData.track1Data;

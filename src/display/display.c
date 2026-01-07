@@ -56,7 +56,7 @@ static void displayUpdate(Display* ui) {
     lv_timer_handler();
 }
 
-void Display_ctor(Display* self) {
+OOP_CTOR(Display) {
     self->init = displayInit;
     self->update = displayUpdate;
     dev = getDevice();

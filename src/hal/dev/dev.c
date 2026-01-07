@@ -1,12 +1,20 @@
 #include "dev.h"
 
-#ifdef DEVICE_TRENDITT3RTOS
-#include "t3Rtos/dev_t3Rtos.h"
-#endif
-
-static Device *device;
+Device *__device;
 BatteryStat batterySt;
 SerialNumber sn;
+
+#ifdef DEVICE_TRENDITT3RTOS
+#include "t3Rtos/dev_t3Rtos.h"
+
+static void constructT3Rtos() {
+    static T3Rtos obj;
+    __device = (Device *)&obj;
+    OOP_CALL_CTOR(Device, __device, "");
+    OOP_CALL_CTOR(T3Rtos, &obj, "");
+}
+
+#endif
 
 OOP_CTOR(Device, const char* name) {
     self->name = name;
@@ -27,10 +35,10 @@ OOP_CTOR(Device, const char* name) {
 Device *getDevice() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
-    DEVICE_REGISTER(Device, T3Rtos, device, "")
+    constructT3Rtos();
 #else
 #error Deivce is undefined. Make sure correct device is chosen and developed.
 #endif
     );
-    return device;
+    return __device;
 }

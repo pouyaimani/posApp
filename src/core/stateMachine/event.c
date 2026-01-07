@@ -12,7 +12,7 @@ static void dispatch(Event *self, State *state)
     getSmCore()->raiseEvent(self);
 }
 
-void Event_ctor(Event* self) {
+OOP_CTOR(Event) {
     self->vtable.dispatch = dispatch;
 }
 

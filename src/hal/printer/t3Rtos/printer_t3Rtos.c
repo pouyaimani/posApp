@@ -71,7 +71,7 @@ static PrinterErr_t print(Printer* priter, unsigned char *bmp, uint16_t width, u
     sdkPrintImage(&format, (const u8 *)bmp + 4, width, height);
 }
 
-void PrinterT3Rtos_ctor(PrinterT3Rtos* self) {
+OOP_CTOR(PrinterT3Rtos) {
     self->base.vtable.init = init;
     self->base.vtable.getStatus = getStatus;
     self->base.vtable.setGray = setGray;

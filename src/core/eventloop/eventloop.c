@@ -1,31 +1,31 @@
 #include "eventloop.h"
 
-static Eventloop loop;
+Eventloop __loop;
 
 static void runCycle() {
-    for (size_t i = 0; i < loop.checkersCnt; ++i) {
-        loop.checkers[i]();
+    for (size_t i = 0; i < __loop.checkersCnt; ++i) {
+        __loop.checkers[i]();
     }
 }
 
 static EvLoopErr_t registerChecker(EventChecker checker) {
-    if (loop.checkersCnt >= EVENTLOOP_MAX_CHECKERS) {
+    if (__loop.checkersCnt >= EVENTLOOP_MAX_CHECKERS) {
         return EV_LOOP_FULL;
     }
-    loop.checkers[loop.checkersCnt++] = checker;
+    __loop.checkers[__loop.checkersCnt++] = checker;
     return EV_LOOP_OK;
 }
 
 static EvLoopErr_t unregisterChecker(EventChecker checker) {
     EvLoopErr_t err = EV_LOOP_CHECKER_NOT_FOUND;
-    for (size_t i = 0; i < loop.checkersCnt; ++i) {
-        if (loop.checkers[i] == checker) {
+    for (size_t i = 0; i < __loop.checkersCnt; ++i) {
+        if (__loop.checkers[i] == checker) {
             /* shift remaining callbacks left */
-            for (size_t j = i + 1; j < loop.checkersCnt; ++j) {
-                loop.checkers[j - 1] = loop.checkers[j];
+            for (size_t j = i + 1; j < __loop.checkersCnt; ++j) {
+                __loop.checkers[j - 1] = __loop.checkers[j];
             }
 
-            loop.checkersCnt--;
+            __loop.checkersCnt--;
             return EV_LOOP_OK;
         }
     }
@@ -33,11 +33,11 @@ static EvLoopErr_t unregisterChecker(EventChecker checker) {
 }
 
 static EvLoopErr_t unregisterAll() {
-    loop.checkersCnt = 0;
+    __loop.checkersCnt = 0;
     return EV_LOOP_OK;
 }
 
-void Eventloop_ctor(Eventloop* self) {
+OOP_CTOR(Eventloop) {
     self->runCycle = runCycle;
     self->registerChecker = registerChecker;
     self->unregisterChecker = unregisterChecker;
@@ -47,7 +47,7 @@ void Eventloop_ctor(Eventloop* self) {
 
 Eventloop *getEventloop(void) {
     CALL_ONCE(
-        Eventloop_ctor(&loop);
+        OOP_CALL_CTOR(Eventloop, &__loop);
     );
-    return &loop;
+    return &__loop;
 }

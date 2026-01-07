@@ -41,7 +41,7 @@ static void readKey(Keypad* keypad) {
     }
 }
 
-void KeypadT3Rtos_ctor(KeypadT3Rtos* self) {
+OOP_CTOR(KeypadT3Rtos) {
     self->base.vtable.init = init;
     self->base.vtable.readKey = readKey;
 }
