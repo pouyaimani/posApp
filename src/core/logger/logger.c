@@ -29,7 +29,7 @@ static size_t format_log_line(char *buf,
     bool has_time = false;
 
     if (g_cfg.getDateTime) {
-        dt = g_cfg.getDateTime();
+        dt = g_cfg.getDateTime(getDevice());
     }
 
     if (has_time) {

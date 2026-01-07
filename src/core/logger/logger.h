@@ -29,7 +29,7 @@ typedef struct {
 typedef struct {
     LogWriter_t writer;
     LogLevel_t  level;
-    DateTime *(*getDateTime)();
+    DateTime *(*getDateTime)(Device *dev);
 } LogConfig_t;
 
 /* API */
