@@ -76,5 +76,5 @@ void log_log(LogLevel_t level,
     );
     va_end(ap);
 
-    g_cfg.writer.write(buf, len, g_cfg.writer.udata);
+    g_cfg.writer.write(getDevice(), buf, len, g_cfg.writer.udata);
 }

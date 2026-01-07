@@ -17,10 +17,11 @@ typedef enum {
 } LogLevel_t;
 
 OOP_DECLARE_CLASS(DateTime);
+OOP_DECLARE_CLASS(Device);
 
 /* Writer interface (device-specific) */
 typedef struct {
-    void (*write)(const char *data, size_t len, void *udata);
+    void (*write)(Device *dev, const char *data, size_t len, void *udata);
     void *udata;
 } LogWriter_t;
 
