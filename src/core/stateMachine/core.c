@@ -101,6 +101,7 @@ OOP_CTOR(Core) {
     __core.goTo = goTo;
     __core.raiseEvent = raiseEvent;
     __core.runCycle = runCycle;
+    __core.registerCallback = registerCallback;
     __core.current = NULL;
     __core.next = NULL;
     __core.qsize = 0;
