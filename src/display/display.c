@@ -45,7 +45,7 @@ static void displayInit() {
     // init LVGL
     LOG_TRACE("Initializing LVGL ...");
     lv_init();
-    
+
 #if LV_USE_LOG
     lv_log_register_print_cb(lvLogCb);
 #endif

@@ -12,6 +12,7 @@ static void runCycle() {
 static EvLoopErr_t registerChecker(EventChecker checker) {
     LOG_TRACE("Event loop registring checker ...");
     if (__loop.checkersCnt >= EVENTLOOP_MAX_CHECKERS) {
+        LOG_FATAL("Event loop maximum checker is reached.");
         return EV_LOOP_FULL;
     }
     __loop.checkers[__loop.checkersCnt++] = checker;

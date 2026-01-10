@@ -2,6 +2,7 @@
 #include "display/display.h"
 #include "core/eventloop/eventloop.h"
 #include "core/stateMachine/core.h"
+#include "hal/keypad/keypad.h"
 #include "states/states.h"
 #include "logger.h"
 

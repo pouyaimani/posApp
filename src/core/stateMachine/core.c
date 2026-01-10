@@ -3,40 +3,45 @@
 #include "event.h"
 #include <stdlib.h>
 #include "logger.h"
+#include "hal/dev/dev.h"
 
 Core __core;
+Device *dev;
 
 static void init(State *initial)
 {
     LOG_TRACE("SM: initialization starts.");
     RETURN_IF_NULL(initial);
-    __core.current = &initial;
-    (*__core.current)->inner = STATE_ENTRY;
+    __core.current = initial;
+    __core.current->inner = STATE_ENTRY;
 }
 
 static void raiseEvent(Event *ev)
 {
     LOG_TRACE("SM: Event is going to raise.");
     RETURN_IF_NULL(ev);
-    if (!ev->target)
-        ev->target = *__core.current;
+    if (!ev->target) {
+        LOG_TRACE("SM: Event target is null, setting it to current state.");
+        ev->target = __core.current;
+    }
     __core.queue[__core.qsize++] = ev;
+    LOG_TRACE("SM: raising event fnished.");
 }
 
 static void goTo(State *next)
 {
     RETURN_IF_NULL(next);
-    (*__core.current)->inner = STATE_EXIT;
-    __core.next = &next;
+    __core.current->inner = STATE_EXIT;
+    __core.next = next;
 }
 
 static void runCycle()
 {
-    State *s = *__core.current;
+    State *s = __core.current;
 
     switch (s->inner) {
     case STATE_ENTRY:
-        LOG_TRACE("SM: on entry to ", s->name, " state.");
+        LOG_TRACE("SM: on entry to %s %s", s->name, " state.");
         s->inner = STATE_EVENT;
         OOP_CALL(s, enter);
         break;
@@ -45,10 +50,11 @@ static void runCycle()
         for (size_t i = 0; i < __core.qsize; ) {
             Event *ev = __core.queue[i];
             if (ev->target == s) {
-                LOG_TRACE("SM: Event came to ", s->name, " state.");
+                LOG_TRACE("SM: Event came to %s %s", s->name, " state.");
                 OOP_CALL(ev, dispatchTo, s);
-                free(ev);
+                OOP_CALL(dev, freeMemory, ev);
                 __core.queue[i] = __core.queue[--__core.qsize];
+                LOG_TRACE("SM: Event dispatched to %s %s", s->name, " state.");
             } else {
                 i++;
             }
@@ -61,7 +67,7 @@ static void runCycle()
         for (size_t i = 0; i < __core.qsize; ) {
             Event *ev = __core.queue[i];
             if (ev->target == s) {
-                free(ev);
+                OOP_CALL(dev, freeMemory, ev);
                 __core.queue[i] = __core.queue[--__core.qsize];
             } else {
                 i++;
@@ -86,11 +92,12 @@ static void exec()
 
 void registerCallback(CoreCallback cb)
 {
-    LOG_TRACE("SM: new callback is registered.");
+    LOG_TRACE("SM: new callback is registring, cb adress = %d", cb);
     if (__core.cbSize < 16) {
+        LOG_TRACE("SM: new callback is registered.");
         __core.callbacks[__core.cbSize++] = cb;
     } else {
-        LOG_FATAL("SM: call back queue is full.");
+        LOG_FATAL("SM: registering callback failed: queue is full.");
     }
 }
 
@@ -106,6 +113,7 @@ OOP_CTOR(Core) {
     __core.next = NULL;
     __core.qsize = 0;
     __core.cbSize = 0;
+    dev = getDevice();
 }
 
 Core *getSmCore(void)

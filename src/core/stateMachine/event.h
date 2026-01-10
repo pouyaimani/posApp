@@ -35,10 +35,10 @@ OOP_CLASS(Event)
 /* Base API */
 OOP_CTOR(Event);
 
-Event **createEvent(SmEventType_t type);
+Event *createEvent(SmEventType_t type);
 
 #define DISPATCH_EVENT(event) \
-    OOP_CALL((Event*)ev, dispatch, NULL);
+    ((event)->base.vtable.dispatch((event), NULL));
 
 /* ===== TimeOut ===== */
 

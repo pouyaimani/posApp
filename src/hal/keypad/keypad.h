@@ -12,7 +12,6 @@ OOP_VTABLE(Keypad) {
     OOP_IMETHOD(void, Keypad, readKey);
     OOP_IMETHOD(Key_t, Keypad, getKey);
     OOP_IMETHOD(bool, Keypad, isPressed);
-    OOP_IMETHOD(void, Keypad, ioRead);
 };
 
 OOP_CLASS(Keypad) {

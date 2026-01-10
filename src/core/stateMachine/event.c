@@ -5,6 +5,14 @@
 #include "hal/dev/dev.h"
 #include "hal/keypad/keypad.h"
 
+#define CREATE_EVENT(type, event)                               \
+    do {                                                        \
+        type## *ev = OOP_CALL(dev, getMemory, sizeof(type##));  \
+        event = (Event*)ev;                                     \
+        OOP_CALL_CTOR(Event, event);                            \
+        OOP_CALL_CTOR(type##, ev);                              \
+    } while(0)
+
 /* ================= Event base ================= */
 static void dispatch(Event *self, State *state)
 {
@@ -16,21 +24,20 @@ OOP_CTOR(Event) {
     self->vtable.dispatch = dispatch;
 }
 
-Event **createEvent(SmEventType_t type) {
+Event *createEvent(SmEventType_t type) {
     Event *event;
     Device *dev = getDevice();
     switch (type) {
     case SM_EVENT_TIME_OUT:
-        event = (TimeOutEvent*)OOP_CALL(dev, getMemory, sizeof(TimeOutEvent));
+        CREATE_EVENT(TimeOutEvent, event);
         break;
     case SM_EVENT_KEYPAD:
-        event = (KeypadEvent*)OOP_CALL(dev, getMemory, sizeof(KeypadEvent));
+        CREATE_EVENT(KeypadEvent, event);
         break;
     default:
         break;
     }
-    Event_ctor(event);
-    return &event;
+    return event;
 }
 
 /* ================= TimeOut ================= */

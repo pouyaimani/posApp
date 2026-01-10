@@ -2,6 +2,7 @@
 
 #include "core/stateMachine/event.h"
 #include "core/eventloop/eventloop.h"
+#include "logger.h"
 
 Keypad *__keypad;
 
@@ -27,22 +28,23 @@ static bool isPressed(Keypad* self) {
     return self->key != KEY_NONE;
 }
 
-static void ioRead(Keypad* self) {
-    OOP_CALL(self, readKey);
-    if (isPressed(self)) {
-        KeypadEvent **ev = (KeypadEvent**)createEvent(SM_EVENT_KEYPAD);
-        (*ev)->key = getKey(self);
-        (*ev)->keyStr = "";
-        DISPATCH_EVENT(*ev);
+static void ioRead() {
+    OOP_CALL(__keypad, readKey);
+    if (isPressed(__keypad)) {
+        KeypadEvent *ev = (KeypadEvent**)createEvent(SM_EVENT_KEYPAD);
+        ev->key = getKey(__keypad);
+        LOG_TRACE("Keypad: key pressed: %d", ev->key);
+        ev->keyStr = "";
+        DISPATCH_EVENT(ev);
     }
 }
 
 OOP_CTOR(Keypad) {
+    LOG_TRACE("Constructing keypad ...");
     self->key = KEY_NONE;
     self->vtable.getKey = getKey;
     self->vtable.isPressed = isPressed;
-    self->vtable.ioRead = ioRead;
-    getEventloop()->registerChecker(self->vtable.ioRead);
+    getEventloop()->registerChecker(ioRead);
 }
 
 Keypad *getKeypad() {
