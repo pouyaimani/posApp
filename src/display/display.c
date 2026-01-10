@@ -31,9 +31,12 @@ static void disp_flush(lv_display_t *disp, const lv_area_t *area, lv_color_t *co
     lv_display_flush_ready(disp);
 }
 
+
+#if LV_USE_LOG
 void lvLogCb(lv_log_level_t level, const char * buf) {
     OOP_CALL(dev, logOut, buf, 0, NULL);
 }
+#endif
 
 static void displayInit() { 
     LOG_TRACE("Initializing display starts ...");
@@ -42,7 +45,10 @@ static void displayInit() {
     // init LVGL
     LOG_TRACE("Initializing LVGL ...");
     lv_init();
+    
+#if LV_USE_LOG
     lv_log_register_print_cb(lvLogCb);
+#endif
 
     LOG_TRACE("Creating display ...");
     lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
