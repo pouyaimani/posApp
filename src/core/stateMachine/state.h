@@ -4,6 +4,24 @@
 #include "oop.h"
 #include <stdint.h>
 
+#define STATE_ENTER(type) \
+    type##_enter
+
+#define STATE_DEF_ENTER(type) \
+    static void type##_enter()
+
+#define STATE_EXIT(type) \
+    type##_exit
+
+#define STATE_DEF_EXIT(type) \
+    static void type##_exit()
+
+#define STATE_HANDLE(type) \
+    type##_handle
+
+#define STATE_DEF_HANDLE(type) \
+    static void type##_handle(State *state, type## *ev)
+
 /* Forward */
 OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
