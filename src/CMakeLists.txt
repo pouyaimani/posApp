@@ -103,6 +103,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${DEVICE_PLATFORM_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/core/logger
+    ${CMAKE_CURRENT_SOURCE_DIR}/display
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/stateMachine
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/eventLoop
+    ${CMAKE_CURRENT_SOURCE_DIR}/hal
+    ${CMAKE_CURRENT_SOURCE_DIR}/hal/dev
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
