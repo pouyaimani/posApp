@@ -20,6 +20,7 @@ static lv_display_t *lv_disp;
 
 static void initBuffer() {
     buffer = OOP_CALL(dev, getMemory, LV_BUFFER_SIZE);
+    LV_ASSERT_MALLOC(buffer);
     memset(buffer, 0, LV_BUFFER_SIZE);
 }
 
@@ -34,7 +35,7 @@ void lvLogCb(lv_log_level_t level, const char * buf) {
     OOP_CALL(dev, logOut, buf, 0, NULL);
 }
 
-static void displayInit(Display* disp) { 
+static void displayInit() { 
     LOG_TRACE("Initializing display starts ...");
 
     initBuffer();
@@ -48,13 +49,13 @@ static void displayInit(Display* disp) {
     lv_display_set_buffers(lv_disp, buffer, NULL, LV_BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
     lv_display_set_flush_cb(lv_disp, disp_flush);
 
-    LOG_TRACE("Loadin main screen ...");
-    disp->screen = lv_obj_create(NULL);
-    lv_screen_load(disp->screen);
+    LOG_TRACE("Loading main screen ...");
+    display.screen = lv_obj_create(NULL);
+    lv_screen_load(display.screen);
     LOG_TRACE("Initializing display finished ...");
 }
 
-static void displayUpdate(Display* ui) {
+static void displayUpdate() {
     // Current tick
     uint32_t ctick = OOP_CALL(dev, getTick);
     lv_tick_inc(ctick - ptick);
