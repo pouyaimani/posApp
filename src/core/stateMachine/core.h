@@ -4,7 +4,6 @@
 #include "oop.h"
 #include <stddef.h>
 
-OOP_DECLARE_CLASS(Core);
 OOP_DECLARE_CLASS(State);
 OOP_DECLARE_CLASS(Event);
 

@@ -11,7 +11,6 @@ typedef enum SmEventType_t {
 
 /* Forward declarations */
 OOP_DECLARE_CLASS(State);
-OOP_DECLARE_CLASS(Core);
 OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
 OOP_DECLARE_CLASS(KeypadEvent);

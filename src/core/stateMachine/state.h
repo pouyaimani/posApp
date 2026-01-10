@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 /* Forward */
-OOP_DECLARE_CLASS(Core);
 OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
 OOP_DECLARE_CLASS(KeypadEvent);
