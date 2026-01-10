@@ -1,4 +1,5 @@
 #include "eventloop.h"
+#include "logger.h"
 
 Eventloop __loop;
 
@@ -9,6 +10,7 @@ static void runCycle() {
 }
 
 static EvLoopErr_t registerChecker(EventChecker checker) {
+    LOG_TRACE("Event loop registring checker ...");
     if (__loop.checkersCnt >= EVENTLOOP_MAX_CHECKERS) {
         return EV_LOOP_FULL;
     }
@@ -17,6 +19,7 @@ static EvLoopErr_t registerChecker(EventChecker checker) {
 }
 
 static EvLoopErr_t unregisterChecker(EventChecker checker) {
+    LOG_TRACE("Event loop unregistring checker ...");
     EvLoopErr_t err = EV_LOOP_CHECKER_NOT_FOUND;
     for (size_t i = 0; i < __loop.checkersCnt; ++i) {
         if (__loop.checkers[i] == checker) {
@@ -33,11 +36,13 @@ static EvLoopErr_t unregisterChecker(EventChecker checker) {
 }
 
 static EvLoopErr_t unregisterAll() {
+    LOG_TRACE("Event loop unregistring all checkers ...");
     __loop.checkersCnt = 0;
     return EV_LOOP_OK;
 }
 
 OOP_CTOR(Eventloop) {
+    LOG_TRACE("Event loop constructing ...");
     self->runCycle = runCycle;
     self->registerChecker = registerChecker;
     self->unregisterChecker = unregisterChecker;
