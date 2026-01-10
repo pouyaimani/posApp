@@ -48,6 +48,7 @@ include($ENV{DEVICE_CONFIG_FILE})   # <--- THIS loads all device paths, flags, s
 # Project and CMake subdirectiries
 # -------------------------------------------------------------
 
+add_subdirectory(lvgl-src)
 add_subdirectory(src)
 
 message(STATUS "----------------------------------------------------")

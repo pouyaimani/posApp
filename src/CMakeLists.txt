@@ -13,11 +13,11 @@ add_executable(${PROJECT_NAME} ${APP_SRC})
 # -------------------------------------------------------------
 
 # LVGL: Download and make available
-FetchContent_Declare(
-  lvgl
-  GIT_REPOSITORY https://github.com/lvgl/lvgl.git
-  GIT_TAG release/v9.3
-)
+# FetchContent_Declare(
+#   lvgl
+#   GIT_REPOSITORY https://github.com/lvgl/lvgl.git
+#   GIT_TAG release/v9.3
+# )
 
 set(LV_BUILD_CONF_PATH
     "${CMAKE_SOURCE_DIR}/include/lv_conf.h"
@@ -46,7 +46,7 @@ set(LVGL_ENABLE_ASM OFF CACHE BOOL "")
 option(LVGL_ENABLE_CPP "Enable C++ for LVGL" OFF)
 option(LVGL_ENABLE_ASM "Enable ASM for LVGL" OFF)
 
-FetchContent_MakeAvailable(lvgl)
+# FetchContent_MakeAvailable(lvgl)
 
 target_include_directories(lvgl PUBLIC
     ${DEVICE_PLATFORM_INCLUDE_DIRS}
