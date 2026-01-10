@@ -56,7 +56,7 @@
 #define LV_LIMITS_INCLUDE       <limits.h>
 #define LV_STDARG_INCLUDE       <stdarg.h>
 
-#if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTINFv
+#if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
     /** Size of memory available for `lv_malloc()` in bytes (>= 2kB) */
     #define LV_MEM_SIZE (4 * 1024U)          /**< [bytes] */
 
