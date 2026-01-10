@@ -29,11 +29,16 @@ static void disp_flush(lv_display_t *disp, const lv_area_t *area, lv_color_t *co
     lv_display_flush_ready(disp);
 }
 
-static void displayInit(Display* disp) { 
+void lvLogCb(lv_log_level_t level, const char * buf) {
+    OOP_CALL(dev, logOut, buf, 0, NULL);
+}
 
+static void displayInit(Display* disp) { 
+    
     initBuffer();
     // init LVGL
     lv_init();
+    lv_log_register_print_cb(lvLogCb);
 
     lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
     lv_display_set_buffers(lv_disp, buffer, NULL, LV_BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
