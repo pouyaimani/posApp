@@ -29,7 +29,6 @@ if(NOT EXISTS "${LV_BUILD_CONF_PATH}")
     message(FATAL_ERROR "lv_conf.h not found at ${LV_BUILD_CONF_PATH}")
 endif()
 
-
 set(CONFIG_LV_BUILD_EXAMPLES OFF)
 set(CONFIG_LV_BUILD_DEMOS OFF)
 set(LVGL_ROOT_DIR ${lvgl_SOURCE_DIR})
