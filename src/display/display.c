@@ -1,6 +1,7 @@
 #include "config.h"
 #include "display.h"
 #include "../hal/dev/dev.h"
+#include "logger.h"
 
 #define SCREEN_SIZE         DISP_HOR_RES * DISP_VER_RES
 #define BYTES_PER_PIXEL     2
@@ -34,21 +35,23 @@ void lvLogCb(lv_log_level_t level, const char * buf) {
 }
 
 static void displayInit(Display* disp) { 
-    
+    LOG_TRACE("Initializing display starts ...");
+
     initBuffer();
     // init LVGL
+    LOG_TRACE("Initializing LVGL ...");
     lv_init();
     lv_log_register_print_cb(lvLogCb);
 
+    LOG_TRACE("Creating display ...");
     lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
     lv_display_set_buffers(lv_disp, buffer, NULL, LV_BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
-
     lv_display_set_flush_cb(lv_disp, disp_flush);
 
-    // main screen
+    LOG_TRACE("Loadin main screen ...");
     disp->screen = lv_obj_create(NULL);
     lv_screen_load(disp->screen);
-
+    LOG_TRACE("Initializing display finished ...");
 }
 
 static void displayUpdate(Display* ui) {
@@ -62,6 +65,7 @@ static void displayUpdate(Display* ui) {
 }
 
 OOP_CTOR(Display) {
+    LOG_TRACE("Display constructor ...");
     self->init = displayInit;
     self->update = displayUpdate;
     dev = getDevice();

@@ -95,6 +95,7 @@ void registerCallback(CoreCallback cb)
 }
 
 OOP_CTOR(Core) {
+    LOG_TRACE("SM: core constructor ...");
     __core.init = init;
     __core.exec = exec;
     __core.goTo = goTo;

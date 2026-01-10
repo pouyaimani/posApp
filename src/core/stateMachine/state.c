@@ -1,6 +1,7 @@
 #include "state.h"
 #include "core.h"
 #include <stdio.h>
+#include "logger.h"
 
 /* defaults */
 
@@ -40,6 +41,7 @@ static void default_mag(State *s, MagEvent *ev)
 
 OOP_CTOR(State, State *parent, const char *name)
 {
+    LOG_TRACE("Constructing State is started ...");
     self->vtable.enter = default_enter;
     self->vtable.exit = default_exit;
     self->vtable.handleTimeout = default_timeout;
@@ -48,4 +50,5 @@ OOP_CTOR(State, State *parent, const char *name)
     self->parent = parent;
     self->name = name;
     self->inner = STATE_ENTRY;
+    LOG_TRACE("Constructing State finished ...");
 }

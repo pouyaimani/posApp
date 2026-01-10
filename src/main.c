@@ -11,7 +11,7 @@ void appMain(void)
     Device *dev = getDevice();
     OOP_CALL(dev, init);
     initLogger(&(LogConfig_t)  {
-        .level = LOG_LEV_INFO,
+        .level = LOG_LEV_TRACE,
         .writer = {
             .write = dev->vtable.logOut,
             .udata = NULL
