@@ -22,9 +22,10 @@ static void initBuffer() {
     memset(buffer, 0, LV_BUFFER_SIZE);
 }
 
-static void disp_flush(lv_display_t *disp, const lv_area_t *area, lv_color_t *color_p)
+static void dispFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *cmap)
 {
-    OOP_CALL(dev, flushDisplay, area->x1, area->x2, area->y1, area->y2, color_p);
+    LOG_TRACE("x0 = %d , x1 = %d , y0 = %d , y1 = %d \n", area->x1, area->x2, area->y1, area->y2);
+    OOP_CALL(dev, flushDisplay, area->x1, area->x2, area->y1, area->y2, cmap);
     // Inform the graphics library that you are ready with the flushing
     lv_display_flush_ready(disp);
 }

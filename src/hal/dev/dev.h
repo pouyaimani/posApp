@@ -46,7 +46,7 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(unsigned int, Device, getTick);
     OOP_IMETHOD(unsigned int, Device, getMemory, unsigned int);
     OOP_IMETHOD(void, Device, freeMemory, void *);
-    OOP_IMETHOD(unsigned int, Device, flushDisplay, int32_t, int32_t, int32_t, int32_t, uint32_t);
+    OOP_IMETHOD(unsigned int, Device, flushDisplay, int32_t, int32_t, int32_t, int32_t, uint8_t*);
     OOP_IMETHOD(void, Device, logOut, const char *, size_t, void *);
     OOP_IMETHOD(DateTime*, Device, getDateTime);
     OOP_IMETHOD(BatteryStat*, Device, getBatteryStatus);

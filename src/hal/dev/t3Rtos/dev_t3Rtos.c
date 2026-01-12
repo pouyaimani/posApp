@@ -104,7 +104,7 @@ static void freeMemory(Device* dev, void *mem) {
     sdkSysFreeMem(mem);
 }
 
-static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint32_t color) {
+static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint8_t *cmap) {
     strRect rect = {
         .m_x0 = x0,
         .m_x1 = x1,
@@ -114,9 +114,10 @@ static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0
     strPicture pic = {
         .m_width = x1 - x0 + 1,
         .m_height = y1 - y0 + 1,
-        .m_pic = color
+        .m_pic = cmap
     };
     ddi_lcd_show_picture(&rect, &pic);
+    sdkLogOut("device flush display ...");
 }
 
 static void logOut(Device* dev, const char *data, size_t len, void *udata) {
