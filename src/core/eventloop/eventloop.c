@@ -16,6 +16,7 @@ static EvLoopErr_t registerChecker(EventChecker checker) {
         return EV_LOOP_FULL;
     }
     __loop.checkers[__loop.checkersCnt++] = checker;
+    LOG_TRACE("Event loop checker is registered.");
     return EV_LOOP_OK;
 }
 
