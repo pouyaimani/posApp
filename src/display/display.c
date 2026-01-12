@@ -11,15 +11,13 @@ static Device *dev;
 // Display buffer
 static uint8_t *buffer;
 #define LV_BUFFER_SIZE  (SCREEN_SIZE / 10) * BYTES_PER_PIXEL
-// Previous tick
-static uint32_t ptick = 0;
 
 static volatile bool isFlushEnabled;
 
 static lv_display_t *lv_disp;
 
 static void initBuffer() {
-    buffer = OOP_CALL(dev, getMemory, LV_BUFFER_SIZE);
+    buffer = GET_MEM(LV_BUFFER_SIZE);
     LV_ASSERT_MALLOC(buffer);
     memset(buffer, 0, LV_BUFFER_SIZE);
 }

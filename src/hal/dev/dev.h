@@ -66,4 +66,6 @@ OOP_CTOR(Device, const char* name);
 
 Device *getDevice(void);
 
+#define GET_MEM(size) OOP_CALL(getDevice(), getMemory, size);
+
 #endif
