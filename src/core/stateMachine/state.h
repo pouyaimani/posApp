@@ -19,6 +19,8 @@
 #define STATE_DEF_HANDLE(type) \
     static void type##_handle(State *state, type## *ev)
 
+#define SM_GOTO(state) getSmCore()->goTo(state)
+
 /* Forward */
 OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
