@@ -4,11 +4,14 @@
 #include "dev/dev.h"
 #include "display.h"
 
-STATE_DEF_ENTER(Startup) {
+static lv_obj_t *startUpPage;
+static lv_obj_t *label;
 
+STATE_DEF_ENTER() {
+    
 }
 
-STATE_DEF_EXIT(Startup) {
+STATE_DEF_EXIT() {
 
 }
 
@@ -24,9 +27,9 @@ STATE_DEF_HANDLE(KeypadEvent) {
 
 OOP_CTOR(Startup, State *parent, const char *name) {
     LOG_TRACE("Constructing Startup ...");
-    State_ctor(self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(Startup);
-    self->base.vtable.exit = STATE_EXIT(Startup);
+    OOP_CALL_CTOR(State, self, parent, name);
+    self->base.vtable.enter = STATE_ENTER();
+    self->base.vtable.exit = STATE_EXIT();
     self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
     self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
 }

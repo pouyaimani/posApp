@@ -2,31 +2,31 @@
 #include "core/eventloop/eventloop.h"
 #include "hal/magReader/magReader.h"
 
-static void enter() {
+STATE_DEF_ENTER() {
     getEventloop()->registerChecker(getMagReader()->vtable.readIo);
 }
 
-static void exit() {
+STATE_DEF_EXIT() {
     getEventloop()->unregisterChecker(getMagReader()->vtable.readIo);
 }
 
-static void handleTimeout(State *state, TimeOutEvent *ev) {
+STATE_DEF_HANDLE(TimeOutEvent) {
 
 }
 
-static void handleKeypad(State *state, KeypadEvent *ev) {
-    
+STATE_DEF_HANDLE(KeypadEvent) {
+
 }
 
-static void handleMag(State *state, MagEvent *ev) {
-    
+STATE_DEF_HANDLE(MagEvent) {
+
 }
 
 OOP_CTOR(Idle, State *parent, const char *name) {
     State_ctor(self, parent, name);
-    self->base.vtable.enter = enter;
-    self->base.vtable.exit = exit;
-    self->base.vtable.handleKeypad = handleKeypad;
-    self->base.vtable.handleTimeout = handleTimeout;
-    self->base.vtable.handleMag = handleMag;
+    self->base.vtable.enter = STATE_ENTER();
+    self->base.vtable.exit = STATE_EXIT();
+    self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
+    self->base.vtable.handleMag = STATE_HANDLE(MagEvent);
 }

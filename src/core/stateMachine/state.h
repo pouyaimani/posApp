@@ -4,17 +4,13 @@
 #include "oop.h"
 #include <stdint.h>
 
-#define STATE_ENTER(type) \
-    type##_enter
+#define STATE_ENTER() stateEnter
 
-#define STATE_DEF_ENTER(type) \
-    static void type##_enter()
+#define STATE_DEF_ENTER() static void stateEnter()
 
-#define STATE_EXIT(type) \
-    type##_exit
+#define STATE_EXIT() stateExit
 
-#define STATE_DEF_EXIT(type) \
-    static void type##_exit()
+#define STATE_DEF_EXIT() static void stateExit()
 
 #define STATE_HANDLE(type) \
     type##_handle
