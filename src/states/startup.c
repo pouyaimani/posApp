@@ -3,12 +3,15 @@
 #include "event.h"
 #include "dev/dev.h"
 #include "display.h"
+#include "keypad/keypad.h"
+#include "magReader/magReader.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
 
 STATE_DEF_ENTER() {
-    
+    OOP_CALL(getKeypad(), init);
+    OOP_CALL(getMagReader(), init);
 }
 
 STATE_DEF_EXIT() {

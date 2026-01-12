@@ -1,5 +1,7 @@
 #include "magReader.h"
 #include "../dev/dev.h"
+#include "eventloop.h"
+#include "logger.h"
 
 MagReader *__magReader;
 
@@ -43,10 +45,12 @@ static TrackData_t getTrack3(MagReader *mag) {
     return mag->data.track3;
 }
 
-static void readIo(MagReader *mag) {
-    OOP_CALL(mag, read);
-    if(isSwiped(mag)) {
-        MagEvent **ev = (MagEvent**)createEvent(SM_EVENT_MAG);
+static void readIo() {
+    OOP_CALL(__magReader, read);
+    if(isSwiped(__magReader)) {
+        MagEvent *ev = (MagEvent*)createEvent(SM_EVENT_MAG);
+        ev->data = &__magReader->data;
+        DISPATCH_EVENT(ev);
     }
 }
 
@@ -55,7 +59,7 @@ OOP_CTOR(MagReader) {
     self->vtable.getTrack1 = getTrack1;
     self->vtable.getTrack2 = getTrack2;
     self->vtable.getTrack3 = getTrack3;
-    self->vtable.readIo = readIo;
+    self->ioRead = readIo;
 }
 
 MagReader *getMagReader() {

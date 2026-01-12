@@ -4,7 +4,7 @@
 #include "oop.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "core/stateMachine/event.h"
+#include "event.h"
 
 typedef enum MagReaderErr_t {
     MAG_ERR_SWIPED,
@@ -16,17 +16,6 @@ typedef enum MagReaderErr_t {
 
 } MagReaderErr_t;
 
-typedef struct TrackData_t {
-    uint16_t len;
-    char *data;
-} TrackData_t;
-
-typedef struct MagReaderData_t {
-    TrackData_t track1;
-    TrackData_t track2;
-    TrackData_t track3;
-} MagReaderData_t;
-
 OOP_DECLARE_CLASS(MagReader)
 
 OOP_VTABLE(MagReader) {
@@ -36,11 +25,11 @@ OOP_VTABLE(MagReader) {
     OOP_IMETHOD(TrackData_t, MagReader, getTrack1);
     OOP_IMETHOD(TrackData_t, MagReader, getTrack2);
     OOP_IMETHOD(TrackData_t, MagReader, getTrack3);
-    OOP_IMETHOD(void, MagReader, readIo);
 };
 
 OOP_CLASS(MagReader) {
     OOP_IMPLEMENTS(MagReader);
+    OOP_METHOD(void, ioRead);
     bool swiped;
     MagReaderData_t data;
     MagReaderErr_t error;

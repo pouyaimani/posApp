@@ -3,6 +3,7 @@
 
 #include "oop.h"
 #include <stdint.h>
+#include "core.h"
 
 #define STATE_ENTER() stateEnter
 

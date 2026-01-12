@@ -34,6 +34,9 @@ Event *createEvent(SmEventType_t type) {
     case SM_EVENT_KEYPAD:
         CREATE_EVENT(KeypadEvent, event);
         break;
+    case SM_EVENT_MAG:
+        CREATE_EVENT(MagEvent, event);
+        break;
     default:
         break;
     }
@@ -68,7 +71,7 @@ OOP_CTOR(KeypadEvent)
 
 static void mag_dispatchTo(Event *self, State *state)
 {
-    OOP_CALL(state, handleKeypad, self);
+    OOP_CALL(state, handleMag, self);
 }
 
 OOP_CTOR(MagEvent)

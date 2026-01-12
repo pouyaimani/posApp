@@ -3,6 +3,7 @@
 #include "magReader_t3Rtos.h"
 #include "posplatform.h"
 #include "sdkMag.h"
+#include "logger.h"
 
 static SDK_MAG_CARD_DATA magData;
 
@@ -29,15 +30,22 @@ static MagReaderErr_t translateSdkErr(int err) {
 
 static void init(MagReader* mag) {
     mag->error = translateSdkErr(sdkMagOpen());
+    sdkMagClear();
 }
 
 static void read(MagReader* mag) {
-    mag->error = translateSdkErr(sdkMagRead(&magData));
-    if (mag->error == MAG_ERR_SWIPED) {
+    int magErr = sdkMagRead(&magData);
+    mag->error = translateSdkErr(magErr);
+    if (mag->data.track2.len != 0) {
+        LOG_TRACE("mag track 2 = %s", magData.track2Data);
         mag->data.track1.len = magData.track1Len;
+        mag->data.track1.data = magData.track1Data;
         mag->data.track2.len = magData.track2Len;
+        mag->data.track2.data = magData.track2Data;
         mag->data.track3.len = magData.track3Len;
+        mag->data.track3.data = magData.track3Data;
     }
+    sdkMagClear();
 }
 
 OOP_CTOR(MagReaderT3Rtos) {

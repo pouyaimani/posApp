@@ -1,13 +1,15 @@
 #include "states.h"
-#include "core/eventloop/eventloop.h"
-#include "hal/magReader/magReader.h"
+#include "eventloop.h"
+#include "magReader/magReader.h"
+#include "logger.h"
+#include "dev.h"
 
 STATE_DEF_ENTER() {
-    getEventloop()->registerChecker(getMagReader()->vtable.readIo);
+    getEventloop()->registerChecker(getMagReader()->ioRead);
 }
 
 STATE_DEF_EXIT() {
-    getEventloop()->unregisterChecker(getMagReader()->vtable.readIo);
+    getEventloop()->unregisterChecker(getMagReader()->ioRead);
 }
 
 STATE_DEF_HANDLE(TimeOutEvent) {
