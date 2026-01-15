@@ -6,6 +6,9 @@
 #include "keypad/keypad.h"
 #include "magReader/magReader.h"
 #include "wifi/wifi.h"
+#include "statusBar/statusBar.h"
+#include "eventloop.h"
+#include "timer.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
@@ -14,6 +17,13 @@ STATE_DEF_ENTER() {
     KEYPAD_INIT();
     MAG_INIT();
     WIFI_INIT();
+    Display *disp = getDisplay();
+    disp->init();
+    Core *core = getSmCore();
+    core->registerCallback(disp->update);
+    core->registerCallback(getEventloop()->runCycle);
+    core->registerCallback(getTimerHanlder()->runCycle);
+    createStatusBar();
 }
 
 STATE_DEF_EXIT() {

@@ -1,8 +1,5 @@
 #include "hal/dev/dev.h"
-#include "display/display.h"
-#include "core/eventloop/eventloop.h"
 #include "core/stateMachine/core.h"
-#include "hal/keypad/keypad.h"
 #include "states/states.h"
 #include "logger.h"
 
@@ -20,12 +17,8 @@ void appMain(void)
         .getDateTime = dev->vtable.getDateTime
     });
 #endif
-    Display *disp = getDisplay();
-    disp->init();
     Core *core = getSmCore();
     core->init(getState(STATE_ID_START_UP));
-    core->registerCallback(disp->update);
-    core->registerCallback(getEventloop()->runCycle);
     core->exec();
 }
 
