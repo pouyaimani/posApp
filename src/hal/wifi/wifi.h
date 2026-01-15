@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "dcfg.h"
+#include "event.h"
 
 #ifndef WIFI_AP_LIST_SIZE
 #error Wifi AP info list size is undefined.
@@ -42,12 +43,6 @@ typedef struct WifiApList_t {
     uint16_t size;
 } WifiApList_t;
 
-typedef enum WifiScanSt_t {
-    WIFI_SCAN_UNDER_PROCESS,
-    WIFI_SCAN_SUCCEED,
-    WIFI_SCAN_FAILED
-} WifiScanSt_t;
-
 OOP_DECLARE_CLASS(Wifi)
 
 OOP_VTABLE(Wifi) {
@@ -62,6 +57,7 @@ OOP_VTABLE(Wifi) {
 
 OOP_CLASS(Wifi) {
     OOP_IMPLEMENTS(Wifi);
+    OOP_METHOD(void, startScan);
     WifiSigStrength_t signalStrength;
     WifiApList_t apList;
     WifiScanSt_t scanSt;
@@ -70,5 +66,8 @@ OOP_CLASS(Wifi) {
 OOP_CTOR(Wifi);
 
 Wifi *getWifi(void);
+
+#define WIFI_INIT()  OOP_CALL(getWifi(), init)
+#define WIFI_START_SCAN() getWifi()->startScan()
 
 #endif

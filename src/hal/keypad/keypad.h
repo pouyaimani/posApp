@@ -23,4 +23,6 @@ OOP_CTOR(Keypad);
 
 Keypad *getKeypad(void);
 
+#define KEYPAD_INIT() OOP_CALL(getKeypad(), init)
+
 #endif

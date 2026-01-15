@@ -5,13 +5,15 @@
 #include "display.h"
 #include "keypad/keypad.h"
 #include "magReader/magReader.h"
+#include "wifi/wifi.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
 
 STATE_DEF_ENTER() {
-    OOP_CALL(getKeypad(), init);
-    OOP_CALL(getMagReader(), init);
+    KEYPAD_INIT();
+    MAG_INIT();
+    WIFI_INIT();
 }
 
 STATE_DEF_EXIT() {
@@ -35,4 +37,5 @@ OOP_CTOR(Startup, State *parent, const char *name) {
     self->base.vtable.exit = STATE_EXIT();
     self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
     self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
+    self->base.vtable.handleWifi = STATE_HANDLE(WifiEvent);
 }

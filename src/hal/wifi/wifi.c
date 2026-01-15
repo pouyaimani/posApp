@@ -1,5 +1,8 @@
 #include "wifi.h"
 #include "../dev/dev.h"
+#include "eventloop.h"
+#include "event.h"
+#include "logger.h"
 
 Wifi *__wifi;
 
@@ -27,10 +30,29 @@ static WifiSigStrength_t getSignalStrength(Wifi *self) {
 
 }
 
+static void checkWifiScanResult() {
+    WifiScanSt_t st = OOP_CALL(__wifi, getScanStatus);
+    if (st != WIFI_SCAN_UNDER_PROCESS) {
+        WifiEvent *ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        ev->scanStatus = st;
+        LOG_TRACE("Wifi status: %d", st);
+        ev->apList = &__wifi->apList;
+        DISPATCH_EVENT(ev);
+        getEventloop()->unregisterChecker(checkWifiScanResult);
+    }
+}
+
+static void startScan() {
+    LOG_TRACE("Wifi: start scanning ...");
+    getEventloop()->registerChecker(checkWifiScanResult);
+    OOP_CALL(__wifi, startScan);
+}
+
 OOP_CTOR(Wifi) {
     self->vtable.getApList = getApList;
     self->vtable.getScanStatus = getScanStatus;
     self->vtable.getSignalStrength = getSignalStrength;
+    self->startScan = startScan;
 }
 
 Wifi *getWifi() {

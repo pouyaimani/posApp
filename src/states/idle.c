@@ -17,11 +17,15 @@ STATE_DEF_HANDLE(TimeOutEvent) {
 }
 
 STATE_DEF_HANDLE(KeypadEvent) {
-
+    if (ev->key == KEY_ESC)
+        OOP_CALL(getDevice(), powerOff);
 }
 
 STATE_DEF_HANDLE(MagEvent) {
-
+    LOG_TRACE("Mag event is recieved.");
+    LOG_TRACE("track1 = %s", ev->data->track1);
+    LOG_TRACE("track2 = %s", ev->data->track2);
+    LOG_TRACE("track3 = %s", ev->data->track3);
 }
 
 OOP_CTOR(Idle, State *parent, const char *name) {

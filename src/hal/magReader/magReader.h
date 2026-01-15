@@ -39,4 +39,6 @@ OOP_CTOR(MagReader);
 
 MagReader *getMagReader(void);
 
+#define MAG_INIT() OOP_CALL(getMagReader(), init)
+
 #endif

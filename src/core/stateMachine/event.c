@@ -2,8 +2,9 @@
 #include "state.h"
 #include "core.h"
 #include <stdlib.h>
-#include "hal/dev/dev.h"
-#include "hal/keypad/keypad.h"
+#include "dev/dev.h"
+#include "keypad/keypad.h"
+#include "logger.h"
 
 #define CREATE_EVENT(type, event)                               \
     do {                                                        \
@@ -26,6 +27,7 @@ OOP_CTOR(Event) {
 
 Event *createEvent(SmEventType_t type) {
     Event *event;
+    LOG_TRACE("Creating Event. type = %d", type);
     Device *dev = getDevice();
     switch (type) {
     case SM_EVENT_TIME_OUT:
@@ -36,6 +38,9 @@ Event *createEvent(SmEventType_t type) {
         break;
     case SM_EVENT_MAG:
         CREATE_EVENT(MagEvent, event);
+        break;
+    case SM_EVENT_WIFI:
+        CREATE_EVENT(WifiEvent, event);
         break;
     default:
         break;
@@ -59,11 +64,13 @@ OOP_CTOR(TimeOutEvent)
 
 static void Keypad_dispatchTo(Event *self, State *state)
 {
+    LOG_TRACE("Keypad event dispatch to is called ...");
     OOP_CALL(state, handleKeypad, self);
 }
 
 OOP_CTOR(KeypadEvent)
 {
+    LOG_TRACE("Keypad event is constructing ...");
     self->base.vtable.dispatchTo = Keypad_dispatchTo;
 }
 
@@ -77,4 +84,16 @@ static void mag_dispatchTo(Event *self, State *state)
 OOP_CTOR(MagEvent)
 {
     self->base.vtable.dispatchTo = mag_dispatchTo;
+}
+
+/* ================= Wifi scan ================= */
+
+static void wifi_dispatchTo(Event *self, State *state)
+{
+    OOP_CALL(state, handleWifi, self);
+}
+
+OOP_CTOR(WifiEvent)
+{
+    self->base.vtable.dispatchTo = wifi_dispatchTo;
 }

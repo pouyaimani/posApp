@@ -7,7 +7,8 @@
 typedef enum SmEventType_t {
     SM_EVENT_TIME_OUT,
     SM_EVENT_KEYPAD,
-    SM_EVENT_MAG
+    SM_EVENT_MAG,
+    SM_EVENT_WIFI
 } SmEventType_t;
 
 /* Forward declarations */
@@ -16,6 +17,7 @@ OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
 OOP_DECLARE_CLASS(KeypadEvent);
 OOP_DECLARE_CLASS(MagEvent);
+OOP_DECLARE_CLASS(WifiEvent);
 
 /* ===== Event vtable ===== */
 
@@ -106,5 +108,26 @@ OOP_CLASS(MagEvent)
 
 /* ctor */
 OOP_CTOR(MagEvent);
+
+/* ===== Wifi ===== */
+
+typedef enum WifiScanSt_t {
+    WIFI_SCAN_UNDER_PROCESS,
+    WIFI_SCAN_SUCCEED,
+    WIFI_SCAN_FAILED
+} WifiScanSt_t;
+
+OOP_DECLARE_CLASS(WifiApList_t);
+  
+OOP_CLASS(WifiEvent)
+{
+    OOP_EXTENDS(Event);
+    WifiScanSt_t scanStatus;
+    WifiApList_t *apList;
+};
+
+/* ctor */
+OOP_CTOR(WifiEvent);
+
 
 #endif

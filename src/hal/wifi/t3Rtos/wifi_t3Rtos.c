@@ -3,7 +3,8 @@
 #include "wifi_t3Rtos.h"
 #include "posplatform.h"
 #include "sdkWifi.h"
-#include "../../dev/dev.h"
+#include "dev/dev.h"
+#include "logger.h"
 
 static WifiAPInfo apinfo[WIFI_AP_LIST_SIZE];
 
@@ -28,18 +29,20 @@ static WifiErr_t translateSdkErr(int err) {
 
 static void copyWifiAp(Wifi* wifi, WifiAPInfo *apInfo, uint32_t num) {
     wifi->apList.size = num;
+    LOG_TRACE("Copeing wifi aps, num = %d", num);
     for (uint32_t i = 0; i < num ; i++) {
-        wifi->apList.list->secMode = apinfo->mSecMode;
-        memcpy(wifi->apList.list->essid, apinfo->mSsid,
-                 sizeof(wifi->apList.list->essid));
-        memcpy(wifi->apList.list->bssid, apinfo->mMac,
-                 sizeof(wifi->apList.list->essid));
-        wifi->apList.list->rssi = apinfo->mRssi;
-        wifi->apList.list->channel = apinfo->mChannel;
+        wifi->apList.list[i].secMode = apinfo[i].mSecMode;
+        memcpy(wifi->apList.list[i].essid, apinfo[i].mSsid,
+                 sizeof(wifi->apList.list[i].essid));
+        memcpy(wifi->apList.list[i].bssid, apinfo[i].mMac,
+                 sizeof(wifi->apList.list[i].essid));
+        wifi->apList.list[i].rssi = apinfo[i].mRssi;
+        wifi->apList.list[i].channel = apinfo[i].mChannel;
     }
 }
 
 static void init(Wifi* wifi) {
+    sdkWifiOpen();
 }
 
 static WifiErr_t startScan(Wifi* wifi) {
@@ -74,11 +77,11 @@ static WifiScanSt_t getScanStatus(Wifi *wifi) {
     uint32_t apNum = 0;
     WIFI_SCAN_AP_STATUS st = sdkWifiGetScanAPStatus(&apNum);
     switch (st) {
-    case WIFI_CONNECT_AP_SUCCESS:
+    case WIFI_SCAN_AP_SUCCESS:
         wifi->scanSt = WIFI_SCAN_SUCCEED;
         copyWifiAp(wifi, apinfo, apNum);
         break;
-    case WIFI_CONNECT_AP_ERR :
+    case WIFI_SCAN_AP_ERR:
         wifi->scanSt = WIFI_SCAN_FAILED;
         break;
     default:
