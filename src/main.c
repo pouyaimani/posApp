@@ -11,14 +11,15 @@ void appMain(void)
 {
     Device *dev = getDevice();
     OOP_CALL(dev, init);
+#if USE_LOG
     initLogger(&(LogConfig_t)  {
-        .level = LOG_LEV_TRACE,
         .writer = {
             .write = dev->vtable.logOut,
             .udata = NULL
         },
         .getDateTime = dev->vtable.getDateTime
     });
+#endif
     Display *disp = getDisplay();
     disp->init();
     Core *core = getSmCore();

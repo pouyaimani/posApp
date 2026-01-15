@@ -4,6 +4,10 @@
 #include <time.h>
 #include "hal/dev/dev.h"
 
+#if USE_LOG
+
+#
+
 #define LOG_BUFFER_SIZE 256
 
 static LogConfig_t g_cfg;
@@ -18,7 +22,6 @@ void initLogger(const LogConfig_t *cfg) {
 
 static size_t format_log_line(char *buf,
                               size_t buf_size,
-                              LogLevel_t level,
                               const char *file,
                               int line,
                               const char *fmt,
@@ -48,7 +51,7 @@ static size_t format_log_line(char *buf,
 
     n += snprintf(buf + n, buf_size - n,
                   "[%s][%s:%d] ",
-                  level_str[level],
+                  level_str[LOG_LEVEL],
                   file,
                   line);
 
@@ -58,12 +61,11 @@ static size_t format_log_line(char *buf,
     return n;
 }
 
-void log_log(LogLevel_t level,
-             const char *file,
+void log_log(const char *file,
              int line,
              const char *fmt, ...)
 {
-    if (level < g_cfg.level || !g_cfg.writer.write) {
+    if (!g_cfg.writer.write) {
         return;
     }
 
@@ -72,9 +74,11 @@ void log_log(LogLevel_t level,
     va_list ap;
     va_start(ap, fmt);
     size_t len = format_log_line(
-        buf, sizeof(buf), level, file, line, fmt, ap
+        buf, sizeof(buf), file, line, fmt, ap
     );
     va_end(ap);
 
     g_cfg.writer.write(getDevice(), buf, len, g_cfg.writer.udata);
 }
+
+#endif
