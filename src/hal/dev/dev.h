@@ -66,7 +66,8 @@ OOP_CTOR(Device, const char* name);
 
 Device *getDevice(void);
 
-#define GET_MEM(size) OOP_CALL(getDevice(), getMemory, size);
-#define GET_TICK() OOP_CALL(getDevice(), getTick);
+#define GET_MEM(size) OOP_CALL(getDevice(), getMemory, size)
+#define FREE_MEM(mem) OOP_CALL(getDevice(), freeMemory, mem)
+#define GET_TICK() OOP_CALL(getDevice(), getTick)
 
 #endif
