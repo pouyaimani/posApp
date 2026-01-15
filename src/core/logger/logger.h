@@ -1,7 +1,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#define USE_LOG 0
+#define USE_LOG 1
 
 #include <stdarg.h>
 #include <stdbool.h>

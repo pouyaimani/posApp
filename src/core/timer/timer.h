@@ -48,5 +48,6 @@ TimerHandler *getTimerHanlder(void);
 #define TIMER_START(timer) timer->start(timer)
 #define TIMER_STOP(timer) timer->stop(timer)
 #define TIMER_REMOVE(timer) removeTimer(timer)
+#define SECS(x) (x * 1000)
 
 #endif

@@ -7,6 +7,7 @@
 #include "LibProperties.h"
 #include "sdkUtils.h"
 #include "sdkLog.h"
+#include "utility/arith.h"
 
 static DateTime dateTime;
 extern BatteryStat batterySt;
@@ -125,11 +126,13 @@ static void logOut(Device* dev, const char *data, size_t len, void *udata) {
 }
 
 static DateTime *getDateTime(Device* dev) {
-    uint8_t dt[6 + 6 + 1];
+    uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
+    char tmp[12 + 1] = {0};
     sdkSysGetRtcTime(dt);
-    memcpy(dateTime.date, dt, 6);
-    memcpy(dateTime.time, dt + 6, 6);
+    bcdToAsc(tmp, dt, 6);
+    memcpy(dateTime.date, tmp, 6);
+    memcpy(dateTime.time, tmp + 6, 6);
     return &dateTime;
 }
 

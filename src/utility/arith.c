@@ -56,3 +56,38 @@ int libCrc16(const unsigned char *pucSrc, unsigned int siSrcLen)
 
     return crcData;
 }
+
+int32_t bcdToAsc(uint8_t *pasDest, const uint8_t *pbcSrc, int32_t siBcdSrclen)
+{
+    int32_t i = 0;
+
+    if ((NULL == pbcSrc) || (NULL == pasDest) || (siBcdSrclen < 0))
+    {
+        return (-4);
+    }
+
+    for (i = 0; i < siBcdSrclen; i++)
+    {
+        // 高Nibble转换
+        if (((*(pbcSrc + i) & 0xF0) >> 4) <= 9)
+        {
+            *(pasDest + 2 * i) = ((*(pbcSrc + i) >> 4) & 0X0F) + 0x30;
+        }
+        else
+        {
+            *(pasDest + 2 * i) = ((*(pbcSrc + i) >> 4) & 0x0F) + 0x37; // 大写A~F
+        }
+
+        // 低Nibble转换
+        if ((*(pbcSrc + i) & 0x0F) <= 9)
+        {
+            *(pasDest + 2 * i + 1) = (*(pbcSrc + i) & 0x0F) + 0x30;
+        }
+        else
+        {
+            *(pasDest + 2 * i + 1) = (*(pbcSrc + i) & 0x0F) + 0x37; // 大写A~F
+        }
+    }
+
+    return siBcdSrclen * 2;
+}

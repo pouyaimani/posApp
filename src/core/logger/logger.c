@@ -28,14 +28,13 @@ static size_t format_log_line(char *buf,
                               va_list ap)
 {
     size_t n = 0;
-    DateTime *dt;
-    bool has_time = false;
+    DateTime *dt = NULL;
 
     if (g_cfg.getDateTime) {
         dt = g_cfg.getDateTime(getDevice());
     }
 
-    if (has_time) {
+    if (dt) {
         /* date = YYMMDD, time = HHMMSS */
         n += snprintf(buf + n, buf_size - n,
                       "[%c%c-%c%c-%c%c %c%c:%c%c:%c%c]",
@@ -74,7 +73,7 @@ void log_log(const char *file,
     va_list ap;
     va_start(ap, fmt);
     size_t len = format_log_line(
-        buf, sizeof(buf), file, line, fmt, ap
+        buf, LOG_BUFFER_SIZE, file, line, fmt, ap
     );
     va_end(ap);
 
