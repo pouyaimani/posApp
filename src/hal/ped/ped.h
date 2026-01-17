@@ -1,0 +1,45 @@
+#ifndef PED_H_
+#define PED_H_
+
+#include "oop.h"
+#include <stdbool.h>
+#include "event.h"
+
+#define PIN_MAX_LEN 4
+#define PIN_MIN_LEN 4
+#define PED_PIN_ENTRY_TIME_OUT SECS(10)
+
+typedef enum PedErr_t {
+    PED_ERR_OK,
+    PED_ERR_INPUT
+} PedErr_t;
+
+typedef enum PedKeyType_t {
+    PED_MASTER_KEY,
+    PED_PIN_KEY,
+    PED_DATA_KEY
+} PedKeyType_t;
+
+OOP_DECLARE_CLASS(Ped)
+
+OOP_VTABLE(Ped) {
+    OOP_IMETHOD(void, Ped, init);
+    OOP_IMETHOD(PedErr_t, Ped, injectKey, PedKeyType_t, uint8_t*, size_t);
+    OOP_IMETHOD(PedErr_t, Ped, enterPinEntryMode);
+    OOP_IMETHOD(PedErr_t, Ped, exitPinEntryMode);
+};
+
+OOP_CLASS(Ped) {
+    OOP_IMPLEMENTS(Ped);
+    OOP_METHOD(PedErr_t, injectMasterKey, uint8_t*, size_t);
+    OOP_METHOD(PedErr_t, injectDataKey, uint8_t*, size_t);
+    OOP_METHOD(PedErr_t, injectPinKey, uint8_t*, size_t);
+};
+
+OOP_CTOR(Ped);
+
+Ped *ped(void);
+
+#define PED_INIT() OOP_CALL(ped(), init)
+
+#endif
