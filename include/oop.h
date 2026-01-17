@@ -72,5 +72,6 @@
 #define RETURN_VAL_IF_NULL(ptr, ret) \
     do { if ((ptr) == NULL) return (ret); } while (0)
 
+#define SECS(x) (x * 1000)
 
 #endif
