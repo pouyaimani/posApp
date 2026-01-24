@@ -1,6 +1,7 @@
 #include "msg.h"
 #include "dev/dev.h"
 
+static DataElement __dataElements[MSG_FIELDS_CONUT];
 static Parser *__parser;
 static Packer *__packer;
 static char *msgBuffer;
@@ -11,6 +12,7 @@ static char *msgBuffer;
 
 static Iso8583Parser *__iso8583parser;
 static Iso8583Packer *__iso8583packer;
+
 static void constructIso8583() {
     CALL_ONCE(
         __iso8583parser = GET_MEM(sizeof(Iso8583Parser));
@@ -27,15 +29,36 @@ static void constructIso8583() {
 
 #endif
 
+static void resetElements() {
+    for (size_t i = 0; i < MSG_FIELDS_CONUT; i++) {
+        __dataElements[i].reset(i);
+    }
+}
+
+static bool isFilled(int i) {
+    return __dataElements[i].len != 0;
+}
+
+static void reset(int i) {
+    __dataElements[i].len = 0;
+}
+
 static void initMsg() {
     CALL_ONCE(
+        for (size_t i = 0; i < MSG_FIELDS_CONUT; i++) {
+            __dataElements[i].data = (uint8_t*)GET_MEM(MSG_FIELD_SIZE);
+            __dataElements[i].isFilled = isFilled;
+            __dataElements[i].reset = reset;
+        }
         msgBuffer = (char*)GET_MEM(MSG_BUFFER_SIZE);
     );
 }
 
 OOP_CTOR(Parser) {
     self->vtable.parse = NULL;
+    self->vtable.reset = resetElements;
     self->buffer = msgBuffer;
+    self->element = __dataElements;
 };
 
 Parser *parser() {
@@ -48,7 +71,9 @@ Parser *parser() {
 
 OOP_CTOR(Packer) {
     self->vtable.pack = NULL;
+    self->vtable.reset = resetElements;
     self->buffer = msgBuffer;
+    self->element = __dataElements;
 };
 
 Packer *packer() {
