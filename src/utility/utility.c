@@ -301,3 +301,176 @@ unsigned char intToChar(int val)
 
 	return ret;
 }
+
+inline void InsertDotIP(const char *ip, char* ip_add)
+{
+    /* Insert Dot between the octed of ip address of user prompt */
+    char octed1[4], octed2[4], octed3[4], octed4[4];
+    char TmpOcted1[4], TmpOcted2[4], TmpOcted3[4], TmpOcted4[4];
+    memset(TmpOcted1, 0, sizeof(TmpOcted1));
+    memset(TmpOcted2, 0, sizeof(TmpOcted2));
+    memset(TmpOcted3, 0, sizeof(TmpOcted3));
+    memset(TmpOcted4, 0, sizeof(TmpOcted4));
+    memset(octed1, 0, sizeof(octed1));
+    memset(octed2, 0, sizeof(octed2));
+    memset(octed3, 0, sizeof(octed3));
+    memset(octed4, 0, sizeof(octed4));
+    memcpy(TmpOcted1, ip, 3);
+    deleteZero(TmpOcted1,octed1);
+    memcpy(TmpOcted2, ip + 3, 3);
+    deleteZero(TmpOcted2,octed2);
+    memcpy(TmpOcted3, ip + 6, 3);
+    deleteZero(TmpOcted3,octed3);
+    memcpy(TmpOcted4, ip + 9, 3);
+    deleteZero(TmpOcted4,octed4);
+    sprintf(ip_add, "%s.%s.%s.%s", octed1, octed2, octed3, octed4);
+}
+
+bool isDigit(char c)
+{
+    return (c >= '0' && c <= '9');
+}
+
+bool isAlphabetic(char c)
+{
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+int toInt(const char *value)
+{
+    return atoi(value);
+}
+
+int16_t hexCharToDecimal(char hexChar)
+{
+    switch (hexChar)
+    {
+    case '0':
+        return 0;
+    case '1':
+        return 1;
+    case '2':
+        return 2;
+    case '3':
+        return 3;
+    case '4':
+        return 4;
+    case '5':
+        return 5;
+    case '6':
+        return 6;
+    case '7':
+        return 7;
+    case '8':
+        return 8;
+    case '9':
+        return 9;
+    case 'a':
+        return 10;
+    case 'A':
+        return 10;
+    case 'b':
+        return 11;
+    case 'B':
+        return 11;
+    case 'c':
+        return 12;
+    case 'C':
+        return 12;
+    case 'd':
+        return 13;
+    case 'D':
+        return 13;
+    case 'e':
+        return 14;
+    case 'E':
+        return 14;
+    case 'f':
+        return 15;
+    case 'F':
+        return 15;
+    default:
+        return -1;
+    }
+}
+
+int dateSeparator(const char *in, char *out, size_t out_size)
+{
+    size_t len;
+
+    if (!in || !out)
+        return -1;
+
+    len = strlen(in);
+
+    /* Accept only 6 or 8 digits */
+    if (!(len == 6 || len == 8))
+        return -1;
+
+    for (size_t i = 0; i < len; i++) {
+        if (!isdigit((unsigned char)in[i]))
+            return -1;
+    }
+
+    /* Output size: len + 2 separators + null */
+    if (out_size < len + 3)
+        return -1;
+
+    if (len == 6) {
+        /* YY/MM/DD */
+        out[0] = in[0];
+        out[1] = in[1];
+        out[2] = '/';
+        out[3] = in[2];
+        out[4] = in[3];
+        out[5] = '/';
+        out[6] = in[4];
+        out[7] = in[5];
+        out[8] = '\0';
+    } else {
+        /* YYYY/MM/DD */
+        out[0] = in[0];
+        out[1] = in[1];
+        out[2] = in[2];
+        out[3] = in[3];
+        out[4] = '/';
+        out[5] = in[4];
+        out[6] = in[5];
+        out[7] = '/';
+        out[8] = in[6];
+        out[9] = in[7];
+        out[10] = '\0';
+    }
+
+    return 0;
+}
+
+int timeSeparator(const char *in, char *out, size_t out_size)
+{
+    if (!in || !out)
+        return -1;
+
+    if (strlen(in) != 6)
+        return -1;
+
+    for (int i = 0; i < 6; i++) {
+        if (!isdigit((unsigned char)in[i]))
+            return -1;
+    }
+
+    /* "HH:MM:SS" => 8 chars + null */
+    if (out_size < 9)
+        return -1;
+
+    out[0] = in[0];
+    out[1] = in[1];
+    out[2] = ':';
+    out[3] = in[2];
+    out[4] = in[3];
+    out[5] = ':';
+    out[6] = in[4];
+    out[7] = in[5];
+    out[8] = '\0';
+
+    return 0;
+}
