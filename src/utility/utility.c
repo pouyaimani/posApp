@@ -196,3 +196,108 @@ int addBeHarf(const char *num, char *out, size_t out_size)
 
     return 0;
 }
+
+void gregorianToJalali(Calendar_t greg, Calendar_t * jalali)
+{
+	int array[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+	if(greg.year <= 1600) {
+		greg.year -= 621;
+		jalali->year = 0;
+	} else {
+		greg.year -= 1600;
+		jalali->year = 979;
+	}
+
+	int temp = (greg.year > 2) ? (greg.year + 1) : greg.year;
+	int days = ((int)((temp + 3) / 4)) + (365 * greg.year) - 
+        ((int)((temp + 99) / 100)) - 80 + array[greg.month - 1] +
+             ((int)((temp + 399) / 400)) + greg.day;
+	jalali->year += 33 * ((int)(days / 12053));
+	days %= 12053;
+	jalali->year += 4 * ((int)(days / 1461));
+	days %= 1461;
+
+	if(days > 365){
+		jalali->year += (int)((days - 1) / 365);
+		days = (days-1) % 365;
+	}
+
+	jalali->month = (days < 186)
+							? 1 + (int)(days / 31)
+							: 7 + (int)((days - 186) / 30);
+
+	jalali->day = 1 + ((days < 186)
+							? (days % 31)
+							: ((days - 186) % 30));
+}
+
+int gregorianToJalaliStr(const char *in_date, char *out_date)
+{
+    int gy, gm, gd;
+    int jy, jm, jd;
+
+    if (!in_date || !out_date)
+        return -1;
+
+    /* must be exactly 6 digits */
+    if (strlen(in_date) != 6)
+        return -1;
+
+    for (int i = 0; i < 6; i++) {
+        if (!isdigit((unsigned char)in_date[i]))
+            return -1;
+    }
+
+    /* parse YYMMDD safely */
+    gy = (in_date[0] - '0') * 10 + (in_date[1] - '0');
+    gy += 2000;
+
+    gm = (in_date[2] - '0') * 10 + (in_date[3] - '0');
+    gd = (in_date[4] - '0') * 10 + (in_date[5] - '0');
+
+    /* basic range check */
+    if (gm < 1 || gm > 12 || gd < 1 || gd > 31)
+        return -1;
+
+    /* assume this function already exists */
+    Calendar_t greg;
+    greg.day = gd;
+    greg.month = gm;
+    greg.month = gy;
+    Calendar_t jalali;
+    gregorianToJalali(greg, &jalali);
+
+    /* format as YYMMDD */
+    sprintf(out_date, "%02d%02d%02d", jalali.year % 100, jalali.month, jalali.day);
+
+    return 0;
+}
+
+static unsigned char intToCharTable[][2] = {
+        {0, 			0x30},	//KEY1
+		{1, 			0x31},	//KEY1
+		{2, 			0x32},	//KEY2
+		{3, 			0x33},	//KEY3
+		{4, 			0x34},	//KEY4
+		{5,		 		0x35},	//KEY5
+		{6, 			0x36},	//KEY6
+		{7, 			0x37},	//KEY7
+		{8, 			0x38},	//KEY8
+		{9, 			0x39}	//KEY9
+};
+
+unsigned char intToChar(int val)
+{
+	unsigned char ret = 0;
+	if (val < 0) {
+        return 0xFF;
+	}
+	for(uint16_t i = 0 ; i < sizeof(intToCharTable) / sizeof(intToCharTable[0]) ; i++) {
+		if(val == intToCharTable[i][0]) {
+			ret = intToCharTable[i][1];
+		}
+	}
+
+	return ret;
+}
