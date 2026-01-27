@@ -118,7 +118,6 @@ static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0
         .m_pic = cmap
     };
     ddi_lcd_show_picture(&rect, &pic);
-    sdkLogOut("device flush display ...");
 }
 
 static void logOut(Device* dev, const char *data, size_t len, void *udata) {

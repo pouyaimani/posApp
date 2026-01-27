@@ -474,3 +474,92 @@ int timeSeparator(const char *in, char *out, size_t out_size)
 
     return 0;
 }
+
+int appendChar(char *buf, size_t buf_size, char c)
+{
+    size_t len = 0;
+
+    /* Find current length */
+    while (len < buf_size && buf[len] != '\0')
+        len++;
+
+    /* No space left (need 1 byte for '\0') */
+    if (len + 1 >= buf_size)
+        return -1;
+
+    buf[len] = c;
+    buf[len + 1] = '\0';
+
+    return 0;
+}
+
+int deleteChar(char *buf)
+{
+    size_t len = 0;
+
+    while (buf[len] != '\0')
+        len++;
+
+    if (len == 0)
+        return -1;   // nothing to delete
+
+    buf[len - 1] = '\0';
+    return 0;
+}
+
+void clearStr(char *buf)
+{
+    if (buf)
+        buf[0] = '\0';
+}
+
+int amountSeparator(const char *in, char *out, size_t out_size)
+{
+    size_t len;
+    size_t commas;
+    size_t out_len;
+    size_t i, j;
+
+    if (!in || !out)
+        return -1;
+
+    len = strlen(in);
+
+    /* empty string → empty output */
+    if (len == 0) {
+        if (out_size > 0)
+            out[0] = '\0';
+        return 0;
+    }
+
+    /* validate digits only */
+    for (i = 0; i < len; i++) {
+        if (!isDigit((char)in[i])) {
+            return -1;
+        }
+    }
+
+    commas = (len - 1) / 3;
+    out_len = len + commas;
+    if (out_size < out_len + 1)
+        return -1;
+    
+    out[out_len] = '\0';
+
+    /* build output from right to left */
+    i = len;
+    j = out_len;
+    int count = 0;
+
+    while (i > 0) {
+        out[--j] = in[--i];
+        count++;
+
+        if (count == 3 && i > 0) {
+            out[--j] = ',';
+            count = 0;
+        }
+    }
+
+    return 0;
+}

@@ -81,7 +81,7 @@ OOP_CLASS(KeypadEvent)
 {
     OOP_EXTENDS(Event);
     Key_t key;
-    const char *keyStr;
+    char keyStr;
 };
 
 /* ctor */

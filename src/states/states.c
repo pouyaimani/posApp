@@ -2,6 +2,7 @@
 
 static Startup startup;
 static Idle idle;
+static Input input;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -16,7 +17,11 @@ State *getState(StateId_t id) {
             Idle_ctor(&idle, &startup, "idle");
         );
         return (State *)&idle;
-    
+    case STATE_ID_INPUT:
+        CALL_ONCE(
+            Input_ctor(&input, NULL, "input");
+        );
+        return (State *)&input;
     default:
         break;
     }

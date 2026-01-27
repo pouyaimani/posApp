@@ -31,4 +31,10 @@ int16_t hexCharToDecimal(char hexChar);
 int dateSeparator(const char *in, char *out, size_t out_size);
 int timeSeparator(const char *in, char *out, size_t out_size);
 
+int appendChar(char *buf, size_t buf_size, char c);
+int deleteChar(char *buf);
+void clearStr(char *buf);
+
+int amountSeparator(const char *in, char *out, size_t out_size);
+
 #endif

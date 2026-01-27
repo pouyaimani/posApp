@@ -20,4 +20,6 @@
 
 #define WIFI_AP_LIST_SIZE 20
 
+#define MAIN_THEME_COLOR 0x652D90
+
 #endif
