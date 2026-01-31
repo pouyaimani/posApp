@@ -35,6 +35,7 @@ OOP_CTOR(Ped) {
     self->vtable.init = NULL;
     self->vtable.injectKey = NULL;
     self->vtable.enterPinEntryMode = NULL;
+    self->vtable.exitPinEntryMode = NULL;
     self->injectMasterKey = injectMasterKey;
     self->injectPinKey = injectPinKey;
     self->injectDataKey = injectDataKey;

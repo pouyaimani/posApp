@@ -7,22 +7,26 @@
 #include "display.h"
 #include "event.h"
 #include "wifi/wifi.h"
+#include "assets.h"
 
 #define MENU_BAR_HEIGHT 46
 
 static lv_obj_t *menuBar;
 static lv_obj_t *swipCardText;
+static lv_obj_t *mainIcon;
 
 STATE_DEF_ENTER() {
     getEventloop()->registerChecker(getMagReader()->ioRead);
     lv_obj_remove_flag(menuBar, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_remove_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
+    // lv_obj_remove_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
+    // lv_obj_remove_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);
 }
 
 STATE_DEF_EXIT() {
     getEventloop()->unregisterChecker(getMagReader()->ioRead);
     lv_obj_add_flag(menuBar, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
+    // lv_obj_add_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
+    // lv_obj_add_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);S
 }
 
 STATE_DEF_HANDLE(TimeOutEvent) {
@@ -70,6 +74,16 @@ static void createUi() {
     lv_obj_set_style_text_font(swipCardText, &lv_font_dejavu_16_persian_hebrew, 0);
     lv_label_set_text(swipCardText, "لطفا کارت خود را بکشید");
     lv_obj_align(swipCardText, LV_ALIGN_CENTER, 0, 0);
+    // lv_obj_set_style_transform_angle(swipCardText, -900, 0);
+    // lv_obj_set_style_transform_pivot_x(swipCardText,
+    // lv_obj_get_width(swipCardText) / 2, 0);
+    // lv_obj_set_style_transform_pivot_y(swipCardText,
+    // lv_obj_get_height(swipCardText) / 2, 0);
+    // lv_obj_align(swipCardText, LV_ALIGN_CENTER, 220, 70);
+
+    mainIcon = lv_img_create(getDisplay()->screen);
+    lv_img_set_src(mainIcon, ICON_IDLE_MAIN);
+    lv_obj_align(mainIcon, LV_ALIGN_CENTER, 0, 0);
 }
 
 OOP_CTOR(Idle, State *parent, const char *name) {

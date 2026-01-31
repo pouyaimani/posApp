@@ -48,9 +48,9 @@ static TrackData_t getTrack3(MagReader *mag) {
 static void readIo() {
     OOP_CALL(__magReader, read);
     if(isSwiped(__magReader)) {
-        MagEvent *ev = (MagEvent*)createEvent(SM_EVENT_MAG);
-        ev->data = &__magReader->data;
-        DISPATCH_EVENT(ev);
+        // MagEvent *ev = (MagEvent*)createEvent(SM_EVENT_MAG);
+        // ev->data = &__magReader->data;
+        // DISPATCH_EVENT(ev);
     }
 }
 
