@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <ctype.h>
 #include <string.h>
+#include "logger.h"
+#include "dev/dev.h"
 
 int libAtoi(const char *str) {
     int s = 0;
@@ -562,4 +564,54 @@ int amountSeparator(const char *in, char *out, size_t out_size)
     }
 
     return 0;
+}
+
+static const char *day_names[] = {
+    "شنبه", "یکشنبه", "دوشنبه", "سه شنبه",
+    "چهارشنبه", "پنج شنبه", "جمعه"
+};
+
+const char *getDayName(int y, int m, int d)
+{
+    if (m < 3) {
+        m += 12;
+        y -= 1;
+    }
+
+    int K = y % 100;
+    int J = y / 100;
+
+    int h = (d + (13 * (m + 1)) / 5 + K + (K / 4) + (J / 4) + 5 * J) % 7;
+    return day_names[h];
+}
+
+
+void formatDateTimeStr(char *out, size_t out_size)
+{
+    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+
+    int yy, mm, dd;
+    sscanf(dt->date, "%2d%2d%2d", &yy, &mm, &dd);
+
+    int full_year = 2000 + yy;     // adjust if needed
+    const char *day = getDayName(full_year, mm, dd);
+    Calendar_t greg;
+    greg.day = dd;
+    greg.month = mm;
+    greg.year = full_year;
+    Calendar_t jalali;
+    gregorianToJalali(greg, &jalali);
+    snprintf(out, out_size,
+             "%02d/%02d/%02d-%s",
+             jalali.year % 100, jalali.month, jalali.day, day);
+}
+
+void formatTimeStr(char *out, size_t out_size)
+{
+    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+
+    int hh, mm;
+    sscanf(dt->time, "%2d%2d", &hh, &mm);
+
+    snprintf(out, out_size, "%02d:%02d", hh, mm);
 }

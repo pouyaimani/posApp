@@ -4,7 +4,7 @@
 #include "oop.h"
 
 OOP_CLASS(StatusBar) {
-
+    int dummy;
 };
 
 OOP_CTOR(StatusBar);

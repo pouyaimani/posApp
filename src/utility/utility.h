@@ -15,10 +15,6 @@ typedef struct {
     int day;
 } Calendar_t;
 
-// Date formatter
-void gregorianToJalali(Calendar_t greg, Calendar_t * jalali);
-int gregorianToJalaliStr(const char *in_date, char *out_date);
-
 unsigned char intToChar(int val);
 
 inline void InsertDotIP(const char *ip, char* ip_add);
@@ -28,13 +24,18 @@ bool isAlphabetic(char c);
 int toInt(const char *value);
 int16_t hexCharToDecimal(char hexChar);
 
-int dateSeparator(const char *in, char *out, size_t out_size);
-int timeSeparator(const char *in, char *out, size_t out_size);
-
 int appendChar(char *buf, size_t buf_size, char c);
 int deleteChar(char *buf);
 void clearStr(char *buf);
 
 int amountSeparator(const char *in, char *out, size_t out_size);
+
+// Date time utilities 
+void formatDateTimeStr(char *out, size_t out_size);
+void formatTimeStr(char *out, size_t out_size);
+int dateSeparator(const char *in, char *out, size_t out_size);
+int timeSeparator(const char *in, char *out, size_t out_size);
+void gregorianToJalali(Calendar_t greg, Calendar_t * jalali);
+int gregorianToJalaliStr(const char *in_date, char *out_date);
 
 #endif
