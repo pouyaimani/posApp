@@ -4,6 +4,7 @@ include(FetchContent)
 
 file(GLOB_RECURSE APP_SRC CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
+    "${CMAKE_SOURCE_DIR}/assets/*.c"
 )
 
 add_executable(${PROJECT_NAME} ${APP_SRC})
@@ -109,6 +110,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core/timer
     ${CMAKE_CURRENT_SOURCE_DIR}/hal
     ${CMAKE_CURRENT_SOURCE_DIR}/hal/dev
+    ${CMAKE_SOURCE_DIR}/assets
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
