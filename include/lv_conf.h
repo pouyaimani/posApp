@@ -71,7 +71,7 @@
     #if LV_MEM_ADR == 0
         #undef LV_MEM_POOL_INCLUDE
         #undef LV_MEM_POOL_ALLOC
-        #define LV_MEM_POOL_INCLUDE CUSTOM_DEV_MEM_INC
+        #define LV_MEM_POOL_INCLUDE "sdkSys.h"
         #define LV_MEM_POOL_ALLOC sdkSysGetMem
     #endif
 #endif  /*LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN*/

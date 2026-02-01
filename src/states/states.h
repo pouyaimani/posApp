@@ -3,7 +3,8 @@
 typedef enum StateId_t {
     STATE_ID_START_UP,
     STATE_ID_IDLE,
-    STATE_ID_INPUT
+    STATE_ID_INPUT,
+    STATE_ID_CARD_HOLDER
 } StateId_t;
 
 State *getState(StateId_t id);
@@ -36,9 +37,16 @@ typedef enum {
 OOP_CLASS(Input)
 {
     OOP_EXTENDS(State);
-    OOP_METHOD(void, setPrevState, State *);
-    OOP_METHOD(void, setNextState, State *);
     OOP_METHOD(void, setMode, InputMode_t);
 };
 
 OOP_CTOR(Input, State *parent, const char *name);
+
+/**********************Card Holder**********************/
+
+OOP_CLASS(CardHolder)
+{
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(CardHolder, State *parent, const char *name);

@@ -3,7 +3,7 @@
 #include "magReader/magReader.h"
 #include "logger.h"
 #include "dev.h"
-#include "lvgl.h"
+#include "mylvgl.h"
 #include "display.h"
 #include "event.h"
 #include "wifi/wifi.h"
@@ -17,14 +17,14 @@ static lv_obj_t *mainIcon;
 
 STATE_DEF_ENTER() {
     getEventloop()->registerChecker(getMagReader()->ioRead);
-    lv_obj_remove_flag(menuBar, LV_OBJ_FLAG_HIDDEN);
+    LV_SHOW(menuBar);
     // lv_obj_remove_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
     // lv_obj_remove_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);
 }
 
 STATE_DEF_EXIT() {
     getEventloop()->unregisterChecker(getMagReader()->ioRead);
-    lv_obj_add_flag(menuBar, LV_OBJ_FLAG_HIDDEN);
+    LV_HIDE(menuBar);
     // lv_obj_add_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
     // lv_obj_add_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);S
 }
@@ -40,9 +40,9 @@ STATE_DEF_HANDLE(KeypadEvent) {
     } else if (ev->key == KEY_1) {
         WIFI_START_SCAN();
     } else if (ev->key == KEY_2) {
-        Input * in = (Input*) getState(STATE_ID_INPUT);
-        in->setPrevState(getState(STATE_ID_IDLE));
-        in->setNextState(getState(STATE_ID_IDLE));
+        Input * in = (Input*)getState(STATE_ID_INPUT);
+        OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
+        OOP_CALL(getState(STATE_ID_INPUT), setNext, getState(STATE_ID_IDLE));
         in->setMode(IN_MODE_AMOUNT);
         SM_GOTO(getState(STATE_ID_INPUT));
     }
@@ -65,15 +65,15 @@ STATE_DEF_HANDLE(WifiEvent) {
 
 static void createUi() {
     menuBar = lv_obj_create(getDisplay()->screen);
-    lv_obj_set_size(menuBar, DISP_HOR_RES + 20, MENU_BAR_HEIGHT + 20);
-    lv_obj_set_style_bg_color(menuBar, lv_color_hex(MAIN_THEME_COLOR), 0);
-    lv_obj_align(menuBar, LV_ALIGN_BOTTOM_MID, 10, 20);
-    lv_obj_set_style_radius(menuBar, 20, 0);
+    LV_SET_SIZE(menuBar, DISP_HOR_RES + 20, MENU_BAR_HEIGHT + 20);
+    LV_SET_BG_COLOR(menuBar, lv_color_hex(MAIN_THEME_COLOR));
+    LV_ALIGN(menuBar, LV_ALIGN_BOTTOM_MID, 10, 20);
+    LV_SET_RADIUS(menuBar, 20);
 
     swipCardText = lv_label_create(getDisplay()->screen);
     lv_obj_set_style_text_font(swipCardText, &lv_font_dejavu_16_persian_hebrew, 0);
     lv_label_set_text(swipCardText, "لطفا کارت خود را بکشید");
-    lv_obj_align(swipCardText, LV_ALIGN_CENTER, 0, 0);
+    LV_ALIGN(swipCardText, LV_ALIGN_CENTER, 0, 0);
     // lv_obj_set_style_transform_angle(swipCardText, -900, 0);
     // lv_obj_set_style_transform_pivot_x(swipCardText,
     // lv_obj_get_width(swipCardText) / 2, 0);
@@ -83,11 +83,11 @@ static void createUi() {
 
     mainIcon = lv_img_create(getDisplay()->screen);
     lv_img_set_src(mainIcon, ICON_IDLE_MAIN);
-    lv_obj_align(mainIcon, LV_ALIGN_CENTER, 0, 0);
+    LV_ALIGN(mainIcon, LV_ALIGN_CENTER, 0, 0);
 }
 
 OOP_CTOR(Idle, State *parent, const char *name) {
-    State_ctor(self, parent, name);
+    OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER();
     self->base.vtable.exit = STATE_EXIT();
     self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);

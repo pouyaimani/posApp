@@ -48,3 +48,46 @@ lv_obj_t *uiCancellButton(lv_obj_t *parent) {
     lv_obj_set_style_bg_grad_color(obj, lv_color_hex(0xFF2A6A), 0);
     return obj;
 }
+
+lv_obj_t *uiMenu(lv_obj_t * parent) {
+    lv_obj_t * menu = lv_obj_create(parent);
+
+    /* Size & positioning */
+    lv_obj_set_width(menu, lv_pct(100));
+    lv_obj_set_height(menu, lv_pct(100));
+    lv_obj_center(menu);
+
+    /* Vertical layout */
+    lv_obj_set_layout(menu, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(menu, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(menu,
+                           LV_FLEX_ALIGN_START,   /* main axis */
+                           LV_FLEX_ALIGN_START,   /* cross axis */
+                           LV_FLEX_ALIGN_START);  /* track align */
+
+    /* Optional spacing between items */
+    lv_obj_set_style_pad_row(menu, 8, 0);
+    lv_obj_set_style_pad_column(menu, 0, 0);
+
+    return menu;
+}
+
+lv_obj_t *uiMenuAddItem(lv_obj_t * menu,
+                         const char * text,
+                         lv_event_cb_t event_cb,
+                         void * user_data) {
+    lv_obj_t * btn = lv_btn_create(menu);
+
+    lv_obj_set_width(btn, lv_pct(100));
+    lv_obj_set_height(btn, LV_SIZE_CONTENT);
+
+    if(event_cb) {
+        lv_obj_add_event_cb(btn, event_cb, LV_EVENT_CLICKED, user_data);
+    }
+
+    lv_obj_t * label = lv_label_create(btn);
+    lv_label_set_text(label, text);
+    lv_obj_center(label);
+
+    return btn;
+}

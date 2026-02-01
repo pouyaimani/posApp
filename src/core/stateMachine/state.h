@@ -5,13 +5,13 @@
 #include <stdint.h>
 #include "core.h"
 
-#define STATE_ENTER() stateEnter
+#define STATE_ENTER(type) type##_Enter
 
-#define STATE_DEF_ENTER() static void stateEnter()
+#define STATE_DEF_ENTER(type) static void type##_Enter()
 
-#define STATE_EXIT() stateExit
+#define STATE_EXIT(type) type##_Exit
 
-#define STATE_DEF_EXIT() static void stateExit()
+#define STATE_DEF_EXIT(type) static void type##_Exit()
 
 #define STATE_HANDLE(type) \
     type##_handle
@@ -47,8 +47,10 @@ OOP_VTABLE(State)
     OOP_IMETHOD(void, State, handleKeypad, KeypadEvent *ev);
     OOP_IMETHOD(void, State, handleMag, MagEvent *ev);
     OOP_IMETHOD(void, State, handleWifi, WifiEvent *ev);
-    // This one shall not be overrided
+    // These methods shall not be overrided
     OOP_IMETHOD(void, State, goTo, State *);
+    OOP_IMETHOD(void, State, setNext, State *);
+    OOP_IMETHOD(void, State, setPrev, State *);
 };
 
 /* ===== State base ===== */
@@ -58,10 +60,14 @@ OOP_CLASS(State)
     OOP_IMPLEMENTS(State);
     const char *name;
     State *parent;
+    State *next;
+    State *prev;
     StateInner inner;
 };
 
 /* ctor */
 OOP_CTOR(State, State *parent, const char *name);
+
+typedef State SubState;
 
 #endif

@@ -39,6 +39,14 @@ static void default_mag(State *s, MagEvent *ev)
     printf("%s Mag not handled\n", s->name);
 }
 
+static void setNext(State *current, State *next) {
+    current->next = next;
+}
+
+static void setPrev(State *current, State *prev) {
+    current->prev = prev;
+}
+
 OOP_CTOR(State, State *parent, const char *name)
 {
     LOG_TRACE("Constructing State is started ...");
@@ -47,6 +55,9 @@ OOP_CTOR(State, State *parent, const char *name)
     self->vtable.handleTimeout = default_timeout;
     self->vtable.handleKeypad = default_keypad;
     self->vtable.handleMag = default_mag;
+    self->vtable.goTo = goTo;
+    self->vtable.setNext = setNext;
+    self->vtable.setPrev = setPrev;
     self->parent = parent;
     self->name = name;
     self->inner = STATE_ENTRY;

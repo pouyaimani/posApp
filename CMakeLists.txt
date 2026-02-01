@@ -47,7 +47,15 @@ include($ENV{DEVICE_CONFIG_FILE})   # <--- THIS loads all device paths, flags, s
 # -------------------------------------------------------------
 # Project and CMake subdirectiries
 # -------------------------------------------------------------
+set(LV_BUILD_CONF_PATH
+        "${CMAKE_SOURCE_DIR}/include/lv_conf.h"
+        CACHE STRING "LVGL configuration file"
+        FORCE
+)
 
+if(NOT EXISTS "${LV_BUILD_CONF_PATH}")
+    message(FATAL_ERROR "lv_conf.h not found at ${LV_BUILD_CONF_PATH}")
+endif()
 add_subdirectory(lvgl-src)
 add_subdirectory(src)
 
