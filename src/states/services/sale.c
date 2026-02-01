@@ -1,10 +1,11 @@
 #include "services.h"
 #include "states/states.h"
+#include "dev/dev.h"
 
-SubState *enterAmount;
-SubState *enterPass;
-SubState *communication;
-SubState *result;
+static SubState *enterAmount;
+static SubState *enterPass;
+static SubState *communication;
+static SubState *result;
 
 STATE_DEF_ENTER(Sale) {
     SM_GOTO(enterAmount);

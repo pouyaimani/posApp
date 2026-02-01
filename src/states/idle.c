@@ -15,14 +15,14 @@ static lv_obj_t *menuBar;
 static lv_obj_t *swipCardText;
 static lv_obj_t *mainIcon;
 
-STATE_DEF_ENTER() {
+STATE_DEF_ENTER(Idle) {
     getEventloop()->registerChecker(getMagReader()->ioRead);
     LV_SHOW(menuBar);
     // lv_obj_remove_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
     // lv_obj_remove_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);
 }
 
-STATE_DEF_EXIT() {
+STATE_DEF_EXIT(Idle) {
     getEventloop()->unregisterChecker(getMagReader()->ioRead);
     LV_HIDE(menuBar);
     // lv_obj_add_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
@@ -88,8 +88,8 @@ static void createUi() {
 
 OOP_CTOR(Idle, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter = STATE_ENTER();
-    self->base.vtable.exit = STATE_EXIT();
+    self->base.vtable.enter = STATE_ENTER(Idle);
+    self->base.vtable.exit = STATE_EXIT(Idle);
     self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
     self->base.vtable.handleMag = STATE_HANDLE(MagEvent);
