@@ -15,9 +15,6 @@ static InputBox inputBox;
 static lv_obj_t *confirmBut;
 static lv_obj_t *cancelBut;
 
-static State *nextState = NULL;
-static State *prevState = NULL;
-
 static InputMode_t inMode;
 static char *input;
 static char *amountStr;
@@ -34,8 +31,7 @@ STATE_DEF_EXIT(Input) {
     LV_HIDE(confirmBut);
     LV_HIDE(cancelBut);
     LV_SET_TEXT(inputBox.textBox, "");
-    nextState = NULL;
-    prevState = NULL;
+    // TODO: pass state to enter and exit method too
 }
 
 STATE_DEF_HANDLE(TimeOutEvent) {
@@ -55,17 +51,17 @@ static void handleAmountInput(KeypadEvent *ev) {
 STATE_DEF_HANDLE(KeypadEvent) {
     switch (ev->key) {
     case KEY_ESC:
-        if (prevState == NULL) {
+        if (state->prev == NULL) {
             LOG_WARN("Input state: previous state is not set.");
         } else {
-            SM_GOTO(prevState);
+            SM_GOTO(state->prev );
         }
         break;
     case KEY_ENTER:
-        if (nextState == NULL) {
+        if (state->next == NULL) {
             LOG_WARN("Input state: next state is not set.");
         } else {
-            SM_GOTO(nextState);
+            SM_GOTO(state->next);
         }
         break;
     default:

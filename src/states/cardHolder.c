@@ -11,11 +11,11 @@
 static lv_obj_t *items[SERVICE_ID_ALL];
 static lv_obj_t *menu;
 
-STATE_DEF_ENTER(Idle) {
+STATE_DEF_ENTER(CardHolder) {
 
 }
 
-STATE_DEF_EXIT(Idle) {
+STATE_DEF_EXIT(CardHolder) {
 
 }
 
@@ -38,10 +38,10 @@ static void createUi() {
 
 }
 
-OOP_CTOR(Idle, State *parent, const char *name) {
+OOP_CTOR(CardHolder, State *parent, const char *name) {
     State_ctor(self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(Idle);
-    self->base.vtable.exit = STATE_EXIT(Idle);
+    self->base.vtable.enter = STATE_ENTER(CardHolder);
+    self->base.vtable.exit = STATE_EXIT(CardHolder);
     self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
 

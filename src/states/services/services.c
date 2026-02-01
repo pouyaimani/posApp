@@ -5,17 +5,6 @@
 static Service *services[MAX_SERVICE_NUM];
 static Service *parent;
 
-Service *getService(ServiceId_t id) {
-    CALL_ONCE(
-        createServices();
-    );
-    return services[id];
-}
-
-OOP_CTOR(Service, State *parent, const char *name) {
-    OOP_CALL_CTOR(parent, name);
-}
-
 static void createServices() {
     parent = (Service*)GET_MEM(sizeof(Service));
     services[SERVICE_ID_SALE] = (Sale*)GET_MEM(sizeof(Sale));
@@ -30,4 +19,15 @@ static void createServices() {
     OOP_CALL_CTOR(Balance, services[SERVICE_ID_BALANCE],parent, "موجودی");
     OOP_CALL_CTOR(Pay, services[SERVICE_ID_PAY],parent, "پرداخت");
     OOP_CALL_CTOR(SimCharge, services[SERVICE_ID_SIM_CHARGE], parent, "خرید شارژ");
+}
+
+Service *getService(ServiceId_t id) {
+    CALL_ONCE(
+        createServices();
+    );
+    return services[id];
+}
+
+OOP_CTOR(Service, State *parent, const char *name) {
+    OOP_CALL_CTOR(State, self, parent, name);
 }

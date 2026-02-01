@@ -59,6 +59,8 @@ OOP_CTOR(State, State *parent, const char *name)
     self->vtable.setNext = setNext;
     self->vtable.setPrev = setPrev;
     self->parent = parent;
+    self->next = NULL;
+    self->prev = NULL;
     self->name = name;
     self->inner = STATE_ENTRY;
     LOG_TRACE("Constructing State finished ...");
