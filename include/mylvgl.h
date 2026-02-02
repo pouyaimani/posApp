@@ -178,6 +178,9 @@
 #define LV_SET_TEXT_COLOR(obj, color) \
     lv_obj_set_style_text_color(obj, lv_color_hex(color), LV_PART_MAIN)
 
+#define LV_SET_TEXT_FONT(obj, font) \
+    lv_obj_set_style_text_font(obj, &font, LV_PART_MAIN);
+
 /***********************************************************************************************/
 
 #define LV_PARENT(obj) \

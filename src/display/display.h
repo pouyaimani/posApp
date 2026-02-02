@@ -2,7 +2,8 @@
 #define DISPLAY_H_
 
 #include "oop.h"
-#include "lvgl.h"
+#include "myLvgl.h"
+#include "myColor.h"
 
 OOP_DECLARE_CLASS(Display)
 

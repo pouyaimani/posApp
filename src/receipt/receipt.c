@@ -181,7 +181,7 @@ static Receipt_t* addAmount(const char *amount) {
     LV_SET_PAD_BOTTOM(lbl, -10);
 
     char str[64];
-    memset(str, sizeof(str));
+    memset(str, 0, sizeof(str));
     snprintf(str, sizeof(str),
          " مبلغ: %s ریال ",
          amount);

@@ -3,8 +3,9 @@
 #include "timer.h"
 #include "logger.h"
 #include "display.h"
-#include "lvgl.h"
+#include "myLvgl.h"
 #include "utility/utility.h"
+#include "font/myFont.h"
 
 static StatusBar *__statusBar;
 static Timer *timer;
@@ -18,10 +19,10 @@ static void updateDateTime() {
     char dt[40];
     memset(dt, 0, sizeof(dt));
     formatDateTimeStr(dt, sizeof(dt));
-    lv_label_set_text(dateBox, dt);
+    LV_SET_TEXT(dateBox, dt);
     memset(dt, 0, sizeof(dt));
     formatTimeStr(dt, sizeof(dt));
-    lv_label_set_text(timeBox, dt);;
+    LV_SET_TEXT(timeBox, dt);
 }
 
 static void update() {
@@ -36,22 +37,22 @@ static void update() {
 OOP_CTOR(StatusBar) {
     timer = TIMER_CREATE(update, SECS(10), false);
     dateBox = lv_label_create(getDisplay()->statusbar);
-    lv_obj_set_size(dateBox, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_align(dateBox, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_bg_opa(dateBox, LV_OPA_0, 0);
-    lv_obj_set_style_border_opa(dateBox, LV_OPA_0, 0);
-    lv_obj_set_style_text_font(dateBox, &lv_font_dejavu_16_persian_hebrew, 0);
-    lv_obj_set_style_text_color(dateBox, lv_color_white(), 0);
-    lv_obj_set_style_pad_top(dateBox, 15, 0);
+    LV_SET_SIZE(dateBox, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    LV_ALIGN(dateBox, LV_ALIGN_CENTER, 0, 0);
+    LV_SET_BG_OPA(dateBox, LV_OPA_0);
+    LV_SET_BORDER_OPA(dateBox, LV_OPA_0);
+    LV_SET_TEXT_FONT(dateBox, FONT_16);
+    LV_SET_TEXT_COLOR(dateBox, COLOR_WHITE);
+    LV_SET_PAD_TOP(dateBox, 15);
 
     timeBox = lv_label_create(getDisplay()->statusbar);
-    lv_obj_set_size(timeBox, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_align(timeBox, LV_ALIGN_RIGHT_MID, -20, 0);
-    lv_obj_set_style_bg_opa(timeBox, LV_OPA_0, 0);
-    lv_obj_set_style_border_opa(timeBox, LV_OPA_0, 0);
-    lv_obj_set_style_text_font(timeBox, &lv_font_dejavu_16_persian_hebrew, 0);
-    lv_obj_set_style_text_color(timeBox, lv_color_white(), 0);
-    lv_obj_set_style_pad_top(timeBox, 15, 0);
+    LV_SET_SIZE(timeBox, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    LV_ALIGN(timeBox, LV_ALIGN_RIGHT_MID, -20, 0);
+    LV_SET_BG_OPA(timeBox, LV_OPA_0);
+    LV_SET_BORDER_OPA(timeBox, LV_OPA_0);
+    LV_SET_TEXT_FONT(timeBox, FONT_16);
+    LV_SET_TEXT_COLOR(timeBox, COLOR_WHITE);
+    LV_SET_PAD_TOP(timeBox, 15);
 
     updateDateTime();
 }

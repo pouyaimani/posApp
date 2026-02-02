@@ -8,6 +8,7 @@
 #include "event.h"
 #include "wifi/wifi.h"
 #include "assets.h"
+#include "font/myFont.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -71,8 +72,8 @@ static void createUi() {
     LV_SET_RADIUS(menuBar, 20);
 
     swipCardText = lv_label_create(getDisplay()->screen);
-    lv_obj_set_style_text_font(swipCardText, &lv_font_dejavu_16_persian_hebrew, 0);
-    lv_label_set_text(swipCardText, "لطفا کارت خود را بکشید");
+    LV_SET_TEXT_FONT(swipCardText, FONT_16);
+    LV_SET_TEXT(swipCardText, "لطفا کارت خود را بکشید");
     LV_ALIGN(swipCardText, LV_ALIGN_CENTER, 0, 0);
     // lv_obj_set_style_transform_angle(swipCardText, -900, 0);
     // lv_obj_set_style_transform_pivot_x(swipCardText,
