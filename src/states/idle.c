@@ -66,7 +66,7 @@ STATE_DEF_HANDLE(WifiEvent) {
 static void createUi() {
     menuBar = lv_obj_create(getDisplay()->screen);
     LV_SET_SIZE(menuBar, DISP_HOR_RES + 20, MENU_BAR_HEIGHT + 20);
-    LV_SET_BG_COLOR(menuBar, lv_color_hex(MAIN_THEME_COLOR));
+    LV_SET_BG_COLOR(menuBar, MAIN_THEME_COLOR);
     LV_ALIGN(menuBar, LV_ALIGN_BOTTOM_MID, 10, 20);
     LV_SET_RADIUS(menuBar, 20);
 
