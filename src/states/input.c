@@ -9,28 +9,37 @@
 #include "ui/ui.h"
 #include "utility/utility.h"
 
-#define INPUT_MAX_LEN 50
+#define INPUT_MAX_LEN       50
+#define PASS_MAX_LEN        4
+#define AMOUNT_MAX_LEN      10
 
 static InputBox inputBox;
-static lv_obj_t *confirmBut;
-static lv_obj_t *cancelBut;
+static Button confirmBut;
+static Button cancelBut;
+static lv_obj_t *title;
 
 static InputMode_t inMode;
 static char *input;
 static char *amountStr;
+static uint8_t idx = 0;
+static uint8_t maxIn = 0;
 
 STATE_DEF_ENTER(Input) {
     LV_SHOW(inputBox.main);
-    LV_SHOW(confirmBut);
-    LV_SHOW(cancelBut);
+    LV_SHOW(confirmBut.main);
+    LV_SHOW(cancelBut.main);
+    LV_SHOW(title);
     clearStr(input);
+    idx = 0;
 }
 
 STATE_DEF_EXIT(Input) {
     LV_HIDE(inputBox.main);
-    LV_HIDE(confirmBut);
-    LV_HIDE(cancelBut);
+    LV_HIDE(confirmBut.main);
+    LV_HIDE(cancelBut.main);
+    LV_HIDE(title);
     LV_SET_TEXT(inputBox.textBox, "");
+    LV_SET_TEXT(title, "");
     // TODO: pass state to enter and exit method too
 }
 
@@ -38,60 +47,94 @@ STATE_DEF_HANDLE(TimeOutEvent) {
 
 }
 
-static void handleAmountInput(KeypadEvent *ev) {
+static void handleInput(KeypadEvent *ev, bool isPassword, bool isAmount)
+{
     if (ev->key == KEY_CLEAR) {
         deleteChar(input);
-    }  else {
-        appendChar(input, INPUT_MAX_LEN, ev->keyStr);
+    } else {
+        if (idx >= maxIn) {
+            return;
+        }
+        appendChar(input, INPUT_MAX_LEN,
+                   isPassword ? '*' : ev->keyStr);
     }
-    int ret = amountSeparator(input, amountStr, INPUT_MAX_LEN);
-    LV_SET_TEXT(inputBox.textBox, amountStr);
+
+    if (isAmount) {
+        amountSeparator(input, amountStr, INPUT_MAX_LEN);
+        LV_SET_TEXT(inputBox.textBox, amountStr);
+    } else {
+        LV_SET_TEXT(inputBox.textBox, input);
+    }
 }
 
-STATE_DEF_HANDLE(KeypadEvent) {
-    switch (ev->key) {
-    case KEY_ESC:
-        if (state->prev == NULL) {
+STATE_DEF_HANDLE(KeypadEvent)
+{
+    if (ev->key == KEY_ESC) {
+        if (state->prev)
+            SM_GOTO(state->prev);
+        else
             LOG_WARN("Input state: previous state is not set.");
-        } else {
-            SM_GOTO(state->prev );
-        }
-        break;
-    case KEY_ENTER:
-        if (state->next == NULL) {
-            LOG_WARN("Input state: next state is not set.");
-        } else {
+        return;
+    }
+
+    if (ev->key == KEY_ENTER) {
+        if (state->next)
             SM_GOTO(state->next);
-        }
+        else
+            LOG_WARN("Input state: next state is not set.");
+        return;
+    }
+
+    if (ev->key > KEY_9 && ev->key != KEY_CLEAR)
+        return;
+
+    switch (inMode) {
+    case IN_MODE_AMOUNT:
+        handleInput(ev, false, true);
+        break;
+    case IN_MODE_PASSWORD:
+        handleInput(ev, true, false);
+        break;
+    case IN_MODE_NUMBERS:
+        handleInput(ev, false, false);
         break;
     default:
-        if (ev->key <= KEY_9 || ev->key == KEY_CLEAR) {
-            switch (inMode) {
-            case IN_MODE_AMOUNT:
-                handleAmountInput(ev);
-                break;
-            
-            default:
-                break;
-            }
-        }
         break;
     }
+
+    idx += (ev->key <= KEY_9);
+    if (ev->key == KEY_CLEAR && idx > 0)
+        idx--;
 }
 
+
 static void createUi() {
+    title = lv_label_create(getDisplay()->screen);
+    LV_SET_TEXT_FONT(title, FONT_20);
+    LV_SET_TEXT_COLOR(title, 0xFF4E4E);
+    LV_SET_SIZE(title, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    LV_ALIGN(title, LV_ALIGN_CENTER, 0, -60);
+    
     inputBox = uiInputBox(getDisplay()->screen);
     LV_ALIGN(inputBox.main, LV_ALIGN_CENTER, 0, 10);
-    confirmBut = uiConfirmButton(getDisplay()->screen);
-    LV_ALIGN(confirmBut, LV_ALIGN_BOTTOM_RIGHT, -5, -15);
-    cancelBut = uiCancellButton(getDisplay()->screen);
-    LV_ALIGN(cancelBut, LV_ALIGN_BOTTOM_LEFT, 5, -15);
+    confirmBut = uiButton(getDisplay()->screen, 0x68DD40, "تایید");
+    LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
+    cancelBut = uiButton(getDisplay()->screen, 0xFF4E4E, "لغو");
+    LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(inputBox.textBox, "");
 }
 
-void setMode(InputMode_t mode) {
+static void setMode(InputMode_t mode) {
     inMode = mode;
+}
+
+static void setTitle(const char *txt) {
+    LV_SET_TEXT(title, txt);
+}
+
+static void setMax(int val) {
+    maxIn = val;
 }
 
 OOP_CTOR(Input, State *parent, const char *name) {
@@ -101,6 +144,8 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
     self->setMode = setMode;
+    self->setTitle = setTitle;
+    self->setMax = setMax;
     input = (char*)GET_MEM(INPUT_MAX_LEN);
     amountStr = (char*)GET_MEM(INPUT_MAX_LEN);
     createUi();

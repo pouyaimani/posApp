@@ -19,15 +19,15 @@ static lv_obj_t *mainIcon;
 STATE_DEF_ENTER(Idle) {
     getEventloop()->registerChecker(getMagReader()->ioRead);
     LV_SHOW(menuBar);
-    // lv_obj_remove_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
+    LV_SHOW(swipCardText);
     // lv_obj_remove_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);
 }
 
 STATE_DEF_EXIT(Idle) {
     getEventloop()->unregisterChecker(getMagReader()->ioRead);
     LV_HIDE(menuBar);
-    // lv_obj_add_flag(swipCardText, LV_OBJ_FLAG_HIDDEN);
-    // lv_obj_add_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);S
+    LV_HIDE(swipCardText);
+    // lv_obj_add_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);
 }
 
 STATE_DEF_HANDLE(TimeOutEvent) {
@@ -45,7 +45,12 @@ STATE_DEF_HANDLE(KeypadEvent) {
         OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
         OOP_CALL(getState(STATE_ID_INPUT), setNext, getState(STATE_ID_IDLE));
         in->setMode(IN_MODE_AMOUNT);
+        in->setTitle("ورود عدد");
         SM_GOTO(getState(STATE_ID_INPUT));
+    } else if (ev->key == KEY_3) {
+        SM_GOTO(getState(STATE_ID_CARD_HOLDER));
+    } else if (ev->key == KEY_4) {
+        SHOW_INFO(state, "خظا", "این پیغام جهت تست است");
     }
 }
 

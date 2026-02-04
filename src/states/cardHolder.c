@@ -8,15 +8,14 @@
 #include "services/services.h"
 #include "ui/ui.h"
 
-static lv_obj_t *items[SERVICE_ID_ALL];
-static lv_obj_t *menu;
+static Menu menu;
 
 STATE_DEF_ENTER(CardHolder) {
-
+    LV_SHOW(menu.main);
 }
 
 STATE_DEF_EXIT(CardHolder) {
-
+    LV_HIDE(menu.main);
 }
 
 STATE_DEF_HANDLE(TimeOutEvent) {
@@ -28,14 +27,17 @@ STATE_DEF_HANDLE(KeypadEvent) {
         ServiceId_t id = (ServiceId_t)((int)ev->key - 1);
         SM_GOTO(&getService(id)->state);
     }
+
+    if (ev->key == KEY_ESC) {
+        SM_GOTO(getState(STATE_ID_IDLE));
+    }
 }
 
 static void createUi() {
     menu = uiMenu(getDisplay()->screen);
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        items[i] = uiMenuAddItem(menu, getService(i)->state.name, NULL, NULL);
+        OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL);
     }
-
 }
 
 OOP_CTOR(CardHolder, State *parent, const char *name) {

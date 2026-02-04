@@ -2,6 +2,8 @@
 #include "states/states.h"
 #include "dev/dev.h"
 
+#define PASSWORD_MAX_LEN    4
+
 static SubState *enterAmount;
 static SubState *enterPass;
 static SubState *communication;
@@ -22,6 +24,7 @@ STATE_DEF_ENTER(EnterAmount) {
     OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
     OOP_CALL(getState(STATE_ID_INPUT), setNext, enterPass);
     in->setMode(IN_MODE_AMOUNT);
+    in->setTitle("مبلغ");
     SM_GOTO(getState(STATE_ID_INPUT));
 }
 
@@ -41,7 +44,13 @@ static void EnterAmount(Sale *parent) {
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
-
+    Input * in = (Input*)getState(STATE_ID_INPUT);
+    OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
+    OOP_CALL(getState(STATE_ID_INPUT), setNext, communication);
+    in->setMode(IN_MODE_PASSWORD);
+    in->setTitle("رمز کارت");
+    in->setMax(PASSWORD_MAX_LEN);
+    SM_GOTO(getState(STATE_ID_INPUT));
 }
 
 STATE_DEF_EXIT(EnterPassword) {
