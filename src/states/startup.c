@@ -4,6 +4,7 @@
 #include "dev/dev.h"
 #include "display.h"
 #include "keypad/keypad.h"
+#include "touchpad/touchpad.h"
 #include "magReader/magReader.h"
 #include "eventloop.h"
 #include "timer.h"
@@ -16,6 +17,7 @@ STATE_DEF_ENTER(Startup) {
     KEYPAD_INIT();
     MAG_INIT();
     WIFI_INIT();
+    TOUCH_INIT();
     Display *disp = getDisplay();
     disp->init();
     Core *core = getSmCore();

@@ -5,4 +5,6 @@ void *getImgAddr(const char *name);
 
 #define ICON_IDLE_MAIN        getImgAddr("img_pNovin")
 
+#define ICON_MENU             getImgAddr("img_menu")
+
 #endif

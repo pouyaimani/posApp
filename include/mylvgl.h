@@ -41,6 +41,9 @@
 #define LV_CLIP_CORNER(obj) \
     lv_obj_set_style_clip_corner(obj, LV_STYLE_CLIP_CORNER, LV_PART_MAIN)
 
+#define LV_CLICKABLE(obj) \
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+
 /***********************************************************************************************/
 
 
@@ -185,5 +188,9 @@
 
 #define LV_PARENT(obj) \
     lv_obj_get_parent(obj)
+
+#define LV_ADD_EV_CB(obj, cb, ev, data) \
+    lv_obj_add_event_cb(obj, cb, ev, data)
+
 
 #endif

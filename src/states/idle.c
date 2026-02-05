@@ -14,20 +14,33 @@
 
 static lv_obj_t *menuBar;
 static lv_obj_t *swipCardText;
+static lv_obj_t *swipCardCont;
 static lv_obj_t *mainIcon;
+static lv_obj_t *menuIcon;
+static lv_obj_t *menuText;
+
+static void menuEventCb(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+
+    if (code == LV_EVENT_CLICKED) {
+        // printf("Image clicked!\n");
+        LOG_ERROR("menu is clicked ........");
+    }
+}
 
 STATE_DEF_ENTER(Idle) {
     getEventloop()->registerChecker(getMagReader()->ioRead);
     LV_SHOW(menuBar);
-    LV_SHOW(swipCardText);
-    // lv_obj_remove_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);
+    // LV_SHOW(swipCardCont);
+    LV_SHOW(mainIcon);
 }
 
 STATE_DEF_EXIT(Idle) {
     getEventloop()->unregisterChecker(getMagReader()->ioRead);
     LV_HIDE(menuBar);
-    LV_HIDE(swipCardText);
-    // lv_obj_add_flag(mainIcon, LV_OBJ_FLAG_HIDDEN);
+    // LV_HIDE(swipCardCont);
+    LV_HIDE(mainIcon);
 }
 
 STATE_DEF_HANDLE(TimeOutEvent) {
@@ -75,21 +88,47 @@ static void createUi() {
     LV_SET_BG_COLOR(menuBar, MAIN_THEME_COLOR);
     LV_ALIGN(menuBar, LV_ALIGN_BOTTOM_MID, 10, 20);
     LV_SET_RADIUS(menuBar, 20);
+    LV_SCROLL_DISABLE(menuBar);
 
-    swipCardText = lv_label_create(getDisplay()->screen);
-    LV_SET_TEXT_FONT(swipCardText, FONT_16);
-    LV_SET_TEXT(swipCardText, "لطفا کارت خود را بکشید");
-    LV_ALIGN(swipCardText, LV_ALIGN_CENTER, 0, 0);
+    // swipCardCont = lv_obj_create(getDisplay()->screen);
+    // LV_SET_SIZE(swipCardText, lv_pct(100), lv_pct(100));
+    // LV_SET_BG_OPA(swipCardCont, LV_OPA_0);
+    // LV_SET_BORDER_OPA(swipCardCont, LV_OPA_0);
+    // LV_SCROLL_DISABLE(swipCardCont);
+    // lv_obj_update_layout(swipCardCont);
+
+    // swipCardText = lv_label_create(swipCardCont);
+    // LV_SET_SIZE(swipCardText, 180, 20);
+    // LV_SET_TEXT_COLOR(swipCardText, MAIN_THEME_COLOR);
+    // LV_SET_TEXT_FONT(swipCardText, FONT_16);
+    // LV_SET_TEXT(swipCardText, "لطفا کارت خود را بکشید");
+    // LV_SCROLL_DISABLE(swipCardText);
+    // LV_ALIGN(swipCardText, LV_ALIGN_RIGHT_MID, 70, -35);
+
+    // lv_obj_update_layout(swipCardText);
+
     // lv_obj_set_style_transform_angle(swipCardText, -900, 0);
-    // lv_obj_set_style_transform_pivot_x(swipCardText,
-    // lv_obj_get_width(swipCardText) / 2, 0);
-    // lv_obj_set_style_transform_pivot_y(swipCardText,
-    // lv_obj_get_height(swipCardText) / 2, 0);
-    // lv_obj_align(swipCardText, LV_ALIGN_CENTER, 220, 70);
+    // lv_obj_set_style_transform_pivot_x(swipCardText, 90, 0);
+    // lv_obj_set_style_transform_pivot_y(swipCardText, 10 , 0);
 
     mainIcon = lv_img_create(getDisplay()->screen);
     lv_img_set_src(mainIcon, ICON_IDLE_MAIN);
-    LV_ALIGN(mainIcon, LV_ALIGN_CENTER, 0, 0);
+    LV_ALIGN(mainIcon, LV_ALIGN_CENTER, 20, -30);
+    LV_SCROLL_DISABLE(mainIcon);
+
+    menuIcon = lv_img_create(menuBar);
+    lv_img_set_src(menuIcon, ICON_MENU);
+    LV_ALIGN(menuIcon, LV_ALIGN_TOP_RIGHT, -40, 5);
+    LV_CLICKABLE(menuIcon);
+    LV_ADD_EV_CB(menuIcon, menuEventCb, LV_EVENT_CLICKED, NULL);
+    LV_SCROLL_DISABLE(menuIcon);
+
+    menuText = lv_label_create(menuBar);
+    LV_SET_TEXT_FONT(menuText, FONT_16);
+    LV_SET_TEXT_COLOR(menuText, COLOR_WHITE);
+    LV_SET_TEXT(menuText, "منو");
+    LV_ALIGN_TO(menuText, menuIcon, LV_ALIGN_OUT_BOTTOM_MID, 0, -5);
+    LV_SCROLL_DISABLE(menuText);
 }
 
 OOP_CTOR(Idle, State *parent, const char *name) {
