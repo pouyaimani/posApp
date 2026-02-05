@@ -91,6 +91,7 @@ static void createUi() {
     LV_ALIGN(menuBar, LV_ALIGN_BOTTOM_MID, 10, 20);
     LV_SET_RADIUS(menuBar, 20);
     LV_SCROLL_DISABLE(menuBar);
+    LV_CLICK_DISABLE(menuBar);
 
     // swipCardCont = lv_obj_create(getDisplay()->screen);
     // LV_SET_SIZE(swipCardText, lv_pct(100), lv_pct(100));

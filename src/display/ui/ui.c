@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "display.h"
+#include "utility/utility.h"
 
 #define INPUT_BOX_HEIGHT 46
 #define INPUT_BOX_WIDTH 270
@@ -61,10 +62,12 @@ static void addItem(Menu *menu, const char * text,
     LV_ALIGN(label, LV_ALIGN_CENTER, 0, 0);
     LV_SET_TEXT_ALIGN(label, LV_TEXT_ALIGN_RIGHT);
     char str[64];
+    char num[4];
     memset(str, 0, sizeof(str));
-    snprintf(str, sizeof(str), "%s.\u200F%d", text, menu->cnt + 1);
+    memset(num, 0, sizeof(num));
+    snprintf(num, sizeof(num), "%d", menu->cnt + 1);
+    snprintf(str, sizeof(str), "%s.%s", num, text);
     lv_obj_set_style_base_dir(label, LV_BASE_DIR_RTL, 0);
-
     LV_SET_TEXT(label, str);
     
     menu->item[menu->cnt++] = btn;

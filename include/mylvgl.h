@@ -145,6 +145,18 @@
 #define LV_SCROLL_DISABLE(obj) \
     lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF)
 
+#define LV_CLICK_DISABLE(obj) \
+    lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE)
+
+#define LV_CLICK_ENABLE(obj) \
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE)
+
+#define LV_DRAG_DISABLE(obj) \
+    lv_obj_clear_flag(obj, LV_OBJ_FLAG_DRAGABLE)
+
+#define LV_DRAG_ENABLE(obj) \
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_DRAGABLE)
+
 #define LV_SCROLL_TO_VIEW(obj) \
     lv_obj_scroll_to_view(obj, LV_ANIM_ON)
 

@@ -87,6 +87,7 @@ static void displayInit() {
     LV_SET_SIZE(display.fscreen, DISP_HOR_RES, DISP_VER_RES);
     LV_SET_BG_COLOR(display.fscreen, COLOR_WHITE);
     LV_SCROLL_DISABLE(display.fscreen);
+    LV_CLICK_DISABLE(display.fscreen);
 
     display.statusbar = lv_obj_create(display.fscreen);
     LV_SET_SIZE(display.statusbar, STATUS_BAR_WIDTH + 10, STATUS_BAR_HEIGHT + 10);
@@ -94,6 +95,8 @@ static void displayInit() {
     LV_ALIGN(display.statusbar, LV_ALIGN_TOP_MID, 5, -10);
     LV_SET_RADIUS(display.statusbar, 10);
     LV_SCROLL_DISABLE(display.statusbar);
+    LV_CLICK_DISABLE(display.statusbar);
+
     lv_obj_set_style_shadow_opa(display.statusbar, LV_OPA_20, 0);
     lv_obj_set_style_shadow_color(display.statusbar, lv_color_black(), 0);
     lv_obj_set_style_shadow_offset_x(display.statusbar, -4, 0);
@@ -106,6 +109,7 @@ static void displayInit() {
     LV_SET_BG_COLOR(display.screen, COLOR_WHITE);
     LV_ALIGN(display.screen, LV_ALIGN_TOP_MID, 0, 34);
     LV_SCROLL_DISABLE(display.screen);
+    LV_CLICK_DISABLE(display.screen);
 
     LOG_TRACE("Initializing display finished ...");
 }
