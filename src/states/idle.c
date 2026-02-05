@@ -64,6 +64,8 @@ STATE_DEF_HANDLE(KeypadEvent) {
         SM_GOTO(getState(STATE_ID_CARD_HOLDER));
     } else if (ev->key == KEY_4) {
         SHOW_INFO(state, "خظا", "این پیغام جهت تست است");
+    } else if (ev->key == KEY_5) {
+        SHOW_DIAL(state, "خظا", "این پیغام جهت تست است");
     }
 }
 

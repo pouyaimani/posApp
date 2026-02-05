@@ -5,7 +5,8 @@ typedef enum StateId_t {
     STATE_ID_INFO,
     STATE_ID_IDLE,
     STATE_ID_INPUT,
-    STATE_ID_CARD_HOLDER
+    STATE_ID_CARD_HOLDER,
+    STATE_ID_DIALOGUE
 } StateId_t;
 
 State *getState(StateId_t id);
@@ -73,3 +74,21 @@ OOP_CTOR(Info, State *parent, const char *name);
     info->setTitle(title);                                      \
     info->setBody(body);                                        \
     SM_GOTO(getState(STATE_ID_INFO));                           
+
+/************************Dialogue***********************/
+
+OOP_CLASS(Dialogue)
+{
+    OOP_EXTENDS(State);
+    OOP_METHOD(void, setBody, const char *);
+    OOP_METHOD(void, setTitle, const char *);
+};
+
+OOP_CTOR(Dialogue, State *parent, const char *name);
+
+#define SHOW_DIAL(state, title, body)                           \
+    OOP_CALL(getState(STATE_ID_DIALOGUE), setNext, state);      \
+    Info *info = (Info *)getState(STATE_ID_DIALOGUE);           \
+    info->setTitle(title);                                      \
+    info->setBody(body);                                        \
+    SM_GOTO(getState(STATE_ID_DIALOGUE));        
