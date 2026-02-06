@@ -23,6 +23,7 @@ bool isDigit(char c);
 bool isAlphabetic(char c);
 int toInt(const char *value);
 int16_t hexCharToDecimal(char hexChar);
+void toPersianDigits(char *out, size_t out_size, int value);
 
 int appendChar(char *buf, size_t buf_size, char c);
 int deleteChar(char *buf);

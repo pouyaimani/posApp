@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "display.h"
 #include "utility/utility.h"
+#include "event.h"
 
 #define INPUT_BOX_HEIGHT 46
 #define INPUT_BOX_WIDTH 270
@@ -73,10 +74,52 @@ static void addItem(Menu *menu, const char * text,
     menu->item[menu->cnt++] = btn;
 }
 
+static void handleItem(Menu *menu, Key_t key) {
+    MenuUpDown_t updown;
+    if (key == KEY_UP) {
+        updown = MENU_UP;
+    } else if (key == KEY_DOWN) {
+        updown = MENU_DOWN;
+    } else {
+        return;
+    }
+    LV_SET_TEXT_COLOR(menu->item[menu->idx], COLOR_BLACK);
+    if (updown == MENU_UP) {
+        menu->idx = menu->idx == 0 ? menu->cnt - 1 : menu->idx - 1;
+    } else if (updown == MENU_DOWN) {
+        menu->idx = menu->idx == (menu->cnt - 1) ? 0 : menu->idx + 1;
+    }
+    LV_SET_TEXT_COLOR(menu->item[menu->idx], 0x68DD40);
+}
+
+static void menuShow(Menu *menu) {
+    if (menu->cnt > 0) {
+        LV_SET_TEXT_COLOR(menu->item[0], 0x68DD40);
+        for(int i = 1 ; i < menu->cnt ; i++) {
+            LV_SET_TEXT_COLOR(menu->item[i], COLOR_BLACK);
+        }
+    }
+    menu->idx = 0;
+    LV_SHOW(menu->main);
+}
+
+static void menuHide(Menu *menu) {
+    LV_HIDE(menu->main);
+}
+
+static void menuGetIdx(Menu *menu) {
+    return menu->idx;
+}
+
 Menu uiMenu(lv_obj_t * parent) {
     Menu menu;
     menu.vtable.addItem = addItem;
+    menu.vtable.handleItem = handleItem;
+    menu.vtable.show = menuShow;
+    menu.vtable.hide = menuHide;
+    menu.vtable.getIdx = menuGetIdx;
     menu.cnt = 0;
+    menu.idx = 0;
 
     menu.main = lv_obj_create(parent);
 
@@ -94,24 +137,4 @@ Menu uiMenu(lv_obj_t * parent) {
     /* Optional spacing between items */
     LV_SET_ROW_PAD(menu.main, 8);
     return menu;
-}
-
-lv_obj_t *uiMenuAddItem(lv_obj_t * menu,
-                         const char * text,
-                         lv_event_cb_t event_cb,
-                         void * user_data) {
-    lv_obj_t * btn = lv_btn_create(menu);
-
-    lv_obj_set_width(btn, lv_pct(100));
-    lv_obj_set_height(btn, LV_SIZE_CONTENT);
-
-    if(event_cb) {
-        lv_obj_add_event_cb(btn, event_cb, LV_EVENT_CLICKED, user_data);
-    }
-
-    lv_obj_t * label = lv_label_create(btn);
-    lv_label_set_text(label, text);
-    lv_obj_center(label);
-
-    return btn;
 }

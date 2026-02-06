@@ -15,13 +15,24 @@ OOP_CLASS(Button) {
     lv_obj_t *textBox;
 };
 
+typedef enum {
+    MENU_UP,
+    MENU_DOWN
+} MenuUpDown_t;
+
 #define MENU_ITEM_MAX   50
+
+typedef enum Key_t Key_t;
 
 OOP_DECLARE_CLASS(Menu);
 
 OOP_VTABLE(Menu) {
     OOP_IMETHOD(void, Menu, addItem, const char * text,
                 lv_event_cb_t event_cb, void * user_data);
+    OOP_IMETHOD(void, Menu, handleItem, Key_t);
+    OOP_IMETHOD(void, Menu, show);
+    OOP_IMETHOD(void, Menu, hide);
+    OOP_IMETHOD(int, Menu, getIdx);
 };
  
 OOP_CLASS(Menu) {
@@ -29,6 +40,7 @@ OOP_CLASS(Menu) {
     lv_obj_t *main;
     lv_obj_t *item[MENU_ITEM_MAX];
     int cnt;
+    int idx;
 };
 
 InputBox uiInputBox(lv_obj_t *parent);

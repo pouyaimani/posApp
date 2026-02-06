@@ -11,11 +11,11 @@
 static Menu menu;
 
 STATE_DEF_ENTER(CardHolder) {
-    LV_SHOW(menu.main);
+    OOP_CALL(&menu, show);
 }
 
 STATE_DEF_EXIT(CardHolder) {
-    LV_HIDE(menu.main);
+    OOP_CALL(&menu, hide);
 }
 
 STATE_DEF_HANDLE(TimeOutEvent) {
@@ -23,13 +23,15 @@ STATE_DEF_HANDLE(TimeOutEvent) {
 }
 
 STATE_DEF_HANDLE(KeypadEvent) {
+    OOP_CALL(&menu, handleItem, ev->key);
     if (ev->key <= KEY_9) {
         ServiceId_t id = (ServiceId_t)((int)ev->key - 1);
         SM_GOTO(&getService(id)->state);
-    }
-
-    if (ev->key == KEY_ESC) {
+    }  else if (ev->key == KEY_ESC) {
         SM_GOTO(getState(STATE_ID_IDLE));
+    } else if (ev->key == KEY_ENTER) {
+        ServiceId_t id = (ServiceId_t)menu.idx;
+        SM_GOTO(&getService(id)->state);        
     }
 }
 

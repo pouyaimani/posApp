@@ -615,3 +615,21 @@ void formatTimeStr(char *out, size_t out_size)
 
     snprintf(out, out_size, "%02d:%02d", hh, mm);
 }
+
+void toPersianDigits(char *out, size_t out_size, int value)
+{
+    static const char *digits[] = {
+        "۰","۱","۲","۳","۴","۵","۶","۷","۸","۹"
+    };
+
+    char tmp[16];
+    snprintf(tmp, sizeof(tmp), "%d", value);
+
+    out[0] = '\0';
+
+    for (char *p = tmp; *p && strlen(out) + 4 < out_size; p++) {
+        if (*p >= '0' && *p <= '9') {
+            strcat(out, digits[*p - '0']);
+        }
+    }
+}

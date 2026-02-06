@@ -1,4 +1,5 @@
 #include "states.h"
+#include "event.h"
 #include "logger.h"
 #include "mylvgl.h"
 #include "display.h"
@@ -33,7 +34,11 @@ STATE_DEF_HANDLE(TimeOutEvent) {
 }
 
 STATE_DEF_HANDLE(KeypadEvent) {
-    SM_GOTO(state->next); 
+    if (ev->key == KEY_ENTER) {
+        SM_GOTO(state->next);
+    } else if (ev->key == KEY_ESC) {
+        SM_GOTO(state->prev);
+    } 
 }
 
 static void createUi() {

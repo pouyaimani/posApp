@@ -6,6 +6,7 @@ static Input input;
 static CardHolder cardHolder;
 static Info info;
 static Dialogue dialogue;
+static Supporter supporter;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -27,6 +28,9 @@ State *getState(StateId_t id) {
     case STATE_ID_DIALOGUE:
         CALL_ONCE(OOP_CALL_CTOR(Dialogue, &dialogue, &idle, "dialogue"););
         return (State *)&dialogue;
+    case STATE_ID_SUPPORTER:
+        CALL_ONCE(OOP_CALL_CTOR(Supporter, &supporter, &idle, "supporter"););
+        return (State *)&supporter;
     default:
         break;
     }

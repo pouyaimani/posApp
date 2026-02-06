@@ -16,6 +16,7 @@ static lv_obj_t *menuBar;
 static lv_obj_t *swipCardText;
 static lv_obj_t *swipCardCont;
 static lv_obj_t *mainIcon;
+static lv_obj_t *menuButton;
 static lv_obj_t *menuIcon;
 static lv_obj_t *menuText;
 
@@ -24,8 +25,7 @@ static void menuEventCb(lv_event_t * e)
     lv_event_code_t code = lv_event_get_code(e);
 
     if (code == LV_EVENT_CLICKED) {
-        // printf("Image clicked!\n");
-        LOG_ERROR("menu is clicked ........");
+        SM_GOTO(getState(STATE_ID_SUPPORTER));
     }
 }
 
@@ -49,9 +49,7 @@ STATE_DEF_HANDLE(TimeOutEvent) {
 
 STATE_DEF_HANDLE(KeypadEvent) {
     LOG_TRACE("event successfully is reached. key = %d", ev->key);
-    if (ev->key == KEY_ESC) {
-        OOP_CALL(getDevice(), powerOff);
-    } else if (ev->key == KEY_1) {
+    if (ev->key == KEY_1) {
         WIFI_START_SCAN();
     } else if (ev->key == KEY_2) {
         Input * in = (Input*)getState(STATE_ID_INPUT);
@@ -64,8 +62,6 @@ STATE_DEF_HANDLE(KeypadEvent) {
         SM_GOTO(getState(STATE_ID_CARD_HOLDER));
     } else if (ev->key == KEY_4) {
         SHOW_INFO(state, "خظا", "این پیغام جهت تست است");
-    } else if (ev->key == KEY_5) {
-        SHOW_DIAL(state, "خظا", "این پیغام جهت تست است");
     }
 }
 
@@ -91,6 +87,7 @@ static void createUi() {
     LV_ALIGN(menuBar, LV_ALIGN_BOTTOM_MID, 10, 20);
     LV_SET_RADIUS(menuBar, 20);
     LV_SCROLL_DISABLE(menuBar);
+    lv_obj_set_scroll_dir(menuBar, LV_DIR_NONE);
     LV_CLICK_DISABLE(menuBar);
 
     // swipCardCont = lv_obj_create(getDisplay()->screen);
@@ -118,20 +115,27 @@ static void createUi() {
     lv_img_set_src(mainIcon, ICON_IDLE_MAIN);
     LV_ALIGN(mainIcon, LV_ALIGN_CENTER, 20, -30);
     LV_SCROLL_DISABLE(mainIcon);
+    LV_CLICK_DISABLE(mainIcon);
 
-    menuIcon = lv_img_create(menuBar);
+    menuButton = lv_button_create(menuBar);
+    LV_CLICKABLE(menuButton);
+    LV_SET_BG_OPA(menuButton, LV_OPA_0);
+    LV_SET_BORDER_OPA(menuButton, LV_OPA_0);
+    LV_SET_SIZE(menuButton, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    LV_ALIGN(menuButton, LV_ALIGN_TOP_RIGHT, -40, 5);
+    LV_ADD_EV_CB(menuButton, menuEventCb, LV_EVENT_CLICKED, NULL);
+    LV_SCROLL_DISABLE(menuButton);
+    lv_obj_set_scroll_dir(menuButton, LV_DIR_NONE);
+
+    menuIcon = lv_img_create(menuButton);
     lv_img_set_src(menuIcon, ICON_MENU);
-    LV_ALIGN(menuIcon, LV_ALIGN_TOP_RIGHT, -40, 5);
-    LV_CLICKABLE(menuIcon);
-    LV_ADD_EV_CB(menuIcon, menuEventCb, LV_EVENT_CLICKED, NULL);
-    LV_SCROLL_DISABLE(menuIcon);
+    LV_ALIGN(menuIcon, LV_ALIGN_TOP_MID, 0, 0);
 
-    menuText = lv_label_create(menuBar);
+    menuText = lv_label_create(menuButton);
     LV_SET_TEXT_FONT(menuText, FONT_16);
     LV_SET_TEXT_COLOR(menuText, COLOR_WHITE);
     LV_SET_TEXT(menuText, "منو");
     LV_ALIGN_TO(menuText, menuIcon, LV_ALIGN_OUT_BOTTOM_MID, 0, -5);
-    LV_SCROLL_DISABLE(menuText);
 }
 
 OOP_CTOR(Idle, State *parent, const char *name) {
