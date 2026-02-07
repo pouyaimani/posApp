@@ -29,8 +29,6 @@ STATE_DEF_ENTER(Input) {
     LV_SHOW(confirmBut.main);
     LV_SHOW(cancelBut.main);
     LV_SHOW(title);
-    clearStr(input);
-    idx = 0;
 }
 
 STATE_DEF_EXIT(Input) {
@@ -38,8 +36,6 @@ STATE_DEF_EXIT(Input) {
     LV_HIDE(confirmBut.main);
     LV_HIDE(cancelBut.main);
     LV_HIDE(title);
-    LV_SET_TEXT(inputBox.textBox, "");
-    LV_SET_TEXT(title, "");
     // TODO: pass state to enter and exit method too
 }
 
@@ -47,12 +43,34 @@ STATE_DEF_HANDLE(TimeOutEvent) {
 
 }
 
-static void handleInput(KeypadEvent *ev, bool isPassword, bool isAmount)
+static void showMaxError(State *state) {
+    switch (inMode) {
+    case IN_MODE_AMOUNT:
+        {
+        SHOW_INFO(state, "خطا", "مبلغ بیش از حد مجاز");
+        }
+        break;
+    case IN_MODE_PASSWORD:
+        break;
+    case IN_MODE_NUMBERS:
+        {
+        SHOW_INFO(state, "خطا", "ورودی بیش از حد مجاز");
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+static void handleInput(State *state, KeypadEvent *ev)
 {
+    bool isPassword = inMode == IN_MODE_PASSWORD ? true : false;
+    bool isAmount = inMode == IN_MODE_AMOUNT ? true : false;
     if (ev->key == KEY_CLEAR) {
         deleteChar(input);
     } else {
         if (idx >= maxIn) {
+            showMaxError(state);
             return;
         }
         appendChar(input, INPUT_MAX_LEN,
@@ -88,20 +106,7 @@ STATE_DEF_HANDLE(KeypadEvent)
     if (ev->key > KEY_9 && ev->key != KEY_CLEAR)
         return;
 
-    switch (inMode) {
-    case IN_MODE_AMOUNT:
-        handleInput(ev, false, true);
-        break;
-    case IN_MODE_PASSWORD:
-        handleInput(ev, true, false);
-        break;
-    case IN_MODE_NUMBERS:
-        handleInput(ev, false, false);
-        break;
-    default:
-        break;
-    }
-
+    handleInput(state, ev);
     idx += (ev->key <= KEY_9);
     if (ev->key == KEY_CLEAR && idx > 0)
         idx--;
@@ -137,6 +142,13 @@ static void setMax(int val) {
     maxIn = val;
 }
 
+static void reset() {
+    clearStr(input);
+    idx = 0;
+    LV_SET_TEXT(inputBox.textBox, "");
+    LV_SET_TEXT(title, "");
+}
+
 OOP_CTOR(Input, State *parent, const char *name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Input);
@@ -146,6 +158,7 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->setMode = setMode;
     self->setTitle = setTitle;
     self->setMax = setMax;
+    self->reset = reset;
     input = (char*)GET_MEM(INPUT_MAX_LEN);
     amountStr = (char*)GET_MEM(INPUT_MAX_LEN);
     createUi();
