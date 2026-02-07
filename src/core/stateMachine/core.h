@@ -17,6 +17,7 @@ OOP_CLASS(Core)
     OOP_METHOD(void, runCycle);
     OOP_METHOD(void, raiseEvent, Event *);
     OOP_METHOD(void, goTo, State *);
+    OOP_METHOD(void, goToSub, State *);
     OOP_METHOD(void, registerCallback, CoreCallback cb);
     State *current;
     State *next;

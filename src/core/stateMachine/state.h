@@ -21,6 +21,8 @@
 
 #define SM_GOTO(state) getSmCore()->goTo(state)
 
+#define SM_SUB(state) getSmCore()->goToSub(state)
+
 /* Forward */
 OOP_DECLARE_CLASS(Event);
 OOP_DECLARE_CLASS(TimeOutEvent);
@@ -34,7 +36,8 @@ OOP_DECLARE_CLASS(State);
 typedef enum StateInner {
     STATE_ENTRY,
     STATE_EVENT,
-    STATE_EXIT
+    STATE_EXIT,
+    STATE_SUBSTATE
 } StateInner;
 
 /* ===== State vtable ===== */

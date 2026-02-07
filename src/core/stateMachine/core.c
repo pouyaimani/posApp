@@ -35,6 +35,25 @@ static void goTo(State *next)
     __core.next = next;
 }
 
+static void goToSub(State *next)
+{
+    RETURN_IF_NULL(next);
+    __core.current->inner = STATE_SUBSTATE;
+    __core.next = next;
+}
+
+static void freeQ() {
+    for (size_t i = 0; i < __core.qsize; ) {
+        Event *ev = __core.queue[i];
+        if (ev->target == __core.current) {
+            OOP_CALL(dev, freeMemory, ev);
+            __core.queue[i] = __core.queue[--__core.qsize];
+        } else {
+            i++;
+        }
+    }
+}
+
 static void runCycle()
 {
     State *s = __core.current;
@@ -64,16 +83,16 @@ static void runCycle()
     case STATE_EXIT:
         LOG_TRACE("SM: on exit to ", s->name, " state.");
         OOP_CALL(s, exit);
-        for (size_t i = 0; i < __core.qsize; ) {
-            Event *ev = __core.queue[i];
-            if (ev->target == s) {
-                OOP_CALL(dev, freeMemory, ev);
-                __core.queue[i] = __core.queue[--__core.qsize];
-            } else {
-                i++;
-            }
-        }
+        freeQ();
         s->inner = STATE_ENTRY;
+        __core.current = __core.next;
+        break;
+
+    case STATE_SUBSTATE:
+        LOG_TRACE("SM: on substate to ", s->name, " state.");
+        OOP_CALL(s, exit);
+        freeQ();
+        s->inner = STATE_EVENT;
         __core.current = __core.next;
         break;
     }
@@ -106,6 +125,7 @@ OOP_CTOR(Core) {
     __core.init = init;
     __core.exec = exec;
     __core.goTo = goTo;
+    __core.goToSub = goToSub;
     __core.raiseEvent = raiseEvent;
     __core.runCycle = runCycle;
     __core.registerCallback = registerCallback;
