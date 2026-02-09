@@ -138,3 +138,50 @@ Menu uiMenu(lv_obj_t * parent) {
     LV_SET_ROW_PAD(menu.main, 8);
     return menu;
 }
+
+static void createInfoPage(InfoPage *pinfo) {
+    pinfo->title = lv_label_create(getDisplay()->screen);
+    LV_SET_TEXT_FONT(pinfo->title, FONT_20);
+    LV_SET_TEXT_COLOR(pinfo->title, COLOR_BLACK);
+    LV_SET_TEXT_ALIGN(pinfo->title, LV_TEXT_ALIGN_CENTER);
+    LV_SET_SIZE(pinfo->title, lv_pct(90), LV_SIZE_CONTENT);
+    LV_ALIGN(pinfo->title, LV_ALIGN_CENTER, 0, -50);
+    
+    pinfo->body = lv_label_create(getDisplay()->screen);
+    LV_SET_TEXT_FONT(pinfo->body, FONT_16);
+    LV_SET_TEXT_COLOR(pinfo->body, COLOR_BLACK);
+    LV_SET_TEXT_ALIGN(pinfo->body, LV_TEXT_ALIGN_CENTER);
+    LV_SET_SIZE(pinfo->body, lv_pct(90), LV_SIZE_CONTENT);
+    LV_ALIGN(pinfo->body, LV_ALIGN_CENTER, 0, 0);
+
+    LV_SET_TEXT(pinfo->title, "");
+    LV_SET_TEXT(pinfo->body, "");
+}
+
+static void infoHide(InfoPage *pinfo) {
+    LV_HIDE(pinfo->body);
+    LV_HIDE(pinfo->title);
+}
+
+static void infoShow(InfoPage *pinfo) {
+    LV_SHOW(pinfo->body);
+    LV_SHOW(pinfo->title);
+}
+
+static void infoSetText(InfoPage *pinfo, const char *title, const char* body) {
+    LV_SET_TEXT(pinfo->title, title);
+    LV_SET_TEXT(pinfo->body, body);
+}
+
+InfoPage infoPage() {
+    static InfoPage info;
+    CALL_ONCE(
+        createInfoPage(&info);
+        info.vtable.hide = infoHide;
+        info.vtable.show = infoShow;
+        info.vtable.setText = infoSetText;
+    );
+    LV_SET_TEXT(info.title, "");
+    LV_SET_TEXT(info.body, "");
+    return info;
+}

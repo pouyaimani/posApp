@@ -47,4 +47,19 @@ InputBox uiInputBox(lv_obj_t *parent);
 Button uiButton(lv_obj_t *parent, unsigned int color, const char * text);
 Menu uiMenu(lv_obj_t * parent);
 
+OOP_DECLARE_CLASS(InfoPage);
+
+OOP_VTABLE(InfoPage) {
+    OOP_IMETHOD(void, InfoPage, setText, const char *, const char *);
+    OOP_IMETHOD(void, InfoPage, show);
+    OOP_IMETHOD(void, InfoPage, hide);
+};
+OOP_CLASS(InfoPage) {
+    OOP_IMPLEMENTS(InfoPage);
+    lv_obj_t *title;
+    lv_obj_t *body;
+};
+
+InfoPage infoPage();
+
 #endif
