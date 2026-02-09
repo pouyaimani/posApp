@@ -32,7 +32,7 @@ STATE_DEF_EXIT(Startup) {
 
 }
 
-STATE_DEF_HANDLE(TimeOutEvent) {
+STATE_DEF_HANDLE(Startup, TimeOutEvent) {
 
 }
 
@@ -41,5 +41,5 @@ OOP_CTOR(Startup, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Startup);
     self->base.vtable.exit = STATE_EXIT(Startup);
-    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(Startup, TimeOutEvent);
 }

@@ -43,11 +43,11 @@ STATE_DEF_EXIT(Idle) {
     LV_HIDE(mainIcon);
 }
 
-STATE_DEF_HANDLE(TimeOutEvent) {
+STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 
 }
 
-STATE_DEF_HANDLE(KeypadEvent) {
+STATE_DEF_HANDLE(Idle, KeypadEvent) {
     LOG_TRACE("event successfully is reached. key = %d", ev->key);
     if (ev->key == KEY_1) {
         WIFI_START_SCAN();
@@ -65,7 +65,7 @@ STATE_DEF_HANDLE(KeypadEvent) {
     }
 }
 
-STATE_DEF_HANDLE(MagEvent) {
+STATE_DEF_HANDLE(Idle, MagEvent) {
     return;
     // LOG_TRACE("Mag event is recieved.");
     // LOG_TRACE("track1 = %s", ev->data->track1);
@@ -73,7 +73,7 @@ STATE_DEF_HANDLE(MagEvent) {
     // LOG_TRACE("track3 = %s", ev->data->track3);
 }
 
-STATE_DEF_HANDLE(WifiEvent) {
+STATE_DEF_HANDLE(Idle, WifiEvent) {
     LOG_TRACE("WIFI event is received.");
     for (int i = 0 ; i < ev->apList->size ; i++) {
         LOG_TRACE("essid: %s", ev->apList->list[i].essid);
@@ -142,10 +142,10 @@ OOP_CTOR(Idle, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Idle);
     self->base.vtable.exit = STATE_EXIT(Idle);
-    self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
-    self->base.vtable.handleMag = STATE_HANDLE(MagEvent);
-    self->base.vtable.handleWifi = STATE_HANDLE(WifiEvent);
+    self->base.vtable.handleKeypad = STATE_HANDLE(Idle, KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(Idle, TimeOutEvent);
+    self->base.vtable.handleMag = STATE_HANDLE(Idle, MagEvent);
+    self->base.vtable.handleWifi = STATE_HANDLE(Idle, WifiEvent);
 
     createUi();
 }

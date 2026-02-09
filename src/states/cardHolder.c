@@ -18,11 +18,11 @@ STATE_DEF_EXIT(CardHolder) {
     OOP_CALL(&menu, hide);
 }
 
-STATE_DEF_HANDLE(TimeOutEvent) {
+STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {
 
 }
 
-STATE_DEF_HANDLE(KeypadEvent) {
+STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     OOP_CALL(&menu, handleItem, ev->key);
     if (ev->key <= KEY_9) {
         ServiceId_t id = (ServiceId_t)((int)ev->key - 1);
@@ -46,8 +46,8 @@ OOP_CTOR(CardHolder, State *parent, const char *name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter = STATE_ENTER(CardHolder);
     self->base.vtable.exit = STATE_EXIT(CardHolder);
-    self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
+    self->base.vtable.handleKeypad = STATE_HANDLE(CardHolder, KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(CardHolder, TimeOutEvent);
 
     createUi();
 }

@@ -22,11 +22,11 @@ STATE_DEF_EXIT(Info) {
     LV_HIDE(body);
 }
 
-STATE_DEF_HANDLE(TimeOutEvent) {
+STATE_DEF_HANDLE(Info, TimeOutEvent) {
 
 }
 
-STATE_DEF_HANDLE(KeypadEvent) {
+STATE_DEF_HANDLE(Info, KeypadEvent) {
     SM_GOTO(state->next); 
 }
 
@@ -61,8 +61,8 @@ OOP_CTOR(Info, State *parent, const char *name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Info);
     self->base.vtable.exit = STATE_EXIT(Info);
-    self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
+    self->base.vtable.handleKeypad = STATE_HANDLE(Info, KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(Info, TimeOutEvent);
     self->setTitle = setTitle;
     self->setBody = setBody;
     createUi();

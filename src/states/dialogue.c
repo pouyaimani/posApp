@@ -29,11 +29,11 @@ STATE_DEF_EXIT(Dialogue) {
     LV_HIDE(cancelBut.main);
 }
 
-STATE_DEF_HANDLE(TimeOutEvent) {
+STATE_DEF_HANDLE(Dialogue, TimeOutEvent) {
 
 }
 
-STATE_DEF_HANDLE(KeypadEvent) {
+STATE_DEF_HANDLE(Dialogue, KeypadEvent) {
     if (ev->key == KEY_ENTER) {
         SM_GOTO(state->next);
     } else if (ev->key == KEY_ESC) {
@@ -77,8 +77,8 @@ OOP_CTOR(Dialogue, State *parent, const char *name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Dialogue);
     self->base.vtable.exit = STATE_EXIT(Dialogue);
-    self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
+    self->base.vtable.handleKeypad = STATE_HANDLE(Dialogue, KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(Dialogue, TimeOutEvent);
     self->setTitle = setTitle;
     self->setBody = setBody;
     createUi();

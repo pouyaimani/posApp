@@ -39,7 +39,7 @@ STATE_DEF_EXIT(Input) {
     // TODO: pass state to enter and exit method too
 }
 
-STATE_DEF_HANDLE(TimeOutEvent) {
+STATE_DEF_HANDLE(Input, TimeOutEvent) {
 
 }
 
@@ -85,7 +85,7 @@ static void handleInput(State *state, KeypadEvent *ev)
     }
 }
 
-STATE_DEF_HANDLE(KeypadEvent)
+STATE_DEF_HANDLE(Input, KeypadEvent)
 {
     if (ev->key == KEY_ESC) {
         if (state->prev)
@@ -153,8 +153,8 @@ OOP_CTOR(Input, State *parent, const char *name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Input);
     self->base.vtable.exit = STATE_EXIT(Input);
-    self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
+    self->base.vtable.handleKeypad = STATE_HANDLE(Input, KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(Input, TimeOutEvent);
     self->setMode = setMode;
     self->setTitle = setTitle;
     self->setMax = setMax;

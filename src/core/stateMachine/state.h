@@ -13,11 +13,11 @@
 
 #define STATE_DEF_EXIT(type) static void type##_Exit()
 
-#define STATE_HANDLE(type) \
-    type##_handle
+#define STATE_HANDLE(type, event) \
+    type##_handle_##event
 
-#define STATE_DEF_HANDLE(type) \
-    static void type##_handle(State *state, type## *ev)
+#define STATE_DEF_HANDLE(type, event) \
+    static void type##_handle_##event(State *state, event## *ev)
 
 #define SM_GOTO(state) getSmCore()->goTo(state)
 

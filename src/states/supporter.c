@@ -27,7 +27,7 @@ STATE_DEF_EXIT(Supporter) {
     OOP_CALL(&menu, hide);
 }
 
-STATE_DEF_HANDLE(TimeOutEvent) {
+STATE_DEF_HANDLE(Supporter, TimeOutEvent) {
 
 }
 
@@ -40,7 +40,7 @@ static void handleKeyAction(State *state, int id) {
     }
 }
 
-STATE_DEF_HANDLE(KeypadEvent) {
+STATE_DEF_HANDLE(Supporter, KeypadEvent) {
     OOP_CALL(&menu, handleItem, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(getState(STATE_ID_IDLE));
@@ -83,8 +83,8 @@ OOP_CTOR(Supporter, State *parent, const char *name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Supporter);
     self->base.vtable.exit = STATE_EXIT(Supporter);
-    self->base.vtable.handleKeypad = STATE_HANDLE(KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(TimeOutEvent);
+    self->base.vtable.handleKeypad = STATE_HANDLE(Supporter, KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(Supporter, TimeOutEvent);
 
     createUi();
     PowerOff(self);
