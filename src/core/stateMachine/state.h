@@ -7,11 +7,11 @@
 
 #define STATE_ENTER(type) type##_Enter
 
-#define STATE_DEF_ENTER(type) static void type##_Enter()
+#define STATE_DEF_ENTER(type) static void type##_Enter(State *state)
 
 #define STATE_EXIT(type) type##_Exit
 
-#define STATE_DEF_EXIT(type) static void type##_Exit()
+#define STATE_DEF_EXIT(type) static void type##_Exit(State *state)
 
 #define STATE_HANDLE(type, event) \
     type##_handle_##event
