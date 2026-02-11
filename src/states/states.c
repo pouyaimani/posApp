@@ -5,6 +5,7 @@ static Idle idle;
 static Input input;
 static CardHolder cardHolder;
 static Info info;
+static Ginfo ginfo;
 static Dialogue dialogue;
 static Supporter supporter;
 
@@ -31,6 +32,9 @@ State *getState(StateId_t id) {
     case STATE_ID_SUPPORTER:
         CALL_ONCE(OOP_CALL_CTOR(Supporter, &supporter, &idle, "supporter"););
         return (State *)&supporter;
+    case STATE_ID_GINFO:
+        CALL_ONCE(OOP_CALL_CTOR(Ginfo, &ginfo, &idle, "supporter"););
+        return (State *)&ginfo;
     default:
         break;
     }

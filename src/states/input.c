@@ -93,23 +93,28 @@ STATE_DEF_HANDLE(Input, KeypadEvent)
         else
             LOG_WARN("Input state: previous state is not set.");
         return;
-    }
-
-    if (ev->key == KEY_ENTER) {
-        if (state->next)
+    } else if (ev->key == KEY_ENTER) {
+        if (state->next) {
+            if (inMode == IN_MODE_PASSWORD) {
+                if (idx != maxIn) {
+                    return;
+                }
+            }
             SM_GOTO(state->next);
-        else
+        } else
             LOG_WARN("Input state: next state is not set.");
-        return;
-    }
+    } 
 
-    if (ev->key > KEY_9 && ev->key != KEY_CLEAR)
+    if (ev->key > KEY_9 && ev->key != KEY_CLEAR )
         return;
 
     handleInput(state, ev);
-    idx += (ev->key <= KEY_9);
-    if (ev->key == KEY_CLEAR && idx > 0)
+    if (ev->key <= KEY_9 && idx < maxIn) {
+        idx++;
+    } else if (ev->key == KEY_CLEAR && idx > 0) {
         idx--;
+    }
+    LOG_TRACE("idx = %d", idx);
 }
 
 

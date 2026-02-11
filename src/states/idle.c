@@ -30,6 +30,8 @@ static void menuEventCb(lv_event_t * e)
 }
 
 STATE_DEF_ENTER(Idle) {
+    CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
+    ch->isMagSwiped = false;
     getEventloop()->registerChecker(getMagReader()->ioRead);
     LV_SHOW(menuBar);
     // LV_SHOW(swipCardCont);
@@ -58,19 +60,18 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         in->setMode(IN_MODE_AMOUNT);
         in->setTitle("ورود عدد");
         SM_GOTO(getState(STATE_ID_INPUT));
-    } else if (ev->key == KEY_3) {
-        SM_GOTO(getState(STATE_ID_CARD_HOLDER));
     } else if (ev->key == KEY_4) {
         SHOW_INFO(state, "خظا", "این پیغام جهت تست است");
     }
 }
 
 STATE_DEF_HANDLE(Idle, MagEvent) {
-    return;
-    // LOG_TRACE("Mag event is recieved.");
-    // LOG_TRACE("track1 = %s", ev->data->track1);
-    // LOG_TRACE("track2 = %s", ev->data->track2);
-    // LOG_TRACE("track3 = %s", ev->data->track3);
+    CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
+    ch->isMagSwiped = true;
+    SM_GOTO(getState(STATE_ID_CARD_HOLDER));
+    LOG_TRACE("track1 = %s", ev->data->track1.data);
+    LOG_TRACE("track2 = %s", ev->data->track2.data);
+    LOG_TRACE("track3 = %s", ev->data->track3.data);
 }
 
 STATE_DEF_HANDLE(Idle, WifiEvent) {

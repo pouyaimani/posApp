@@ -35,8 +35,19 @@ static void handleKeyAction(State *state, int id) {
     if (id >= ITEM_CNT_MAX) {
         return;
     }
-    if (id == 3) {
-        SHOW_DIAL(state, powerOff, "قصد خروج دارید؟", "");
+    switch (id) {
+    case 0:
+    {
+        CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
+        ch->isMagSwiped = false;
+        SM_GOTO(getState(STATE_ID_CARD_HOLDER));
+    }
+        break;
+    case 3:
+         SHOW_DIAL(state, powerOff, "قصد خروج دارید؟", "");
+        break;
+    default:
+        break;
     }
 }
 
@@ -45,13 +56,12 @@ STATE_DEF_HANDLE(Supporter, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(getState(STATE_ID_IDLE));
     } else if (ev->key == KEY_ENTER) {
-        int id = OOP_CALL(&menu, getIdx);
-        handleKeyAction(state, id);
+        handleKeyAction(state, menu.idx);
     }  else {
-    if (ev->key <= KEY_9) {
-        int id = ((int)ev->key - 1);
-        handleKeyAction(state, id);
-    }
+        if (ev->key <= KEY_9) {
+            int id = ((int)ev->key - 1);
+            handleKeyAction(state, id);
+        }
     }
 }
 

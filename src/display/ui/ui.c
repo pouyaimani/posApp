@@ -153,6 +153,18 @@ static void createInfoPage(InfoPage *pinfo) {
     LV_SET_TEXT_ALIGN(pinfo->body, LV_TEXT_ALIGN_CENTER);
     LV_SET_SIZE(pinfo->body, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(pinfo->body, LV_ALIGN_CENTER, 0, 0);
+    
+    pinfo->img = lv_img_create(getDisplay()->screen);
+    LV_ALIGN(pinfo->img, LV_ALIGN_TOP_MID, 0, 36);
+    LV_SCROLL_DISABLE(pinfo->img);
+    LV_CLICK_DISABLE(pinfo->img);
+
+    pinfo->line = lv_obj_create(getDisplay()->screen);
+    LV_SET_SIZE(pinfo->line, 190, 8);
+    LV_ALIGN(pinfo->line, LV_ALIGN_TOP_MID, 0, 140);
+    LV_SET_RADIUS(pinfo->line, 17);
+    LV_SET_BG_COLOR(pinfo->line, 0x333333);
+    LV_SET_BORDER_COLOR(pinfo->line, 0x333333);
 
     LV_SET_TEXT(pinfo->title, "");
     LV_SET_TEXT(pinfo->body, "");
@@ -161,16 +173,32 @@ static void createInfoPage(InfoPage *pinfo) {
 static void infoHide(InfoPage *pinfo) {
     LV_HIDE(pinfo->body);
     LV_HIDE(pinfo->title);
+    LV_HIDE(pinfo->img);
+    LV_HIDE(pinfo->line);
 }
 
 static void infoShow(InfoPage *pinfo) {
-    LV_SHOW(pinfo->body);
-    LV_SHOW(pinfo->title);
+    if (pinfo->type == INFO_T_IMG) {
+        LV_SHOW(pinfo->body);
+        LV_SHOW(pinfo->img);
+        LV_SHOW(pinfo->line);
+        LV_ALIGN(pinfo->body, LV_ALIGN_TOP_MID, 0, 161);
+    } else {
+        LV_SHOW(pinfo->body);
+        LV_ALIGN(pinfo->body, LV_ALIGN_CENTER, 0, 0);
+        LV_SHOW(pinfo->title);
+    }
 }
 
-static void infoSetText(InfoPage *pinfo, const char *title, const char* body) {
-    LV_SET_TEXT(pinfo->title, title);
-    LV_SET_TEXT(pinfo->body, body);
+static void infoSetData(InfoPage *pinfo, InfoType_t type, const char *data, const char* body) {
+    pinfo->type = type;
+    if (type == INFO_T_IMG) {
+        lv_img_set_src(pinfo->img, data);
+        LV_SET_TEXT(pinfo->body, body);
+    } else {
+        LV_SET_TEXT(pinfo->title, data);
+        LV_SET_TEXT(pinfo->body, body);
+    }
 }
 
 InfoPage infoPage() {
@@ -179,7 +207,8 @@ InfoPage infoPage() {
         createInfoPage(&info);
         info.vtable.hide = infoHide;
         info.vtable.show = infoShow;
-        info.vtable.setText = infoSetText;
+        info.vtable.setData = infoSetData;
+        infoHide(&info);
     );
     LV_SET_TEXT(info.title, "");
     LV_SET_TEXT(info.body, "");

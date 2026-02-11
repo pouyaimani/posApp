@@ -1,8 +1,10 @@
 #include "core/stateMachine/state.h"
+#include <stdbool.h>
 
 typedef enum StateId_t {
     STATE_ID_START_UP,
     STATE_ID_INFO,
+    STATE_ID_GINFO,
     STATE_ID_IDLE,
     STATE_ID_INPUT,
     STATE_ID_CARD_HOLDER,
@@ -39,6 +41,14 @@ typedef enum {
     IN_MODE_NUMBERS
 } InputMode_t;
 
+OOP_CLASS(InputCfg) {
+    const char *title;
+    uint8_t maxLen;
+    InputMode_t mode;
+    State *next;
+    State *prev;
+};
+
 OOP_CLASS(Input)
 {
     OOP_EXTENDS(State);
@@ -55,6 +65,7 @@ OOP_CTOR(Input, State *parent, const char *name);
 OOP_CLASS(CardHolder)
 {
     OOP_EXTENDS(State);
+    bool isMagSwiped;
 };
 
 OOP_CTOR(CardHolder, State *parent, const char *name);
@@ -64,8 +75,7 @@ OOP_CTOR(CardHolder, State *parent, const char *name);
 OOP_CLASS(Info)
 {
     OOP_EXTENDS(State);
-    OOP_METHOD(void, setBody, const char *);
-    OOP_METHOD(void, setTitle, const char *);
+    OOP_METHOD(void, setText, const char *, const char *);
 };
 
 OOP_CTOR(Info, State *parent, const char *name);
@@ -73,9 +83,26 @@ OOP_CTOR(Info, State *parent, const char *name);
 #define SHOW_INFO(state, title, body)                           \
     OOP_CALL(getState(STATE_ID_INFO), setNext, state);          \
     Info *info = (Info *)getState(STATE_ID_INFO);               \
-    info->setTitle(title);                                      \
-    info->setBody(body);                                        \
+    info->setText(title, body);                                 \
     SM_GOTO(getState(STATE_ID_INFO));                           
+
+/**************************Ginfo*************************/
+
+OOP_CLASS(Ginfo)
+{
+    OOP_EXTENDS(State);
+    OOP_METHOD(void, setText, const char *);
+    OOP_METHOD(void, setImg, const char *);
+};
+
+OOP_CTOR(Ginfo, State *parent, const char *name);
+
+#define SHOW_GINFO(state, text, img)                            \
+    OOP_CALL(getState(STATE_ID_GINFO), setNext, state);         \
+    Ginfo *info = (Ginfo *)getState(STATE_ID_GINFO);            \
+    info->setText(title);                                       \
+    info->setImg(body);                                         \
+    SM_GOTO(getState(STATE_ID_GINFO));   
 
 /************************Dialogue***********************/
 
@@ -92,8 +119,7 @@ OOP_CTOR(Dialogue, State *parent, const char *name);
     OOP_CALL(getState(STATE_ID_DIALOGUE), setNext, next);       \
     OOP_CALL(getState(STATE_ID_DIALOGUE), setPrev, prev);       \
     Info *info = (Info *)getState(STATE_ID_DIALOGUE);           \
-    info->setTitle(title);                                      \
-    info->setBody(body);                                        \
+    info->setText(title, body);                                 \
     SM_GOTO(getState(STATE_ID_DIALOGUE));        
 
 

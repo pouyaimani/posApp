@@ -7,30 +7,60 @@
 #include "assets.h"
 #include "services/services.h"
 #include "ui/ui.h"
+#include "eventloop.h"
+#include "magReader/magReader.h"
 
 static Menu menu;
+static InfoPage infop;
+static ServiceId_t id;
 
 STATE_DEF_ENTER(CardHolder) {
+    CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
+    if (!ch->isMagSwiped) {
+        getEventloop()->registerChecker(getMagReader()->ioRead);
+    }
     OOP_CALL(&menu, show);
 }
 
 STATE_DEF_EXIT(CardHolder) {
     OOP_CALL(&menu, hide);
+    OOP_CALL(&infop, hide);
 }
 
 STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {
 
 }
 
+STATE_DEF_HANDLE(CardHolder, MagEvent) {
+    CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
+    if (!ch->isMagSwiped) {
+        SM_GOTO(&getService(id)->state); 
+        getEventloop()->unregisterChecker(getMagReader()->ioRead);
+    }
+}
+
 STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     OOP_CALL(&menu, handleItem, ev->key);
+    CardHolder *ch = (CardHolder*)state;
     if (ev->key <= KEY_9) {
-        ServiceId_t id = (ServiceId_t)((int)ev->key - 1);
+        id = (ServiceId_t)((int)ev->key - 1);
+        if (!ch->isMagSwiped) {
+            OOP_CALL(&infop, setData, INFO_T_IMG, ICON_SWIPE_CARD, SWIPE_CARD_TEXT);
+            OOP_CALL(&menu, hide);
+            OOP_CALL(&infop, show);
+            return;
+        }
         SM_GOTO(&getService(id)->state);
     }  else if (ev->key == KEY_ESC) {
         SM_GOTO(getState(STATE_ID_IDLE));
     } else if (ev->key == KEY_ENTER) {
-        ServiceId_t id = (ServiceId_t)menu.idx;
+        id = (ServiceId_t)menu.idx;
+        if (!ch->isMagSwiped) {
+            OOP_CALL(&infop, setData, INFO_T_IMG, ICON_SWIPE_CARD, SWIPE_CARD_TEXT);
+            OOP_CALL(&menu, hide);
+            OOP_CALL(&infop, show);
+            return;
+        }
         SM_GOTO(&getService(id)->state);        
     }
 }
@@ -40,6 +70,7 @@ static void createUi() {
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
         OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL);
     }
+    OOP_CALL(&menu, hide);
 }
 
 OOP_CTOR(CardHolder, State *parent, const char *name) {
@@ -48,6 +79,7 @@ OOP_CTOR(CardHolder, State *parent, const char *name) {
     self->base.vtable.exit = STATE_EXIT(CardHolder);
     self->base.vtable.handleKeypad = STATE_HANDLE(CardHolder, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(CardHolder, TimeOutEvent);
-
+    self->base.vtable.handleMag = STATE_HANDLE(CardHolder, MagEvent);
     createUi();
+    infop = infoPage();
 }

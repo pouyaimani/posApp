@@ -47,17 +47,25 @@ InputBox uiInputBox(lv_obj_t *parent);
 Button uiButton(lv_obj_t *parent, unsigned int color, const char * text);
 Menu uiMenu(lv_obj_t * parent);
 
+typedef enum {
+    INFO_T_TEXT,
+    INFO_T_IMG
+} InfoType_t;
+
 OOP_DECLARE_CLASS(InfoPage);
 
 OOP_VTABLE(InfoPage) {
-    OOP_IMETHOD(void, InfoPage, setText, const char *, const char *);
+    OOP_IMETHOD(void, InfoPage, setData, InfoType_t, const char *, const char *);
     OOP_IMETHOD(void, InfoPage, show);
     OOP_IMETHOD(void, InfoPage, hide);
 };
 OOP_CLASS(InfoPage) {
     OOP_IMPLEMENTS(InfoPage);
+    InfoType_t type;
     lv_obj_t *title;
     lv_obj_t *body;
+    lv_obj_t *img;
+    lv_obj_t *line;
 };
 
 InfoPage infoPage();
