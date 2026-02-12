@@ -90,6 +90,7 @@ static void handleItem(Menu *menu, Key_t key) {
         menu->idx = menu->idx == (menu->cnt - 1) ? 0 : menu->idx + 1;
     }
     LV_SET_TEXT_COLOR(menu->item[menu->idx], 0x68DD40);
+    lv_obj_scroll_to_view(menu->item[menu->idx], LV_ANIM_ON);
 }
 
 static void menuShow(Menu *menu) {
@@ -136,6 +137,7 @@ Menu uiMenu(lv_obj_t * parent) {
 
     /* Optional spacing between items */
     LV_SET_ROW_PAD(menu.main, 8);
+    lv_obj_set_style_base_dir(menu.main, LV_BASE_DIR_RTL, 0);
     return menu;
 }
 
