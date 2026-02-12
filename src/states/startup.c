@@ -24,7 +24,7 @@ STATE_DEF_ENTER(Startup) {
     core->registerCallback(disp->update);
     core->registerCallback(getEventloop()->runCycle);
     core->registerCallback(getTimerHanlder()->runCycle);
-    createStatusBar();
+    statusBar();
     SM_GOTO(getState(STATE_ID_IDLE));
 }
 

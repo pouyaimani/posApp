@@ -9,6 +9,7 @@
 #include "ui/ui.h"
 #include "eventloop.h"
 #include "magReader/magReader.h"
+#include "statusBar/statusBar.h"
 
 static Menu menu;
 static InfoPage infop;
@@ -31,10 +32,17 @@ STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {
 
 }
 
+static void gotoService() {
+    statusBar()->setInfoMode(STBAR_INFO_OTHER);
+    statusBar()->setInfo(getService(id)->state.name);
+    SM_GOTO(&getService(id)->state);
+
+}
+
 STATE_DEF_HANDLE(CardHolder, MagEvent) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     if (!ch->isMagSwiped) {
-        SM_GOTO(&getService(id)->state); 
+        gotoService();
         getEventloop()->unregisterChecker(getMagReader()->ioRead);
     }
 }
@@ -50,7 +58,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
             OOP_CALL(&infop, show);
             return;
         }
-        SM_GOTO(&getService(id)->state);
+        gotoService();
     }  else if (ev->key == KEY_ESC) {
         SM_GOTO(getState(STATE_ID_IDLE));
     } else if (ev->key == KEY_ENTER) {
@@ -61,7 +69,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
             OOP_CALL(&infop, show);
             return;
         }
-        SM_GOTO(&getService(id)->state);        
+        gotoService();     
     }
 }
 

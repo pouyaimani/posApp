@@ -9,6 +9,7 @@
 #include "wifi/wifi.h"
 #include "assets.h"
 #include "font/myFont.h"
+#include "statusBar/statusBar.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -36,6 +37,7 @@ STATE_DEF_ENTER(Idle) {
     LV_SHOW(menuBar);
     // LV_SHOW(swipCardCont);
     LV_SHOW(mainIcon);
+    statusBar()->setInfoMode(STBAR_INFO_DATE);
 }
 
 STATE_DEF_EXIT(Idle) {

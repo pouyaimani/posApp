@@ -3,12 +3,19 @@
 
 #include "oop.h"
 
+typedef enum {
+    STBAR_INFO_DATE,
+    STBAR_INFO_OTHER
+} StatusBarInfoMode_t;
+
 OOP_CLASS(StatusBar) {
     int dummy;
+    OOP_METHOD(void, setInfoMode, StatusBarInfoMode_t);
+    OOP_METHOD(void, setInfo, const char *);
 };
 
 OOP_CTOR(StatusBar);
 
-void createStatusBar();
+StatusBar *statusBar();
 
 #endif
