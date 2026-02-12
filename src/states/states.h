@@ -53,7 +53,7 @@ OOP_CLASS(Input)
 {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setMode, InputMode_t);
-    OOP_METHOD(void, setTitle, const char *);
+    OOP_METHOD(void, setData, const char *, const char *);
     OOP_METHOD(void, setMax, int);
     OOP_METHOD(void, reset);
 };

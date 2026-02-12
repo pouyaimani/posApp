@@ -17,6 +17,7 @@ static InputBox inputBox;
 static Button confirmBut;
 static Button cancelBut;
 static lv_obj_t *title;
+static lv_obj_t *info;
 
 static InputMode_t inMode;
 static char *input;
@@ -29,6 +30,7 @@ STATE_DEF_ENTER(Input) {
     LV_SHOW(confirmBut.main);
     LV_SHOW(cancelBut.main);
     LV_SHOW(title);
+    LV_SHOW(info);
 }
 
 STATE_DEF_EXIT(Input) {
@@ -36,6 +38,7 @@ STATE_DEF_EXIT(Input) {
     LV_HIDE(confirmBut.main);
     LV_HIDE(cancelBut.main);
     LV_HIDE(title);
+    LV_HIDE(info);
     // TODO: pass state to enter and exit method too
 }
 
@@ -123,7 +126,13 @@ static void createUi() {
     LV_SET_TEXT_FONT(title, FONT_20);
     LV_SET_TEXT_COLOR(title, 0xFF4E4E);
     LV_SET_SIZE(title, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    LV_ALIGN(title, LV_ALIGN_CENTER, 0, -60);
+    LV_ALIGN(title, LV_ALIGN_CENTER, 0, -70);
+
+    info = lv_label_create(getDisplay()->screen);
+    LV_SET_TEXT_FONT(info, FONT_16);
+    LV_SET_TEXT_COLOR(info, 0x333333);
+    LV_SET_SIZE(info, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    LV_ALIGN(info, LV_ALIGN_CENTER, 0, -30);
     
     inputBox = uiInputBox(getDisplay()->screen);
     LV_ALIGN(inputBox.main, LV_ALIGN_CENTER, 0, 10);
@@ -139,8 +148,9 @@ static void setMode(InputMode_t mode) {
     inMode = mode;
 }
 
-static void setTitle(const char *txt) {
-    LV_SET_TEXT(title, txt);
+static void setData(const char *dtitle, const char *dinfo) {
+    LV_SET_TEXT(title, dtitle);
+    LV_SET_TEXT(info, dinfo);
 }
 
 static void setMax(int val) {
@@ -152,6 +162,7 @@ static void reset() {
     idx = 0;
     LV_SET_TEXT(inputBox.textBox, "");
     LV_SET_TEXT(title, "");
+    LV_SET_TEXT(info, "");
 }
 
 OOP_CTOR(Input, State *parent, const char *name) {
@@ -161,7 +172,7 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(Input, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Input, TimeOutEvent);
     self->setMode = setMode;
-    self->setTitle = setTitle;
+    self->setData = setData;
     self->setMax = setMax;
     self->reset = reset;
     input = (char*)GET_MEM(INPUT_MAX_LEN);
