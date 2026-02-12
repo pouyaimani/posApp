@@ -55,13 +55,6 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     LOG_TRACE("event successfully is reached. key = %d", ev->key);
     if (ev->key == KEY_1) {
         WIFI_START_SCAN();
-    } else if (ev->key == KEY_2) {
-        Input * in = (Input*)getState(STATE_ID_INPUT);
-        OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
-        OOP_CALL(getState(STATE_ID_INPUT), setNext, getState(STATE_ID_IDLE));
-        in->setMode(IN_MODE_AMOUNT);
-        in->setTitle("ورود عدد");
-        SM_GOTO(getState(STATE_ID_INPUT));
     } else if (ev->key == KEY_4) {
         SHOW_INFO(state, "خظا", "این پیغام جهت تست است");
     }

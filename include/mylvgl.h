@@ -204,5 +204,8 @@
 #define LV_ADD_EV_CB(obj, cb, ev, data) \
     lv_obj_add_event_cb(obj, cb, ev, data)
 
+#define LV_DELETE(obj) \
+    lv_obj_delete(obj)
+
 
 #endif

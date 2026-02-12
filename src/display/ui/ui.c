@@ -156,10 +156,7 @@ static void createInfoPage(InfoPage *pinfo) {
     LV_SET_SIZE(pinfo->body, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(pinfo->body, LV_ALIGN_CENTER, 0, 0);
     
-    pinfo->img = lv_img_create(getDisplay()->screen);
-    LV_ALIGN(pinfo->img, LV_ALIGN_TOP_MID, 0, 36);
-    LV_SCROLL_DISABLE(pinfo->img);
-    LV_CLICK_DISABLE(pinfo->img);
+    pinfo->img = NULL;
 
     pinfo->line = lv_obj_create(getDisplay()->screen);
     LV_SET_SIZE(pinfo->line, 190, 8);
@@ -175,14 +172,20 @@ static void createInfoPage(InfoPage *pinfo) {
 static void infoHide(InfoPage *pinfo) {
     LV_HIDE(pinfo->body);
     LV_HIDE(pinfo->title);
-    LV_HIDE(pinfo->img);
+    if(pinfo->img) {
+        LV_HIDE(pinfo->img);
+        LV_DELETE(pinfo->img);
+        pinfo->img = NULL;
+    }
     LV_HIDE(pinfo->line);
 }
 
 static void infoShow(InfoPage *pinfo) {
     if (pinfo->type == INFO_T_IMG) {
         LV_SHOW(pinfo->body);
-        LV_SHOW(pinfo->img);
+        if (pinfo->img) {
+            LV_SHOW(pinfo->img);
+        }
         LV_SHOW(pinfo->line);
         LV_ALIGN(pinfo->body, LV_ALIGN_TOP_MID, 0, 161);
     } else {
@@ -195,6 +198,10 @@ static void infoShow(InfoPage *pinfo) {
 static void infoSetData(InfoPage *pinfo, InfoType_t type, const char *data, const char* body) {
     pinfo->type = type;
     if (type == INFO_T_IMG) {
+        pinfo->img = lv_img_create(getDisplay()->screen);
+        LV_ALIGN(pinfo->img, LV_ALIGN_TOP_MID, 0, 36);
+        LV_SCROLL_DISABLE(pinfo->img);
+        LV_CLICK_DISABLE(pinfo->img);
         lv_img_set_src(pinfo->img, data);
         LV_SET_TEXT(pinfo->body, body);
     } else {
