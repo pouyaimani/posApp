@@ -81,7 +81,7 @@ static void runCycle()
         break;
 
     case STATE_EXIT:
-        LOG_TRACE("SM: on exit to ", s->name, " state.");
+        LOG_TRACE("SM: on exit from %s %s", s->name, " state.");
         OOP_CALL(s, exit);
         freeQ();
         s->inner = STATE_ENTRY;
