@@ -143,7 +143,7 @@
     lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_ACTIVE)
 
 #define LV_SCROLL_DISABLE(obj) \
-    lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF)
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE)
 
 #define LV_CLICK_DISABLE(obj) \
     lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE)

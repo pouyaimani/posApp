@@ -128,7 +128,6 @@ static void createUi() {
     LV_ALIGN(menuButton, LV_ALIGN_TOP_RIGHT, -40, 5);
     LV_ADD_EV_CB(menuButton, menuEventCb, LV_EVENT_CLICKED, NULL);
     LV_SCROLL_DISABLE(menuButton);
-    lv_obj_set_scroll_dir(menuButton, LV_DIR_NONE);
 
     menuIcon = lv_img_create(menuButton);
     lv_img_set_src(menuIcon, ICON_MENU);
