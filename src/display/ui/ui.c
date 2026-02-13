@@ -141,6 +141,12 @@ Menu uiMenu(lv_obj_t * parent) {
     return menu;
 }
 
+void uiDeleteMenu(Menu *menu) {
+    LV_DELETE(menu->main);
+    menu->cnt = 0;
+    menu->idx = 0;
+}
+
 static void createInfoPage(InfoPage *pinfo) {
     pinfo->title = lv_label_create(getDisplay()->screen);
     LV_SET_TEXT_FONT(pinfo->title, FONT_20);

@@ -18,7 +18,7 @@ State *getState(StateId_t id) {
         CALL_ONCE(OOP_CALL_CTOR(Idle, &idle, &startup, "idle"););
         return (State *)&idle;
     case STATE_ID_INPUT:
-        CALL_ONCE(OOP_CALL_CTOR(Input, &input, NULL, "input"););
+        CALL_ONCE(OOP_CALL_CTOR(Input, &input, &idle, "input"););
         return (State *)&input;
     case STATE_ID_CARD_HOLDER:
         CALL_ONCE(OOP_CALL_CTOR(CardHolder, &cardHolder, &idle, "card holder"););
@@ -33,7 +33,7 @@ State *getState(StateId_t id) {
         CALL_ONCE(OOP_CALL_CTOR(Supporter, &supporter, &idle, "supporter"););
         return (State *)&supporter;
     case STATE_ID_GINFO:
-        CALL_ONCE(OOP_CALL_CTOR(Ginfo, &ginfo, &idle, "supporter"););
+        CALL_ONCE(OOP_CALL_CTOR(Ginfo, &ginfo, &idle, "ginfo"););
         return (State *)&ginfo;
     default:
         break;

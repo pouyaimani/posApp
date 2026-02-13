@@ -6,9 +6,11 @@
 #include "services/services.h"
 #include "ui/ui.h"
 #include "dev/dev.h"
+#include "merchant/merchant.h"
 
 static Menu menu;
 static SubState *powerOff;
+static Merchant *merchant;
 
 #define ITEM_CNT_MAX    4
 
@@ -19,12 +21,25 @@ static const char* itemTxt[ITEM_CNT_MAX] = {
     "خاموش کردن",
 };
 
+static void createUi() {
+    menu = uiMenu(getDisplay()->screen);
+    for (uint8_t i = 0; i < ITEM_CNT_MAX ; i++) {
+        OOP_CALL(&menu, addItem, itemTxt[i], NULL, NULL);
+    }
+}
+
+static void destroyUi() {
+    uiDeleteMenu(&menu);
+}
+
 STATE_DEF_ENTER(Supporter) {
+    createUi();
     OOP_CALL(&menu, show);
 }
 
 STATE_DEF_EXIT(Supporter) {
     OOP_CALL(&menu, hide);
+    destroyUi();
 }
 
 STATE_DEF_HANDLE(Supporter, TimeOutEvent) {
@@ -43,8 +58,11 @@ static void handleKeyAction(State *state, int id) {
         SM_GOTO(getState(STATE_ID_CARD_HOLDER));
     }
         break;
+    case 1:
+        SM_GOTO(merchant);
+        break;
     case 3:
-         SHOW_DIAL(state, powerOff, "قصد خروج دارید؟", "");
+        SHOW_DIAL(state, powerOff, "قصد خروج دارید؟", "");
         break;
     default:
         break;
@@ -65,14 +83,7 @@ STATE_DEF_HANDLE(Supporter, KeypadEvent) {
     }
 }
 
-static void createUi() {
-    menu = uiMenu(getDisplay()->screen);
-    for (uint8_t i = 0; i < ITEM_CNT_MAX ; i++) {
-        OOP_CALL(&menu, addItem, itemTxt[i], NULL, NULL);
-    }
-}
-
-/******************** Enter pass sub state **********************/
+/******************** Power off sub state **********************/
 
 STATE_DEF_ENTER(PowerOff) {
     OOP_CALL(getDevice(), powerOff);
@@ -96,6 +107,8 @@ OOP_CTOR(Supporter, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(Supporter, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Supporter, TimeOutEvent);
 
-    createUi();
     PowerOff(self);
+
+    merchant = (Merchant*)GET_MEM(sizeof(Merchant));
+    OOP_CALL_CTOR(Merchant, merchant, self, "merchant");
 }

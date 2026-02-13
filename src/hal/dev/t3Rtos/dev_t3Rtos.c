@@ -89,6 +89,7 @@ static void init(Device* dev) {
     dev->module.audio = sdkSysIsDeviceExist(SYS_DEVICE_AUDIO);
     dev->module.scanner = sdkSysIsDeviceExist(SYS_DEVICE_CAMERA);
     dev->module.bt = sdkSysIsDeviceExist(SYS_DEVICE_BLUETOOTH);
+    dev->module.dialup = false;
 
     sdkSysReadDeviceSN(SYS_SN_TYPE_MANUFACTURER, sn.data, SERIAL_NUMBER_MAX_LEN);
 }

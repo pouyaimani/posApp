@@ -9,7 +9,7 @@ typedef enum StateId_t {
     STATE_ID_INPUT,
     STATE_ID_CARD_HOLDER,
     STATE_ID_DIALOGUE,
-    STATE_ID_SUPPORTER
+    STATE_ID_SUPPORTER,
 } StateId_t;
 
 State *getState(StateId_t id);

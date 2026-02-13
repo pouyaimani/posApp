@@ -36,6 +36,9 @@
 #define OOP_CALL_CTOR(type, ...) \
     type##_ctor(##__VA_ARGS__)
 
+#define OOP_CALL_DTOR(type, ...) \
+    type##_dtor(##__VA_ARGS__)
+
 /* ===== Interface (vtable) ===== */
 
 #define OOP_VTABLE(name) \

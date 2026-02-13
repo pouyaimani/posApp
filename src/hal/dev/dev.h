@@ -14,6 +14,7 @@ typedef struct ModuleExist_t {
     bool audio;
     bool scanner;
     bool bt;
+    bool dialup;
 } ModuleExist_t;
 
 

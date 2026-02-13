@@ -3,8 +3,6 @@
 #include "dev/dev.h"
 #include "ui/ui.h"
 
-#define PASSWORD_MAX_LEN    4
-
 static SubState *enterAmount;
 static SubState *enterPass;
 static SubState *connection;
@@ -30,7 +28,7 @@ STATE_DEF_ENTER(EnterAmount) {
     OOP_CALL(getState(STATE_ID_INPUT), setNext, enterPass);
     in->reset();
     in->setMode(IN_MODE_AMOUNT);
-    in->setTitle("مبلغ");
+    in->setData("مبلغ", "");
     in->setMax(AMOUNT_MAX_CNT);
     SM_GOTO(getState(STATE_ID_INPUT));
 }
@@ -56,7 +54,7 @@ STATE_DEF_ENTER(EnterPassword) {
     OOP_CALL(getState(STATE_ID_INPUT), setNext, connection);
     in->reset();
     in->setMode(IN_MODE_PASSWORD);
-    in->setTitle("رمز کارت");
+    in->setData("رمز کارت", "");
     in->setMax(PASSWORD_MAX_LEN);
     SM_GOTO(getState(STATE_ID_INPUT));
 }

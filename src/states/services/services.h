@@ -5,6 +5,8 @@
 
 #define MAX_SERVICE_NUM 10
 
+#define PASSWORD_MAX_LEN    4
+
 extern int serviceCount;
 
 /*********************Service*********************/
