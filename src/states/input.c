@@ -176,6 +176,7 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->setMax = setMax;
     self->reset = reset;
     input = (char*)GET_MEM(INPUT_MAX_LEN);
+    self->input = input;
     amountStr = (char*)GET_MEM(INPUT_MAX_LEN);
     createUi();
 }

@@ -2,6 +2,7 @@
 #include "states/states.h"
 #include "dev/dev.h"
 #include "ui/ui.h"
+#include "msg.h"
 
 static SubState *enterAmount;
 static SubState *enterPass;
@@ -12,6 +13,7 @@ static SubState *result;
 
 STATE_DEF_ENTER(Sale) {
     SM_GOTO(enterAmount);
+    packer()->reset();
 }
 
 STATE_DEF_EXIT(Sale) {
@@ -21,6 +23,8 @@ STATE_DEF_EXIT(Sale) {
 /******************** Enter amount sub state **********************/
 
 #define AMOUNT_MAX_CNT  12
+
+static char *amount;
 
 STATE_DEF_ENTER(EnterAmount) {
     Input * in = (Input*)getState(STATE_ID_INPUT);
@@ -38,6 +42,7 @@ STATE_DEF_EXIT(EnterAmount) {
 }
 
 static void EnterAmount(Sale *parent) {
+    // packer()->element[]
     enterAmount = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, &parent->base.state, "enter Amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterAmount);

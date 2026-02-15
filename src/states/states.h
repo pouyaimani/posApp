@@ -56,6 +56,7 @@ OOP_CLASS(Input)
     OOP_METHOD(void, setData, const char *, const char *);
     OOP_METHOD(void, setMax, int);
     OOP_METHOD(void, reset);
+    char *input;
 };
 
 OOP_CTOR(Input, State *parent, const char *name);

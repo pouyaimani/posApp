@@ -3,6 +3,13 @@
 
 #if MSG_STANDARD == ISO8583
 
+#define DEFINE_FIELD(id, name, fmt, len_type, max_len) \
+    { id, name, fmt, len_type, max_len },
+
+IsofieldDef_t isoFields[] = {
+    ISO8583_FIELD_TABLE(DEFINE_FIELD)
+};
+
 DL_ISO8583_HANDLER isoHandler;
 DL_ISO8583_MSG     isoMsg;
 
@@ -19,13 +26,13 @@ static IsoMsgErr_t parse(Parser *self, const char *data) {
     for (uint8_t i = 2 ; i < MSG_FIELDS_CONUT ; i++) {
         memset(self->element[i].data, 0, MSG_FIELD_SIZE);
         if (DL_ISO8583_MSG_HaveField(i, &isoMsg)) {
-            if (ISO_MSG_TYPE[i] == ISO_MSG_STR) {
-                if (DL_ISO8583_MSG_GetField_Str(i, &isoMsg, &ptr) == 0 ) {
-                    strcpy(self->element[i].data, ptr);
-                }
-            } else if (ISO_MSG_TYPE[i] == ISO_MSG_BYTE) {
+            if (isoFields[i].format == FMT_B) {
                 if (DL_ISO8583_MSG_GetField_Bin(i, &isoMsg, &ptr, &size) == 0) {
                     memcpy(self->element[i].data, ptr, size);
+                }
+            } else {
+                if (DL_ISO8583_MSG_GetField_Str(i, &isoMsg, &ptr) == 0 ) {
+                    strcpy(self->element[i].data, ptr);
                 }
             }
         }
@@ -43,25 +50,29 @@ static IsoMsgErr_t pack(Packer *self,const char *data) {
     DL_ISO8583_MSG_Init(NULL, 0, &isoMsg);
     for (uint8_t i = 0 ; i < MSG_FIELDS_CONUT ; i++) {
         if (self->element[i].isFilled(i)) {
-            switch (ISO_MSG_TYPE[i])
-            {
-            case ISO_MSG_STR:
-                DL_ISO8583_MSG_SetField_Str(i, (const uint8_t *)self->element[i].data, &isoMsg);
-                break;
-            case ISO_MSG_BYTE:
+            if (isoFields[i].format == FMT_B) {
                 DL_ISO8583_MSG_SetField_Bin(i, (const uint8_t *)self->element[i].data, 
                                                 self->element[i].len, &isoMsg);
-                break;
-            default:
-                break;
+            } else {
+                DL_ISO8583_MSG_SetField_Str(i, (const uint8_t *)self->element[i].data, &isoMsg);
             }
         }
     }
     return MSG_ERR_OK;
 }
 
+static void setAmount(Packer *self,const char *amt) {
+
+}
+
+static char *getAmount(Packer *self) {
+
+}
+
 OOP_CTOR(Iso8583Packer) {
     self->base.vtable.pack = pack;
+    self->base.vtable.setAmount = setAmount;
+    self->base.vtable.getAmount = getAmount;
     DL_ISO8583_DEFS_1993_GetHandler(&isoHandler);
 }
 
