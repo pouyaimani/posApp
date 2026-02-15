@@ -10,6 +10,7 @@
 static SubState *enterPass;
 static SubState *merchantMenu;
 static SubState *connections;
+static SubState *settings;
 
 #define PASSWORD_MAX_LEN 4
 
@@ -141,5 +142,7 @@ OOP_CTOR(Merchant, State *parent, const char *name) {
     MerchantMenu(self);
     connections = (Connections *)GET_MEM(sizeof(Connections));
     OOP_CALL_CTOR(Connections, connections, merchantMenu, "connections");
+    settings = (Settings *)GET_MEM(sizeof(Settings));
+    OOP_CALL_CTOR(Settings, settings, merchantMenu, "settings");
 
 }
