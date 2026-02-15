@@ -24,19 +24,25 @@ static void goTo(State *s, State *nextState)
 static void default_timeout(State *s, TimeOutEvent *ev)
 {
     (void)ev;
-    printf("%s timeout not handled\n", s->name);
+    LOG_WARN("Timeout event hadler is not defined for %s state.", s->name);
 }
 
 static void default_keypad(State *s, KeypadEvent *ev)
 {
     (void)ev;
-    printf("%s keypad not handled\n", s->name);
+    LOG_WARN("Keypad event hadler is not defined for %s state.", s->name);
 }
 
 static void default_mag(State *s, MagEvent *ev)
 {
     (void)ev;
-    printf("%s Mag not handled\n", s->name);
+    LOG_WARN("Mag event hadler is not defined for %s state.", s->name);
+}
+
+static void default_wifi(State *s, WifiEvent *ev)
+{
+    (void)ev;
+    LOG_WARN("Wifi event hadler is not defined for %s state.", s->name);
 }
 
 static void setNext(State *current, State *next) {
@@ -55,6 +61,7 @@ OOP_CTOR(State, State *parent, const char *name)
     self->vtable.handleTimeout = default_timeout;
     self->vtable.handleKeypad = default_keypad;
     self->vtable.handleMag = default_mag;
+    self->vtable.handleWifi = default_wifi;
     self->vtable.goTo = goTo;
     self->vtable.setNext = setNext;
     self->vtable.setPrev = setPrev;

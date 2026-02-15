@@ -3,11 +3,95 @@
 #include "logger.h"
 #include "display.h"
 #include "event.h"
-#include "assets.h"
 #include "ui/ui.h"
 #include "dev/dev.h"
+#include "wifi/wifi.h"
 
-/******************** Merchant menu sub state **********************/
+static Wifi *wifi; 
+static SubState *wifiScan;
+static SubState *wifiConnect;
+
+WifiApInfo_t *chosenAp;
+
+/******************** Wifi connect sub state **********************/
+
+STATE_DEF_ENTER(WifiConnect) {
+}
+
+STATE_DEF_EXIT(WifiConnect) {
+
+}
+
+STATE_DEF_HANDLE(WifiConnect, KeypadEvent) {
+}
+
+STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
+}
+
+static void WifiConnect(State *parent) {
+    wifiConnect = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, wifiConnect, parent, "wifi connect");
+    wifiConnect->vtable.enter = STATE_ENTER(WifiConnect);
+    wifiConnect->vtable.exit = STATE_EXIT(WifiConnect);
+    wifiConnect->vtable.handleWifi = STATE_HANDLE(WifiConnect, WifiEvent);
+    wifiConnect->vtable.handleKeypad = STATE_HANDLE(WifiConnect, KeypadEvent);
+}
+
+/******************** Wifi scan sub state **********************/
+
+static Menu wifiMenu;
+
+STATE_DEF_ENTER(WifiScan) {
+    InfoPage info = infoPage();
+    OOP_CALL(&info, show);
+    OOP_CALL(&info, setData, INFO_T_TEXT, "جستجوی wifi", "لطفا منتظر بمانید");
+    wifi = getWifi();
+    wifi->startScan();
+}
+
+STATE_DEF_EXIT(WifiScan) {
+
+}
+
+STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
+    if (wifi->scanSt == WIFI_SCAN_UNDER_PROCESS) {
+        return;
+    } else if (wifi->scanSt == WIFI_SCAN_FAILED) {
+
+    } else {
+        OOP_CALL(&wifiMenu, handleItem, ev->key);
+        if (ev->key == KEY_ESC) {
+            SM_GOTO(getState(state->parent));
+        } else if (ev->key == KEY_ENTER) {
+            SM_GOTO(getState(wifiConnect));
+            chosenAp = &wifi->apList.list[wifiMenu.idx];
+        }
+    }
+}
+
+STATE_DEF_HANDLE(WifiScan, WifiEvent) {
+    if (wifi->scanSt == WIFI_SCAN_SUCCEED) {
+        wifiMenu = uiMenu(getDisplay()->screen);
+        for (uint8_t i = 0; i < wifi->apList.size ; i++) {
+            OOP_CALL(&wifiMenu, addItem, wifi->apList.list[i].essid, NULL, NULL);
+        }
+    } else if (wifi->scanSt == WIFI_SCAN_FAILED) {
+        InfoPage info = infoPage();
+        OOP_CALL(&info, show);
+        OOP_CALL(&info, setData, INFO_T_TEXT, "خطا در جستجوی wifi", "");
+    }
+}
+
+static void WifiScan(State *parent) {
+    wifiScan = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, wifiScan, parent, "wifi Scan");
+    wifiScan->vtable.enter = STATE_ENTER(WifiScan);
+    wifiScan->vtable.exit = STATE_EXIT(WifiScan);
+    wifiScan->vtable.handleWifi = STATE_HANDLE(WifiScan, WifiEvent);
+    wifiScan->vtable.handleKeypad = STATE_HANDLE(WifiScan, KeypadEvent);
+}
+
+/******************** Connection sub state **********************/
 
 typedef enum {
     CONNECTION_WIFI = 0,
@@ -63,6 +147,7 @@ static void handleKeyAction(State *state, int id) {
     }
     switch (menuMap[id]) {
     case CONNECTION_WIFI:
+        SM_GOTO(wifiScan);
         break;
     default:
         break;
@@ -84,8 +169,11 @@ STATE_DEF_HANDLE(Connectios, KeypadEvent) {
 }
 
 OOP_CTOR(Connections, State *parent, const char *name) {
-    OOP_CALL_CTOR(State, self, parent, "merchant menu");
+    OOP_CALL_CTOR(State, self, parent, "connections");
     self->base.vtable.enter = STATE_ENTER(Connectios);
     self->base.vtable.exit = STATE_EXIT(Connectios);
     self->base.vtable.handleKeypad = STATE_HANDLE(Connectios, KeypadEvent);
+
+    WifiScan(self);
+    WifiConnect(self);
 }
