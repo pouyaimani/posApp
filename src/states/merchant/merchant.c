@@ -94,20 +94,16 @@ STATE_DEF_EXIT(MerchantMenu) {
 }
 
 static void handleKeyAction(State *state, int id) {
-    LOG_TRACE("id = %d", id);
     if (id >= SUBS_ALL) {
         return;
     }
-    LOG_TRACE("-----------------------");
     switch (id) {
     case SUBS_CONNECTIONS:
-    LOG_TRACE("-----------------------");
         SM_GOTO(connections);
         break;
     default:
         break;
     }
-    LOG_TRACE("-----------------------");
 }
 
 STATE_DEF_HANDLE(MerchantMenu, KeypadEvent) {
