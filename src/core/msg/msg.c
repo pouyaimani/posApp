@@ -75,6 +75,10 @@ OOP_CTOR(Packer) {
     self->vtable.pack = NULL;
     self->vtable.setAmount = NULL;
     self->vtable.getAmount = NULL;
+    self->vtable.setPan = NULL;
+    self->vtable.getPan = NULL;
+    self->vtable.setDateTime = NULL;
+    self->vtable.getDateTime = NULL;
     self->reset = resetElements;
     self->buffer = msgBuffer;
     self->element = __dataElements;

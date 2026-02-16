@@ -61,12 +61,25 @@ static IsoMsgErr_t pack(Packer *self,const char *data) {
     return MSG_ERR_OK;
 }
 
-static void setAmount(Packer *self,const char *amt) {
-
+static void setAmount(Packer *self, const char *amt) {
+    strcpy(self->element[ELEMENT_AMOUNT_TRANSACTION].data, amt);
 }
 
-static char *getAmount(Packer *self) {
+static const char *getAmount(Packer *self) {
+    return self->element[ELEMENT_AMOUNT_TRANSACTION].data;
+}
 
+static void setPan(Packer *self, const char *pan) {
+}
+
+static const char *getPan(Packer *self) {
+}
+
+static void setDateTime(Packer *self, const char *dt) {
+}
+
+static const char *getDateTime(Packer *self) {
+    return self->element[ELEMENT_AMOUNT_TRANSACTION].data;
 }
 
 OOP_CTOR(Iso8583Packer) {

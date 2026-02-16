@@ -51,7 +51,11 @@ OOP_DECLARE_CLASS(Packer);
 OOP_VTABLE(Packer) {
     OOP_IMETHOD(IsoMsgErr_t, Packer, pack, char *);
     OOP_IMETHOD(void, Packer, setAmount, char *);
-    OOP_IMETHOD(char *, Packer, getAmount);
+    OOP_IMETHOD(const char *, Packer, getAmount);
+    OOP_IMETHOD(void, Packer, setPan, char *);
+    OOP_IMETHOD(const char *, Packer, getPan);
+    OOP_IMETHOD(void, Packer, setDateTime, char *);
+    OOP_IMETHOD(const char *, Packer, getDateTime);
 };
 
 OOP_CLASS(Packer) {
