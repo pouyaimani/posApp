@@ -58,7 +58,7 @@ static WifiErr_t connect(Wifi* wifi, WifiApInfo_t* ap, char *pass) {
     WifiErr_t err = WIFI_ERR_CONNECT_FAILED;
     for (uint16_t i = 0; i < wifi->apList.size ; i++) {
         if (strcmp(ap->essid, apinfo[i].mSsid) == 0) {
-             WifiAPPasswordInfo passInfo;
+            WifiAPPasswordInfo passInfo;
             memcpy(passInfo.mWpaPassword, pass,
                  sizeof(pass));
             // TODO
@@ -91,11 +91,29 @@ static WifiScanSt_t getScanStatus(Wifi *wifi) {
     return wifi->scanSt;
 }
 
+static WifiConnectSt_t getConnectStatus(Wifi *wifi) {
+    WIFI_CONNECT_AP_STATUS st = sdkWifiGetConnectAPStatus();
+    switch (st) {
+    case WIFI_CONNECT_AP_SUCCESS:
+        wifi->connectSt = WIFI_CONNECT_SUCCEED;
+        break;
+    case WIFI_CONNECT_AP_ERR:
+        wifi->connectSt = WIFI_CONNECT_FAILED;
+        break;
+    default:
+        wifi->connectSt = WIFI_CONNECT_UNDER_PROCESS;
+        break;
+    }
+    return wifi->connectSt;
+}
+
 OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.init = init;
-    self->base.vtable.startScan = startScan;
-    self->base.vtable.connect = connect;
-    self->base.vtable.getScanStatus = getScanStatus;  
+    self->base.vtable.hstartScan = startScan;
+    self->base.vtable.hconnect = connect;
+    self->base.vtable.hgetScanStatus = getScanStatus;
+    self->base.vtable.hdisconnect = disconnect;
+    self->base.vtable.hgetConnectStatus = getConnectStatus;
 }
 
 #endif

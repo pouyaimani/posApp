@@ -1,46 +1,35 @@
 #include "alphabetic.h"
-
 #include <string.h>
-#include <ctype.h>
 #include "dev/dev.h"
-#include "event.h"
 
 static uint16_t minElapsedTimeMs;
 static uint16_t count;
 static uint32_t prevTimeMs;
 static Key_t  prevKey;
-static bool upperCase;
 static bool backSpace;
 
 static Alphebatic alpheb;
 
-/* Static key map table */
+/* Static key map table (Uppercase included inside map) */
 static const char *keyMap[] =
 {
     [KEY_0] = ",*#0",
-    [KEY_1] = "qz.1",
-    [KEY_2] = "abc2",
-    [KEY_3] = "def3",
-    [KEY_4] = "ghi4",
-    [KEY_5] = "jkl5",
-    [KEY_6] = "mno6",
-    [KEY_7] = "pqrs7",
-    [KEY_8] = "tuv8",
-    [KEY_9] = "wxyz9"
+    [KEY_1] = "QZqz.1",
+    [KEY_2] = "ABCabc2",
+    [KEY_3] = "DEFdef3",
+    [KEY_4] = "GHIghi4",
+    [KEY_5] = "JKLjkl5",
+    [KEY_6] = "MNOmno6",
+    [KEY_7] = "PQRSpqrs7",
+    [KEY_8] = "TUVtuv8",
+    [KEY_9] = "WXYZwxyz9"
 };
 
-/* Internal helper */
-static int isAlphabetic(char ch)
-{
-    return isalpha((unsigned char)ch);
-}
-
-static Alphebatic * reset()
+static Alphebatic *reset()
 {
     count = 0;
     prevTimeMs = 0;
     prevKey = KEY_NONE;
-    upperCase = false;
     backSpace = false;
     return &alpheb;
 }
@@ -50,14 +39,7 @@ static void setMinimumDelay(uint16_t delay)
     minElapsedTimeMs = delay;
 }
 
-static Alphebatic * enableUpperCase(bool en)
-{
-    upperCase = en;
-    return &alpheb;
-}
-
-static void addKey(char *str, size_t maxLen,
-                                Key_t key)
+static void addKey(char *str, size_t maxLen, Key_t key)
 {
     if (key == KEY_NONE)
         return;
@@ -93,11 +75,7 @@ static void addKey(char *str, size_t maxLen,
 
         if (len < maxLen - 1)
         {
-            char ch = map[count];
-            if (upperCase && isAlphabetic(ch))
-                ch = toupper((unsigned char)ch);
-
-            str[len] = ch;
+            str[len] = map[count];
             str[len + 1] = '\0';
         }
     }
@@ -112,11 +90,7 @@ static void addKey(char *str, size_t maxLen,
             str[len - 1] = '\0';
             len--;
 
-            char ch = map[count];
-            if (upperCase && isAlphabetic(ch))
-                ch = toupper((unsigned char)ch);
-
-            str[len] = ch;
+            str[len] = map[count];
             str[len + 1] = '\0';
         }
     }
@@ -125,13 +99,14 @@ static void addKey(char *str, size_t maxLen,
     prevKey = key;
 }
 
-static void init() {
+static void init()
+{
     alpheb.addKey = addKey;
-    alpheb.enableUpperCase = enableUpperCase;
     alpheb.reset = reset;
 }
 
-Alphebatic *alphebatic() {
+Alphebatic *alphebatic()
+{
     CALL_ONCE(
         init();
         setMinimumDelay(1000);

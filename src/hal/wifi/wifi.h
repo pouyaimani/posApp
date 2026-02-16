@@ -47,20 +47,24 @@ OOP_DECLARE_CLASS(Wifi)
 
 OOP_VTABLE(Wifi) {
     OOP_IMETHOD(void, Wifi, init);
-    OOP_IMETHOD(WifiSigStrength_t, Wifi, getSignalStrength);
-    OOP_IMETHOD(WifiErr_t, Wifi, startScan);
-    OOP_IMETHOD(WifiScanSt_t, Wifi, getScanStatus);
-    OOP_IMETHOD(WifiErr_t, Wifi, connect, WifiApInfo_t *, char *);
-    OOP_IMETHOD(WifiApList_t, Wifi, getApList);
-    OOP_IMETHOD(WifiErr_t, Wifi, disconnect);
+    OOP_IMETHOD(WifiErr_t, Wifi, hconnect, WifiApInfo_t *, char *);
+    OOP_IMETHOD(WifiErr_t, Wifi, hdisconnect);
+    OOP_IMETHOD(void, Wifi, hstartScan);
+    OOP_IMETHOD(WifiScanSt_t, Wifi, hgetScanStatus);
+    OOP_IMETHOD(WifiScanSt_t, Wifi, hgetConnectStatus);
 };
 
 OOP_CLASS(Wifi) {
     OOP_IMPLEMENTS(Wifi);
     OOP_METHOD(void, startScan);
     WifiSigStrength_t signalStrength;
+    OOP_METHOD(WifiSigStrength_t, getSignalStrength);
+    OOP_METHOD(WifiApList_t, getApList);
+    OOP_METHOD(WifiErr_t, connect, WifiApInfo_t *, char *);
+    OOP_METHOD(WifiErr_t,  disconnect);
     WifiApList_t apList;
     WifiScanSt_t scanSt;
+    WifiConnectSt_t connectSt;
 };
 
 OOP_CTOR(Wifi);

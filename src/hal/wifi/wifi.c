@@ -22,16 +22,28 @@ static WifiApList_t *getApList(Wifi *self) {
     return &self->apList;
 }
 
-static WifiScanSt_t getScanStatus(Wifi *self) {
-    return self->scanSt;
-}
-
 static WifiSigStrength_t getSignalStrength(Wifi *self) {
 
 }
 
 static void checkWifiScanResult() {
-    WifiScanSt_t st = OOP_CALL(__wifi, getScanStatus);
+    WifiConnectSt_t st = OOP_CALL(__wifi, hgetConnectStatus);
+    if (st != WIFI_SCAN_UNDER_PROCESS) {
+        WifiEvent *ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        ev->connectStatus = st;
+        DISPATCH_EVENT(ev);
+        getEventloop()->unregisterChecker(checkWifiScanResult);
+    }
+}
+
+static void startScan() {
+    LOG_TRACE("Wifi: start scanning ...");
+    getEventloop()->registerChecker(checkWifiScanResult);
+    OOP_CALL(__wifi, hstartScan);
+}
+
+static void checkWifiConnectResult() {
+    WifiScanSt_t st = OOP_CALL(__wifi, hgetScanStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
         WifiEvent *ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
         ev->scanStatus = st;
@@ -42,17 +54,29 @@ static void checkWifiScanResult() {
     }
 }
 
-static void startScan() {
-    LOG_TRACE("Wifi: start scanning ...");
-    getEventloop()->registerChecker(checkWifiScanResult);
-    OOP_CALL(__wifi, startScan);
+static WifiErr_t connect(WifiApInfo_t *apinfo, char *password) {
+    LOG_TRACE("Wifi: start connecting to %s ", apinfo->essid);
+    getEventloop()->registerChecker(checkWifiConnectResult);
+    OOP_CALL(__wifi, hconnect, apinfo, password);
+}
+
+static WifiErr_t disconnect() {
+
 }
 
 OOP_CTOR(Wifi) {
-    self->vtable.getApList = getApList;
-    self->vtable.getScanStatus = getScanStatus;
-    self->vtable.getSignalStrength = getSignalStrength;
+    self->vtable.hconnect = NULL;
+    self->vtable.hdisconnect = NULL;
+    self->vtable.hstartScan = NULL;
+    self->vtable.init = NULL;
+    self->vtable.hgetScanStatus = NULL;
+    self->vtable.hgetConnectStatus = NULL;
+
+    self->getApList = getApList;
+    self->getSignalStrength = getSignalStrength;
     self->startScan = startScan;
+    self->connect = connect;
+    self->disconnect = disconnect;
 }
 
 Wifi *getWifi() {
