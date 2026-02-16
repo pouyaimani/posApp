@@ -12,6 +12,7 @@ OOP_CLASS(StatusBar) {
     int dummy;
     OOP_METHOD(void, setInfoMode, StatusBarInfoMode_t);
     OOP_METHOD(void, setInfo, const char *);
+    OOP_METHOD(void, setSoundVolume, int);
 };
 
 OOP_CTOR(StatusBar);

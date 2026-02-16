@@ -42,7 +42,6 @@ STATE_DEF_EXIT(EnterAmount) {
 }
 
 static void EnterAmount(Sale *parent) {
-    // packer()->element[]
     enterAmount = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, &parent->base.state, "enter Amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterAmount);
@@ -82,6 +81,7 @@ static void EnterPassword(Sale *parent) {
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Connection) {
+
     InfoPage info = infoPage();
     OOP_CALL(&info, show);
     OOP_CALL(&info, setData, INFO_T_TEXT, "در حال اتصال", "");
