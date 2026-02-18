@@ -2,6 +2,7 @@
 #include "states/states.h"
 #include "dev/dev.h"
 #include "ui/ui.h"
+#include "msg.h"
 
 static SubState *enterAmount;
 static SubState *enterPass;
@@ -12,6 +13,7 @@ static SubState *result;
 
 STATE_DEF_ENTER(Sale) {
     SM_GOTO(enterAmount);
+    packer()->reset();
 }
 
 STATE_DEF_EXIT(Sale) {
@@ -21,6 +23,8 @@ STATE_DEF_EXIT(Sale) {
 /******************** Enter amount sub state **********************/
 
 #define AMOUNT_MAX_CNT  12
+
+static char *amount;
 
 STATE_DEF_ENTER(EnterAmount) {
     Input * in = (Input*)getState(STATE_ID_INPUT);
@@ -52,6 +56,8 @@ STATE_DEF_ENTER(EnterPassword) {
     Input * in = (Input*)getState(STATE_ID_INPUT);
     OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
     OOP_CALL(getState(STATE_ID_INPUT), setNext, connection);
+    // Set packager amount before reseting input
+    OOP_CALL(packer(), setAmount, in->input);
     in->reset();
     in->setMode(IN_MODE_PASSWORD);
     in->setData("رمز کارت", "");
@@ -75,6 +81,7 @@ static void EnterPassword(Sale *parent) {
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Connection) {
+
     InfoPage info = infoPage();
     OOP_CALL(&info, show);
     OOP_CALL(&info, setData, INFO_T_TEXT, "در حال اتصال", "");

@@ -12,3 +12,9 @@ OOP_CLASS(Connections) {
 };
 
 OOP_CTOR(Connections, State *parent, const char *name);
+
+OOP_CLASS(Settings) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(Settings, State *parent, const char *name);

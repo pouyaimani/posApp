@@ -10,6 +10,8 @@ static char *msgBuffer;
 
 #include "iso8583/msg_iso8583.h"
 
+extern IsofieldDef_t *isoFields;
+
 static Iso8583Parser *__iso8583parser;
 static Iso8583Packer *__iso8583packer;
 
@@ -46,7 +48,7 @@ static void reset(int i) {
 static void initMsg() {
     CALL_ONCE(
         for (size_t i = 0; i < MSG_FIELDS_CONUT; i++) {
-            __dataElements[i].data = (uint8_t*)GET_MEM(MSG_FIELD_SIZE);
+            __dataElements[i].data = (uint8_t*)GET_MEM(isoFields[i].maxLen + 1);
             __dataElements[i].isFilled = isFilled;
             __dataElements[i].reset = reset;
         }
@@ -56,7 +58,7 @@ static void initMsg() {
 
 OOP_CTOR(Parser) {
     self->vtable.parse = NULL;
-    self->vtable.reset = resetElements;
+    self->reset = resetElements;
     self->buffer = msgBuffer;
     self->element = __dataElements;
 };
@@ -71,7 +73,13 @@ Parser *parser() {
 
 OOP_CTOR(Packer) {
     self->vtable.pack = NULL;
-    self->vtable.reset = resetElements;
+    self->vtable.setAmount = NULL;
+    self->vtable.getAmount = NULL;
+    self->vtable.setPan = NULL;
+    self->vtable.getPan = NULL;
+    self->vtable.setDateTime = NULL;
+    self->vtable.getDateTime = NULL;
+    self->reset = resetElements;
     self->buffer = msgBuffer;
     self->element = __dataElements;
 };

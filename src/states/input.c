@@ -5,9 +5,9 @@
 #include "dev.h"
 #include "mylvgl.h"
 #include "display.h"
-#include "wifi/wifi.h"
 #include "ui/ui.h"
 #include "utility/utility.h"
+#include "utility/alphabetic.h"
 
 #define INPUT_MAX_LEN       50
 #define PASS_MAX_LEN        4
@@ -88,6 +88,16 @@ static void handleInput(State *state, KeypadEvent *ev)
     }
 }
 
+static void handleAlpahb(State *state, KeypadEvent *ev)
+{
+    if (ev->key == KEY_CLEAR) {
+        deleteChar(input);
+    } else {
+        alphebatic()->addKey(input, INPUT_MAX_LEN, ev->key);
+    }
+    LV_SET_TEXT(inputBox.textBox, input);
+}
+
 STATE_DEF_HANDLE(Input, KeypadEvent)
 {
     if (ev->key == KEY_ESC) {
@@ -107,7 +117,10 @@ STATE_DEF_HANDLE(Input, KeypadEvent)
         } else
             LOG_WARN("Input state: next state is not set.");
     } 
-
+    if (inMode == IN_MODE_ALPHAB) {
+        handleAlpahb(state, ev);
+        return;
+    }
     if (ev->key > KEY_9 && ev->key != KEY_CLEAR )
         return;
 
@@ -117,7 +130,6 @@ STATE_DEF_HANDLE(Input, KeypadEvent)
     } else if (ev->key == KEY_CLEAR && idx > 0) {
         idx--;
     }
-    LOG_TRACE("idx = %d", idx);
 }
 
 
@@ -163,6 +175,7 @@ static void reset() {
     LV_SET_TEXT(inputBox.textBox, "");
     LV_SET_TEXT(title, "");
     LV_SET_TEXT(info, "");
+    maxIn = INPUT_MAX_LEN;
 }
 
 OOP_CTOR(Input, State *parent, const char *name) {
@@ -176,6 +189,7 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->setMax = setMax;
     self->reset = reset;
     input = (char*)GET_MEM(INPUT_MAX_LEN);
+    self->input = input;
     amountStr = (char*)GET_MEM(INPUT_MAX_LEN);
     createUi();
 }

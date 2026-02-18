@@ -6,6 +6,9 @@
 #include "myLvgl.h"
 #include "utility/utility.h"
 #include "font/myFont.h"
+#include "wifi/wifi.h"
+#include "cellular/cellular.h"
+#include "assets.h"
 
 static StatusBar *__statusBar;
 static Timer *timer;
@@ -13,8 +16,9 @@ static StatusBarInfoMode_t infoMode = STBAR_INFO_DATE;
 lv_obj_t *statusbar;
 lv_obj_t *infoBox;
 lv_obj_t *timeBox;
-lv_obj_t *wifiIcon;
+lv_obj_t *connectionIcon;
 lv_obj_t *soundIcon;
+lv_obj_t *batteryIcon;
 
 static void updateDate() {
     char dt[40];
@@ -30,16 +34,83 @@ static void updateTime() {
     LV_SET_TEXT(timeBox, dt);
 }
 
-static void update() {
+static void updateBatteryIcon() {
     BatteryStat *bat = OOP_CALL(getDevice(), getBatteryStatus);
+    if (bat->isChanrging) {
+    } else {
+        switch (bat->level) {
+        case DEV_BAT_LEV_LOW:
+            lv_img_set_src(batteryIcon, ICON_BAT_LEV_LOW);
+            break;
+        case DEV_BAT_LEV_1:
+            lv_img_set_src(batteryIcon, ICON_BAT_LEV_1);
+            break;
+        case DEV_BAT_LEV_2:
+            lv_img_set_src(batteryIcon, ICON_BAT_LEV_2);
+            break;
+        case DEV_BAT_LEV_3:
+            lv_img_set_src(batteryIcon, ICON_BAT_LEV_3);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+static void updateConnectionIcon() {
+
+    if(1) {
+        if (getWifi()->connectSt == WIFI_CONNECT_SUCCEED) {
+            switch (getWifi()->signalStrength) {
+            case WIFI_SIGNAL_STRENGTH_0:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_0);
+                break;
+            case WIFI_SIGNAL_STRENGTH_1:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_1);
+                break;
+            case WIFI_SIGNAL_STRENGTH_2:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_2);
+                break;
+            case WIFI_SIGNAL_STRENGTH_3:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_3);
+                break;
+            default:
+                break;
+            }
+        } else {
+            lv_img_set_src(connectionIcon, ICON_WIFI_DISCONNECT);
+        }
+    } else {
+        if (OOP_CALL(getCell(), getSignalStrength) == WIFI_CONNECT_SUCCEED) {
+            switch (OOP_CALL(getCell(), getSignalStrength)) {
+            case CELL_SIGNAL_STRENGTH_0:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_0);
+                break;
+            case CELL_SIGNAL_STRENGTH_1:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_1);
+                break;
+            case CELL_SIGNAL_STRENGTH_2:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_2);
+                break;
+            case CELL_SIGNAL_STRENGTH_3:
+                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_3);
+                break;
+            default:
+                break;
+            }
+        } else {
+            lv_img_set_src(connectionIcon, ICON_WIFI_DISCONNECT);
+        }
+    }
+}
+
+static void update() {
     if (infoMode == STBAR_INFO_DATE) {
         updateDate();
     }
     updateTime();
-    // LOG_TRACE("battery percent %d", bat->percent);
-    // if (bat->isChanrging) {
-    //     LOG_TRACE("battery is chargine ...");
-    // }
+    updateBatteryIcon();
+    updateConnectionIcon();
 }
 
 static void setInfoMode(StatusBarInfoMode_t mode) {
@@ -49,6 +120,25 @@ static void setInfoMode(StatusBarInfoMode_t mode) {
 
 static void setInfo(const char *data) {
     LV_SET_TEXT(infoBox, data);
+}
+
+static void setSoundVolume(int volume) {
+    switch (volume) {
+    case 0:
+        lv_img_set_src(soundIcon, ICON_SOUND_VOLUME_0);
+        break;
+    case 1:
+        lv_img_set_src(soundIcon, ICON_SOUND_VOLUME_1);
+        break;
+    case 2:
+        lv_img_set_src(soundIcon, ICON_SOUND_VOLUME_2);
+        break;
+    case 3:
+        lv_img_set_src(soundIcon, ICON_SOUND_VOLUME_3);
+        break;
+    default:
+        break;
+    }
 }
 
 OOP_CTOR(StatusBar) {
@@ -65,17 +155,26 @@ OOP_CTOR(StatusBar) {
 
     timeBox = lv_label_create(getDisplay()->statusbar);
     LV_SET_SIZE(timeBox, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    LV_ALIGN(timeBox, LV_ALIGN_RIGHT_MID, -20, 0);
+    LV_ALIGN(timeBox, LV_ALIGN_RIGHT_MID, -50, 0);
     LV_SET_BG_OPA(timeBox, LV_OPA_0);
     LV_SET_BORDER_OPA(timeBox, LV_OPA_0);
     LV_SET_TEXT_FONT(timeBox, FONT_16);
     LV_SET_TEXT_COLOR(timeBox, COLOR_WHITE);
     LV_SET_PAD_TOP(timeBox, 15);
 
+    batteryIcon = lv_img_create(getDisplay()->statusbar);
+    LV_ALIGN(batteryIcon, LV_ALIGN_RIGHT_MID, -20, 0);
+
+    soundIcon = lv_img_create(getDisplay()->statusbar);
+    LV_ALIGN(soundIcon, LV_ALIGN_LEFT_MID, 0, 0);
+
+    connectionIcon = lv_img_create(getDisplay()->statusbar);
+    LV_ALIGN(connectionIcon, LV_ALIGN_LEFT_MID, 20, 0);
+
     __statusBar->setInfo = setInfo;
     __statusBar->setInfoMode = setInfoMode;
-    updateDate();
-    updateTime();
+    __statusBar->setSoundVolume = setSoundVolume;
+    update();
 }
 
 StatusBar *statusBar() {

@@ -117,12 +117,19 @@ typedef enum WifiScanSt_t {
     WIFI_SCAN_FAILED
 } WifiScanSt_t;
 
+typedef enum WifiConnectSt_t {
+    WIFI_CONNECT_UNDER_PROCESS,
+    WIFI_CONNECT_SUCCEED,
+    WIFI_CONNECT_FAILED
+} WifiConnectSt_t;
+
 OOP_DECLARE_CLASS(WifiApList_t);
   
 OOP_CLASS(WifiEvent)
 {
     OOP_EXTENDS(Event);
     WifiScanSt_t scanStatus;
+    WifiConnectSt_t connectStatus;
     WifiApList_t *apList;
 };
 

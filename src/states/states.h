@@ -38,7 +38,8 @@ OOP_CTOR(Idle, State *parent, const char *name);
 typedef enum {
     IN_MODE_AMOUNT,
     IN_MODE_PASSWORD,
-    IN_MODE_NUMBERS
+    IN_MODE_NUMBERS,
+    IN_MODE_ALPHAB
 } InputMode_t;
 
 OOP_CLASS(InputCfg) {
@@ -56,6 +57,7 @@ OOP_CLASS(Input)
     OOP_METHOD(void, setData, const char *, const char *);
     OOP_METHOD(void, setMax, int);
     OOP_METHOD(void, reset);
+    char *input;
 };
 
 OOP_CTOR(Input, State *parent, const char *name);

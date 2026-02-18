@@ -10,12 +10,17 @@
 static Wifi *wifi; 
 static SubState *wifiScan;
 static SubState *wifiConnect;
+<<<<<<< HEAD
+=======
+static SubState *wifiEnterPass;
+>>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 
 WifiApInfo_t *chosenAp;
 
 /******************** Wifi connect sub state **********************/
 
 STATE_DEF_ENTER(WifiConnect) {
+<<<<<<< HEAD
 }
 
 STATE_DEF_EXIT(WifiConnect) {
@@ -26,6 +31,29 @@ STATE_DEF_HANDLE(WifiConnect, KeypadEvent) {
 }
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
+=======
+    Input * in = (Input*)getState(STATE_ID_INPUT);
+    InfoPage info = infoPage();
+    OOP_CALL(&info, show);
+    OOP_CALL(&info, setData, INFO_T_TEXT, "در حال اتصال به wifi", "لطفا منتظر بمانید");
+    wifi->connect(chosenAp, in->input);
+}
+
+STATE_DEF_EXIT(WifiConnect) {
+    
+}
+
+STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
+    Info *info = (Info *)getState(STATE_ID_INFO);
+    OOP_CALL(getState(STATE_ID_INPUT), setPrev, state->parent);
+    OOP_CALL(getState(STATE_ID_INPUT), setNext, state->parent);
+    if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
+        info->setText("اتصال برقرار شد", "");
+    } else {
+        info->setText("اتصال برقرار نشد", "");
+    }
+    SM_GOTO(getState(STATE_ID_INFO));
+>>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 }
 
 static void WifiConnect(State *parent) {
@@ -34,7 +62,34 @@ static void WifiConnect(State *parent) {
     wifiConnect->vtable.enter = STATE_ENTER(WifiConnect);
     wifiConnect->vtable.exit = STATE_EXIT(WifiConnect);
     wifiConnect->vtable.handleWifi = STATE_HANDLE(WifiConnect, WifiEvent);
+<<<<<<< HEAD
     wifiConnect->vtable.handleKeypad = STATE_HANDLE(WifiConnect, KeypadEvent);
+=======
+}
+
+/******************** Wifi Enter pass sub state **********************/
+
+STATE_DEF_ENTER(WifiEnterPass) {
+    Input * in = (Input*)getState(STATE_ID_INPUT);
+    OOP_CALL(getState(STATE_ID_INPUT), setPrev, state->parent);
+    OOP_CALL(getState(STATE_ID_INPUT), setNext, wifiConnect);
+    in->reset();
+    in->setMode(IN_MODE_ALPHAB);
+    in->setData("رمز wifi", "");
+    in->setMax(32);
+    SM_GOTO(getState(STATE_ID_INPUT));
+}
+
+STATE_DEF_EXIT(WifiEnterPass) {
+
+}
+
+static void WifiEnterPass(State *parent) {
+    wifiEnterPass = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, wifiEnterPass, parent, "wifi enter pass");
+    wifiEnterPass->vtable.enter = STATE_ENTER(WifiEnterPass);
+    wifiEnterPass->vtable.exit = STATE_EXIT(WifiEnterPass);
+>>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 }
 
 /******************** Wifi scan sub state **********************/
@@ -63,19 +118,31 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
         if (ev->key == KEY_ESC) {
             SM_GOTO(getState(state->parent));
         } else if (ev->key == KEY_ENTER) {
+<<<<<<< HEAD
             SM_GOTO(getState(wifiConnect));
+=======
+            SM_GOTO(getState(wifiEnterPass));
+>>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
             chosenAp = &wifi->apList.list[wifiMenu.idx];
         }
     }
 }
 
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
+<<<<<<< HEAD
     if (wifi->scanSt == WIFI_SCAN_SUCCEED) {
+=======
+    if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
+>>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
         wifiMenu = uiMenu(getDisplay()->screen);
         for (uint8_t i = 0; i < wifi->apList.size ; i++) {
             OOP_CALL(&wifiMenu, addItem, wifi->apList.list[i].essid, NULL, NULL);
         }
+<<<<<<< HEAD
     } else if (wifi->scanSt == WIFI_SCAN_FAILED) {
+=======
+    } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
+>>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
         InfoPage info = infoPage();
         OOP_CALL(&info, show);
         OOP_CALL(&info, setData, INFO_T_TEXT, "خطا در جستجوی wifi", "");
@@ -113,6 +180,7 @@ static Menu menu;
 
 static void createUi() {
     menu = uiMenu(getDisplay()->screen);
+    menuCount = 0;
     if (getDevice()->module.wifi) {
         OOP_CALL(&menu, addItem, itemTxt[CONNECTION_WIFI], NULL, NULL);
         menuMap[menuCount++] = CONNECTION_WIFI;
@@ -176,4 +244,8 @@ OOP_CTOR(Connections, State *parent, const char *name) {
 
     WifiScan(self);
     WifiConnect(self);
+<<<<<<< HEAD
+=======
+    WifiEnterPass(self);
+>>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 }
