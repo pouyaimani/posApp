@@ -45,7 +45,7 @@ OOP_CLASS(Menu) {
 
 InputBox uiInputBox(lv_obj_t *parent);
 Button uiButton(lv_obj_t *parent, unsigned int color, const char * text);
-Menu uiMenu(lv_obj_t * parent);
+void uiMenu(Menu *, lv_obj_t * parent);
 void uiDeleteMenu(Menu *menu);
 
 typedef enum {

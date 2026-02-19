@@ -109,8 +109,8 @@ static void update() {
         updateDate();
     }
     updateTime();
-    updateBatteryIcon();
-    updateConnectionIcon();
+    // updateBatteryIcon();
+    // updateConnectionIcon();
 }
 
 static void setInfoMode(StatusBarInfoMode_t mode) {

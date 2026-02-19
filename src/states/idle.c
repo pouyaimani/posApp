@@ -56,7 +56,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_1) {
         WIFI_START_SCAN();
     } else if (ev->key == KEY_4) {
-        SHOW_INFO(state, "خظا", "این پیغام جهت تست است");
+        SHOW_INFO(state, state, "خظا", "ات");
     }
 }
 

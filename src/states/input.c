@@ -50,14 +50,14 @@ static void showMaxError(State *state) {
     switch (inMode) {
     case IN_MODE_AMOUNT:
         {
-        SHOW_INFO(state, "خطا", "مبلغ بیش از حد مجاز");
+        SHOW_INFO(state, state, "خطا", "مبلغ بیش از حد مجاز");
         }
         break;
     case IN_MODE_PASSWORD:
         break;
     case IN_MODE_NUMBERS:
         {
-        SHOW_INFO(state, "خطا", "ورودی بیش از حد مجاز");
+        SHOW_INFO(state, state, "خطا", "ورودی بیش از حد مجاز");
         }
         break;
     default:
@@ -179,7 +179,7 @@ static void reset() {
 }
 
 OOP_CTOR(Input, State *parent, const char *name) {
-    State_ctor(self, parent, name);
+    OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Input);
     self->base.vtable.exit = STATE_EXIT(Input);
     self->base.vtable.handleKeypad = STATE_HANDLE(Input, KeypadEvent);

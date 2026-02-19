@@ -10,33 +10,24 @@
 static Wifi *wifi; 
 static SubState *wifiScan;
 static SubState *wifiConnect;
-<<<<<<< HEAD
-=======
 static SubState *wifiEnterPass;
->>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 
 WifiApInfo_t *chosenAp;
+
+#define WIFI_DISCONNECT_STATE       0
+#define WIFI_CONNECT_STATE          1
+#define WIFI_AFTER_CONNECT_STATE    2
+
+int connectState = WIFI_DISCONNECT_STATE;
 
 /******************** Wifi connect sub state **********************/
 
 STATE_DEF_ENTER(WifiConnect) {
-<<<<<<< HEAD
-}
-
-STATE_DEF_EXIT(WifiConnect) {
-
-}
-
-STATE_DEF_HANDLE(WifiConnect, KeypadEvent) {
-}
-
-STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
-=======
-    Input * in = (Input*)getState(STATE_ID_INPUT);
     InfoPage info = infoPage();
     OOP_CALL(&info, show);
-    OOP_CALL(&info, setData, INFO_T_TEXT, "در حال اتصال به wifi", "لطفا منتظر بمانید");
-    wifi->connect(chosenAp, in->input);
+    OOP_CALL(&info, setData, INFO_T_TEXT, "wifi در حال اتصال به", "لطفا منتظر بمانید");
+    connectState = WIFI_DISCONNECT_STATE;
+    wifi->disconnect();
 }
 
 STATE_DEF_EXIT(WifiConnect) {
@@ -44,16 +35,18 @@ STATE_DEF_EXIT(WifiConnect) {
 }
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
-    Info *info = (Info *)getState(STATE_ID_INFO);
-    OOP_CALL(getState(STATE_ID_INPUT), setPrev, state->parent);
-    OOP_CALL(getState(STATE_ID_INPUT), setNext, state->parent);
-    if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
-        info->setText("اتصال برقرار شد", "");
+    LOG_TRACE("Wifi connect status = %d",  ev->connectStatus);
+    if (connectState == WIFI_DISCONNECT_STATE) {
+        Input * in = (Input*)getState(STATE_ID_INPUT);
+        wifi->connect(chosenAp, in->input);
+        connectState = WIFI_CONNECT_STATE;
     } else {
-        info->setText("اتصال برقرار نشد", "");
+        if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
+            SHOW_INFO(state->parent, state->parent, "اتصال برقرار شد", "");
+        } else {
+            SHOW_INFO(state->parent, state->parent, "اتصال برقرار نشد", "");
+        }
     }
-    SM_GOTO(getState(STATE_ID_INFO));
->>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 }
 
 static void WifiConnect(State *parent) {
@@ -62,9 +55,6 @@ static void WifiConnect(State *parent) {
     wifiConnect->vtable.enter = STATE_ENTER(WifiConnect);
     wifiConnect->vtable.exit = STATE_EXIT(WifiConnect);
     wifiConnect->vtable.handleWifi = STATE_HANDLE(WifiConnect, WifiEvent);
-<<<<<<< HEAD
-    wifiConnect->vtable.handleKeypad = STATE_HANDLE(WifiConnect, KeypadEvent);
-=======
 }
 
 /******************** Wifi Enter pass sub state **********************/
@@ -75,7 +65,7 @@ STATE_DEF_ENTER(WifiEnterPass) {
     OOP_CALL(getState(STATE_ID_INPUT), setNext, wifiConnect);
     in->reset();
     in->setMode(IN_MODE_ALPHAB);
-    in->setData("رمز wifi", "");
+    in->setData("wifi رمز", "");
     in->setMax(32);
     SM_GOTO(getState(STATE_ID_INPUT));
 }
@@ -89,7 +79,6 @@ static void WifiEnterPass(State *parent) {
     OOP_CALL_CTOR(State, wifiEnterPass, parent, "wifi enter pass");
     wifiEnterPass->vtable.enter = STATE_ENTER(WifiEnterPass);
     wifiEnterPass->vtable.exit = STATE_EXIT(WifiEnterPass);
->>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 }
 
 /******************** Wifi scan sub state **********************/
@@ -99,53 +88,44 @@ static Menu wifiMenu;
 STATE_DEF_ENTER(WifiScan) {
     InfoPage info = infoPage();
     OOP_CALL(&info, show);
-    OOP_CALL(&info, setData, INFO_T_TEXT, "جستجوی wifi", "لطفا منتظر بمانید");
+    OOP_CALL(&info, setData, INFO_T_TEXT, "wifi جستجوی", "لطفا منتظر بمانید");
     wifi = getWifi();
     wifi->startScan();
 }
 
 STATE_DEF_EXIT(WifiScan) {
-
+    uiDeleteMenu(&wifiMenu);
 }
 
 STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
     if (wifi->scanSt == WIFI_SCAN_UNDER_PROCESS) {
         return;
     } else if (wifi->scanSt == WIFI_SCAN_FAILED) {
-
     } else {
         OOP_CALL(&wifiMenu, handleItem, ev->key);
         if (ev->key == KEY_ESC) {
-            SM_GOTO(getState(state->parent));
+            OOP_CALL(&wifiMenu, hide);
+            SM_GOTO(state->parent);
         } else if (ev->key == KEY_ENTER) {
-<<<<<<< HEAD
-            SM_GOTO(getState(wifiConnect));
-=======
-            SM_GOTO(getState(wifiEnterPass));
->>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
+            OOP_CALL(&wifiMenu, hide);
+            SM_GOTO(wifiEnterPass);
             chosenAp = &wifi->apList.list[wifiMenu.idx];
         }
     }
 }
 
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
-<<<<<<< HEAD
-    if (wifi->scanSt == WIFI_SCAN_SUCCEED) {
-=======
+    LOG_ERROR("wifi scan result is receivedv. scanStatus = %d", ev->scanStatus);
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
->>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
-        wifiMenu = uiMenu(getDisplay()->screen);
+        uiMenu(&wifiMenu, getDisplay()->screen);
         for (uint8_t i = 0; i < wifi->apList.size ; i++) {
             OOP_CALL(&wifiMenu, addItem, wifi->apList.list[i].essid, NULL, NULL);
         }
-<<<<<<< HEAD
-    } else if (wifi->scanSt == WIFI_SCAN_FAILED) {
-=======
-    } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
->>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
         InfoPage info = infoPage();
-        OOP_CALL(&info, show);
-        OOP_CALL(&info, setData, INFO_T_TEXT, "خطا در جستجوی wifi", "");
+        OOP_CALL(&info, hide);
+        OOP_CALL(&wifiMenu, show);
+    } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
+        SHOW_INFO(state->parent, state->parent, "wifi خطا در جستجوی", "");
     }
 }
 
@@ -179,7 +159,7 @@ static const char* itemTxt[CONNECTION_ALL] = {
 static Menu menu;
 
 static void createUi() {
-    menu = uiMenu(getDisplay()->screen);
+    uiMenu(&menu, getDisplay()->screen);
     menuCount = 0;
     if (getDevice()->module.wifi) {
         OOP_CALL(&menu, addItem, itemTxt[CONNECTION_WIFI], NULL, NULL);
@@ -192,7 +172,7 @@ static void createUi() {
     if (getDevice()->module.dialup) {
         OOP_CALL(&menu, addItem, itemTxt[CONNECTION_DIAL], NULL, NULL);
         menuMap[menuCount++] = CONNECTION_DIAL;
-    }       
+    }
 }
 
 static void destroyUi() {
@@ -244,8 +224,5 @@ OOP_CTOR(Connections, State *parent, const char *name) {
 
     WifiScan(self);
     WifiConnect(self);
-<<<<<<< HEAD
-=======
     WifiEnterPass(self);
->>>>>>> 060e86f1e9bbb30d2a0b5fd14f8ec6352f591b1e
 }

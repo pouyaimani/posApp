@@ -27,10 +27,10 @@ static WifiSigStrength_t getSignalStrength(Wifi *self) {
 }
 
 static void checkWifiScanResult() {
-    WifiConnectSt_t st = OOP_CALL(__wifi, hgetConnectStatus);
+    WifiScanSt_t st = OOP_CALL(__wifi, hgetScanStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
         WifiEvent *ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
-        ev->connectStatus = st;
+        ev->scanStatus = st;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkWifiScanResult);
     }
@@ -43,25 +43,23 @@ static void startScan() {
 }
 
 static void checkWifiConnectResult() {
-    WifiScanSt_t st = OOP_CALL(__wifi, hgetScanStatus);
+    WifiConnectSt_t st = OOP_CALL(__wifi, hgetConnectStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
         WifiEvent *ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
-        ev->scanStatus = st;
-        LOG_TRACE("Wifi status: %d", st);
-        ev->apList = &__wifi->apList;
+        ev->connectStatus = st;
         DISPATCH_EVENT(ev);
-        getEventloop()->unregisterChecker(checkWifiScanResult);
+        getEventloop()->unregisterChecker(checkWifiConnectResult);
     }
 }
 
 static WifiErr_t connect(WifiApInfo_t *apinfo, char *password) {
-    LOG_TRACE("Wifi: start connecting to %s ", apinfo->essid);
     getEventloop()->registerChecker(checkWifiConnectResult);
     OOP_CALL(__wifi, hconnect, apinfo, password);
 }
 
 static WifiErr_t disconnect() {
-
+    getEventloop()->registerChecker(checkWifiConnectResult);
+    OOP_CALL(__wifi, hdisconnect);
 }
 
 OOP_CTOR(Wifi) {

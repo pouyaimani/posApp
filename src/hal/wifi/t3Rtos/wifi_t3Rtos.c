@@ -31,13 +31,9 @@ static void copyWifiAp(Wifi* wifi, WifiAPInfo *apInfo, uint32_t num) {
     wifi->apList.size = num;
     LOG_TRACE("Copeing wifi aps, num = %d", num);
     for (uint32_t i = 0; i < num ; i++) {
-        wifi->apList.list[i].secMode = apinfo[i].mSecMode;
         memcpy(wifi->apList.list[i].essid, apinfo[i].mSsid,
                  sizeof(wifi->apList.list[i].essid));
-        memcpy(wifi->apList.list[i].bssid, apinfo[i].mMac,
-                 sizeof(wifi->apList.list[i].essid));
-        wifi->apList.list[i].rssi = apinfo[i].mRssi;
-        wifi->apList.list[i].channel = apinfo[i].mChannel;
+        wifi->apList.list[i].idx = i;
     }
 }
 
@@ -55,17 +51,14 @@ static WifiErr_t startScan(Wifi* wifi) {
 }
 
 static WifiErr_t connect(Wifi* wifi, WifiApInfo_t* ap, char *pass) {
-    WifiErr_t err = WIFI_ERR_CONNECT_FAILED;
-    for (uint16_t i = 0; i < wifi->apList.size ; i++) {
-        if (strcmp(ap->essid, apinfo[i].mSsid) == 0) {
-            WifiAPPasswordInfo passInfo;
-            memcpy(passInfo.mWpaPassword, pass,
-                 sizeof(pass));
-            // TODO
-            passInfo.mSecMode = WIFI_SEC_UNSEC;
-            err = translateSdkErr(sdkWifiConnectAP(&apinfo[i], &passInfo));
-        }
-    }
+    WifiAPPasswordInfo passInfo;
+    memset(passInfo.mWpaPassword, 0, sizeof(passInfo.mWpaPassword));
+    snprintf(passInfo.mWpaPassword, sizeof(passInfo.mWpaPassword), "%s", pass);
+    LOG_TRACE("wifi wssid = %s", apinfo[ap->idx].mSsid);
+    LOG_TRACE("wifi pass = %s", passInfo.mWpaPassword);
+    passInfo.mSecMode = apinfo[ap->idx].mSecMode;
+    WifiErr_t err = translateSdkErr(sdkWifiConnectAP(&apinfo[ap->idx], &passInfo));
+    LOG_TRACE("hal connect to wifi err = %d", err);
     return err;
 }
 

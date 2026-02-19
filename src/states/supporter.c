@@ -22,7 +22,7 @@ static const char* itemTxt[ITEM_CNT_MAX] = {
 };
 
 static void createUi() {
-    menu = uiMenu(getDisplay()->screen);
+    uiMenu(&menu, getDisplay()->screen);
     for (uint8_t i = 0; i < ITEM_CNT_MAX ; i++) {
         OOP_CALL(&menu, addItem, itemTxt[i], NULL, NULL);
     }

@@ -34,7 +34,7 @@ OOP_DECLARE_CLASS(State);
 /* ===== Inner state ===== */
 
 typedef enum StateInner {
-    STATE_ENTRY,
+    STATE_ENTRY = 0,
     STATE_EVENT,
     STATE_EXIT,
     STATE_SUBSTATE
@@ -61,11 +61,11 @@ OOP_VTABLE(State)
 OOP_CLASS(State)
 {
     OOP_IMPLEMENTS(State);
+    StateInner inner;
     const char *name;
     State *parent;
     State *next;
     State *prev;
-    StateInner inner;
 };
 
 /* ctor */

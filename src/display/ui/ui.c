@@ -112,39 +112,40 @@ static void menuGetIdx(Menu *menu) {
     return menu->idx;
 }
 
-Menu uiMenu(lv_obj_t * parent) {
-    Menu menu;
-    menu.vtable.addItem = addItem;
-    menu.vtable.handleItem = handleItem;
-    menu.vtable.show = menuShow;
-    menu.vtable.hide = menuHide;
-    menu.vtable.getIdx = menuGetIdx;
-    menu.cnt = 0;
-    menu.idx = 0;
+void uiMenu(Menu *menu, lv_obj_t * parent) {
+    menu->vtable.addItem = addItem;
+    menu->vtable.handleItem = handleItem;
+    menu->vtable.show = menuShow;
+    menu->vtable.hide = menuHide;
+    menu->vtable.getIdx = menuGetIdx;
+    menu->cnt = 0;
+    menu->idx = 0;
 
-    menu.main = lv_obj_create(parent);
+    menu->main = lv_obj_create(parent);
 
     /* Size & positioning */
-    LV_SET_SIZE(menu.main, lv_pct(100), lv_pct(100));
-    LV_ALIGN(menu.main, LV_ALIGN_CENTER, 0, 0);
+    LV_SET_SIZE(menu->main, lv_pct(100), lv_pct(100));
+    LV_ALIGN(menu->main, LV_ALIGN_CENTER, 0, 0);
 
     /* Vertical layout */
-    LV_SET_FLEX_FLOW(menu.main, LV_FLEX_FLOW_COLUMN);
-    LV_SET_FLEX_ALIGN(menu.main,
+    LV_SET_FLEX_FLOW(menu->main, LV_FLEX_FLOW_COLUMN);
+    LV_SET_FLEX_ALIGN(menu->main,
                             LV_FLEX_ALIGN_START,   /* main axis */
                            LV_FLEX_ALIGN_START,   /* cross axis */
                            LV_FLEX_ALIGN_START);  /* track align */
 
     /* Optional spacing between items */
-    LV_SET_ROW_PAD(menu.main, 8);
-    lv_obj_set_style_base_dir(menu.main, LV_BASE_DIR_RTL, 0);
-    return menu;
+    LV_SET_ROW_PAD(menu->main, 8);
+    lv_obj_set_style_base_dir(menu->main, LV_BASE_DIR_RTL, 0);
 }
 
 void uiDeleteMenu(Menu *menu) {
-    LV_DELETE(menu->main);
-    menu->cnt = 0;
-    menu->idx = 0;
+    if(menu->main && lv_obj_is_valid(menu->main)) {
+        LV_DELETE(menu->main);
+        menu->main = NULL;
+        menu->cnt = 0;
+        menu->idx = 0;
+    }
 }
 
 static void createInfoPage(InfoPage *pinfo) {

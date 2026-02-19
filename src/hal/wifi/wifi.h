@@ -30,12 +30,7 @@ typedef enum WifiSigStrenght_t {
 
 typedef struct WifiApInfo_t {
     char essid[64];     /* AP name */
-	char bssid[18];	    /* MAC address */
-	int channel;		/* Channel */
-	int mode;		    /* Connection mode, 0:Station; 1:IBSS */
-	int rssi;		    /* Signal value */
-	int authMode;		/* Authentication modes */
-	int secMode;		/* Encryption mode, NONE,WEP,TKIP,CCMP */
+    int idx;
 } WifiApInfo_t;
 
 typedef struct WifiApList_t {

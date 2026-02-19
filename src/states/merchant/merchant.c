@@ -73,7 +73,7 @@ static const char* itemTxt[SUBS_ALL] = {
 static Menu menu;
 
 static void createUi() {
-    menu = uiMenu(getDisplay()->screen);
+    uiMenu(&menu, getDisplay()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
         OOP_CALL(&menu, addItem, itemTxt[i], NULL, NULL);
     }

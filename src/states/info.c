@@ -10,7 +10,6 @@
 InfoPage page;
 
 STATE_DEF_ENTER(Info) {
-    page = infoPage();
     OOP_CALL(&page, show);
 }
 
@@ -23,7 +22,7 @@ STATE_DEF_HANDLE(Info, TimeOutEvent) {
 }
 
 STATE_DEF_HANDLE(Info, KeypadEvent) {
-    SM_GOTO(state->next); 
+    SM_GOTO(state->next);
 }
 
 static void setText(const char *title, const char *body) {
@@ -31,10 +30,11 @@ static void setText(const char *title, const char *body) {
 }
 
 OOP_CTOR(Info, State *parent, const char *name) {
-    State_ctor(self, parent, name);
+    OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Info);
     self->base.vtable.exit = STATE_EXIT(Info);
     self->base.vtable.handleKeypad = STATE_HANDLE(Info, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Info, TimeOutEvent);
     self->setText = setText;
+    page = infoPage();
 }

@@ -133,7 +133,7 @@ static void DateTimeSettings(State *parent) {
 static Menu settingsMenu;
 
 static void createUi() {
-    settingsMenu = uiMenu(getDisplay()->screen);
+    uiMenu(&settingsMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL ; i++) {
         OOP_CALL(&settingsMenu, addItem, SettingsItemTxt[i], NULL, NULL);
     }

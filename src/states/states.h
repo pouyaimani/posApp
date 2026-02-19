@@ -17,8 +17,7 @@ State *getState(StateId_t id);
 
 /*********************Startup*********************/
 
-OOP_CLASS(Startup)
-{
+OOP_CLASS(Startup) {
     OOP_EXTENDS(State);
 };
 
@@ -26,8 +25,7 @@ OOP_CTOR(Startup, State *parent, const char *name);
 
 /**********************Idle**********************/
 
-OOP_CLASS(Idle)
-{
+OOP_CLASS(Idle) {
     OOP_EXTENDS(State);
 };
 
@@ -50,8 +48,7 @@ OOP_CLASS(InputCfg) {
     State *prev;
 };
 
-OOP_CLASS(Input)
-{
+OOP_CLASS(Input) {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setMode, InputMode_t);
     OOP_METHOD(void, setData, const char *, const char *);
@@ -64,8 +61,7 @@ OOP_CTOR(Input, State *parent, const char *name);
 
 /**********************Card Holder**********************/
 
-OOP_CLASS(CardHolder)
-{
+OOP_CLASS(CardHolder) {
     OOP_EXTENDS(State);
     bool isMagSwiped;
 };
@@ -74,24 +70,23 @@ OOP_CTOR(CardHolder, State *parent, const char *name);
 
 /**************************Info*************************/
 
-OOP_CLASS(Info)
-{
+OOP_CLASS(Info) {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setText, const char *, const char *);
 };
 
 OOP_CTOR(Info, State *parent, const char *name);
 
-#define SHOW_INFO(state, title, body)                           \
-    OOP_CALL(getState(STATE_ID_INFO), setNext, state);          \
+#define SHOW_INFO(prev, next, title, body)                      \
     Info *info = (Info *)getState(STATE_ID_INFO);               \
     info->setText(title, body);                                 \
+    OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);           \
+    OOP_CALL(getState(STATE_ID_INFO), setNext, next);           \
     SM_GOTO(getState(STATE_ID_INFO));                           
 
 /**************************Ginfo*************************/
 
-OOP_CLASS(Ginfo)
-{
+OOP_CLASS(Ginfo) {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setText, const char *);
     OOP_METHOD(void, setImg, const char *);
@@ -108,8 +103,7 @@ OOP_CTOR(Ginfo, State *parent, const char *name);
 
 /************************Dialogue***********************/
 
-OOP_CLASS(Dialogue)
-{
+OOP_CLASS(Dialogue) {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setBody, const char *);
     OOP_METHOD(void, setTitle, const char *);
@@ -127,8 +121,7 @@ OOP_CTOR(Dialogue, State *parent, const char *name);
 
 /************************Supporter***********************/
 
-OOP_CLASS(Supporter)
-{
+OOP_CLASS(Supporter) {
     OOP_EXTENDS(State);
 };
 
