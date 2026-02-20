@@ -42,7 +42,10 @@
     lv_obj_set_style_clip_corner(obj, LV_STYLE_CLIP_CORNER, LV_PART_MAIN)
 
 #define LV_CLICKABLE(obj) \
-    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE)
+
+#define LV_CHECKABLE(obj) \
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_CHECKABLE)
 
 /***********************************************************************************************/
 

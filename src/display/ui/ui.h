@@ -33,20 +33,25 @@ OOP_VTABLE(Menu) {
     OOP_IMETHOD(void, Menu, show);
     OOP_IMETHOD(void, Menu, hide);
     OOP_IMETHOD(int, Menu, getIdx);
+    OOP_IMETHOD(void, Menu, setChecked, int);
 };
  
 OOP_CLASS(Menu) {
     OOP_IMPLEMENTS(Menu);
     lv_obj_t *main;
+    lv_obj_t *selector;
+    lv_obj_t *checker;
     lv_obj_t *item[MENU_ITEM_MAX];
     int cnt;
     int idx;
+    int selected;
 };
 
 InputBox uiInputBox(lv_obj_t *parent);
 Button uiButton(lv_obj_t *parent, unsigned int color, const char * text);
 void uiMenu(Menu *, lv_obj_t * parent);
 void uiDeleteMenu(Menu *menu);
+void uiOnOffMenu(Menu *menu, lv_obj_t * parent);
 
 typedef enum {
     INFO_T_TEXT,

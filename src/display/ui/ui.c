@@ -50,6 +50,7 @@ static void addItem(Menu *menu, const char * text,
     LV_SET_SIZE(btn, lv_pct(100), LV_SIZE_CONTENT);
     LV_SET_BG_OPA(btn, LV_OPA_0);
     LV_SET_BORDER_OPA(btn, LV_OPA_0);
+    LV_ALIGN(btn, LV_ALIGN_CENTER, 0, 0);
 
     if(event_cb) {
         lv_obj_add_event_cb(btn, event_cb, LV_EVENT_CLICKED, user_data);
@@ -74,6 +75,16 @@ static void addItem(Menu *menu, const char * text,
     menu->item[menu->cnt++] = btn;
 }
 
+static void showSelector(Menu *menu) {
+    lv_obj_update_layout(menu->main);
+    lv_obj_set_size(menu->selector, lv_pct(105), 
+        LV_GET_HEIGHT(menu->item[menu->idx]) * 1.2);
+    lv_obj_align_to(menu->selector,
+                menu->item[menu->idx],
+                LV_ALIGN_CENTER,
+                0, 0);
+}
+
 static void handleItem(Menu *menu, Key_t key) {
     MenuUpDown_t updown;
     if (key == KEY_UP) {
@@ -83,25 +94,21 @@ static void handleItem(Menu *menu, Key_t key) {
     } else {
         return;
     }
-    LV_SET_TEXT_COLOR(menu->item[menu->idx], COLOR_BLACK);
     if (updown == MENU_UP) {
         menu->idx = menu->idx == 0 ? menu->cnt - 1 : menu->idx - 1;
     } else if (updown == MENU_DOWN) {
         menu->idx = menu->idx == (menu->cnt - 1) ? 0 : menu->idx + 1;
     }
-    LV_SET_TEXT_COLOR(menu->item[menu->idx], 0x68DD40);
+    showSelector(menu);
     lv_obj_scroll_to_view(menu->item[menu->idx], LV_ANIM_ON);
 }
 
 static void menuShow(Menu *menu) {
-    if (menu->cnt > 0) {
-        LV_SET_TEXT_COLOR(menu->item[0], 0x68DD40);
-        for(int i = 1 ; i < menu->cnt ; i++) {
-            LV_SET_TEXT_COLOR(menu->item[i], COLOR_BLACK);
-        }
-    }
     menu->idx = 0;
     LV_SHOW(menu->main);
+    if (menu->cnt > 0) {
+        showSelector(menu);
+    }
 }
 
 static void menuHide(Menu *menu) {
@@ -112,20 +119,36 @@ static void menuGetIdx(Menu *menu) {
     return menu->idx;
 }
 
+static void menuSetChecked(Menu *menu, int newIdx) {
+    if(newIdx < 0 || newIdx >= menu->cnt) return;
+    lv_obj_update_layout(menu->main);
+    LV_SET_SIZE(menu->checker, lv_pct(95), LV_SIZE_CONTENT);
+    lv_obj_align_to(menu->checker,
+                menu->item[menu->idx],
+                LV_ALIGN_CENTER,
+                0, 0);
+    LV_SET_TEXT_ALIGN(menu->checker, LV_TEXT_ALIGN_LEFT);
+    LV_SHOW(menu->checker);
+}
+
 void uiMenu(Menu *menu, lv_obj_t * parent) {
     menu->vtable.addItem = addItem;
     menu->vtable.handleItem = handleItem;
     menu->vtable.show = menuShow;
     menu->vtable.hide = menuHide;
     menu->vtable.getIdx = menuGetIdx;
+    menu->vtable.setChecked = menuSetChecked;
     menu->cnt = 0;
     menu->idx = 0;
+    menu->selected = 0;
 
     menu->main = lv_obj_create(parent);
-
     /* Size & positioning */
-    LV_SET_SIZE(menu->main, lv_pct(100), lv_pct(100));
+    LV_SET_SIZE(menu->main, lv_pct(97), lv_pct(90));
     LV_ALIGN(menu->main, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_scroll_dir(menu->main, LV_DIR_VER);
+    LV_SET_PAD_TOP(menu->main, 5);
+    LV_SET_PAD_BOTTOM(menu->main, 20);
 
     /* Vertical layout */
     LV_SET_FLEX_FLOW(menu->main, LV_FLEX_FLOW_COLUMN);
@@ -137,6 +160,19 @@ void uiMenu(Menu *menu, lv_obj_t * parent) {
     /* Optional spacing between items */
     LV_SET_ROW_PAD(menu->main, 8);
     lv_obj_set_style_base_dir(menu->main, LV_BASE_DIR_RTL, 0);
+    
+    menu->selector = lv_obj_create(menu->main);
+    LV_SET_BG_COLOR(menu->selector, MAIN_THEME_COLOR);
+    LV_SET_BG_OPA(menu->selector, LV_OPA_20);
+    lv_obj_move_background(menu->selector);
+    lv_obj_add_flag(menu->selector, LV_OBJ_FLAG_IGNORE_LAYOUT);
+    LV_SET_RADIUS(menu->selector, 16);
+    lv_obj_set_style_anim_time(menu->selector, 300, 0);
+
+    menu->checker= lv_label_create(menu->main);
+    LV_SET_TEXT(menu->checker, LV_SYMBOL_OK);  // built-in LVGL symbol
+    LV_HIDE(menu->checker);
+    lv_obj_add_flag(menu->checker, LV_OBJ_FLAG_IGNORE_LAYOUT);
 }
 
 void uiDeleteMenu(Menu *menu) {
@@ -146,6 +182,12 @@ void uiDeleteMenu(Menu *menu) {
         menu->cnt = 0;
         menu->idx = 0;
     }
+}
+
+void uiOnOffMenu(Menu *menu, lv_obj_t * parent) {
+    uiMenu(menu, parent);
+    OOP_CALL(menu, addItem, "فعال", NULL, NULL);
+    OOP_CALL(menu, addItem, "غیر فعال", NULL, NULL);
 }
 
 static void createInfoPage(InfoPage *pinfo) {

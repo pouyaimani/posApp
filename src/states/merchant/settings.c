@@ -29,12 +29,26 @@ static const char* SettingsItemTxt[SET_ITEM_ALL] = {
 
 /******************** sound sub state **********************/
 
-STATE_DEF_ENTER(SoundSettings) {
+static Menu soundMenu;
 
+STATE_DEF_ENTER(SoundSettings) {
+    uiOnOffMenu(&soundMenu, getDisplay()->screen);
+    OOP_CALL(&soundMenu, setChecked, 0);
+    OOP_CALL(&soundMenu, show);
 }
 
 STATE_DEF_EXIT(SoundSettings) {
+    OOP_CALL(&soundMenu, hide);
+    uiDeleteMenu(&soundMenu);
+}
 
+STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
+    OOP_CALL(&soundMenu, handleItem, ev->key);
+    if (ev->key == KEY_ESC) {
+        SM_GOTO(state->parent);
+    } else if (ev->key == KEY_ENTER) {
+        OOP_CALL(&soundMenu, setChecked, soundMenu.idx);
+    }
 }
 
 static void SoundSettings(State *parent) {
@@ -42,6 +56,7 @@ static void SoundSettings(State *parent) {
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_SOUND], parent, "sound settings");
     subSettings[SET_ITEM_SOUND]->vtable.enter = STATE_ENTER(SoundSettings);
     subSettings[SET_ITEM_SOUND]->vtable.exit = STATE_EXIT(SoundSettings);
+    subSettings[SET_ITEM_SOUND]->vtable.handleKeypad = STATE_HANDLE(SoundSettings, KeypadEvent);
 }
 
 /******************** energy sub state **********************/
@@ -157,6 +172,7 @@ static void handleKeyAction(State *state, int id) {
     if (id >= SET_ITEM_ALL) {
         return;
     }
+    SM_GOTO(subSettings[id]);
 }
 
 STATE_DEF_HANDLE(Settings, KeypadEvent) {

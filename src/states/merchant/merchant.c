@@ -7,10 +7,20 @@
 #include "ui/ui.h"
 #include "dev/dev.h"
 
+typedef enum {
+    SUBS_REPORTS = 0,
+    SUBS_SHIFT,
+    SUBS_MERCHANT_DATA,
+    SUBS_SPEC_PROJECTS,
+    SUBS_SETTINGS,
+    SUBS_CONNECTIONS,
+    SUBS_ALL
+} SubStates_t;
+
+static SubState *subStates[SUBS_ALL];
+
 static SubState *enterPass;
 static SubState *merchantMenu;
-static SubState *connections;
-static SubState *settings;
 
 #define PASSWORD_MAX_LEN 4
 
@@ -51,16 +61,6 @@ static void D_EnterPassword() {
 
 /******************** Merchant menu sub state **********************/
 
-typedef enum {
-    SUBS_REPORTS = 0,
-    SUBS_SHIFT,
-    SUBS_MERCHANT_DATA,
-    SUBS_SPEC_PROJECTS,
-    SUBS_SETTINGS,
-    SUBS_CONNECTIONS,
-    SUBS_ALL
-} SubStates_t;
-
 static const char* itemTxt[SUBS_ALL] = {
     "گزارش",
     "شیفت کاری",
@@ -97,13 +97,7 @@ static void handleKeyAction(State *state, int id) {
     if (id >= SUBS_ALL) {
         return;
     }
-    switch (id) {
-    case SUBS_CONNECTIONS:
-        SM_GOTO(connections);
-        break;
-    default:
-        break;
-    }
+    SM_GOTO(subStates[id]);
 }
 
 STATE_DEF_HANDLE(MerchantMenu, KeypadEvent) {
@@ -136,9 +130,9 @@ OOP_CTOR(Merchant, State *parent, const char *name) {
     self->base.vtable.exit = STATE_EXIT(Merchant);
     EnterPassword(self);
     MerchantMenu(self);
-    connections = (Connections *)GET_MEM(sizeof(Connections));
-    OOP_CALL_CTOR(Connections, connections, merchantMenu, "connections");
-    settings = (Settings *)GET_MEM(sizeof(Settings));
-    OOP_CALL_CTOR(Settings, settings, merchantMenu, "settings");
+    subStates[SUBS_CONNECTIONS] = (Connections *)GET_MEM(sizeof(Connections));
+    OOP_CALL_CTOR(Connections, subStates[SUBS_CONNECTIONS], merchantMenu, "connections");
+    subStates[SUBS_SETTINGS] = (Settings *)GET_MEM(sizeof(Settings));
+    OOP_CALL_CTOR(Settings, subStates[SUBS_SETTINGS], merchantMenu, "settings");
 
 }
