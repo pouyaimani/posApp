@@ -93,7 +93,7 @@ OOP_CLASS(TxnSettings) {
     bool mIsSupportTdk;                 
 };
 
-OOP_CLASS(Settings) {
+OOP_CLASS(DevSettings) {
     TerminalSettings terminal;      
     ServerSettings server;         
     TxnSettings txn;
@@ -109,7 +109,7 @@ OOP_VTABLE(Storage) {
 
 OOP_CLASS(Storage) {
     OOP_IMPLEMENTS(Storage);
-    Settings *settings;
+    DevSettings *settings;
 };
 
 OOP_CTOR(Storage);

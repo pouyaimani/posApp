@@ -5,6 +5,10 @@
 #include "event.h"
 #include "ui/ui.h"
 #include "dev/dev.h"
+#include "storage/storage.h"
+
+static Storage *storage;
+static Device *dev;
 
 typedef enum {
     SET_ITEM_SOUND = 0,
@@ -33,7 +37,8 @@ static Menu soundMenu;
 
 STATE_DEF_ENTER(SoundSettings) {
     uiOnOffMenu(&soundMenu, getDisplay()->screen);
-    OOP_CALL(&soundMenu, setChecked, 0);
+    int idx = storage->settings->terminal.mVideoVolume == AUDI_VOL_6 ? 0 : 1;
+    OOP_CALL(&soundMenu, setChecked, idx);
     OOP_CALL(&soundMenu, show);
 }
 
@@ -47,6 +52,10 @@ STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
+        AudioVolume_t vol = soundMenu.idx == 0 ? 
+            AUDI_VOL_6 : AUDI_VOL_0;
+        OOP_CALL(dev, setAudioVolume, vol);
+        storage->settings->terminal.mVideoVolume = vol;
         OOP_CALL(&soundMenu, setChecked, soundMenu.idx);
     }
 }
@@ -94,13 +103,30 @@ static void ReceiptSettings(State *parent) {
 }
 
 /******************** screen light sub state **********************/
+static Bar brightBar;
 
 STATE_DEF_ENTER(ScrLightSettings) {
-
+    uiBar(&brightBar, getDisplay()->screen, 1, dev->maxBright);
+    OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
+    OOP_CALL(&brightBar, setValue, storage->settings->terminal.mScreenLight);
 }
 
 STATE_DEF_EXIT(ScrLightSettings) {
+    uiBarDelete(&brightBar);
+}
 
+STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
+    if (ev->key == KEY_ESC) {
+        storage->settings->terminal.mScreenLight = brightBar.value;
+        SM_GOTO(state->parent);
+    } else if (ev->key == KEY_ENTER) {
+
+    } else if (ev->key == KEY_UP) {
+        OOP_CALL(&brightBar, increase);
+    } else if (ev->key == KEY_DOWN) {
+        OOP_CALL(&brightBar, decrease);
+    }
+    OOP_CALL(dev, setBrightness, brightBar.value);
 }
 
 static void ScrLightSettings(State *parent) {
@@ -108,6 +134,7 @@ static void ScrLightSettings(State *parent) {
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_SCR_LIGHT], parent, "receipt settings");
     subSettings[SET_ITEM_SCR_LIGHT]->vtable.enter = STATE_ENTER(ScrLightSettings);
     subSettings[SET_ITEM_SCR_LIGHT]->vtable.exit = STATE_EXIT(ScrLightSettings);
+    subSettings[SET_ITEM_SCR_LIGHT]->vtable.handleKeypad = STATE_HANDLE(ScrLightSettings, KeypadEvent);
 }
 
 /******************** touch sub state **********************/
@@ -194,7 +221,8 @@ OOP_CTOR(Settings, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(Settings);
     self->base.vtable.exit = STATE_EXIT(Settings);
     self->base.vtable.handleKeypad = STATE_HANDLE(Settings, KeypadEvent);
-
+    storage = getStorage();
+    dev = getDevice();
     SoundSettings(self);
     EnergySettings(self);
     ReceiptSettings(self);

@@ -5,7 +5,7 @@
 #include "logger.h"
 
 Storage *__storage;
-Settings _settings;
+DevSettings _settings;
 
 #ifdef DEVICE_TRENDITT3RTOS
 #include "t3Rtos/storage_t3Rtos.h"

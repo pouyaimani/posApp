@@ -192,7 +192,7 @@ typedef struct _SettingItem {
 
 #define MAX_OPERATOR_NUM   4
 
-extern Settings _settings;
+extern DevSettings _settings;
 
 static const SettingItem settingsTable[] = {
     {
@@ -1103,7 +1103,7 @@ static void _init(Storage *self) {
 }
 
 static void _reloadSettings(Storage *self) {
-    memset(&_settings, 0x00, sizeof(Settings));
+    memset(&_settings, 0x00, sizeof(DevSettings));
     reloadSettings(DEVICE_PROP_FILE, (SettingItem *) &settingsTable, getDevicePropsTableCount());
 }
 

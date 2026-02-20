@@ -47,11 +47,33 @@ OOP_CLASS(Menu) {
     int selected;
 };
 
+OOP_DECLARE_CLASS(Bar);
+
+OOP_VTABLE(Bar) {
+    OOP_IMETHOD(void, Bar, setValue, int);
+    OOP_IMETHOD(void, Bar, increase);
+    OOP_IMETHOD(void, Bar, decrease);
+    OOP_IMETHOD(void, Bar, hide);
+    OOP_IMETHOD(void, Bar, show);
+    OOP_IMETHOD(void, Bar, setTitle, const char *);
+};
+ 
+OOP_CLASS(Bar) {
+    OOP_IMPLEMENTS(Bar);
+    lv_obj_t *bar;
+    lv_obj_t *title;
+    int value;
+    int max;
+    int min;
+};
+
 InputBox uiInputBox(lv_obj_t *parent);
 Button uiButton(lv_obj_t *parent, unsigned int color, const char * text);
 void uiMenu(Menu *, lv_obj_t * parent);
 void uiDeleteMenu(Menu *menu);
 void uiOnOffMenu(Menu *menu, lv_obj_t * parent);
+void uiBar(Bar *bar, lv_obj_t * parent, int min, int max);
+void uiBarDelete(Bar *bar);
 
 typedef enum {
     INFO_T_TEXT,

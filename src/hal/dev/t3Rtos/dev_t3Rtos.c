@@ -169,6 +169,17 @@ static SerialNumber *getSN(Device *dev) {
     return &sn;
 }
 
+static void setAudioVolume(Device *dev, AudioVolume_t volume) {
+    sdkSysSetDeviceVolume(SYS_VOLUME_TYPE_KEY, volume);
+    sdkSysSetDeviceVolume(SYS_VOLUME_TYPE_AUDIO, volume);
+}
+
+static void setBrightness(Device *dev, int bright) {
+    int br = bright > dev->maxBright ? dev->maxBright : bright;
+    br = bright < 1 ? 1 : bright;
+    ddi_lcd_ioctl(DDI_LCD_CTL_BRIGHT, br, 0);
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.name = name;
     self->base.vtable.init = init;
@@ -183,6 +194,10 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.reboot = reboot;
     self->base.vtable.powerOff = powerOff;
     self->base.vtable.getSN = getSN;
+    self->base.vtable.setAudioVolume = setAudioVolume;
+    self->base.vtable.setBrightness = setBrightness;
+
+    self->base.maxBright = 5;
 }
 
 #endif

@@ -726,7 +726,7 @@
 
 #define LV_USE_ARCLABEL  0
 
-#define LV_USE_BAR        0
+#define LV_USE_BAR        1
 
 #define LV_USE_BUTTON        1
 
