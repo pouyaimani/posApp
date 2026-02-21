@@ -33,31 +33,33 @@ static const char* SettingsItemTxt[SET_ITEM_ALL] = {
 
 /******************** sound sub state **********************/
 
-static Menu soundMenu;
+static Bar soundBar;
 
 STATE_DEF_ENTER(SoundSettings) {
-    uiOnOffMenu(&soundMenu, getDisplay()->screen);
-    int idx = storage->settings->terminal.mVideoVolume == AUDI_VOL_6 ? 0 : 1;
-    OOP_CALL(&soundMenu, setChecked, idx);
-    OOP_CALL(&soundMenu, show);
+    uiBar(&soundBar, getDisplay()->screen, 0, dev->maxSound);
+    OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
+    OOP_CALL(&soundBar, setValue, storage->settings->terminal.mVideoVolume);
+    OOP_CALL(&soundBar, show);
 }
 
 STATE_DEF_EXIT(SoundSettings) {
-    OOP_CALL(&soundMenu, hide);
-    uiDeleteMenu(&soundMenu);
+    OOP_CALL(&soundBar, hide);
+    uiBarDelete(&soundBar);
 }
 
 STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
-    OOP_CALL(&soundMenu, handleItem, ev->key);
     if (ev->key == KEY_ESC) {
+        storage->settings->terminal.mVideoVolume = soundBar.value;
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        AudioVolume_t vol = soundMenu.idx == 0 ? 
-            AUDI_VOL_6 : AUDI_VOL_0;
-        OOP_CALL(dev, setAudioVolume, vol);
-        storage->settings->terminal.mVideoVolume = vol;
-        OOP_CALL(&soundMenu, setChecked, soundMenu.idx);
+
+    } else if (ev->key == KEY_UP) {
+        OOP_CALL(&soundBar, increase);
+    } else if (ev->key == KEY_DOWN) {
+        OOP_CALL(&soundBar, decrease);
     }
+    OOP_CALL(dev, setAudioVolume, soundBar.value);
+    OOP_CALL(dev, beepOnce);
 }
 
 static void SoundSettings(State *parent) {
@@ -109,9 +111,11 @@ STATE_DEF_ENTER(ScrLightSettings) {
     uiBar(&brightBar, getDisplay()->screen, 1, dev->maxBright);
     OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
     OOP_CALL(&brightBar, setValue, storage->settings->terminal.mScreenLight);
+    OOP_CALL(&brightBar, show);
 }
 
 STATE_DEF_EXIT(ScrLightSettings) {
+    OOP_CALL(&brightBar, hide);
     uiBarDelete(&brightBar);
 }
 
@@ -139,19 +143,38 @@ static void ScrLightSettings(State *parent) {
 
 /******************** touch sub state **********************/
 
-STATE_DEF_ENTER(TouchSettings) {
+static Menu touchMenu;
 
+STATE_DEF_ENTER(TouchSettings) {
+    uiOnOffMenu(&touchMenu, getDisplay()->screen);
+    int idx = storage->settings->terminal.mTouchEnable == true ? 0 : 1;
+    OOP_CALL(&touchMenu, setChecked, idx);
+    OOP_CALL(&touchMenu, show);
 }
 
 STATE_DEF_EXIT(TouchSettings) {
+    OOP_CALL(&touchMenu, hide);
+    uiDeleteMenu(&touchMenu);
+}
 
+STATE_DEF_HANDLE(TouchSettings, KeypadEvent) {
+    OOP_CALL(&touchMenu, handleItem, ev->key);
+    if (ev->key == KEY_ESC) {
+        SM_GOTO(state->parent);
+    } else if (ev->key == KEY_ENTER) {
+        bool en = touchMenu.idx == 0;
+        //TODO: enable/ disable touch
+        storage->settings->terminal.mTouchEnable = en;
+        OOP_CALL(&touchMenu, setChecked, touchMenu.idx);
+    }
 }
 
 static void TouchSettings(State *parent) {
     subSettings[SET_ITEM_TOUCH] = (SubState *)GET_MEM(sizeof(SubState));
-    OOP_CALL_CTOR(State, subSettings[SET_ITEM_TOUCH], parent, "receipt settings");
+    OOP_CALL_CTOR(State, subSettings[SET_ITEM_TOUCH], parent, "touch settings");
     subSettings[SET_ITEM_TOUCH]->vtable.enter = STATE_ENTER(TouchSettings);
     subSettings[SET_ITEM_TOUCH]->vtable.exit = STATE_EXIT(TouchSettings);
+    subSettings[SET_ITEM_TOUCH]->vtable.handleKeypad = STATE_HANDLE(TouchSettings, KeypadEvent);
 }
 
 /******************** date time sub state **********************/

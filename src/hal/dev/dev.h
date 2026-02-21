@@ -40,16 +40,6 @@ OOP_CLASS(SerialNumber) {
     char data[SERIAL_NUMBER_MAX_LEN];
 };
 
-typedef enum {
-    AUDI_VOL_0 = 0,
-    AUDI_VOL_1,
-    AUDI_VOL_2,
-    AUDI_VOL_3,
-    AUDI_VOL_4,
-    AUDI_VOL_5,
-    AUDI_VOL_6
-} AudioVolume_t;
-
 OOP_DECLARE_CLASS(Device)
 
 OOP_VTABLE(Device) {
@@ -65,8 +55,9 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(void, Device, reboot);
     OOP_IMETHOD(void, Device, powerOff);
     OOP_IMETHOD(SerialNumber*, Device, getSN);
-    OOP_IMETHOD(void, Device, setAudioVolume, AudioVolume_t);
+    OOP_IMETHOD(void, Device, setAudioVolume, int);
     OOP_IMETHOD(void, Device, setBrightness, int);
+    OOP_IMETHOD(void, Device, beepOnce);
 };
 
 OOP_CLASS(Device) {
@@ -74,6 +65,7 @@ OOP_CLASS(Device) {
     ModuleExist_t module;
     const char *name;
     int maxBright;
+    int maxSound;
 };
 
 OOP_CTOR(Device, const char* name);

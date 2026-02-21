@@ -41,6 +41,7 @@ typedef struct _SettingItem {
 #define PROP_HAS_MARGIN                         "has_margin"
 #define PROP_HAS_DOWNLOAD_TMK                   "has_download_tmk"
 #define PROP_HAS_VERSION_FORCE_UPDATE           "has_version_force_update"
+#define PROP_TOUCH_ENABLE                       "touch_enable"
 #define PROP_COMM_MODE                          "comm_mode"
 #define PROP_TIMEOUT_SLEEP                      "timeout_sleep"
 #define PROP_BRIGHTNESS                         "brightness"
@@ -118,6 +119,7 @@ typedef struct _SettingItem {
 #define VALUE_PROP_HAS_MARGIN                         libPropertiesGet(PROP_HAS_MARGIN)
 #define VALUE_PROP_HAS_DOWNLOAD_TMK                   libPropertiesGet(PROP_HAS_DOWNLOAD_TMK)
 #define VALUE_PROP_HAS_VERSION_FORCE_UPDATE           libPropertiesGet(PROP_HAS_VERSION_FORCE_UPDATE)
+#define VALUE_PROP_TOUCH_ENABLE                       libPropertiesGet(PROP_TOUCH_ENABLE)
 #define VALUE_PROP_COMM_MODE                          libPropertiesGet(PROP_COMM_MODE)
 #define VALUE_PROP_TIMEOUT_SLEEP                      libPropertiesGet(PROP_TIMEOUT_SLEEP)
 #define VALUE_PROP_BRIGHTNESS                         libPropertiesGet(PROP_BRIGHTNESS)
@@ -226,6 +228,14 @@ static const SettingItem settingsTable[] = {
         1,
         DEFAULT_PROP_HAS_VERSION_FORCE_UPDATE,
         &_settings.terminal.mHasVersionForceUpdate,
+    },
+    {
+        PROP_TOUCH_ENABLE,
+        T_CHAR,
+        0,
+        1,
+        DEFAULT_PROP_TOUCH_ENABLE,
+        &_settings.terminal.mTouchEnable,
     },
     {
         PROP_COMM_MODE,

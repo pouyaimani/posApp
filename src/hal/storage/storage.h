@@ -13,6 +13,7 @@ OOP_CLASS(TerminalSettings) {
     bool mHasMargined;
     bool mHasDownloadTmk;
     bool mHasVersionForceUpdate;
+    bool mTouchEnable;
 
     uint8_t mSupportAutoLogin;
     bool mSupportReverse;

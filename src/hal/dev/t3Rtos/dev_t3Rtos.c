@@ -80,8 +80,6 @@ static void init(Device* dev) {
     platformSysInit();
     sdkSysInit();
     sdkLogSetLevel(4);
-    sdkEmvDebug(0);
-    libPropertiesLoad();
     
     dev->module.wifi = sdkSysIsDeviceExist(SYS_DEVICE_WIFI);
     dev->module.gprs = sdkSysIsDeviceExist(SYS_DEVICE_WIRELESS);
@@ -169,8 +167,7 @@ static SerialNumber *getSN(Device *dev) {
     return &sn;
 }
 
-static void setAudioVolume(Device *dev, AudioVolume_t volume) {
-    sdkSysSetDeviceVolume(SYS_VOLUME_TYPE_KEY, volume);
+static void setAudioVolume(Device *dev, int volume) {
     sdkSysSetDeviceVolume(SYS_VOLUME_TYPE_AUDIO, volume);
 }
 
@@ -178,6 +175,10 @@ static void setBrightness(Device *dev, int bright) {
     int br = bright > dev->maxBright ? dev->maxBright : bright;
     br = bright < 1 ? 1 : bright;
     ddi_lcd_ioctl(DDI_LCD_CTL_BRIGHT, br, 0);
+}
+
+static void beepOnce(Device *dev) {
+    sdkSysBeepOnce();
 }
 
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
@@ -196,8 +197,10 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.getSN = getSN;
     self->base.vtable.setAudioVolume = setAudioVolume;
     self->base.vtable.setBrightness = setBrightness;
+    self->base.vtable.beepOnce = beepOnce;
 
     self->base.maxBright = 5;
+    self->base.maxSound = 5;
 }
 
 #endif
