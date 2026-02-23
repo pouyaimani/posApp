@@ -59,6 +59,16 @@ OOP_CLASS(Input) {
 
 OOP_CTOR(Input, State *parent, const char *name);
 
+#define GOTO_INPUT(prev, next, title, body, max, mode)          \
+    Input *in = (Input*)getState(STATE_ID_INPUT);               \
+    in->reset();                                                \
+    in->setData(title, body);                                   \
+    in->setMax(max);                                            \
+    in->setMode(mode);                                          \
+    OOP_CALL(getState(STATE_ID_INPUT), setPrev, prev);           \
+    OOP_CALL(getState(STATE_ID_INPUT), setNext, next);           \
+    SM_GOTO(getState(STATE_ID_INPUT));  
+
 /**********************Card Holder**********************/
 
 OOP_CLASS(CardHolder) {
