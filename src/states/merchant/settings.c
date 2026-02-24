@@ -98,6 +98,7 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
+        idx = energyMenu.idx;
         if (energyMenu.idx == 0) {
             GOTO_INPUT(state, getValue, "ورود بازه ذخیره انرژی", "", 2, IN_MODE_NUMBERS);
         } else if (energyMenu.idx == 1) {

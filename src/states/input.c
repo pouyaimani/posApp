@@ -22,6 +22,7 @@ static lv_obj_t *info;
 static InputMode_t inMode;
 static char *input;
 static char *amountStr;
+static char *password;
 static uint8_t idx = 0;
 static uint8_t maxIn = 0;
 
@@ -71,6 +72,7 @@ static void handleInput(State *state, KeypadEvent *ev)
     bool isAmount = inMode == IN_MODE_AMOUNT ? true : false;
     if (ev->key == KEY_CLEAR) {
         deleteChar(input);
+        deleteChar(password);
     } else {
         if (idx >= maxIn) {
             showMaxError(state);
@@ -78,6 +80,9 @@ static void handleInput(State *state, KeypadEvent *ev)
         }
         appendChar(input, INPUT_MAX_LEN,
                    isPassword ? '*' : ev->keyStr);
+        if (isPassword) {
+            appendChar(password, INPUT_MAX_LEN, ev->keyStr);
+        }
     }
 
     if (isAmount) {
@@ -171,6 +176,7 @@ static void setMax(int val) {
 
 static void reset() {
     clearStr(input);
+    clearStr(password);
     idx = 0;
     LV_SET_TEXT(inputBox.textBox, "");
     LV_SET_TEXT(title, "");
@@ -189,7 +195,9 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->setMax = setMax;
     self->reset = reset;
     input = (char*)GET_MEM(INPUT_MAX_LEN);
+    password = (char*)GET_MEM(PASS_MAX_LEN + 1);
     self->input = input;
+    self->password = password;
     amountStr = (char*)GET_MEM(INPUT_MAX_LEN);
     createUi();
 }

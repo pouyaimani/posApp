@@ -9,6 +9,7 @@
 #include "eventloop.h"
 #include "timer.h"
 #include "wifi/wifi.h"
+#include "storage/storage.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
@@ -18,6 +19,7 @@ STATE_DEF_ENTER(Startup) {
     MAG_INIT();
     WIFI_INIT();
     TOUCH_INIT();
+    OOP_CALL(getStorage(), reloadSettings);
     Display *disp = getDisplay();
     disp->init();
     Core *core = getSmCore();

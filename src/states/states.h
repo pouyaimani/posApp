@@ -55,6 +55,7 @@ OOP_CLASS(Input) {
     OOP_METHOD(void, setMax, int);
     OOP_METHOD(void, reset);
     char *input;
+    char *password;
 };
 
 OOP_CTOR(Input, State *parent, const char *name);

@@ -26,7 +26,7 @@ OOP_CLASS(TerminalSettings) {
     char mLoginOperator;
     char mLoginDate[6 + 1];
 
-    uint8_t mOperatePwd[40];
+    uint8_t mOperatePwd[4 + 1];
     uint8_t m99Pwd[8 + 1];
     uint8_t m00Pwd[6 + 1];
     char mMerchantNo[15 + 1];
