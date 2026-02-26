@@ -18,3 +18,9 @@ OOP_CLASS(Settings) {
 };
 
 OOP_CTOR(Settings, State *parent, const char *name);
+
+OOP_CLASS(Reports) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(Reports, State *parent, const char *name);

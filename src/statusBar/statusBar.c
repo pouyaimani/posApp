@@ -9,6 +9,8 @@
 #include "wifi/wifi.h"
 #include "cellular/cellular.h"
 #include "assets.h"
+#include "network/network.h"
+#include "storage/storage.h"
 
 static StatusBar *__statusBar;
 static Timer *timer;
@@ -37,6 +39,7 @@ static void updateTime() {
 static void updateBatteryIcon() {
     BatteryStat *bat = OOP_CALL(getDevice(), getBatteryStatus);
     if (bat->isChanrging) {
+        lv_img_set_src(batteryIcon, ICON_BAT_CHARGING);
     } else {
         switch (bat->level) {
         case DEV_BAT_LEV_LOW:
@@ -58,10 +61,10 @@ static void updateBatteryIcon() {
 }
 
 static void updateConnectionIcon() {
-
+    SocketRoute_t route = OOP_CALL(getNetwork(), getRoute);
     if(1) {
-        if (getWifi()->connectSt == WIFI_CONNECT_SUCCEED) {
-            switch (getWifi()->signalStrength) {
+        if (OOP_CALL(getWifi(), hgetConnectStatus) == WIFI_CONNECT_SUCCEED) {
+            switch (OOP_CALL(getWifi(), getSignalStrength)) {
             case WIFI_SIGNAL_STRENGTH_0:
                 lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_0);
                 break;
@@ -80,26 +83,26 @@ static void updateConnectionIcon() {
         } else {
             lv_img_set_src(connectionIcon, ICON_WIFI_DISCONNECT);
         }
-    } else {
+    } else if (route == NET_ROUTE_CELLUALR) {
         if (OOP_CALL(getCell(), getSignalStrength) == WIFI_CONNECT_SUCCEED) {
             switch (OOP_CALL(getCell(), getSignalStrength)) {
             case CELL_SIGNAL_STRENGTH_0:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_0);
+                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_0);
                 break;
             case CELL_SIGNAL_STRENGTH_1:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_1);
+                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_1);
                 break;
             case CELL_SIGNAL_STRENGTH_2:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_2);
+                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_2);
                 break;
             case CELL_SIGNAL_STRENGTH_3:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_3);
+                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_3);
                 break;
             default:
                 break;
             }
         } else {
-            lv_img_set_src(connectionIcon, ICON_WIFI_DISCONNECT);
+            lv_img_set_src(connectionIcon, ICON_CELL_DISCONNECT);
         }
     }
 }
@@ -109,8 +112,14 @@ static void update() {
         updateDate();
     }
     updateTime();
-    // updateBatteryIcon();
-    // updateConnectionIcon();
+    updateBatteryIcon();
+    updateConnectionIcon();
+
+    if (getStorage()->settings->terminal.mVideoVolume > 0) {
+        lv_img_set_src(soundIcon, ICON_SOUND_ON);
+    } else {
+        lv_img_set_src(soundIcon, ICON_SOUND_OFF);
+    }
 }
 
 static void setInfoMode(StatusBarInfoMode_t mode) {
@@ -142,7 +151,7 @@ static void setSoundVolume(int volume) {
 }
 
 OOP_CTOR(StatusBar) {
-    timer = TIMER_CREATE(update, SECS(10), false);
+    timer = TIMER_CREATE(update, SECS(2), false);
 
     infoBox = lv_label_create(getDisplay()->statusbar);
     LV_SET_SIZE(infoBox, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
@@ -163,13 +172,13 @@ OOP_CTOR(StatusBar) {
     LV_SET_PAD_TOP(timeBox, 15);
 
     batteryIcon = lv_img_create(getDisplay()->statusbar);
-    LV_ALIGN(batteryIcon, LV_ALIGN_RIGHT_MID, -20, 0);
+    LV_ALIGN(batteryIcon, LV_ALIGN_RIGHT_MID, -15, 8);
 
     soundIcon = lv_img_create(getDisplay()->statusbar);
-    LV_ALIGN(soundIcon, LV_ALIGN_LEFT_MID, 0, 0);
+    LV_ALIGN(soundIcon, LV_ALIGN_LEFT_MID, 5, 8);
 
     connectionIcon = lv_img_create(getDisplay()->statusbar);
-    LV_ALIGN(connectionIcon, LV_ALIGN_LEFT_MID, 20, 0);
+    LV_ALIGN(connectionIcon, LV_ALIGN_LEFT_MID, 40, 8);
 
     __statusBar->setInfo = setInfo;
     __statusBar->setInfoMode = setInfoMode;

@@ -125,8 +125,9 @@ OOP_CTOR(Dialogue, State *parent, const char *name);
 #define SHOW_DIAL(prev, next, title, body)                      \
     OOP_CALL(getState(STATE_ID_DIALOGUE), setNext, next);       \
     OOP_CALL(getState(STATE_ID_DIALOGUE), setPrev, prev);       \
-    Info *info = (Info *)getState(STATE_ID_DIALOGUE);           \
-    info->setText(title, body);                                 \
+    Dialogue *dial = (Dialogue *)getState(STATE_ID_DIALOGUE);   \
+    dial->setTitle(title);                                      \
+    dial->setBody(body);                                        \
     SM_GOTO(getState(STATE_ID_DIALOGUE));        
 
 

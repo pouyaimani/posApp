@@ -20,8 +20,6 @@ void *getImgAddr(const char *name)
     lvgl_func_t fun = *((unsigned int *)(LVGL_START_ADDR + 0x200 + MCU_BASE_ADDR));
 
     ret = fun(name, &p);
-    LOG_TRACE("image name = %s", name);
-    LOG_TRACE("get image ret = %d", ret);
     if(ret == 0)
     {
         return p;

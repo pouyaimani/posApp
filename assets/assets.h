@@ -32,7 +32,8 @@ void *getImgAddr(const char *name);
 #define ICON_CELL_STRENGTH_3        getImgAddr("img_cell_3")
 #define ICON_CELL_DISCONNECT        getImgAddr("img_cell_diss")
 
-
+#define ICON_SOUND_ON               getImgAddr("img_sound_on")
+#define ICON_SOUND_OFF              getImgAddr("img_sound_off")
 
 #define SWIPE_CARD_TEXT     "لطفا کارت خود را بکشید"
 

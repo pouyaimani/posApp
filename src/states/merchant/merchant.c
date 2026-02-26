@@ -98,7 +98,7 @@ STATE_DEF_ENTER(CheckPin) {
 }
 
 STATE_DEF_ENTER(EnterNewPin) {
-    GOTO_INPUT(state->parent, reEnterNewPin, "رمز جدید را وارد نمایید", "", 4, IN_MODE_PASSWORD);
+    GOTO_INPUT(state->parent, reEnterNewPin, "رمز جدید", "", 4, IN_MODE_PASSWORD);
 }
 
 STATE_DEF_ENTER(ReEnterNewPin) {
@@ -106,7 +106,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
     for (size_t i = 0; i < 4; i++) {
         newPin[i] = inp->password[i];
     }
-    GOTO_INPUT(merchantMenu, checkNewPin, "رمز جدید را مجدد وارد نمایید", "", 4, IN_MODE_PASSWORD);
+    GOTO_INPUT(merchantMenu, checkNewPin, "تکرار رمز جدید", "", 4, IN_MODE_PASSWORD);
 }
 
 STATE_DEF_ENTER(CheckNewPin) {
@@ -125,7 +125,7 @@ STATE_DEF_ENTER(CheckNewPin) {
 }
 
 STATE_DEF_ENTER(ChangeMerPin) {
-    GOTO_INPUT(state->parent, checkPin, "رمز را وارد نمایید", "", 4, IN_MODE_PASSWORD);
+    GOTO_INPUT(state->parent, checkPin, "رمز فعلی", "", 4, IN_MODE_PASSWORD);
 }
 
 static void ChangeMerPin(State *parent) {
@@ -228,5 +228,7 @@ OOP_CTOR(Merchant, State *parent, const char *name) {
     OOP_CALL_CTOR(Connections, subStates[SUBS_CONNECTIONS], merchantMenu, "connections");
     subStates[SUBS_SETTINGS] = (Settings *)GET_MEM(sizeof(Settings));
     OOP_CALL_CTOR(Settings, subStates[SUBS_SETTINGS], merchantMenu, "settings");
+    subStates[SUBS_REPORTS] = (Settings *)GET_MEM(sizeof(Settings));
+    OOP_CALL_CTOR(Reports, subStates[SUBS_REPORTS], merchantMenu, "reports");
     storage = getStorage();
 }
