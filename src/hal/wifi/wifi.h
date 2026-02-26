@@ -25,7 +25,8 @@ typedef enum WifiSigStrenght_t {
     WIFI_SIGNAL_STRENGTH_0,
     WIFI_SIGNAL_STRENGTH_1,
     WIFI_SIGNAL_STRENGTH_2,
-    WIFI_SIGNAL_STRENGTH_3
+    WIFI_SIGNAL_STRENGTH_3,
+    WIFI_SIGNAL_DISCONNECT
 } WifiSigStrength_t;
 
 typedef struct WifiApInfo_t {
@@ -46,20 +47,19 @@ OOP_VTABLE(Wifi) {
     OOP_IMETHOD(WifiErr_t, Wifi, hdisconnect);
     OOP_IMETHOD(void, Wifi, hstartScan);
     OOP_IMETHOD(WifiScanSt_t, Wifi, hgetScanStatus);
-    OOP_IMETHOD(WifiScanSt_t, Wifi, hgetConnectStatus);
+    OOP_IMETHOD(WifiConnectSt_t, Wifi, hgetConnectStatus);
+    OOP_IMETHOD(WifiSigStrength_t, Wifi, getSignalStrength);
 };
 
 OOP_CLASS(Wifi) {
     OOP_IMPLEMENTS(Wifi);
     OOP_METHOD(void, startScan);
     WifiSigStrength_t signalStrength;
-    OOP_METHOD(WifiSigStrength_t, getSignalStrength);
     OOP_METHOD(WifiApList_t, getApList);
     OOP_METHOD(WifiErr_t, connect, WifiApInfo_t *, char *);
     OOP_METHOD(WifiErr_t,  disconnect);
     WifiApList_t apList;
     WifiScanSt_t scanSt;
-    WifiConnectSt_t connectSt;
 };
 
 OOP_CTOR(Wifi);

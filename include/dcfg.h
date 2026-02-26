@@ -18,7 +18,7 @@
 #error Please define the macro COLOR_DEPTH with the actual screen color depth.
 #endif
 
-#define WIFI_AP_LIST_SIZE 20
+#define WIFI_AP_LIST_SIZE 50
 
 #define MAIN_THEME_COLOR 0x652D90
 

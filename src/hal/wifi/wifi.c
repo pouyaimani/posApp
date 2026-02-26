@@ -22,10 +22,6 @@ static WifiApList_t *getApList(Wifi *self) {
     return &self->apList;
 }
 
-static WifiSigStrength_t getSignalStrength(Wifi *self) {
-
-}
-
 static void checkWifiScanResult() {
     WifiScanSt_t st = OOP_CALL(__wifi, hgetScanStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
@@ -69,9 +65,9 @@ OOP_CTOR(Wifi) {
     self->vtable.init = NULL;
     self->vtable.hgetScanStatus = NULL;
     self->vtable.hgetConnectStatus = NULL;
+    self->vtable.getSignalStrength = NULL;
 
     self->getApList = getApList;
-    self->getSignalStrength = getSignalStrength;
     self->startScan = startScan;
     self->connect = connect;
     self->disconnect = disconnect;

@@ -91,3 +91,74 @@ int32_t bcdToAsc(uint8_t *pasDest, const uint8_t *pbcSrc, int32_t siBcdSrclen)
 
     return siBcdSrclen * 2;
 }
+
+int32_t ascToBcd(uint8_t *pbcDest, const char *pasSrc, uint32_t siSrclen)
+{
+    uint32_t i = 0;
+    uint8_t high = 0, low = 0;
+
+    if ((NULL == pasSrc) || (NULL == pbcDest) || (siSrclen < 0))
+    {
+
+        return -1;
+    }
+
+    for (i = 0; i < siSrclen; i++)
+    {
+        if ((pasSrc[i] < '0') || ((pasSrc[i] > '9') && (pasSrc[i] < 'A')) || ((pasSrc[i] > 'F') && (pasSrc[i] < 'a')) || (pasSrc[i] > 'f'))
+        {
+            return -1;
+        }
+    }
+
+    for (i = 0; i < siSrclen; i++)
+    {
+
+        if ((*(pasSrc + i) >= 0x61) && (*(pasSrc + i) <= 0x66))
+        {
+            high = (uint8_t)(*(pasSrc + i) - 0x57);
+        }
+        else if ((*(pasSrc + i) >= 0x41) && (*(pasSrc + i) <= 0x46))
+        {
+            high = (uint8_t)(*(pasSrc + i) - 0x37);
+        }
+        else if ((*(pasSrc + i) >= 0x30) && (*(pasSrc + i) <= 0x39))
+        {
+            high = (uint8_t)(*(pasSrc + i) - 0x30);
+        }
+        else
+        {
+            high = 0x00;
+        }
+
+        i++;
+
+        if (i < siSrclen)
+        {
+            if ((*(pasSrc + i) >= 0x61) && (*(pasSrc + i) <= 0x66))
+            {
+                low = (uint8_t)(*(pasSrc + i) - 0x57);
+            }
+            else if ((*(pasSrc + i) >= 0x41) && (*(pasSrc + i) <= 0x46))
+            {
+                low = (uint8_t)(*(pasSrc + i) - 0x37);
+            }
+            else if ((*(pasSrc + i) >= 0x30) && (*(pasSrc + i) <= 0x39))
+            {
+                low = (uint8_t)(*(pasSrc + i) - 0x30);
+            }
+            else
+            {
+                low = 0x00;
+            }
+        }
+        else
+        {
+            i--;
+            low = 0x00;
+        }
+        *(pbcDest + i / 2) = (high << 4) | low;
+    }
+
+    return (siSrclen + 1) / 2;
+}
