@@ -51,7 +51,6 @@ static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
 }
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
-    LOG_TRACE("Wifi connect status = %d",  ev->connectStatus);
     if (connectState == WIFI_DISCONNECT_STATE) {
         Input * in = (Input*)getState(STATE_ID_INPUT);
         wifi->connect(selectedAp, in->input);

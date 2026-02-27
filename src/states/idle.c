@@ -30,12 +30,10 @@ static Wifi *wifi;
 static Timer *timer;
 
 static void wifiAutoConnect() {
-    LOG_TRACE("wifi  auto connect ...");
     if (OOP_CALL(getNetwork(), getRoute) != NET_ROUTE_WIFI) {
         return;
     }
     WifiConnectSt_t conSt = OOP_CALL(getWifi(), getConnectStatus);
-    LOG_TRACE("wifi  connect status = %d", conSt);
     if(conSt == WIFI_CONNECT_SUCCEED  || conSt == WIFI_CONNECT_UNDER_PROCESS) {
         return;
     }
@@ -85,11 +83,8 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 }
 
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
-    LOG_TRACE("event successfully is reached. key = %d", ev->key);
-    if (ev->key == KEY_1) {
-        WIFI_START_SCAN();
-    } else if (ev->key == KEY_4) {
-        SHOW_INFO(state, state, "خظا", "ات");
+    if (ev->key == KEY_FUNCTION) {
+        SM_GOTO(getState(STATE_ID_SUPPORTER));
     }
 }
 
@@ -100,13 +95,6 @@ STATE_DEF_HANDLE(Idle, MagEvent) {
     LOG_TRACE("track1 = %s", ev->data->track1.data);
     LOG_TRACE("track2 = %s", ev->data->track2.data);
     LOG_TRACE("track3 = %s", ev->data->track3.data);
-}
-
-STATE_DEF_HANDLE(Idle, WifiEvent) {
-    LOG_TRACE("WIFI event is received.");
-    for (int i = 0 ; i < ev->apList->size ; i++) {
-        LOG_TRACE("essid: %s", ev->apList->list[i].essid);
-    }
 }
 
 static void createUi() {
@@ -173,7 +161,6 @@ OOP_CTOR(Idle, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(Idle, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Idle, TimeOutEvent);
     self->base.vtable.handleMag = STATE_HANDLE(Idle, MagEvent);
-    self->base.vtable.handleWifi = STATE_HANDLE(Idle, WifiEvent);
 
     createUi();
     storage = getStorage();

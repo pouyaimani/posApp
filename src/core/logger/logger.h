@@ -18,7 +18,7 @@
 #define    LOG_LEV_ERROR 4
 #define    LOG_LEV_FATAL 5
 
-#define LOG_LEVEL LOG_LEV_TRACE
+#define LOG_LEVEL LOG_LEV_DEBUG
 
 OOP_DECLARE_CLASS(DateTime);
 OOP_DECLARE_CLASS(Device);

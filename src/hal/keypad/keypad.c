@@ -33,7 +33,6 @@ static void ioRead() {
     if (isPressed(__keypad)) {
         KeypadEvent *ev = (KeypadEvent**)createEvent(SM_EVENT_KEYPAD);
         ev->key = getKey(__keypad);
-        LOG_TRACE("Keypad: key pressed: %d", ev->key);
         switch (ev->key)
         {
         case KEY_0:

@@ -123,7 +123,6 @@ static void displayUpdate() {
     // Current tick
     uint32_t ctick = GET_TICK();
     uint32_t elapsed = ctick - ptick;
-    // LOG_TRACE("elapsed time = %d", elapsed);
     lv_tick_inc(elapsed);
     ptick = ctick;
     // LVGL timer handler

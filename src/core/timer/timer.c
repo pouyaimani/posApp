@@ -32,29 +32,6 @@ static TimerErr_t unRegisterTimer(Timer* timer) {
     return err;
 }
 
-// static EvLoopErr_t unregisterChecker(EventChecker checker) {
-//     LOG_TRACE("Event loop unregistring checker ...");
-//     EvLoopErr_t err = EV_LOOP_CHECKER_NOT_FOUND;
-//     for (size_t i = 0; i < __loop.checkersCnt; ++i) {
-//         if (__loop.checkers[i] == checker) {
-//             /* shift remaining callbacks left */
-//             for (size_t j = i + 1; j < __loop.checkersCnt; ++j) {
-//                 __loop.checkers[j - 1] = __loop.checkers[j];
-//             }
-
-//             __loop.checkersCnt--;
-//             return EV_LOOP_OK;
-//         }
-//     }
-//     return err;
-// }
-
-// static EvLoopErr_t unregisterAll() {
-//     LOG_TRACE("Event loop unregistring all checkers ...");
-//     __loop.checkersCnt = 0;
-//     return EV_LOOP_OK;
-// }
-
 static void start(Timer *timer) {
     timer->isStoped = false;
     timer->ctime = GET_TICK();
