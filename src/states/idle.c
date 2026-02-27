@@ -68,7 +68,7 @@ STATE_DEF_ENTER(Idle) {
     LV_SHOW(menuBar);
     // LV_SHOW(swipCardCont);
     LV_SHOW(mainIcon);
-    statusBar()->setInfoMode(STBAR_INFO_DATE);
+    statusBar()->enDateTimeMode();
 }
 
 STATE_DEF_EXIT(Idle) {

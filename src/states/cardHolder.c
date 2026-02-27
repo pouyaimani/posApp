@@ -33,10 +33,8 @@ STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {
 }
 
 static void gotoService() {
-    statusBar()->setInfoMode(STBAR_INFO_OTHER);
     statusBar()->setInfo(getService(id)->state.name);
     SM_GOTO(&getService(id)->state);
-
 }
 
 STATE_DEF_HANDLE(CardHolder, MagEvent) {

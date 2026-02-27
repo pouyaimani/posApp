@@ -4,13 +4,13 @@
 #include "oop.h"
 
 typedef enum {
-    STBAR_INFO_DATE,
-    STBAR_INFO_OTHER
+    STBAR_INFO_DATE_TIME,
+    STBAR_INFO
 } StatusBarInfoMode_t;
 
 OOP_CLASS(StatusBar) {
     int dummy;
-    OOP_METHOD(void, setInfoMode, StatusBarInfoMode_t);
+    OOP_METHOD(void, enDateTimeMode);
     OOP_METHOD(void, setInfo, const char *);
     OOP_METHOD(void, setSoundVolume, int);
 };

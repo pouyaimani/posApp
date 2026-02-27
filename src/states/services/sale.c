@@ -13,11 +13,7 @@ static SubState *result;
 
 STATE_DEF_ENTER(Sale) {
     SM_GOTO(enterAmount);
-    packer()->reset();
-}
-
-STATE_DEF_EXIT(Sale) {
-
+    // packer()->reset();
 }
 
 /******************** Enter amount sub state **********************/
@@ -27,25 +23,14 @@ STATE_DEF_EXIT(Sale) {
 static char *amount;
 
 STATE_DEF_ENTER(EnterAmount) {
-    Input * in = (Input*)getState(STATE_ID_INPUT);
-    OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
-    OOP_CALL(getState(STATE_ID_INPUT), setNext, enterPass);
-    in->reset();
-    in->setMode(IN_MODE_AMOUNT);
-    in->setData("مبلغ", "");
-    in->setMax(AMOUNT_MAX_CNT);
-    SM_GOTO(getState(STATE_ID_INPUT));
-}
-
-STATE_DEF_EXIT(EnterAmount) {
-
+    GOTO_INPUT(getState(STATE_ID_IDLE), enterPass,
+        "مبلغ", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
 }
 
 static void EnterAmount(Sale *parent) {
     enterAmount = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, &parent->base.state, "enter Amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterAmount);
-    enterAmount->vtable.exit = STATE_EXIT(EnterAmount);
 }
 
 /******************************************************************/
@@ -53,27 +38,16 @@ static void EnterAmount(Sale *parent) {
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
-    Input * in = (Input*)getState(STATE_ID_INPUT);
-    OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
-    OOP_CALL(getState(STATE_ID_INPUT), setNext, connection);
+    GOTO_INPUT(getState(STATE_ID_IDLE), connection,
+        "رمز کارت", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD);
     // Set packager amount before reseting input
-    OOP_CALL(packer(), setAmount, in->input);
-    in->reset();
-    in->setMode(IN_MODE_PASSWORD);
-    in->setData("رمز کارت", "");
-    in->setMax(PASSWORD_MAX_LEN);
-    SM_GOTO(getState(STATE_ID_INPUT));
-}
-
-STATE_DEF_EXIT(EnterPassword) {
-
+    // OOP_CALL(packer(), setAmount, in->input);
 }
 
 static void EnterPassword(Sale *parent) {
     enterPass = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, &parent->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
-    enterPass->vtable.exit = STATE_EXIT(EnterPassword);
 }
 
 /******************************************************************/
@@ -183,7 +157,6 @@ static void Result(Sale *parent) {
 OOP_CTOR(Sale, State *parent, const char *name) {
     OOP_CALL_CTOR(Service, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(Sale);
-    self->base.state.vtable.exit = STATE_EXIT(Sale);
 
     EnterAmount(self);
     EnterPassword(self);
