@@ -42,28 +42,28 @@ void log_log(
              int line,
              const char *fmt, ...);
 
-/* Convenience macros */
-#define LOG_TRACE(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
-#define LOG_DEBUG(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
-#define LOG_INFO(...)  log_log(__FILE__, __LINE__, __VA_ARGS__)
-#define LOG_WARN(...)  log_log(__FILE__, __LINE__, __VA_ARGS__)
-#define LOG_ERROR(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
-#define LOG_FATAL(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
-
 /**********************
  *      MACROS
  **********************/
 #ifndef LOG_TRACE
 #  if LOG_LEVEL <= LOG_LEVEL_TRACE
-#    define LOG_TRACE(...) log_log(LOG_LEV_TRACE, __FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_TRACE(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_TRACE(...) do {}while(0)
 #  endif
 #endif
 
+#ifndef LOG_DEBUG
+#  if LOG_LEVEL <= LOG_LEVEL_DEBUG
+#    define LOG_DEBUG(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
+#  else
+#    define LOG_DEBUG(...) do {}while(0)
+#  endif
+#endif
+
 #ifndef LOG_INFO
 #  if LOG_LEVEL <= LOG_LEVEL_INFO
-#    define LOG_INFO(...) log_log(LOG_LEV_INFO,  __FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_INFO(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_INFO(...) do {}while(0)
 #  endif
@@ -71,7 +71,7 @@ void log_log(
 
 #ifndef LOG_WARN
 #  if LOG_LEVEL <= LOG_LEVEL_WARN
-#    define LOG_WARN(...) log_log(LOG_LEV_WARN,  __FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_WARN(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_WARN(...) do {}while(0)
 #  endif
@@ -79,7 +79,7 @@ void log_log(
 
 #ifndef LOG_ERROR
 #  if LOG_LEVEL <= LOG_LEVEL_ERROR
-#    define LOG_ERROR(...) log_log(LOG_LEV_ERROR, __FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_ERROR(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_ERROR(...) do {}while(0)
 #  endif
@@ -88,7 +88,7 @@ void log_log(
 
 #ifndef LOG_FATAL
 #  if LOG_LEVEL < LOG_LEVEL_NONE
-#    define LOG_FATAL(...) log_log(LOG_LEV_FATAL, __FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_FATAL(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_FATAL(...) do {} while(0)
 #  endif
