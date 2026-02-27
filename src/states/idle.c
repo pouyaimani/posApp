@@ -10,6 +10,9 @@
 #include "assets.h"
 #include "font/myFont.h"
 #include "statusBar/statusBar.h"
+#include "storage/storage.h"
+#include "network/network.h"
+#include "timer.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -20,6 +23,36 @@ static lv_obj_t *mainIcon;
 static lv_obj_t *menuButton;
 static lv_obj_t *menuIcon;
 static lv_obj_t *menuText;
+
+static Storage *storage;
+static Wifi *wifi;
+
+static Timer *timer;
+
+static void wifiAutoConnect() {
+    LOG_TRACE("wifi  auto connect ...");
+    if (OOP_CALL(getNetwork(), getRoute) != NET_ROUTE_WIFI) {
+        return;
+    }
+    WifiConnectSt_t conSt = OOP_CALL(getWifi(), getConnectStatus);
+    LOG_TRACE("wifi  connect status = %d", conSt);
+    if(conSt == WIFI_CONNECT_SUCCEED  || conSt == WIFI_CONNECT_UNDER_PROCESS) {
+        return;
+    }
+    WifiApInfo_t apInfo = {0};
+    char pwd[64] = {0};
+    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s", storage->settings->terminal.mWifiSSID);
+    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s", storage->settings->terminal.mWifiMac);
+    apInfo.secMode = storage->settings->terminal.mWifiEnc;
+    snprintf(pwd, sizeof(pwd), "%s", storage->settings->terminal.mWifiPwd);
+    if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 && apInfo.secMode != 0) {
+        OOP_CALL(wifi, hconnect, &apInfo, pwd);
+    }
+}
+
+static void timerCb() {
+    wifiAutoConnect();
+}
 
 static void menuEventCb(lv_event_t * e)
 {
@@ -143,4 +176,8 @@ OOP_CTOR(Idle, State *parent, const char *name) {
     self->base.vtable.handleWifi = STATE_HANDLE(Idle, WifiEvent);
 
     createUi();
+    storage = getStorage();
+    wifi = getWifi();
+
+    timer = TIMER_CREATE(timerCb, SECS(10), false);
 }

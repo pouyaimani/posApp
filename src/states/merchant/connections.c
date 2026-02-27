@@ -6,13 +6,16 @@
 #include "ui/ui.h"
 #include "dev/dev.h"
 #include "wifi/wifi.h"
+#include "storage/storage.h"
+#include "network/network.h"
 
-static Wifi *wifi; 
+static Wifi *wifi;
+static Storage *storage;
 static SubState *wifiScan;
 static SubState *wifiConnect;
 static SubState *wifiEnterPass;
 
-WifiApInfo_t *chosenAp;
+WifiApInfo_t *selectedAp;
 
 #define WIFI_DISCONNECT_STATE       0
 #define WIFI_CONNECT_STATE          1
@@ -34,15 +37,30 @@ STATE_DEF_EXIT(WifiConnect) {
     
 }
 
+static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
+    snprintf(storage->settings->terminal.mWifiSSID, 
+        sizeof(storage->settings->terminal.mWifiSSID), "%s", ap->essid);
+    snprintf(storage->settings->terminal.mWifiMac,
+        sizeof(storage->settings->terminal.mWifiMac), "%s", ap->mac);
+    storage->settings->terminal.mWifiEnc = ap->secMode;
+    snprintf(storage->settings->terminal.mWifiPwd, 
+        sizeof(storage->settings->terminal.mWifiPwd), "%s", pwd);
+    storage->settings->terminal.netRoute = NET_ROUTE_WIFI;
+    OOP_CALL(getNetwork(), setRoute, NET_ROUTE_WIFI);
+    OOP_CALL(storage, applySettings);
+}
+
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
     LOG_TRACE("Wifi connect status = %d",  ev->connectStatus);
     if (connectState == WIFI_DISCONNECT_STATE) {
         Input * in = (Input*)getState(STATE_ID_INPUT);
-        wifi->connect(chosenAp, in->input);
+        wifi->connect(selectedAp, in->input);
         connectState = WIFI_CONNECT_STATE;
     } else {
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
             SHOW_INFO(state->parent, state->parent, "اتصال برقرار شد", "");
+            Input * in = (Input*)getState(STATE_ID_INPUT);
+            saveWifiInfo(selectedAp, in->input);
         } else {
             SHOW_INFO(state->parent, state->parent, "اتصال برقرار نشد", "");
         }
@@ -89,7 +107,6 @@ STATE_DEF_ENTER(WifiScan) {
     InfoPage info = infoPage();
     OOP_CALL(&info, show);
     OOP_CALL(&info, setData, INFO_T_TEXT, "wifi جستجوی", "لطفا منتظر بمانید");
-    wifi = getWifi();
     wifi->startScan();
 }
 
@@ -109,7 +126,7 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
         } else if (ev->key == KEY_ENTER) {
             OOP_CALL(&wifiMenu, hide);
             SM_GOTO(wifiEnterPass);
-            chosenAp = &wifi->apList.list[wifiMenu.idx];
+            selectedAp = &wifi->apList.list[wifiMenu.idx];
         }
     }
 }
@@ -225,4 +242,6 @@ OOP_CTOR(Connections, State *parent, const char *name) {
     WifiScan(self);
     WifiConnect(self);
     WifiEnterPass(self);
+    wifi = getWifi();
+    storage = getStorage();
 }

@@ -19,7 +19,7 @@ OOP_CLASS(TerminalSettings) {
     bool mSupportReverse;
     bool mSupportEsBeforeOnline;
 
-    uint8_t mCommMode;
+    uint8_t netRoute;
     uint8_t mVideoVolume;
     uint8_t mSleepTimeout;
     uint8_t mScreenLight;

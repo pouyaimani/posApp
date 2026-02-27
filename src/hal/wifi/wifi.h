@@ -30,7 +30,9 @@ typedef enum WifiSigStrenght_t {
 } WifiSigStrength_t;
 
 typedef struct WifiApInfo_t {
-    char essid[64];     /* AP name */
+    char essid[64];
+    uint32_t secMode;
+    char mac[18];
     int idx;
 } WifiApInfo_t;
 
@@ -47,7 +49,7 @@ OOP_VTABLE(Wifi) {
     OOP_IMETHOD(WifiErr_t, Wifi, hdisconnect);
     OOP_IMETHOD(void, Wifi, hstartScan);
     OOP_IMETHOD(WifiScanSt_t, Wifi, hgetScanStatus);
-    OOP_IMETHOD(WifiConnectSt_t, Wifi, hgetConnectStatus);
+    OOP_IMETHOD(WifiConnectSt_t, Wifi, getConnectStatus);
     OOP_IMETHOD(WifiSigStrength_t, Wifi, getSignalStrength);
 };
 

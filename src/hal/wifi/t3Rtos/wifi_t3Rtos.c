@@ -138,6 +138,9 @@ static void copyWifiAp(Wifi* wifi, WifiAPInfo *apInfo, uint32_t num) {
     for (uint32_t i = 0; i < num ; i++) {
         memcpy(wifi->apList.list[i].essid, apinfo[i].mSsid,
                  sizeof(wifi->apList.list[i].essid));
+        memcpy(wifi->apList.list[i].mac, apinfo[i].mMac,
+                 sizeof(wifi->apList.list[i].mac));
+        wifi->apList.list[i].secMode = apinfo[i].mSecMode;
         wifi->apList.list[i].idx = i;
     }
 }
@@ -159,8 +162,11 @@ static WifiErr_t connect(Wifi* wifi, WifiApInfo_t* ap, char *pass) {
     WifiAPPasswordInfo passInfo;
     memset(passInfo.mWpaPassword, 0, sizeof(passInfo.mWpaPassword));
     snprintf(passInfo.mWpaPassword, sizeof(passInfo.mWpaPassword), "%s", pass);
-    selectedAp = &apinfo[ap->idx];
-    WifiErr_t err = translateSdkErr(sdkWifiConnectAP(&apinfo[ap->idx], &passInfo));
+    WifiAPInfo wap;
+    memcpy(wap.mSsid, ap->essid, sizeof(wap.mSsid));
+    memcpy(wap.mMac, ap->mac, sizeof(wap.mMac));
+    wap.mSecMode = ap->secMode;
+    WifiErr_t err = translateSdkErr(sdkWifiConnectAP(&wap, &passInfo));
     return err;
 }
 
@@ -227,7 +233,7 @@ OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.hconnect = connect;
     self->base.vtable.hgetScanStatus = getScanStatus;
     self->base.vtable.hdisconnect = disconnect;
-    self->base.vtable.hgetConnectStatus = getConnectStatus;
+    self->base.vtable.getConnectStatus = getConnectStatus;
     self->base.vtable.getSignalStrength = getSignalStrength;
 
     apinfo = GET_MEM(sizeof(WifiAPInfo) * WIFI_AP_LIST_SIZE);

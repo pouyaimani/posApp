@@ -63,7 +63,7 @@ static void updateBatteryIcon() {
 static void updateConnectionIcon() {
     SocketRoute_t route = OOP_CALL(getNetwork(), getRoute);
     if(1) {
-        if (OOP_CALL(getWifi(), hgetConnectStatus) == WIFI_CONNECT_SUCCEED) {
+        if (OOP_CALL(getWifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
             switch (OOP_CALL(getWifi(), getSignalStrength)) {
             case WIFI_SIGNAL_STRENGTH_0:
                 lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_0);

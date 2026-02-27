@@ -39,7 +39,7 @@ static void startScan() {
 }
 
 static void checkWifiConnectResult() {
-    WifiConnectSt_t st = OOP_CALL(__wifi, hgetConnectStatus);
+    WifiConnectSt_t st = OOP_CALL(__wifi, getConnectStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
         WifiEvent *ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
         ev->connectStatus = st;
@@ -64,7 +64,7 @@ OOP_CTOR(Wifi) {
     self->vtable.hstartScan = NULL;
     self->vtable.init = NULL;
     self->vtable.hgetScanStatus = NULL;
-    self->vtable.hgetConnectStatus = NULL;
+    self->vtable.getConnectStatus = NULL;
     self->vtable.getSignalStrength = NULL;
 
     self->getApList = getApList;

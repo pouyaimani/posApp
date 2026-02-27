@@ -10,6 +10,7 @@
 #include "timer.h"
 #include "wifi/wifi.h"
 #include "storage/storage.h"
+#include "network/network.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
@@ -26,6 +27,7 @@ STATE_DEF_ENTER(Startup) {
     core->registerCallback(disp->update);
     core->registerCallback(getEventloop()->runCycle);
     core->registerCallback(getTimerHanlder()->runCycle);
+    OOP_CALL(getNetwork(), setRoute, getStorage()->settings->terminal.netRoute);
     statusBar();
     SM_GOTO(getState(STATE_ID_IDLE));
 }

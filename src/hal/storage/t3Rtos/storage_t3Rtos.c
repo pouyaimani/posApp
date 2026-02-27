@@ -243,7 +243,7 @@ static const SettingItem settingsTable[] = {
         0,
         4,
         DEFAULT_PROP_COMM_MODE,
-        (void *) &_settings.terminal.mCommMode,
+        (void *) &_settings.terminal.netRoute,
     },
     {
         PROP_KEY_VOLUME,
