@@ -274,9 +274,9 @@ InfoPage infoPage() {
 }
 
 static void barSetValue(Bar *bar, int value) {
-    int val = value > bar->max ? bar->max : value;
-    val = (val * 100) / bar->max;
-    lv_bar_set_value(bar->bar, val, LV_ANIM_ON);
+    bar->value = value > bar->max ? bar->max : value;
+    int pval = (bar->value * 100) / bar->max;
+    lv_bar_set_value(bar->bar, pval, LV_ANIM_ON);
 }
 
 static void barSetTitle(Bar *bar, const char *txt) {
