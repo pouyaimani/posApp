@@ -153,7 +153,7 @@ static void update() {
     updateBatteryIcon();
     updateConnectionIcon();
 
-    if (getStorage()->settings->terminal.mVideoVolume > 0) {
+    if (getStorage()->settings->terminal.devVolume > 0) {
         lv_img_set_src(soundIcon, ICON_SOUND_ON);
     } else {
         lv_img_set_src(soundIcon, ICON_SOUND_OFF);

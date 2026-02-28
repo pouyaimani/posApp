@@ -38,18 +38,19 @@ static Bar soundBar;
 STATE_DEF_ENTER(SoundSettings) {
     uiBar(&soundBar, getDisplay()->screen, 0, dev->maxSound);
     OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
-    OOP_CALL(&soundBar, setValue, storage->settings->terminal.mVideoVolume);
+    OOP_CALL(&soundBar, setValue, storage->settings->terminal.devVolume);
     OOP_CALL(&soundBar, show);
 }
 
 STATE_DEF_EXIT(SoundSettings) {
+    storage->settings->terminal.devVolume = soundBar.value;
+    OOP_CALL(storage, applySettings);
     OOP_CALL(&soundBar, hide);
     uiBarDelete(&soundBar);
 }
 
 STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        storage->settings->terminal.mVideoVolume = soundBar.value;
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
 
@@ -58,8 +59,7 @@ STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
     } else if (ev->key == KEY_DOWN) {
         OOP_CALL(&soundBar, decrease);
     }
-    OOP_CALL(dev, setAudioVolume, soundBar.value);
-    OOP_CALL(dev, beepOnce);
+    OOP_CALL(dev, setVolume, soundBar.value);
 }
 
 static void SoundSettings(State *parent) {
@@ -284,18 +284,19 @@ static Bar brightBar;
 STATE_DEF_ENTER(ScrLightSettings) {
     uiBar(&brightBar, getDisplay()->screen, 1, dev->maxBright);
     OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
-    OOP_CALL(&brightBar, setValue, storage->settings->terminal.mScreenLight);
+    OOP_CALL(&brightBar, setValue, storage->settings->terminal.brightness);
     OOP_CALL(&brightBar, show);
 }
 
 STATE_DEF_EXIT(ScrLightSettings) {
+    storage->settings->terminal.brightness = brightBar.value;
+    OOP_CALL(storage, applySettings);
     OOP_CALL(&brightBar, hide);
     uiBarDelete(&brightBar);
 }
 
 STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        storage->settings->terminal.mScreenLight = brightBar.value;
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
 

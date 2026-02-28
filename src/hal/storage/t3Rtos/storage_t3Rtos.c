@@ -251,7 +251,7 @@ static const SettingItem settingsTable[] = {
         0,
         6,
         DEFAULT_PROP_KEY_VOLUME,
-        &_settings.terminal.mVideoVolume,
+        &_settings.terminal.devVolume,
     },
     {
         PROP_TIMEOUT_SLEEP,
@@ -267,7 +267,7 @@ static const SettingItem settingsTable[] = {
         1,
         5,
         DEFAULT_PROP_BRIGHTNESS,
-        &_settings.terminal.mScreenLight,
+        &_settings.terminal.brightness,
     },
     {
         PROP_LOGIN_OPERATOR,

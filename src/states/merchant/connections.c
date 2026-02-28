@@ -131,7 +131,6 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
 }
 
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
-    LOG_ERROR("wifi scan result is receivedv. scanStatus = %d", ev->scanStatus);
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
         uiMenu(&wifiMenu, getDisplay()->screen);
         for (uint8_t i = 0; i < wifi->apList.size ; i++) {

@@ -50,17 +50,6 @@ static void initRam(void)
     unsigned int *dst = &Image$$RW_IRAM1$$Base;
     unsigned int *end = src + ((unsigned int)&Image$$RW_IRAM1$$Length/sizeof(unsigned int));
 
-    #if 0
-    LOG_D("\r\n");
-    LOG_D("ram_base:0x%x\r\n", &Image$$RW_IRAM1$$Base);
-    LOG_D("ram_length:0x%x\r\n", &Image$$RW_IRAM1$$Length);
-    LOG_D("ram_limit:0x%x\r\n\r\n", &Image$$RW_IRAM1$$Limit);
-    
-    LOG_D("rom_base:0x%x\r\n", &Image$$ER_IROM1$$Base);
-    LOG_D("rom_length:0x%x\r\n", &Image$$ER_IROM1$$Length);
-    LOG_D("rom_limit:0x%x 0x%x\r\n\r\n", &Image$$ER_IROM1$$Limit, *(int*)&Image$$ER_IROM1$$Limit);
-    #endif
-
     while (src < end)
     {
         *dst++ = *src++;
@@ -167,7 +156,7 @@ static SerialNumber *getSN(Device *dev) {
     return &sn;
 }
 
-static void setAudioVolume(Device *dev, int volume) {
+static void setVolume(Device *dev, int volume) {
     sdkSysSetDeviceVolume(SYS_VOLUME_TYPE_AUDIO, volume);
 }
 
@@ -175,6 +164,14 @@ static void setBrightness(Device *dev, int bright) {
     int br = bright > dev->maxBright ? dev->maxBright : bright;
     br = bright < 1 ? 1 : bright;
     ddi_lcd_ioctl(DDI_LCD_CTL_BRIGHT, br, 0);
+}
+
+static int getVolume(Device *dev) {
+    return sdkSysGetDeviceVolume(SYS_VOLUME_TYPE_AUDIO);
+}
+
+static int getBrightness(Device *dev) {
+
 }
 
 static void beepOnce(Device *dev) {
@@ -195,9 +192,11 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.reboot = reboot;
     self->base.vtable.powerOff = powerOff;
     self->base.vtable.getSN = getSN;
-    self->base.vtable.setAudioVolume = setAudioVolume;
+    self->base.vtable.setVolume = setVolume;
     self->base.vtable.setBrightness = setBrightness;
     self->base.vtable.beepOnce = beepOnce;
+    self->base.vtable.getVolume = getVolume;
+    self->base.vtable.getBrightness = getBrightness;
 
     self->base.maxBright = 5;
     self->base.maxSound = 5;

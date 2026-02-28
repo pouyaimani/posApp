@@ -55,8 +55,10 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(void, Device, reboot);
     OOP_IMETHOD(void, Device, powerOff);
     OOP_IMETHOD(SerialNumber*, Device, getSN);
-    OOP_IMETHOD(void, Device, setAudioVolume, int);
+    OOP_IMETHOD(void, Device, setVolume, int);
     OOP_IMETHOD(void, Device, setBrightness, int);
+    OOP_IMETHOD(int, Device, getVolume);
+    OOP_IMETHOD(int, Device, getBrightness);
     OOP_IMETHOD(void, Device, beepOnce);
 };
 

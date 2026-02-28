@@ -30,9 +30,11 @@ OOP_CTOR(Device, const char* name) {
     self->vtable.reboot = NULL;
     self->vtable.powerOff = NULL;
     self->vtable.getSN = NULL;
-    self->vtable.setAudioVolume = NULL;
+    self->vtable.setVolume = NULL;
     self->vtable.setBrightness = NULL;
     self->vtable.beepOnce = NULL;
+    self->vtable.getVolume = NULL;
+    self->vtable.getBrightness= NULL;
 }
 
 Device *getDevice() {

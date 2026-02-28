@@ -14,6 +14,8 @@
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
+static Device *dev;
+static Storage *storage;
 
 STATE_DEF_ENTER(Startup) {
     KEYPAD_INIT();
@@ -28,6 +30,9 @@ STATE_DEF_ENTER(Startup) {
     core->registerCallback(getEventloop()->runCycle);
     core->registerCallback(getTimerHanlder()->runCycle);
     OOP_CALL(getNetwork(), setRoute, getStorage()->settings->terminal.netRoute);
+    LOG_DEBUG("device voulme = %d", storage->settings->terminal.devVolume);
+    OOP_CALL(dev, setVolume, storage->settings->terminal.devVolume);
+    OOP_CALL(dev, setBrightness, storage->settings->terminal.brightness);
     statusBar();
     SM_GOTO(getState(STATE_ID_IDLE));
 }
@@ -46,4 +51,6 @@ OOP_CTOR(Startup, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(Startup);
     self->base.vtable.exit = STATE_EXIT(Startup);
     self->base.vtable.handleTimeout = STATE_HANDLE(Startup, TimeOutEvent);
+    dev = getDevice();
+    storage = getStorage();
 }

@@ -20,9 +20,9 @@ OOP_CLASS(TerminalSettings) {
     bool mSupportEsBeforeOnline;
 
     uint8_t netRoute;
-    uint8_t mVideoVolume;
+    uint8_t devVolume;
     uint8_t mSleepTimeout;
-    uint8_t mScreenLight;
+    uint8_t brightness;
     char mLoginOperator;
     char mLoginDate[6 + 1];
 
