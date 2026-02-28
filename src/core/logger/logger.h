@@ -46,7 +46,7 @@ void log_log(
  *      MACROS
  **********************/
 #ifndef LOG_TRACE
-#  if LOG_LEVEL <= LOG_LEVEL_TRACE
+#  if LOG_LEVEL <= LOG_LEV_TRACE
 #    define LOG_TRACE(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_TRACE(...) do {}while(0)
@@ -54,7 +54,7 @@ void log_log(
 #endif
 
 #ifndef LOG_DEBUG
-#  if LOG_LEVEL <= LOG_LEVEL_DEBUG
+#  if LOG_LEVEL <= LOG_LEV_DEBUG
 #    define LOG_DEBUG(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_DEBUG(...) do {}while(0)
@@ -62,7 +62,7 @@ void log_log(
 #endif
 
 #ifndef LOG_INFO
-#  if LOG_LEVEL <= LOG_LEVEL_INFO
+#  if LOG_LEVEL <= LOG_LEV_INFO
 #    define LOG_INFO(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_INFO(...) do {}while(0)
@@ -70,7 +70,7 @@ void log_log(
 #endif
 
 #ifndef LOG_WARN
-#  if LOG_LEVEL <= LOG_LEVEL_WARN
+#  if LOG_LEVEL <= LOG_LEV_WARN
 #    define LOG_WARN(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_WARN(...) do {}while(0)
@@ -78,7 +78,7 @@ void log_log(
 #endif
 
 #ifndef LOG_ERROR
-#  if LOG_LEVEL <= LOG_LEVEL_ERROR
+#  if LOG_LEVEL <= LOG_LEV_ERROR
 #    define LOG_ERROR(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_ERROR(...) do {}while(0)
@@ -87,7 +87,7 @@ void log_log(
 
 
 #ifndef LOG_FATAL
-#  if LOG_LEVEL < LOG_LEVEL_NONE
+#  if LOG_LEVEL < LOG_LEV_FATAL
 #    define LOG_FATAL(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_FATAL(...) do {} while(0)
