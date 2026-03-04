@@ -31,9 +31,7 @@ int connectState = WIFI_DISCONNECT_STATE;
 /******************** Wifi connect sub state **********************/
 
 STATE_DEF_ENTER(WifiConnect) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, show);
-    OOP_CALL(&info, setData, INFO_T_TEXT, "wifi در حال اتصال به", "لطفا منتظر بمانید");
+    SHOW_INFO("wifi در حال اتصال به", "لطفا منتظر بمانید");
     connectState = WIFI_DISCONNECT_STATE;
     wifi->disconnect();
 }
@@ -62,11 +60,11 @@ STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
         connectState = WIFI_CONNECT_STATE;
     } else {
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
-            SHOW_INFO(state->parent, state->parent, "اتصال برقرار شد", "");
+            GOTO_INFO(state->parent, state->parent, "اتصال برقرار شد", "");
             Input * in = (Input*)getState(STATE_ID_INPUT);
             saveWifiInfo(selectedAp, in->input);
         } else {
-            SHOW_INFO(state->parent, state->parent, "اتصال برقرار نشد", "");
+            GOTO_INFO(state->parent, state->parent, "اتصال برقرار نشد", "");
         }
     }
 }
@@ -108,9 +106,7 @@ static void WifiEnterPass(State *parent) {
 static Menu wifiMenu;
 
 STATE_DEF_ENTER(WifiScan) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, show);
-    OOP_CALL(&info, setData, INFO_T_TEXT, "wifi جستجوی", "لطفا منتظر بمانید");
+    SHOW_INFO("wifi جستجوی", "لطفا منتظر بمانید");
     wifi->startScan();
 }
 
@@ -141,11 +137,10 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
         for (uint8_t i = 0; i < wifi->apList.size ; i++) {
             OOP_CALL(&wifiMenu, addItem, wifi->apList.list[i].essid, NULL, NULL);
         }
-        InfoPage info = infoPage();
-        OOP_CALL(&info, hide);
+        HIDE_INFO();
         OOP_CALL(&wifiMenu, show);
     } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
-        SHOW_INFO(state->parent, state->parent, "wifi خطا در جستجوی", "");
+        GOTO_INFO(state->parent, state->parent, "wifi خطا در جستجوی", "");
     }
 }
 
@@ -161,12 +156,9 @@ static void WifiScan(State *parent) {
 /******************** Cellular connect sub state **********************/
 
 STATE_DEF_ENTER(CellularLogin) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, show);
-    OOP_CALL(&info, setData, INFO_T_TEXT, "در حال اتصال به شبکه", "لطفا منتظر بمانید");
-    LOG_DEBUG("login to cellular ...");
+    SHOW_INFO("در حال اتصال به شبکه", "لطفا منتظر بمانید");
     if (OOP_CALL(cel, getSimStatus) != CELL_ERR_OK) {
-        SHOW_INFO(state->parent, state->parent, "خطا در اتصال", "وضعیت سیم کارت را بررسی کنید");
+        GOTO_INFO(state->parent, state->parent, "خطا در اتصال", "وضعیت سیم کارت را بررسی کنید");
         return;
     }
     cel->startPPPlogin(NULL, NULL, NULL, NULL);
@@ -177,11 +169,11 @@ STATE_DEF_EXIT(CellularLogin) {
 
 STATE_DEF_HANDLE(CellularLogin, CellEvent) {
     if (ev->pppSt == CELL_PPP_SUCESS) {
-        SHOW_INFO(state->parent, state->parent, "با موفقیت متصل شد", "");
+        GOTO_INFO(state->parent, state->parent, "با موفقیت متصل شد", "");
     } else if (ev->pppSt == CELL_PPP_FAILURE) {
-        SHOW_INFO(state->parent, state->parent, "خطا در اتصال", "");
+        GOTO_INFO(state->parent, state->parent, "خطا در اتصال", "");
     } else if (ev->pppSt == CELL_PPP_INVALID) {
-        SHOW_INFO(state->parent, state->parent, "خطا در اتصال", "");
+        GOTO_INFO(state->parent, state->parent, "خطا در اتصال", "");
     }
 }
 

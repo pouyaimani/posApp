@@ -55,15 +55,11 @@ static void EnterPassword(Sale *parent) {
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Connection) {
-
-    InfoPage info = infoPage();
-    OOP_CALL(&info, show);
-    OOP_CALL(&info, setData, INFO_T_TEXT, "در حال اتصال", "");
+    SHOW_INFO("در حال اتصال", "");
 }
 
 STATE_DEF_EXIT(Connection) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, hide);
+    HIDE_INFO();
 }
 
 STATE_DEF_HANDLE(Connection, KeypadEvent) {
@@ -83,14 +79,11 @@ static void Connection(Sale *parent) {
 /******************** Send data sub state **********************/
 
 STATE_DEF_ENTER(SendData) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, setData, INFO_T_TEXT, "ارسال اطلاعات", "");
-    OOP_CALL(&info, show);
+    SHOW_INFO("ارسال اطلاعات", "");
 }
 
 STATE_DEF_EXIT(SendData) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, hide);
+    HIDE_INFO();
 }
 
 STATE_DEF_HANDLE(SendData, KeypadEvent) {
@@ -110,14 +103,11 @@ static void SendData(Sale *parent) {
 /******************** Receive data sub state **********************/
 
 STATE_DEF_ENTER(ReceiveData) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, show);
-    OOP_CALL(&info, setData, INFO_T_TEXT, "دریافت اطلاعات", "");
+    SHOW_INFO("دریافت اطلاعات", "");
 }
 
 STATE_DEF_EXIT(ReceiveData) {
-    InfoPage info = infoPage();
-    OOP_CALL(&info, hide);
+    HIDE_INFO();
 }
 
 STATE_DEF_HANDLE(ReceiveData, KeypadEvent) {

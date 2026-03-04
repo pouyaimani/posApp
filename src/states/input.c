@@ -51,14 +51,14 @@ static void showMaxError(State *state) {
     switch (inMode) {
     case IN_MODE_AMOUNT:
         {
-        SHOW_INFO(state, state, "خطا", "مبلغ بیش از حد مجاز");
+        GOTO_INFO(state, state, "خطا", "مبلغ بیش از حد مجاز");
         }
         break;
     case IN_MODE_PASSWORD:
         break;
     case IN_MODE_NUMBERS:
         {
-        SHOW_INFO(state, state, "خطا", "ورودی بیش از حد مجاز");
+        GOTO_INFO(state, state, "خطا", "ورودی بیش از حد مجاز");
         }
         break;
     default:

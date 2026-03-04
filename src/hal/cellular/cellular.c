@@ -18,17 +18,19 @@ static void constructT3Rtos() {
 }
 
 #endif
+
 static uint32_t tick;
+#define LOGIN_TIME_OUT 30000
+
 static void checkCellLoginResult() {
     CellPPPStatus_t st = OOP_CALL(__cellular, getPPPstatus);
-    LOG_DEBUG("PPP status = %d ", st);
     if (st != CELL_PPP_DIALING) {
         CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
         ev->pppSt = st;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkCellLoginResult);
     }
-    if (GET_TICK() - tick >= 30000) {
+    if (GET_TICK() - tick >= LOGIN_TIME_OUT) {
         CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
         ev->pppSt = CELL_PPP_FAILURE;
         DISPATCH_EVENT(ev);

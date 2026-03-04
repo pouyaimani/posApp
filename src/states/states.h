@@ -88,7 +88,7 @@ OOP_CLASS(Info) {
 
 OOP_CTOR(Info, State *parent, const char *name);
 
-#define SHOW_INFO(prev, next, title, body)                      \
+#define GOTO_INFO(prev, next, title, body)                      \
     Info *info = (Info *)getState(STATE_ID_INFO);               \
     info->setText(title, body);                                 \
     OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);           \
@@ -105,7 +105,7 @@ OOP_CLASS(Ginfo) {
 
 OOP_CTOR(Ginfo, State *parent, const char *name);
 
-#define SHOW_GINFO(state, text, img)                            \
+#define GOTO_GINFO(state, text, img)                            \
     OOP_CALL(getState(STATE_ID_GINFO), setNext, state);         \
     Ginfo *info = (Ginfo *)getState(STATE_ID_GINFO);            \
     info->setText(title);                                       \
@@ -122,7 +122,7 @@ OOP_CLASS(Dialogue) {
 
 OOP_CTOR(Dialogue, State *parent, const char *name);
 
-#define SHOW_DIAL(prev, next, title, body)                      \
+#define GOTO_DIAL(prev, next, title, body)                      \
     OOP_CALL(getState(STATE_ID_DIALOGUE), setNext, next);       \
     OOP_CALL(getState(STATE_ID_DIALOGUE), setPrev, prev);       \
     Dialogue *dial = (Dialogue *)getState(STATE_ID_DIALOGUE);   \

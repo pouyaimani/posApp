@@ -98,4 +98,14 @@ OOP_CLASS(InfoPage) {
 
 InfoPage infoPage();
 
+#define SHOW_INFO(title, body)              \
+    InfoPage info = infoPage();             \
+    OOP_CALL(&info, show);                  \
+    OOP_CALL(&info, setData, INFO_T_TEXT,   \
+         title, body);
+
+#define HIDE_INFO()                         \
+    InfoPage info = infoPage();             \
+    OOP_CALL(&info, hide);                  \
+
 #endif

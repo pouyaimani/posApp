@@ -62,7 +62,7 @@ static void handleKeyAction(State *state, int id) {
         SM_GOTO(merchant);
         break;
     case 3:
-        SHOW_DIAL(state, powerOff, "قصد خروج دارید؟", "");
+        GOTO_DIAL(state, powerOff, "قصد خروج دارید؟", "");
         break;
     default:
         break;

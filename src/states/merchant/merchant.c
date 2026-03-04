@@ -55,7 +55,7 @@ STATE_DEF_ENTER(CheckPassword) {
     if (isPassVlaid) {
         SM_GOTO(merchantMenu);
     } else {
-        SHOW_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER), "رمز عبور نادرست است", "");
+        GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER), "رمز عبور نادرست است", "");
     }
 }
 
@@ -93,7 +93,7 @@ STATE_DEF_ENTER(CheckPin) {
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
     } else {
-        SHOW_INFO(merchantMenu, merchantMenu, "رمز نادرست است", "");
+        GOTO_INFO(merchantMenu, merchantMenu, "رمز نادرست است", "");
     }
 }
 
@@ -118,9 +118,9 @@ STATE_DEF_ENTER(CheckNewPin) {
             storage->settings->terminal.mOperatePwd[i] = newPin[i];
         }
         OOP_CALL(storage, applySettings);
-        SHOW_INFO(merchantMenu, merchantMenu, "رمز با موفقیت تغییر کرد", "");
+        GOTO_INFO(merchantMenu, merchantMenu, "رمز با موفقیت تغییر کرد", "");
     } else {
-        SHOW_INFO(merchantMenu, merchantMenu, "تاییدیه رمز نادرست است", "");
+        GOTO_INFO(merchantMenu, merchantMenu, "تاییدیه رمز نادرست است", "");
     }
 }
 
