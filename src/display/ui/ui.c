@@ -144,7 +144,7 @@ void uiMenu(Menu *menu, lv_obj_t * parent) {
 
     menu->main = lv_obj_create(parent);
     /* Size & positioning */
-    LV_SET_SIZE(menu->main, lv_pct(97), lv_pct(90));
+    LV_SET_SIZE(menu->main, lv_pct(97), lv_pct(95));
     LV_ALIGN(menu->main, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_scroll_dir(menu->main, LV_DIR_VER);
     LV_SET_PAD_TOP(menu->main, 5);
