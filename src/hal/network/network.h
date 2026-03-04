@@ -16,7 +16,7 @@ typedef enum {
     NET_ROUTE_CELLUALR = 0,
     NET_ROUTE_WIFI,
     NET_ROUTE_ETH
-} SocketRoute_t;
+} NetRoute_t;
 
 typedef enum {
     NET_STATUS_CONNECTING = 0,
@@ -54,8 +54,8 @@ OOP_DECLARE_CLASS(Network)
 
 OOP_VTABLE(Network) {
     OOP_IMETHOD(void, Network, init);
-    OOP_IMETHOD(SocketRoute_t, Network, getRoute);
-    OOP_IMETHOD(NetError_t, Network, setRoute, SocketRoute_t);
+    OOP_IMETHOD(NetRoute_t, Network, getRoute);
+    OOP_IMETHOD(NetError_t, Network, setRoute, NetRoute_t);
     OOP_IMETHOD(NetError_t, Network, setAddr, const char *, uint16_t);
     OOP_IMETHOD(const SocketAddr_t *, Network, getAddr);
     OOP_IMETHOD(NetError_t, Network, create, SocketAddr_t *, SocketType_t);

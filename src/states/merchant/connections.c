@@ -8,12 +8,17 @@
 #include "wifi/wifi.h"
 #include "storage/storage.h"
 #include "network/network.h"
+#include "cellular/cellular.h"
 
 static Wifi *wifi;
+static Cellular *cel;
+static Network *net;
 static Storage *storage;
 static SubState *wifiScan;
 static SubState *wifiConnect;
 static SubState *wifiEnterPass;
+
+static SubState *cellularLogin;
 
 WifiApInfo_t *selectedAp;
 
@@ -153,6 +158,45 @@ static void WifiScan(State *parent) {
     wifiScan->vtable.handleKeypad = STATE_HANDLE(WifiScan, KeypadEvent);
 }
 
+/******************** Cellular connect sub state **********************/
+
+STATE_DEF_ENTER(CellularLogin) {
+    InfoPage info = infoPage();
+    OOP_CALL(&info, show);
+    OOP_CALL(&info, setData, INFO_T_TEXT, "در حال اتصال به شبکه", "لطفا منتظر بمانید");
+    LOG_DEBUG("login to cellular ...");
+    if (OOP_CALL(cel, getSimStatus) != CELL_ERR_OK) {
+        SHOW_INFO(state->parent, state->parent, "خطا در اتصال", "وضعیت سیم کارت را بررسی کنید");
+        return;
+    }
+    cel->startPPPlogin(NULL, NULL, NULL, NULL);
+}
+
+STATE_DEF_EXIT(CellularLogin) {
+}
+
+STATE_DEF_HANDLE(CellularLogin, CellEvent) {
+    if (ev->pppSt == CELL_PPP_SUCESS) {
+        SHOW_INFO(state->parent, state->parent, "با موفقیت متصل شد", "");
+    } else if (ev->pppSt == CELL_PPP_FAILURE) {
+        SHOW_INFO(state->parent, state->parent, "خطا در اتصال", "");
+    } else if (ev->pppSt == CELL_PPP_INVALID) {
+        SHOW_INFO(state->parent, state->parent, "خطا در اتصال", "");
+    }
+}
+
+STATE_DEF_HANDLE(CellularLogin, KeypadEvent) {
+}
+
+static void CellularLogin(State *parent) {
+    cellularLogin = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, cellularLogin, parent, "cellular login");
+    cellularLogin->vtable.enter = STATE_ENTER(CellularLogin);
+    cellularLogin->vtable.exit = STATE_EXIT(CellularLogin);
+    cellularLogin->vtable.handleKeypad = STATE_HANDLE(CellularLogin, KeypadEvent);
+    cellularLogin->vtable.handleCell = STATE_HANDLE(CellularLogin, CellEvent);
+}
+
 /******************** Connection sub state **********************/
 
 typedef enum {
@@ -176,17 +220,22 @@ static Menu menu;
 static void createUi() {
     uiMenu(&menu, getDisplay()->screen);
     menuCount = 0;
+    NetRoute_t route = OOP_CALL(net, getRoute);
     if (getDevice()->module.wifi) {
         OOP_CALL(&menu, addItem, itemTxt[CONNECTION_WIFI], NULL, NULL);
-        menuMap[menuCount++] = CONNECTION_WIFI;
+        menuMap[menuCount] = CONNECTION_WIFI;
+        if (route == NET_ROUTE_WIFI) {
+            OOP_CALL(&menu, setChecked, menuCount);
+        }
+        menuCount++;
     }
     if (getDevice()->module.gprs) {
         OOP_CALL(&menu, addItem, itemTxt[CONNECTION_GPRS], NULL, NULL);
-        menuMap[menuCount++] = CONNECTION_GPRS;
-    }
-    if (getDevice()->module.dialup) {
-        OOP_CALL(&menu, addItem, itemTxt[CONNECTION_DIAL], NULL, NULL);
-        menuMap[menuCount++] = CONNECTION_DIAL;
+        menuMap[menuCount] = CONNECTION_GPRS;
+        if (route == NET_ROUTE_CELLUALR) {
+            OOP_CALL(&menu, setChecked, menuCount);
+        }
+        menuCount++;
     }
 }
 
@@ -211,6 +260,9 @@ static void handleKeyAction(State *state, int id) {
     switch (menuMap[id]) {
     case CONNECTION_WIFI:
         SM_GOTO(wifiScan);
+        break;
+    case CONNECTION_GPRS:
+        SM_GOTO(cellularLogin);
         break;
     default:
         break;
@@ -240,6 +292,10 @@ OOP_CTOR(Connections, State *parent, const char *name) {
     WifiScan(self);
     WifiConnect(self);
     WifiEnterPass(self);
+    CellularLogin(self);
+
     wifi = getWifi();
     storage = getStorage();
+    cel = getCell();
+    net = getNetwork();
 }

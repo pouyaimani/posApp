@@ -42,6 +42,9 @@ Event *createEvent(SmEventType_t type) {
     case SM_EVENT_WIFI:
         CREATE_EVENT(WifiEvent, event);
         break;
+    case SM_EVENT_CELLULAR:
+        CREATE_EVENT(CellEvent, event);
+        break;
     default:
         break;
     }
@@ -86,7 +89,7 @@ OOP_CTOR(MagEvent)
     self->base.vtable.dispatchTo = mag_dispatchTo;
 }
 
-/* ================= Wifi scan ================= */
+/* ==================== Wifi ==================== */
 
 static void wifi_dispatchTo(Event *self, State *state)
 {
@@ -96,4 +99,14 @@ static void wifi_dispatchTo(Event *self, State *state)
 OOP_CTOR(WifiEvent)
 {
     self->base.vtable.dispatchTo = wifi_dispatchTo;
+}
+
+/* =================== Cellular ================== */
+
+static void cell_dispatchTo(Event *self, State *state) {
+    OOP_CALL(state, handleCell, self);
+}
+
+OOP_CTOR(CellEvent) {
+    self->base.vtable.dispatchTo = cell_dispatchTo;
 }

@@ -3,6 +3,7 @@
 #include "eventloop.h"
 #include "event.h"
 #include "logger.h"
+#include "timer.h"
 
 Cellular *__cellular;
 
@@ -17,6 +18,29 @@ static void constructT3Rtos() {
 }
 
 #endif
+static uint32_t tick;
+static void checkCellLoginResult() {
+    CellPPPStatus_t st = OOP_CALL(__cellular, getPPPstatus);
+    LOG_DEBUG("PPP status = %d ", st);
+    if (st != CELL_PPP_DIALING) {
+        CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
+        ev->pppSt = st;
+        DISPATCH_EVENT(ev);
+        getEventloop()->unregisterChecker(checkCellLoginResult);
+    }
+    if (GET_TICK() - tick >= 30000) {
+        CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
+        ev->pppSt = CELL_PPP_FAILURE;
+        DISPATCH_EVENT(ev);
+        getEventloop()->unregisterChecker(checkCellLoginResult);
+    }
+}
+
+static CellErr_t startPPPlogin(const char *apn, const char *user, const char *pass, const char *dialnum) {
+    getEventloop()->registerChecker(checkCellLoginResult);
+    OOP_CALL(__cellular, startPPPlogin, apn, user, pass, dialnum);
+    tick = GET_TICK();
+}
 
 OOP_CTOR(Cellular) {
     self->vtable.getNetType = NULL;
@@ -29,6 +53,9 @@ OOP_CTOR(Cellular) {
     self->vtable.ussdRec = NULL;
     self->vtable.ussdSend = NULL;
     self->vtable.ussdStop = NULL;
+    self->vtable.getSimStatus = NULL;
+
+    self->startPPPlogin = startPPPlogin;
 }
 
 Cellular *getCell() {

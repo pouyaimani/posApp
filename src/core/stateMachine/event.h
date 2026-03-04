@@ -8,7 +8,8 @@ typedef enum SmEventType_t {
     SM_EVENT_TIME_OUT,
     SM_EVENT_KEYPAD,
     SM_EVENT_MAG,
-    SM_EVENT_WIFI
+    SM_EVENT_WIFI,
+    SM_EVENT_CELLULAR
 } SmEventType_t;
 
 /* Forward declarations */
@@ -18,6 +19,7 @@ OOP_DECLARE_CLASS(TimeOutEvent);
 OOP_DECLARE_CLASS(KeypadEvent);
 OOP_DECLARE_CLASS(MagEvent);
 OOP_DECLARE_CLASS(WifiEvent);
+OOP_DECLARE_CLASS(CellEvent);
 
 /* ===== Event vtable ===== */
 
@@ -136,5 +138,23 @@ OOP_CLASS(WifiEvent)
 /* ctor */
 OOP_CTOR(WifiEvent);
 
+/* ===== Cellullar ===== */
+
+typedef enum CellPPPStatus_t {
+    CELL_PPP_DIALING,
+    CELL_PPP_READY,
+    CELL_PPP_SUCESS,
+    CELL_PPP_FAILURE,
+    CELL_PPP_INVALID
+} CellPPPStatus_t;
+  
+OOP_CLASS(CellEvent)
+{
+    OOP_EXTENDS(Event);
+    CellPPPStatus_t pppSt;
+};
+
+/* ctor */
+OOP_CTOR(CellEvent);
 
 #endif

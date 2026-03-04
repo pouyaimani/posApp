@@ -90,7 +90,7 @@ static void updateBatteryIcon() {
 }
 
 static void updateConnectionIcon() {
-    SocketRoute_t route = OOP_CALL(getNetwork(), getRoute);
+    NetRoute_t route = OOP_CALL(getNetwork(), getRoute);
     if(1) {
         if (OOP_CALL(getWifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
             switch (OOP_CALL(getWifi(), getSignalStrength)) {
@@ -113,25 +113,29 @@ static void updateConnectionIcon() {
             lv_img_set_src(connectionIcon, ICON_WIFI_DISCONNECT);
         }
     } else if (route == NET_ROUTE_CELLUALR) {
-        if (OOP_CALL(getCell(), getSignalStrength) == WIFI_CONNECT_SUCCEED) {
-            switch (OOP_CALL(getCell(), getSignalStrength)) {
-            case CELL_SIGNAL_STRENGTH_0:
-                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_0);
-                break;
-            case CELL_SIGNAL_STRENGTH_1:
-                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_1);
-                break;
-            case CELL_SIGNAL_STRENGTH_2:
-                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_2);
-                break;
-            case CELL_SIGNAL_STRENGTH_3:
-                lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_3);
-                break;
-            default:
-                break;
-            }
-        } else {
+        if (OOP_CALL(getCell(), getSimStatus) != CELL_ERR_OK) {
             lv_img_set_src(connectionIcon, ICON_CELL_DISCONNECT);
+            return;
+        }
+        if (OOP_CALL(getCell(), getPPPstatus) != CELL_PPP_SUCESS) {
+            lv_img_set_src(connectionIcon, ICON_CELL_DISCONNECT);
+            return;
+        }
+        switch (OOP_CALL(getCell(), getSignalStrength)) {
+        case CELL_SIGNAL_STRENGTH_0:
+            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_0);
+            break;
+        case CELL_SIGNAL_STRENGTH_1:
+            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_1);
+            break;
+        case CELL_SIGNAL_STRENGTH_2:
+            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_2);
+            break;
+        case CELL_SIGNAL_STRENGTH_3:
+            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_3);
+            break;
+        default:
+            break;
         }
     }
 }

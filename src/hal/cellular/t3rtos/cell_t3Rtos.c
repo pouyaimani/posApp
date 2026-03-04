@@ -105,6 +105,13 @@ static CellNeyType_t getNetType(Cellular *self) {
     return netType;
 }
 
+static CellErr_t getSimStatus(Cellular *self) {
+    if (sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0) == SDK_CELLULAR_ERR_SIM) {
+            return CELL_ERR_SIM_ERROR;
+    }
+    return CELL_ERR_OK;
+}
+
 OOP_CTOR(CellT3Rtos) {
     self->base.vtable.getNetType = getNetType;
     self->base.vtable.getPPPstatus = getPPPstatus;
@@ -119,6 +126,7 @@ OOP_CTOR(CellT3Rtos) {
     self->base.vtable.ussdStop = ussdStop;
     self->base.vtable.getSimInfo = getSimInfo;
     self->base.vtable.selectSim = selectSim;
+    self->base.vtable.getSimStatus = getSimStatus;
 }
 
 #endif

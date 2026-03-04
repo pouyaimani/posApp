@@ -45,6 +45,12 @@ static void default_wifi(State *s, WifiEvent *ev)
     LOG_WARN("Wifi event hadler is not defined for %s state.", s->name);
 }
 
+static void default_cell(State *s, CellEvent *ev)
+{
+    (void)ev;
+    LOG_WARN("Cellular event hadler is not defined for %s state.", s->name);
+}
+
 static void setNext(State *current, State *next) {
     current->next = next;
 }

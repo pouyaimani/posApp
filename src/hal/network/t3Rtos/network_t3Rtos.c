@@ -10,7 +10,7 @@ static void init(Network *self) {
 
 }
 
-static SocketRoute_t getRoute(Network *self) {
+static NetRoute_t getRoute(Network *self) {
     SOCKET_ROUTE route = sdkNetGetRoute();
     switch (route) {
     case SOCKET_ROUTE_CELLULAR: return NET_ROUTE_CELLUALR;
@@ -19,7 +19,7 @@ static SocketRoute_t getRoute(Network *self) {
     }
 }
 
-static NetError_t setRoute(Network *self, SocketRoute_t route) {
+static NetError_t setRoute(Network *self, NetRoute_t route) {
     SOCKET_ROUTE sdkRoute;
     switch (route) {
     case NET_ROUTE_CELLUALR: sdkRoute = SOCKET_ROUTE_CELLULAR; break;

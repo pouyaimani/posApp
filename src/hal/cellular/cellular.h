@@ -3,6 +3,7 @@
 
 #include "oop.h"
 #include <stdint.h>
+#include "event.h"
 
 typedef enum CellSigStrength_t {
     CELL_SIGNAL_STRENGTH_0,
@@ -12,15 +13,9 @@ typedef enum CellSigStrength_t {
     CELL_SIGNAL_STRENGTH_INVALID
 } CellSigStrength_t;
 
-typedef enum CellPPPStatus_t {
-    CELL_PPP_DIALING,
-    CELL_PPP_SUCESS,
-    CELL_PPP_FAILURE,
-    CELL_PPP_INVALID
-} CellPPPStatus_t;
-
 typedef enum CellErr_t {
-    CELL_ERR_OK
+    CELL_ERR_OK,
+    CELL_ERR_SIM_ERROR
 } CellErr_t;
 
 typedef enum CellNeyType_t {
@@ -52,10 +47,13 @@ OOP_VTABLE(Cellular) {
     OOP_IMETHOD(CellNeyType_t, Cellular, getNetType);
     OOP_IMETHOD(CellSimInfo *, Cellular, getSimInfo);
     OOP_IMETHOD(CellErr_t, Cellular, selectSim, uint8_t);
+    OOP_IMETHOD(CellErr_t, Cellular, getSimStatus);
 };
 
 OOP_CLASS(Cellular) {
     OOP_IMPLEMENTS(Cellular);
+    OOP_METHOD(CellErr_t, startPPPlogin, const char *, 
+                    const char *, const char *, const char *);
     CellSimInfo simInfo;
 };
 
