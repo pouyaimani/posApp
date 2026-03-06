@@ -7,13 +7,21 @@
 
 int libAtoi(const char *str);
 
+int intToStr(int val, char *out, size_t size);
+
 int addBeHarf(const char *num, char *out, size_t out_size);
 
 typedef struct {
     int year;
     int month;
     int day;
-} Calendar_t;
+} Date_t;
+
+typedef struct {
+    int hour;
+    int minute;
+    int secound;
+} Time_t;
 
 unsigned char intToChar(int val);
 
@@ -36,8 +44,9 @@ void formatDateTimeStr(char *out, size_t out_size);
 void formatTimeStr(char *out, size_t out_size);
 int dateSeparator(const char *in, char *out, size_t out_size);
 int timeSeparator(const char *in, char *out, size_t out_size);
-void gregorianToJalali(Calendar_t greg, Calendar_t * jalali);
+void gregorianToJalali(Date_t greg, Date_t * jalali);
 int gregorianToJalaliStr(const char *in_date, char *out_date);
 
+Date_t getJalaliDate();
 
 #endif

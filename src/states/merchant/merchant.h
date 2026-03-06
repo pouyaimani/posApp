@@ -24,3 +24,9 @@ OOP_CLASS(Reports) {
 };
 
 OOP_CTOR(Reports, State *parent, const char *name);
+
+OOP_CLASS(Shift) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(Shift, State *parent, const char *name);

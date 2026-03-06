@@ -85,6 +85,8 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_FUNCTION) {
         SM_GOTO(getState(STATE_ID_SUPPORTER));
+    } else if (ev->key == KEY_CLEAR) {
+        GOTO_DEV_INFO(state);
     }
 }
 

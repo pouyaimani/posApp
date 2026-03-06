@@ -2,7 +2,7 @@
 
 Device *__device;
 BatteryStat batterySt;
-SerialNumber sn;
+char serialNumber[SERIAL_NUMBER_MAX_LEN];
 
 #ifdef DEVICE_TRENDITT3RTOS
 #include "t3Rtos/dev_t3Rtos.h"
@@ -35,6 +35,9 @@ OOP_CTOR(Device, const char* name) {
     self->vtable.beepOnce = NULL;
     self->vtable.getVolume = NULL;
     self->vtable.getBrightness= NULL;
+    self->vtable.setDateTime= NULL;
+    self->vtable.getName= NULL;
+    self->vtable.getCode= NULL;
 }
 
 Device *getDevice() {

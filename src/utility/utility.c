@@ -33,6 +33,11 @@ int libAtoi(const char *str) {
     return s * (falg ? -1 : 1);
 }
 
+int intToStr(int val, char *out, size_t size) {
+    memset(out, 0, size);
+    return sprintf(out, "%d", val);
+}
+
 void removeNonDigits(const char *src, char *dst, size_t dst_size)
 {
     size_t j = 0;
@@ -199,7 +204,7 @@ int addBeHarf(const char *num, char *out, size_t out_size)
     return 0;
 }
 
-void gregorianToJalali(Calendar_t greg, Calendar_t * jalali)
+void gregorianToJalali(Date_t greg, Date_t * jalali)
 {
 	int array[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
@@ -263,11 +268,11 @@ int gregorianToJalaliStr(const char *in_date, char *out_date)
         return -1;
 
     /* assume this function already exists */
-    Calendar_t greg;
+    Date_t greg;
     greg.day = gd;
     greg.month = gm;
     greg.month = gy;
-    Calendar_t jalali;
+    Date_t jalali;
     gregorianToJalali(greg, &jalali);
 
     /* format as YYMMDD */
@@ -585,6 +590,21 @@ const char *getDayName(int y, int m, int d)
     return day_names[h];
 }
 
+Date_t getJalaliDate() {
+    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+
+    int yy, mm, dd;
+    sscanf(dt->date, "%2d%2d%2d", &yy, &mm, &dd);
+
+    int full_year = 2000 + yy;     // adjust if needed
+    Date_t greg;
+    greg.day = dd;
+    greg.month = mm;
+    greg.year = full_year;
+    Date_t jalali;
+    gregorianToJalali(greg, &jalali);
+    return jalali;
+}
 
 void formatDateTimeStr(char *out, size_t out_size)
 {
@@ -595,11 +615,11 @@ void formatDateTimeStr(char *out, size_t out_size)
 
     int full_year = 2000 + yy;     // adjust if needed
     const char *day = getDayName(full_year, mm, dd);
-    Calendar_t greg;
+    Date_t greg;
     greg.day = dd;
     greg.month = mm;
     greg.year = full_year;
-    Calendar_t jalali;
+    Date_t jalali;
     gregorianToJalali(greg, &jalali);
     snprintf(out, out_size,
              "%02d/%02d/%02d-%s",

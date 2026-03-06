@@ -106,6 +106,6 @@ InfoPage infoPage();
 
 #define HIDE_INFO()                         \
     InfoPage info = infoPage();             \
-    OOP_CALL(&info, hide);                  \
+    OOP_CALL(&info, show);                  \
 
 #endif

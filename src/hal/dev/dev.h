@@ -36,10 +36,6 @@ OOP_CLASS(BatteryStat) {
     uint16_t percent;
 };
 
-OOP_CLASS(SerialNumber) {
-    char data[SERIAL_NUMBER_MAX_LEN];
-};
-
 OOP_DECLARE_CLASS(Device)
 
 OOP_VTABLE(Device) {
@@ -49,12 +45,15 @@ OOP_VTABLE(Device) {
     OOP_IMETHOD(void, Device, freeMemory, void *);
     OOP_IMETHOD(unsigned int, Device, flushDisplay, int32_t, int32_t, int32_t, int32_t, uint8_t*);
     OOP_IMETHOD(DateTime*, Device, getDateTime);
+    OOP_IMETHOD(void, Device, setDateTime, DateTime *);
     OOP_IMETHOD(void, Device, logOut, const char *, size_t, void *);
     OOP_IMETHOD(BatteryStat*, Device, getBatteryStatus);
     OOP_IMETHOD(void, Device, sleep);
     OOP_IMETHOD(void, Device, reboot);
     OOP_IMETHOD(void, Device, powerOff);
-    OOP_IMETHOD(SerialNumber*, Device, getSN);
+    OOP_IMETHOD(const char*, Device, getSN);
+    OOP_IMETHOD(const char*, Device, getCode);
+    OOP_IMETHOD(const char*, Device, getName);
     OOP_IMETHOD(void, Device, setVolume, int);
     OOP_IMETHOD(void, Device, setBrightness, int);
     OOP_IMETHOD(int, Device, getVolume);

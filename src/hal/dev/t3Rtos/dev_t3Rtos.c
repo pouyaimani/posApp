@@ -11,7 +11,8 @@
 
 static DateTime dateTime;
 extern BatteryStat batterySt;
-extern SerialNumber sn;
+extern char *serialNumber;
+static TerminalInfo tinfo;
 
 //app address in ram
 #define MCU_BASE_ADDR  (0x1000000)
@@ -78,7 +79,8 @@ static void init(Device* dev) {
     dev->module.bt = sdkSysIsDeviceExist(SYS_DEVICE_BLUETOOTH);
     dev->module.dialup = false;
 
-    sdkSysReadDeviceSN(SYS_SN_TYPE_MANUFACTURER, sn.data, SERIAL_NUMBER_MAX_LEN);
+    sdkSysReadDeviceSN(SYS_SN_TYPE_MANUFACTURER, serialNumber, SERIAL_NUMBER_MAX_LEN);
+    sdkSysReadTerminalInfo(&tinfo);
 }
 
 static void getTick(Device* dev) {
@@ -152,8 +154,16 @@ static void powerOff(Device *dev) {
     sdkSysDevicePowerOff();
 }
 
-static SerialNumber *getSN(Device *dev) {
-    return &sn;
+static const char *getSN(Device *dev) {
+    return serialNumber;
+}
+
+static const char *getCode(Device *dev) {
+    return tinfo.mTerminalCode;
+}
+
+static const char *getName(Device *dev) {
+    return tinfo.mTerminalName;
 }
 
 static void setVolume(Device *dev, int volume) {
@@ -178,6 +188,10 @@ static void beepOnce(Device *dev) {
     sdkSysBeepOnce();
 }
 
+static void setDateTime(Device *dev, DateTime *dt) {
+    sdkSysBeepOnce();
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.name = name;
     self->base.vtable.init = init;
@@ -197,6 +211,9 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.beepOnce = beepOnce;
     self->base.vtable.getVolume = getVolume;
     self->base.vtable.getBrightness = getBrightness;
+    self->base.vtable.setDateTime = setDateTime;
+    self->base.vtable.getCode = getCode;
+    self->base.vtable.getName = getName;    
 
     self->base.maxBright = 5;
     self->base.maxSound = 5;

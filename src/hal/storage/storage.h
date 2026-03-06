@@ -7,6 +7,8 @@
 #include "dcfg.h"
 #include "event.h"
 
+#define MAX_SHIFT_CNT 100
+
 OOP_CLASS(TerminalSettings) {
     bool mHasLoginOnline;
     bool mIsKeyVolumeOpen;
@@ -94,10 +96,23 @@ OOP_CLASS(TxnSettings) {
     bool mIsSupportTdk;                 
 };
 
+OOP_CLASS(Shifts) {
+    struct ShiftsData{
+        uint32_t startDate;
+        uint32_t startTime;
+        uint32_t endDate;
+        uint32_t endTime;
+    } data[MAX_SHIFT_CNT];
+    uint16_t latest;
+    uint8_t isEnable;
+    uint8_t isActive;
+};
+
 OOP_CLASS(DevSettings) {
-    TerminalSettings terminal;      
-    ServerSettings server;         
+    TerminalSettings terminal;
+    ServerSettings server;
     TxnSettings txn;
+    Shifts shift;
 };
 
 OOP_DECLARE_CLASS(Storage)

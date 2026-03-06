@@ -10,6 +10,7 @@ typedef enum StateId_t {
     STATE_ID_CARD_HOLDER,
     STATE_ID_DIALOGUE,
     STATE_ID_SUPPORTER,
+    STATE_ID_DEV_INFO
 } StateId_t;
 
 State *getState(StateId_t id);
@@ -94,6 +95,20 @@ OOP_CTOR(Info, State *parent, const char *name);
     OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);           \
     OOP_CALL(getState(STATE_ID_INFO), setNext, next);           \
     SM_GOTO(getState(STATE_ID_INFO));                           
+
+/************************Dev Info*************************/
+
+OOP_CLASS(DevInfo) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(DevInfo, State *parent, const char *name);
+
+#define GOTO_DEV_INFO(prev)                                     \
+    DevInfo *devInfo = (DevInfo *)getState(STATE_ID_DEV_INFO);  \
+    OOP_CALL(getState(STATE_ID_DEV_INFO), setPrev, prev);       \
+    OOP_CALL(getState(STATE_ID_DEV_INFO), setNext, prev);       \
+    SM_GOTO(getState(STATE_ID_DEV_INFO));                    
 
 /**************************Ginfo*************************/
 

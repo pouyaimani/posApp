@@ -12,6 +12,7 @@ InputBox uiInputBox(lv_obj_t *parent) {
     LV_SET_SIZE(inBox.main, INPUT_BOX_WIDTH, INPUT_BOX_HEIGHT);
     LV_SET_BORDER_COLOR(inBox.main, MAIN_THEME_COLOR);
     LV_SET_BORDER_WIDTH(inBox.main, 3);
+    LV_SET_RADIUS(inBox.main, 8);
     lv_obj_set_style_shadow_opa(inBox.main, LV_OPA_20, 0);
     lv_obj_set_style_shadow_color(inBox.main, lv_color_black(), 0);
     lv_obj_set_style_shadow_offset_x(inBox.main, 0, 0);

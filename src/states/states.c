@@ -9,6 +9,7 @@ static Info *info;
 static Ginfo *ginfo;
 static Dialogue *dialogue;
 static Supporter *supporter;
+static DevInfo *devInfo;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -60,6 +61,12 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(Ginfo, ginfo, idle, "ginfo");
         );
         return (State *)ginfo;
+    case STATE_ID_DEV_INFO:
+        CALL_ONCE(
+            devInfo = GET_MEM(sizeof(DevInfo));
+            OOP_CALL_CTOR(DevInfo, devInfo, idle, "dev info");
+        );
+        return (State *)devInfo;
     default:
         break;
     }

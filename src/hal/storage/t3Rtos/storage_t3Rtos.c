@@ -110,6 +110,15 @@ typedef struct _SettingItem {
 #define PROP_SUPPORT_REVERSE                    "support_reverse"
 #define PROP_SUPPORT_ES_BEFORE_ONLINE           "support_es_before_online"
 
+#define PROP_SHIFT_S_DATE                         "shift_start_date"
+#define PROP_SHIFT_S_TIME                         "shift_start_time"
+#define PROP_SHIFT_E_DATE                         "shift_end_date"
+#define PROP_SHIFT_E_TIME                         "shift_end_time"
+#define PROP_SHIFT_E_TIME                         "shift_end_time"
+#define PROP_SHIFT_LATEST                         "shift_latest"
+#define PROP_SHIFT_ENABLE                         "shift_enable"
+#define PROP_SHIFT_ACTIVE                         "shift_active"
+
 #define VALUE_PROP_LANGUAGE                           libPropertiesGet(PROP_LANGUAGE)
 #define VALUE_PROP_PRINT_GREY_SCALE                   libPropertiesGet(PROP_PRINT_GREY_SCALE)
 #define VALUE_PROP_UPDATE_FLAG                        libPropertiesGet(PROP_UPDATE_FLAG)
@@ -183,9 +192,25 @@ typedef struct _SettingItem {
 #define VALUE_PROP_IS_SUPPORT_GM                      libPropertiesGet(PROP_IS_SUPPORT_GM)
 #define VALUE_PROP_IS_VERIFY_MAC                      libPropertiesGet(PROP_IS_VERIFY_MAC)
 
-#define VALUE_PROP_SUPPORT_AUTO_LOGIN                   libPropertiesGet(PROP_SUPPORT_AUTO_LOGIN)
+#define VALUE_PROP_SUPPORT_AUTO_LOGIN                 libPropertiesGet(PROP_SUPPORT_AUTO_LOGIN)
 #define VALUE_PROP_SUPPORT_REVERSE                    libPropertiesGet(PROP_SUPPORT_REVERSE)
 #define VALUE_PROP_SUPPORT_ES_BEFORE_ONLINE           libPropertiesGet(PROP_SUPPORT_ES_BEFORE_ONLINE)
+
+#define VALUE_PROP_SHIFT_S_DATE                       libPropertiesGet(PROP_SHIFT_S_DATE)
+#define VALUE_PROP_SHIFT_S_TIME                       libPropertiesGet(PROP_SHIFT_S_TIME)
+#define VALUE_PROP_SHIFT_E_DATE                       libPropertiesGet(PROP_SHIFT_E_DATE)
+#define VALUE_PROP_SHIFT_E_TIME                       libPropertiesGet(PROP_SHIFT_E_TIME)
+#define VALUE_PROP_SHIFT_LATEST                       libPropertiesGet(PROP_SHIFT_LATEST)
+#define VALUE_PROP_SHIFT_ENABLE                       libPropertiesGet(PROP_SHIFT_ENABLE)
+#define VALUE_PROP_SHIFT_ACTIVE                       libPropertiesGet(PROP_SHIFT_ACTIVE)
+
+#define DEFAULT_PROP_SHIFT_S_DATE                     0
+#define DEFAULT_PROP_SHIFT_S_TIME                     0
+#define DEFAULT_PROP_SHIFT_E_DATE                     0
+#define DEFAULT_PROP_SHIFT_E_TIME                     0
+#define DEFAULT_PROP_SHIFT_LATEST                     0
+#define DEFAULT_PROP_SHIFT_ENABLE                     0
+#define DEFAULT_PROP_SHIFT_ACTIVE                     0
 
 #define OPERATOR_PWD_LEN   4
 #define ADMIN_PWD_LEN      6
@@ -792,6 +817,62 @@ static const SettingItem settingsTable[] = {
         1,
         DEFAULT_PROP_CONNECT_MODE,
         &_settings.terminal.mConnectMode,
+    },
+    {
+        PROP_SHIFT_S_DATE,
+        T_INT,
+        0,
+        sizeof(uint32_t) * MAX_SHIFT_CNT,
+        DEFAULT_PROP_SHIFT_S_DATE,
+        &_settings.shift.data->startDate,
+    },
+    {
+        PROP_SHIFT_S_TIME,
+        T_INT,
+        0,
+        sizeof(uint32_t) * MAX_SHIFT_CNT,
+        DEFAULT_PROP_SHIFT_S_TIME,
+        &_settings.shift.data->startTime,
+    },
+    {
+        PROP_SHIFT_E_DATE,
+        T_INT,
+        0,
+        sizeof(uint32_t) * MAX_SHIFT_CNT,
+        DEFAULT_PROP_SHIFT_E_DATE,
+        &_settings.shift.data->endDate,
+    },
+    {
+        PROP_SHIFT_E_TIME,
+        T_INT,
+        0,
+        sizeof(uint32_t) * MAX_SHIFT_CNT,
+        DEFAULT_PROP_SHIFT_E_TIME,
+        &_settings.shift.data->endTime,
+    },
+    {
+        PROP_SHIFT_LATEST,
+        T_INT,
+        0,
+        sizeof(uint16_t),
+        DEFAULT_PROP_SHIFT_LATEST,
+        &_settings.shift.latest,
+    },
+    {
+        PROP_SHIFT_ENABLE,
+        T_INT,
+        0,
+        sizeof(uint8_t),
+        DEFAULT_PROP_SHIFT_ENABLE,
+        &_settings.shift.isEnable,
+    },
+    {
+        PROP_SHIFT_ACTIVE,
+        T_INT,
+        0,
+        sizeof(uint8_t),
+        DEFAULT_PROP_SHIFT_ACTIVE,
+        &_settings.shift.isActive,
     },
 };
 

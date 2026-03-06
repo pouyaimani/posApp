@@ -190,6 +190,10 @@ static void handleKeyAction(State *state, int id) {
     if (id >= SUBS_ALL) {
         return;
     }
+    if (id == SUBS_MERCHANT_DATA) {
+        GOTO_DEV_INFO(state);
+        return;
+    }
     SM_GOTO(subStates[id]);
 }
 
@@ -228,7 +232,10 @@ OOP_CTOR(Merchant, State *parent, const char *name) {
     OOP_CALL_CTOR(Connections, subStates[SUBS_CONNECTIONS], merchantMenu, "connections");
     subStates[SUBS_SETTINGS] = (Settings *)GET_MEM(sizeof(Settings));
     OOP_CALL_CTOR(Settings, subStates[SUBS_SETTINGS], merchantMenu, "settings");
-    subStates[SUBS_REPORTS] = (Settings *)GET_MEM(sizeof(Settings));
+    subStates[SUBS_REPORTS] = (Reports *)GET_MEM(sizeof(Reports));
     OOP_CALL_CTOR(Reports, subStates[SUBS_REPORTS], merchantMenu, "reports");
+    subStates[SUBS_SHIFT] = (Shift *)GET_MEM(sizeof(Shift));
+    OOP_CALL_CTOR(Shift, subStates[SUBS_SHIFT], merchantMenu, "shift");
+
     storage = getStorage();
 }
