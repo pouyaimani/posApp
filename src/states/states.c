@@ -10,6 +10,7 @@ static Ginfo *ginfo;
 static Dialogue *dialogue;
 static Supporter *supporter;
 static DevInfo *devInfo;
+static StMenu *menu;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -67,6 +68,12 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(DevInfo, devInfo, idle, "dev info");
         );
         return (State *)devInfo;
+    case STATE_ID_MENU:
+        CALL_ONCE(
+            menu = GET_MEM(sizeof(StMenu));
+            OOP_CALL_CTOR(StMenu, menu, idle, "menu");
+        );
+        return (State *)menu;
     default:
         break;
     }

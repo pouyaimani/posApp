@@ -174,6 +174,14 @@ static void setMax(int val) {
     maxIn = val;
 }
 
+static void setAmount(const char *amt) {
+    snprintf(input,
+        INPUT_MAX_LEN, "%s", amt);
+    idx = strlen(input);
+    amountSeparator(input, amountStr, INPUT_MAX_LEN);
+    LV_SET_TEXT(inputBox.textBox, amountStr);
+}
+
 static void reset() {
     clearStr(input);
     clearStr(password);
@@ -194,6 +202,7 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->setData = setData;
     self->setMax = setMax;
     self->reset = reset;
+    self->setAmount = setAmount;
     input = (char*)GET_MEM(INPUT_MAX_LEN);
     password = (char*)GET_MEM(PASS_MAX_LEN + 1);
     self->input = input;

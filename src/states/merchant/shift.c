@@ -269,55 +269,41 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
     }
 }
 
+/******************** Shift report sub state **********************/
+
+static SubState *handleReports;
+
+STATE_DEF_ENTER(HandleReports) {
+    Input *in = getState(STATE_ID_INPUT);
+    int shiftNum = libAtoi(in->input) - 1;
+    if (shiftNum >= shiftStg->latest) {
+        GOTO_INFO(state->parent, state->parent, "شیفت مورد نظر یافت نشد", "");
+    } else {
+        GOTO_INFO(state->parent, state->parent, "این قسمت پیاده نشده هنوز", "");
+    }
+}
+
+STATE_DEF_ENTER(ShiftReports) {
+    GOTO_INPUT(state->parent, handleReports, "انتخاب شیفت", "", 3, IN_MODE_NUMBERS);
+}
+
 /******************** Shift settings state **********************/
 
 static void createUi() {
     uiMenu(&shiftItemMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < SHIFT_ITEM_ALL ; i++) {
-        OOP_CALL(&shiftItemMenu, addItem, shiftItemTxt[i], NULL, NULL);
+        OOP_CALL(&shiftItemMenu, addItem, shiftItemTxt[i], subShift[i], NULL, NULL);
     }
-}
-
-static void destroyUi() {
-    uiDeleteMenu(&shiftItemMenu);
 }
 
 STATE_DEF_ENTER(Shift) {
     createUi();
-    OOP_CALL(&shiftItemMenu, show);
-}
-
-STATE_DEF_EXIT(Shift) {
-    OOP_CALL(&shiftItemMenu, hide);
-    destroyUi();
-}
-
-static void handleKeyAction(State *state, int id) {
-    if (id >= SHIFT_ITEM_ALL) {
-        return;
-    }
-    SM_GOTO(subShift[id]);
-}
-
-STATE_DEF_HANDLE(Shift, KeypadEvent) {
-    OOP_CALL(&shiftItemMenu, handleItem, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else if (ev->key == KEY_ENTER) {
-        handleKeyAction(state, shiftItemMenu.idx);
-    }  else {
-        if (ev->key <= KEY_9) {
-            int id = ((int)ev->key - 1);
-            handleKeyAction(state, id);
-        }
-    }
+    GOTO_MENU(state->parent, &shiftItemMenu);
 }
 
 OOP_CTOR(Shift, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Shift);
-    self->base.vtable.exit = STATE_EXIT(Shift);
-    self->base.vtable.handleKeypad = STATE_HANDLE(Shift, KeypadEvent);
     storage = getStorage();
     dev = getDevice();
     shiftStg = &storage->settings->shift;
@@ -345,4 +331,12 @@ OOP_CTOR(Shift, State *parent, const char *name) {
     subShift[SHIFT_ITEM_CLOSE]->vtable.enter = STATE_ENTER(CloseShift);
     subShift[SHIFT_ITEM_CLOSE]->vtable.exit = STATE_EXIT(CloseShift);
     subShift[SHIFT_ITEM_CLOSE]->vtable.handleKeypad = STATE_HANDLE(CloseShift, KeypadEvent);
+
+    subShift[SHIFT_ITEM_REPORT] = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_REPORT], self, "Shift reports");
+    subShift[SHIFT_ITEM_REPORT]->vtable.enter = STATE_ENTER(ShiftReports);
+
+    handleReports = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, handleReports, self, "Shift reports");
+    handleReports->vtable.enter = STATE_ENTER(HandleReports);
 }

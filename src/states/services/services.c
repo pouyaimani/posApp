@@ -1,6 +1,7 @@
 #include "services.h"
 #include "dev/dev.h"
 #include "../states.h"
+#include "storage/storage.h"
 
 static Service *services[MAX_SERVICE_NUM];
 static Service *parent;
@@ -19,6 +20,10 @@ static void createServices() {
     OOP_CALL_CTOR(Balance, services[SERVICE_ID_BALANCE],parent, "موجودی");
     OOP_CALL_CTOR(Pay, services[SERVICE_ID_PAY],parent, "پرداخت");
     OOP_CALL_CTOR(SimCharge, services[SERVICE_ID_SIM_CHARGE], parent, "خرید شارژ");
+
+    for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
+        services[i]->enable = getStorage()->settings->terminal.serviceEn[i];
+    }
 }
 
 Service *getService(ServiceId_t id) {

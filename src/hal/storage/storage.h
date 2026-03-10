@@ -40,20 +40,24 @@ OOP_CLASS(TerminalSettings) {
     char mTransmitCreateLinkAttr[32];
     char mWifiSSID[32];                             
     char mWifiMac[32];                              
-    u32 mWifiEnc;                                   
+    uint32_t mWifiEnc;                                   
     char mWifiPwd[63+1];
     char mTmsCheckDate[4 + 1];                      
 
-    u32 mTimeoutShowErr;                            
-    u32 mTimeoutShowTip;                            
-    u32 mTransmitCreatePPPTimeout;                  
-    u32 mTransmitErrTipsTimeout;                    
-    u32 mRecvDataTimeout;                           
-    u32 mAppID;                                     
+    uint32_t mTimeoutShowErr;                            
+    uint32_t mTimeoutShowTip;                            
+    uint32_t mTransmitCreatePPPTimeout;                  
+    uint32_t mTransmitErrTipsTimeout;                    
+    uint32_t mRecvDataTimeout;                           
+    uint32_t mAppID;                                     
     uint8_t mLanguage;
     uint8_t mPrintGreyScale;
     uint8_t mUpdateFlag;
     uint8_t mConnectMode;
+    bool maxAmntEnable;
+    char maxAmnt[12 + 1];
+    bool directSaleEn;
+    bool serviceEn[MAX_SERVICE_NUM];
 };
 
 OOP_CLASS(ServerSettings) {

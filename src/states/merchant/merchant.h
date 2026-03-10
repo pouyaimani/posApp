@@ -30,3 +30,15 @@ OOP_CLASS(Shift) {
 };
 
 OOP_CTOR(Shift, State *parent, const char *name);
+
+OOP_CLASS(OtherProjects) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(OtherProjects, State *parent, const char *name);
+
+OOP_CLASS(MerchantData) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(MerchantData, State *parent, const char *name);

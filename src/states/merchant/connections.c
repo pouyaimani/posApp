@@ -135,7 +135,7 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
         uiMenu(&wifiMenu, getDisplay()->screen);
         for (uint8_t i = 0; i < wifi->apList.size ; i++) {
-            OOP_CALL(&wifiMenu, addItem, wifi->apList.list[i].essid, NULL, NULL);
+            OOP_CALL(&wifiMenu, addItem, wifi->apList.list[i].essid, wifiEnterPass, NULL, NULL);
         }
         HIDE_INFO();
         OOP_CALL(&wifiMenu, show);
@@ -214,7 +214,7 @@ static void createUi() {
     menuCount = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
     if (getDevice()->module.wifi) {
-        OOP_CALL(&menu, addItem, itemTxt[CONNECTION_WIFI], NULL, NULL);
+        OOP_CALL(&menu, addItem, itemTxt[CONNECTION_WIFI], wifiScan, NULL, NULL);
         menuMap[menuCount] = CONNECTION_WIFI;
         if (route == NET_ROUTE_WIFI) {
             OOP_CALL(&menu, setChecked, menuCount);
@@ -222,7 +222,7 @@ static void createUi() {
         menuCount++;
     }
     if (getDevice()->module.gprs) {
-        OOP_CALL(&menu, addItem, itemTxt[CONNECTION_GPRS], NULL, NULL);
+        OOP_CALL(&menu, addItem, itemTxt[CONNECTION_GPRS], cellularLogin, NULL, NULL);
         menuMap[menuCount] = CONNECTION_GPRS;
         if (route == NET_ROUTE_CELLUALR) {
             OOP_CALL(&menu, setChecked, menuCount);
@@ -231,55 +231,14 @@ static void createUi() {
     }
 }
 
-static void destroyUi() {
-    uiDeleteMenu(&menu);
-}
-
 STATE_DEF_ENTER(Connectios) {
     createUi();
-    OOP_CALL(&menu, show);
-}
-
-STATE_DEF_EXIT(Connectios) {
-    OOP_CALL(&menu, hide);
-    destroyUi();
-}
-
-static void handleKeyAction(State *state, int id) {
-    if (id >= menuCount) {
-        return;
-    }
-    switch (menuMap[id]) {
-    case CONNECTION_WIFI:
-        SM_GOTO(wifiScan);
-        break;
-    case CONNECTION_GPRS:
-        SM_GOTO(cellularLogin);
-        break;
-    default:
-        break;
-    }
-}
-
-STATE_DEF_HANDLE(Connectios, KeypadEvent) {
-    OOP_CALL(&menu, handleItem, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else if (ev->key == KEY_ENTER) {
-        handleKeyAction(state, menu.idx);
-    }  else {
-        if (ev->key <= KEY_9) {
-            int id = ((int)ev->key - 1);
-            handleKeyAction(state, id);
-        }
-    }
+    GOTO_MENU(state->parent, &menu);
 }
 
 OOP_CTOR(Connections, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, "connections");
     self->base.vtable.enter = STATE_ENTER(Connectios);
-    self->base.vtable.exit = STATE_EXIT(Connectios);
-    self->base.vtable.handleKeypad = STATE_HANDLE(Connectios, KeypadEvent);
 
     WifiScan(self);
     WifiConnect(self);

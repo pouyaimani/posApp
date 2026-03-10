@@ -28,7 +28,7 @@ typedef struct _SettingItem {
     void *mAddress;                            // Address to read or store the corresponding data
 } SettingItem;
 
-#define SETTINGS_FILE_MAX_SIZE  2048
+#define SETTINGS_FILE_MAX_SIZE  4096
 
 #define SETTINGS_FILE_HEADER_LEN    4
 
@@ -119,6 +119,13 @@ typedef struct _SettingItem {
 #define PROP_SHIFT_ENABLE                         "shift_enable"
 #define PROP_SHIFT_ACTIVE                         "shift_active"
 
+#define PROP_MAX_AMNT_EN                          "max_amnt_en"
+#define PROP_MAX_AMNT                             "max_amnt"
+
+#define PROP_DIRECT_SALE_EN                       "direct_sale_en"
+
+#define PROP_SERVICES_EN                          "services_en"
+
 #define VALUE_PROP_LANGUAGE                           libPropertiesGet(PROP_LANGUAGE)
 #define VALUE_PROP_PRINT_GREY_SCALE                   libPropertiesGet(PROP_PRINT_GREY_SCALE)
 #define VALUE_PROP_UPDATE_FLAG                        libPropertiesGet(PROP_UPDATE_FLAG)
@@ -204,6 +211,13 @@ typedef struct _SettingItem {
 #define VALUE_PROP_SHIFT_ENABLE                       libPropertiesGet(PROP_SHIFT_ENABLE)
 #define VALUE_PROP_SHIFT_ACTIVE                       libPropertiesGet(PROP_SHIFT_ACTIVE)
 
+#define VALUE_PROP_MAX_AMNT_EN                        libPropertiesGet(PROP_MAX_AMNT_EN)
+#define VALUE_PROP_MAX_AMNT                           libPropertiesGet(PROP_MAX_AMNT)
+
+#define VALUE_PROP_DIRECT_SALE_EN                     libPropertiesGet(PROP_DIRECT_SALE_EN)
+
+#define VALUE_PROP_SERVICES_EN                        libPropertiesGet(PROP_SERVICES_EN)
+
 #define DEFAULT_PROP_SHIFT_S_DATE                     0
 #define DEFAULT_PROP_SHIFT_S_TIME                     0
 #define DEFAULT_PROP_SHIFT_E_DATE                     0
@@ -212,12 +226,20 @@ typedef struct _SettingItem {
 #define DEFAULT_PROP_SHIFT_ENABLE                     0
 #define DEFAULT_PROP_SHIFT_ACTIVE                     0
 
+#define DEFAULT_PROP_MAX_AMNT_EN                      0
+#define DEFAULT_PROP_MAX_AMNT                         "999999999999/0"
+
+#define DEFAULT_PROP_DIRECT_SALE_EN                   0
+
+#define DEFAULT_PROP_SERVICES_EN                      0
+
 #define OPERATOR_PWD_LEN   4
 #define ADMIN_PWD_LEN      6
 #define SYS_PWD_LEN        8
 #define SAFE_PWD_LEN       8
 
 #define MAX_OPERATOR_NUM   4
+
 
 extern DevSettings _settings;
 
@@ -874,6 +896,38 @@ static const SettingItem settingsTable[] = {
         DEFAULT_PROP_SHIFT_ACTIVE,
         &_settings.shift.isActive,
     },
+    {
+        PROP_MAX_AMNT_EN,
+        T_INT,
+        0,
+        sizeof(uint8_t),
+        DEFAULT_PROP_MAX_AMNT_EN,
+        &_settings.terminal.maxAmntEnable,
+    },
+    {
+        PROP_MAX_AMNT,
+        T_ASC,
+        0,
+        13,
+        DEFAULT_PROP_MAX_AMNT,
+        &_settings.terminal.maxAmnt,
+    },
+    {
+        PROP_DIRECT_SALE_EN,
+        T_CHAR,
+        0,
+        1,
+        DEFAULT_PROP_DIRECT_SALE_EN,
+        &_settings.terminal.directSaleEn,
+    },
+    {
+        PROP_SERVICES_EN,
+        T_INT,
+        MAX_SERVICE_NUM,
+        MAX_SERVICE_NUM,
+        DEFAULT_PROP_SERVICES_EN,
+        _settings.terminal.serviceEn,
+    },
 };
 
 static uint16_t getDevicePropsTableCount(void)
@@ -1126,6 +1180,7 @@ static void reloadSettings(char *fileName, SettingItem *settings, uint32_t items
     uint32_t fileCrc = 0;
     uint32_t readSize = 0;
     s32 ret = SDK_ERR;
+    // goto init_settings;
 
     if (fileName == NULL || strlen(fileName) == 0)
     {

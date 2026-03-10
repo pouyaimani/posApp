@@ -2,8 +2,7 @@
 #define SERVICES_H_
 
 #include "state.h"
-
-#define MAX_SERVICE_NUM 10
+#include "dcfg.h"
 
 #define PASSWORD_MAX_LEN    4
 
@@ -13,6 +12,7 @@ extern int serviceCount;
 
 OOP_CLASS(Service) {
     State state;
+    bool enable;
 };
 
 OOP_CTOR(Service, State *parent, const char *name);

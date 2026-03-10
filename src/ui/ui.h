@@ -4,6 +4,8 @@
 #include "oop.h"
 #include "lvgl.h"
 #include "font/myFont.h"
+#include "state.h"
+#include "dev/dev.h"
 
 OOP_CLASS(InputBox) {
     lv_obj_t *main;
@@ -20,20 +22,27 @@ typedef enum {
     MENU_DOWN
 } MenuUpDown_t;
 
-#define MENU_ITEM_MAX   50
+/***************************** Menu *****************************/
+
+#define MENU_ITEM_MAX   20
 
 typedef enum Key_t Key_t;
 
 OOP_DECLARE_CLASS(Menu);
 
+typedef void (CallBack_t)();
+
 OOP_VTABLE(Menu) {
-    OOP_IMETHOD(void, Menu, addItem, const char * text,
-                lv_event_cb_t event_cb, void * user_data);
+    OOP_IMETHOD(void, Menu, addItem, const char * text, State *state,
+                CallBack_t cb, void * user_data);
+    OOP_IMETHOD(void, Menu, addOnOffItem, const char * text, bool onOff, State *state,
+                CallBack_t cb, void * user_data);               
     OOP_IMETHOD(void, Menu, handleItem, Key_t);
     OOP_IMETHOD(void, Menu, show);
     OOP_IMETHOD(void, Menu, hide);
     OOP_IMETHOD(int, Menu, getIdx);
     OOP_IMETHOD(void, Menu, setChecked, int);
+    OOP_IMETHOD(void, Menu, toggle, int);
 };
  
 OOP_CLASS(Menu) {
@@ -41,11 +50,18 @@ OOP_CLASS(Menu) {
     lv_obj_t *main;
     lv_obj_t *selector;
     lv_obj_t *checker;
-    lv_obj_t *item[MENU_ITEM_MAX];
+    lv_obj_t **item;
+    State **state;
+    CallBack_t **cb;
+    bool *toggle;
     int cnt;
     int idx;
     int selected;
+    bool checkEnable;
+    bool togglable;
 };
+
+/***************************** Bar *****************************/
 
 OOP_DECLARE_CLASS(Bar);
 
@@ -72,6 +88,7 @@ Button uiButton(lv_obj_t *parent, unsigned int color, const char * text);
 void uiMenu(Menu *, lv_obj_t * parent);
 void uiDeleteMenu(Menu *menu);
 void uiOnOffMenu(Menu *menu, lv_obj_t * parent);
+void uiToggleMenu(Menu *menu, lv_obj_t * parent);
 void uiBar(Bar *bar, lv_obj_t * parent, int min, int max);
 void uiBarDelete(Bar *bar);
 

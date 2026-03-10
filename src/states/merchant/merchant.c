@@ -23,7 +23,7 @@ typedef enum {
     SUBS_REPORTS = 0,
     SUBS_SHIFT,
     SUBS_MERCHANT_DATA,
-    SUBS_SPEC_PROJECTS,
+    SUBS_OTHER_PROJECTS,
     SUBS_SETTINGS,
     SUBS_CONNECTIONS,
     SUBS_CHANGE_MERCHANT_PIN,
@@ -151,6 +151,17 @@ static void ChangeMerPin(State *parent) {
 
 }
 
+/******************** Merchant data sub state **********************/
+
+STATE_DEF_ENTER(MerchantData) {
+    GOTO_DEV_INFO(state->parent);
+}
+
+OOP_CTOR(MerchantData, State *parent, const char *name) {
+    OOP_CALL_CTOR(State, self, parent, "Merchant Data");
+    self->base.vtable.enter = STATE_ENTER(MerchantData);
+}
+
 /******************** Merchant menu sub state **********************/
 
 static const char* itemTxt[SUBS_ALL] = {
@@ -168,55 +179,19 @@ static Menu menu;
 static void createUi() {
     uiMenu(&menu, getDisplay()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
-        OOP_CALL(&menu, addItem, itemTxt[i], NULL, NULL);
+        OOP_CALL(&menu, addItem, itemTxt[i], subStates[i], NULL, NULL);
     }
-}
-
-static void destroyUi() {
-    uiDeleteMenu(&menu);
 }
 
 STATE_DEF_ENTER(MerchantMenu) {
     createUi();
-    OOP_CALL(&menu, show);
-}
-
-STATE_DEF_EXIT(MerchantMenu) {
-    OOP_CALL(&menu, hide);
-    destroyUi();
-}
-
-static void handleKeyAction(State *state, int id) {
-    if (id >= SUBS_ALL) {
-        return;
-    }
-    if (id == SUBS_MERCHANT_DATA) {
-        GOTO_DEV_INFO(state);
-        return;
-    }
-    SM_GOTO(subStates[id]);
-}
-
-STATE_DEF_HANDLE(MerchantMenu, KeypadEvent) {
-    OOP_CALL(&menu, handleItem, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(getState(STATE_ID_SUPPORTER));
-    } else if (ev->key == KEY_ENTER) {
-        handleKeyAction(state, menu.idx);
-    }  else {
-        if (ev->key <= KEY_9) {
-            int id = ((int)ev->key - 1);
-            handleKeyAction(state, id);
-        }
-    }
+    GOTO_MENU(getState(STATE_ID_SUPPORTER), &menu);
 }
 
 static void MerchantMenu(State *parent) {
     merchantMenu = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, merchantMenu, parent, "merchant menu");
     merchantMenu->vtable.enter = STATE_ENTER(MerchantMenu);
-    merchantMenu->vtable.exit = STATE_EXIT(MerchantMenu);
-    merchantMenu->vtable.handleKeypad = STATE_HANDLE(MerchantMenu, KeypadEvent);
 }
 
 /******************************************************************/
@@ -236,6 +211,10 @@ OOP_CTOR(Merchant, State *parent, const char *name) {
     OOP_CALL_CTOR(Reports, subStates[SUBS_REPORTS], merchantMenu, "reports");
     subStates[SUBS_SHIFT] = (Shift *)GET_MEM(sizeof(Shift));
     OOP_CALL_CTOR(Shift, subStates[SUBS_SHIFT], merchantMenu, "shift");
+    subStates[SUBS_OTHER_PROJECTS] = (OtherProjects *)GET_MEM(sizeof(OtherProjects));
+    OOP_CALL_CTOR(OtherProjects, subStates[SUBS_OTHER_PROJECTS], merchantMenu, "other projects");
+    subStates[SUBS_MERCHANT_DATA] = (MerchantData *)GET_MEM(sizeof(MerchantData));
+    OOP_CALL_CTOR(MerchantData, subStates[SUBS_MERCHANT_DATA], merchantMenu, "merchant data");
 
     storage = getStorage();
 }

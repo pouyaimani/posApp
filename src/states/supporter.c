@@ -24,7 +24,7 @@ static const char* itemTxt[ITEM_CNT_MAX] = {
 static void createUi() {
     uiMenu(&menu, getDisplay()->screen);
     for (uint8_t i = 0; i < ITEM_CNT_MAX ; i++) {
-        OOP_CALL(&menu, addItem, itemTxt[i], NULL, NULL);
+        OOP_CALL(&menu, addItem, itemTxt[i], NULL, NULL, NULL);
     }
 }
 
@@ -86,18 +86,14 @@ STATE_DEF_HANDLE(Supporter, KeypadEvent) {
 /******************** Power off sub state **********************/
 
 STATE_DEF_ENTER(PowerOff) {
+    GOTO_INFO(NULL, NULL, "در حال خاموش شدن ...", "");
     OOP_CALL(getDevice(), powerOff);
-}
-
-STATE_DEF_EXIT(PowerOff) {
-
 }
 
 static void PowerOff(Sale *parent) {
     powerOff = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, powerOff, &parent->base.state, "power off");
     powerOff->vtable.enter = STATE_ENTER(PowerOff);
-    powerOff->vtable.exit = STATE_EXIT(PowerOff);
 }
 
 OOP_CTOR(Supporter, State *parent, const char *name) {

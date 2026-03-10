@@ -1,4 +1,4 @@
-#include "core/stateMachine/state.h"
+#include "state.h"
 #include <stdbool.h>
 
 typedef enum StateId_t {
@@ -10,7 +10,8 @@ typedef enum StateId_t {
     STATE_ID_CARD_HOLDER,
     STATE_ID_DIALOGUE,
     STATE_ID_SUPPORTER,
-    STATE_ID_DEV_INFO
+    STATE_ID_DEV_INFO,
+    STATE_ID_MENU
 } StateId_t;
 
 State *getState(StateId_t id);
@@ -53,6 +54,7 @@ OOP_CLASS(Input) {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setMode, InputMode_t);
     OOP_METHOD(void, setData, const char *, const char *);
+    OOP_METHOD(void, setAmount, const char *);
     OOP_METHOD(void, setMax, int);
     OOP_METHOD(void, reset);
     char *input;
@@ -153,3 +155,19 @@ OOP_CLASS(Supporter) {
 };
 
 OOP_CTOR(Supporter, State *parent, const char *name);
+
+/************************ Menu ***********************/
+typedef struct Menu Menu;
+
+OOP_CLASS(StMenu) {
+    OOP_EXTENDS(State);
+    Menu *menu;
+};
+
+OOP_CTOR(StMenu, State *parent, const char *name);
+
+#define GOTO_MENU(prev, amenu)                                  \
+    StMenu *stMenu = (StMenu *)getState(STATE_ID_MENU);         \
+    stMenu->menu = amenu;                                       \
+    OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);           \
+    SM_GOTO(getState(STATE_ID_MENU));

@@ -74,7 +74,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
 static void createUi() {
     uiMenu(&menu, getDisplay()->screen);
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL);
+        OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL, NULL);
     }
     OOP_CALL(&menu, hide);
 }

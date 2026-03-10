@@ -83,7 +83,7 @@ static SubState *getValue;
 STATE_DEF_ENTER(EnergySettings) {
     uiMenu(&energyMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < 2 ; i++) {
-        OOP_CALL(&energyMenu, addItem, energyItemTxt[i], NULL, NULL);
+        OOP_CALL(&energyMenu, addItem, &energyItemTxt[i], NULL, NULL, NULL);
     }
     OOP_CALL(&energyMenu, show);
 }
@@ -150,23 +150,9 @@ static Menu receiptMenu;
 STATE_DEF_ENTER(ReceiptSettings) {
     uiMenu(&receiptMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < 4 ; i++) {
-        OOP_CALL(&receiptMenu, addItem, receiptItemTxt[i], NULL, NULL);
+        OOP_CALL(&receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
     }
-    OOP_CALL(&receiptMenu, show);
-}
-
-STATE_DEF_EXIT(ReceiptSettings) {
-    OOP_CALL(&receiptMenu, hide);
-    uiDeleteMenu(&receiptMenu);
-}
-
-STATE_DEF_HANDLE(ReceiptSettings, KeypadEvent) {
-    OOP_CALL(&receiptMenu, handleItem, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else if (ev->key == KEY_ENTER) {
-        SM_GOTO(subReceipt[receiptMenu.idx]);
-    }
+    GOTO_MENU(state->parent, &receiptMenu);
 }
 
 static Menu autoRecMenu;
@@ -225,8 +211,8 @@ static Menu prnModel;
 
 STATE_DEF_ENTER(PrnModel) {
     uiMenu(&prnModel, getDisplay()->screen);
-    OOP_CALL(&prnModel, addItem, "پس زمینه سفید", NULL, NULL);
-    OOP_CALL(&prnModel, addItem, "پس زمینه مشکی", NULL, NULL);
+    OOP_CALL(&prnModel, addItem, "پس زمینه سفید", NULL, NULL, NULL);
+    OOP_CALL(&prnModel, addItem, "پس زمینه مشکی", NULL, NULL, NULL);
     OOP_CALL(&prnModel, show);
 }
 
@@ -248,8 +234,6 @@ static void ReceiptSettings(State *parent) {
     subSettings[SET_ITEM_RECEIPT] = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_RECEIPT], parent, "receipt settings");
     subSettings[SET_ITEM_RECEIPT]->vtable.enter = STATE_ENTER(ReceiptSettings);
-    subSettings[SET_ITEM_RECEIPT]->vtable.exit = STATE_EXIT(ReceiptSettings);
-    subSettings[SET_ITEM_RECEIPT]->vtable.handleKeypad = STATE_HANDLE(ReceiptSettings, KeypadEvent);
 
     subReceipt[0] = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[0], subSettings[SET_ITEM_RECEIPT], "auto print");
@@ -381,50 +365,18 @@ static Menu settingsMenu;
 static void createUi() {
     uiMenu(&settingsMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL ; i++) {
-        OOP_CALL(&settingsMenu, addItem, SettingsItemTxt[i], NULL, NULL);
+        OOP_CALL(&settingsMenu, addItem, SettingsItemTxt[i], subSettings[i], NULL, NULL);
     }
-}
-
-static void destroyUi() {
-    uiDeleteMenu(&settingsMenu);
 }
 
 STATE_DEF_ENTER(Settings) {
     createUi();
-    OOP_CALL(&settingsMenu, show);
-}
-
-STATE_DEF_EXIT(Settings) {
-    OOP_CALL(&settingsMenu, hide);
-    destroyUi();
-}
-
-static void handleKeyAction(State *state, int id) {
-    if (id >= SET_ITEM_ALL) {
-        return;
-    }
-    SM_GOTO(subSettings[id]);
-}
-
-STATE_DEF_HANDLE(Settings, KeypadEvent) {
-    OOP_CALL(&settingsMenu, handleItem, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else if (ev->key == KEY_ENTER) {
-        handleKeyAction(state, settingsMenu.idx);
-    }  else {
-        if (ev->key <= KEY_9) {
-            int id = ((int)ev->key - 1);
-            handleKeyAction(state, id);
-        }
-    }
+    GOTO_MENU(state->parent, &settingsMenu);
 }
 
 OOP_CTOR(Settings, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Settings);
-    self->base.vtable.exit = STATE_EXIT(Settings);
-    self->base.vtable.handleKeypad = STATE_HANDLE(Settings, KeypadEvent);
     storage = getStorage();
     dev = getDevice();
     SoundSettings(self);
