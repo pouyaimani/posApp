@@ -135,7 +135,7 @@ STATE_DEF_ENTER(ShiftEnable) {
 STATE_DEF_EXIT(ShiftEnable) {
     OOP_CALL(&EnMenu, hide);
     uiDeleteMenu(&EnMenu);
-    OOP_CALL(storage, applySettings);
+    SAVE_SETTINGS();
 }
 
 STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
@@ -222,7 +222,7 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
         uint16_t latest = shiftStg->latest;
         shiftStg->data[latest].startDate = sdate;
         shiftStg->data[latest].startTime = stime;
-        OOP_CALL(storage, applySettings);
+        SAVE_SETTINGS();
     }
 }
 
@@ -264,7 +264,7 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
         shiftStg->data[latest].endTime = etime;
         shiftStg->isActive = false;
         shiftStg->latest++;
-        OOP_CALL(storage, applySettings);
+        SAVE_SETTINGS();
         GOTO_INFO(state->parent, state->parent, "شیفت با موفقیت بسته شد", "");
     }
 }
@@ -298,7 +298,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Shift) {
     createUi();
-    GOTO_MENU(state->parent, &shiftItemMenu);
+    GOTO_MENU(state->parent, &shiftItemMenu, NULL);
 }
 
 OOP_CTOR(Shift, State *parent, const char *name) {

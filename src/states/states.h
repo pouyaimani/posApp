@@ -158,16 +158,19 @@ OOP_CTOR(Supporter, State *parent, const char *name);
 
 /************************ Menu ***********************/
 typedef struct Menu Menu;
+typedef void (*CallBack_t)();
 
 OOP_CLASS(StMenu) {
     OOP_EXTENDS(State);
     Menu *menu;
+    CallBack_t onExit;
 };
 
 OOP_CTOR(StMenu, State *parent, const char *name);
 
-#define GOTO_MENU(prev, amenu)                                  \
+#define GOTO_MENU(prev, amenu, _onExit)                          \
     StMenu *stMenu = (StMenu *)getState(STATE_ID_MENU);         \
     stMenu->menu = amenu;                                       \
+    stMenu->onExit = _onExit;                                    \
     OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);           \
     SM_GOTO(getState(STATE_ID_MENU));

@@ -48,7 +48,7 @@ OOP_CLASS(TerminalSettings) {
     uint32_t mTimeoutShowTip;                            
     uint32_t mTransmitCreatePPPTimeout;                  
     uint32_t mTransmitErrTipsTimeout;                    
-    uint32_t mRecvDataTimeout;                           
+    uint32_t mRecvDataTimeout;
     uint32_t mAppID;                                     
     uint8_t mLanguage;
     uint8_t mPrintGreyScale;
@@ -58,6 +58,11 @@ OOP_CLASS(TerminalSettings) {
     char maxAmnt[12 + 1];
     bool directSaleEn;
     bool serviceEn[MAX_SERVICE_NUM];
+    int fixedAmountItem;
+    char amountList[12 + 1][MAX_AMOUNT_LIST];
+    int amountListCnt;
+    int fixedAmountCoef;
+
 };
 
 OOP_CLASS(ServerSettings) {
@@ -135,5 +140,7 @@ OOP_CLASS(Storage) {
 OOP_CTOR(Storage);
 
 Storage *getStorage(void);
+
+#define SAVE_SETTINGS()     OOP_CALL(getStorage(), applySettings)
 
 #endif

@@ -30,7 +30,7 @@ typedef enum Key_t Key_t;
 
 OOP_DECLARE_CLASS(Menu);
 
-typedef void (CallBack_t)();
+typedef void (*CallBack_t)();
 
 OOP_VTABLE(Menu) {
     OOP_IMETHOD(void, Menu, addItem, const char * text, State *state,
@@ -52,7 +52,7 @@ OOP_CLASS(Menu) {
     lv_obj_t *checker;
     lv_obj_t **item;
     State **state;
-    CallBack_t **cb;
+    CallBack_t *cb;
     bool *toggle;
     int cnt;
     int idx;

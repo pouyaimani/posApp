@@ -18,8 +18,6 @@ STATE_DEF_ENTER(Sale) {
 
 /******************** Enter amount sub state **********************/
 
-#define AMOUNT_MAX_CNT  12
-
 static char *amount;
 
 STATE_DEF_ENTER(EnterAmount) {

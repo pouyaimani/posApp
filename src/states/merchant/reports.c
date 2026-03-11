@@ -57,7 +57,7 @@ STATE_DEF_ENTER(RePrint) {
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
         OOP_CALL(&reprintMenu, addItem, reprintItemTxt[i], NULL, NULL, NULL);
     }
-    GOTO_MENU(getState(STATE_ID_SUPPORTER), &reprintMenu);
+    GOTO_MENU(getState(STATE_ID_SUPPORTER), &reprintMenu, NULL);
 }
 
 STATE_DEF_ENTER(StartRePrint) {
@@ -159,7 +159,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Reports) {
     createUi();
-    GOTO_MENU(state->parent, &reportsMenu);
+    GOTO_MENU(state->parent, &reportsMenu, NULL);
 }
 
 OOP_CTOR(Reports, State *parent, const char *name) {

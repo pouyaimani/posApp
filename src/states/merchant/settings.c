@@ -44,7 +44,7 @@ STATE_DEF_ENTER(SoundSettings) {
 
 STATE_DEF_EXIT(SoundSettings) {
     storage->settings->terminal.devVolume = soundBar.value;
-    OOP_CALL(storage, applySettings);
+    SAVE_SETTINGS();
     OOP_CALL(&soundBar, hide);
     uiBarDelete(&soundBar);
 }
@@ -152,7 +152,7 @@ STATE_DEF_ENTER(ReceiptSettings) {
     for (uint8_t i = 0; i < 4 ; i++) {
         OOP_CALL(&receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
     }
-    GOTO_MENU(state->parent, &receiptMenu);
+    GOTO_MENU(state->parent, &receiptMenu, NULL);
 }
 
 static Menu autoRecMenu;
@@ -274,7 +274,7 @@ STATE_DEF_ENTER(ScrLightSettings) {
 
 STATE_DEF_EXIT(ScrLightSettings) {
     storage->settings->terminal.brightness = brightBar.value;
-    OOP_CALL(storage, applySettings);
+    SAVE_SETTINGS();
     OOP_CALL(&brightBar, hide);
     uiBarDelete(&brightBar);
 }
@@ -371,7 +371,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Settings) {
     createUi();
-    GOTO_MENU(state->parent, &settingsMenu);
+    GOTO_MENU(state->parent, &settingsMenu, NULL);
 }
 
 OOP_CTOR(Settings, State *parent, const char *name) {

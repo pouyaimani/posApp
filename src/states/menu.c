@@ -51,6 +51,9 @@ STATE_DEF_HANDLE(StMenu, KeypadEvent) {
                 SM_GOTO(menu->menu->state[ev->key - 1]);
         }
     } else if (ev->key == KEY_ESC) {
+        if(menu->onExit) {
+            menu->onExit();
+        }
         SM_GOTO(state->prev);
     }
 }

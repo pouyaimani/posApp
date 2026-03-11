@@ -126,6 +126,11 @@ typedef struct _SettingItem {
 
 #define PROP_SERVICES_EN                          "services_en"
 
+#define PROP_FIXED_AMNT_ITEM                      "fixed_amnt_item"
+#define PROP_FIXED_AMNT_LIST                      "fixed_amnt_list"
+#define PROP_FIXED_AMNT_COEF                      "fixed_amnt_coef"
+#define PROP_AMNT_LIST_CNT                        "amnt_list_cnt"
+
 #define VALUE_PROP_LANGUAGE                           libPropertiesGet(PROP_LANGUAGE)
 #define VALUE_PROP_PRINT_GREY_SCALE                   libPropertiesGet(PROP_PRINT_GREY_SCALE)
 #define VALUE_PROP_UPDATE_FLAG                        libPropertiesGet(PROP_UPDATE_FLAG)
@@ -218,6 +223,11 @@ typedef struct _SettingItem {
 
 #define VALUE_PROP_SERVICES_EN                        libPropertiesGet(PROP_SERVICES_EN)
 
+#define VALUE_PROP_FIXED_AMNT_ITEM                    libPropertiesGet(PROP_FIXED_AMNT_ITEM)
+#define VALUE_PROP_FIXED_AMNT_LIST                    libPropertiesGet(PROP_FIXED_AMNT_LIST)
+#define VALUE_PROP_FIXED_AMNT_COEF                    libPropertiesGet(PROP_FIXED_AMNT_COEF)
+#define VALUE_PROP_AMNT_LIST_CNT                      libPropertiesGet(PROP_AMNT_LIST_CNT)
+
 #define DEFAULT_PROP_SHIFT_S_DATE                     0
 #define DEFAULT_PROP_SHIFT_S_TIME                     0
 #define DEFAULT_PROP_SHIFT_E_DATE                     0
@@ -232,6 +242,11 @@ typedef struct _SettingItem {
 #define DEFAULT_PROP_DIRECT_SALE_EN                   0
 
 #define DEFAULT_PROP_SERVICES_EN                      0
+
+#define DEFAULT_PROP_FIXED_AMNT_ITEM                  0
+#define DEFAULT_PROP_FIXED_AMNT_LIST                  0
+#define DEFAULT_PROP_FIXED_AMNT_COEF                  0
+#define DEFAULT_PROP_AMNT_LIST_CNT                    0
 
 #define OPERATOR_PWD_LEN   4
 #define ADMIN_PWD_LEN      6
@@ -927,6 +942,38 @@ static const SettingItem settingsTable[] = {
         MAX_SERVICE_NUM,
         DEFAULT_PROP_SERVICES_EN,
         _settings.terminal.serviceEn,
+    },
+    {
+        PROP_FIXED_AMNT_ITEM,
+        T_INT,
+        0,
+        1,
+        DEFAULT_PROP_FIXED_AMNT_ITEM,
+        &_settings.terminal.fixedAmountItem,
+    },
+    {
+        PROP_FIXED_AMNT_LIST,
+        T_ASC,
+        13 * MAX_AMOUNT_LIST,
+        13 * MAX_AMOUNT_LIST,
+        DEFAULT_PROP_FIXED_AMNT_LIST,
+        _settings.terminal.amountList,
+    },
+    {
+        PROP_FIXED_AMNT_COEF,
+        T_INT,
+        0,
+        1,
+        DEFAULT_PROP_FIXED_AMNT_COEF,
+        &_settings.terminal.fixedAmountCoef,
+    },
+    {
+        PROP_AMNT_LIST_CNT,
+        T_INT,
+        0,
+        1,
+        DEFAULT_PROP_AMNT_LIST_CNT,
+        &_settings.terminal.amountListCnt,
     },
 };
 

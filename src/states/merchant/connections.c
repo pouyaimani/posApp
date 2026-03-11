@@ -50,7 +50,7 @@ static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
         sizeof(storage->settings->terminal.mWifiPwd), "%s", pwd);
     storage->settings->terminal.netRoute = NET_ROUTE_WIFI;
     OOP_CALL(getNetwork(), setRoute, NET_ROUTE_WIFI);
-    OOP_CALL(storage, applySettings);
+    SAVE_SETTINGS();
 }
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
@@ -233,7 +233,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Connectios) {
     createUi();
-    GOTO_MENU(state->parent, &menu);
+    GOTO_MENU(state->parent, &menu, NULL);
 }
 
 OOP_CTOR(Connections, State *parent, const char *name) {

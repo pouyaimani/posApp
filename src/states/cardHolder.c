@@ -13,7 +13,8 @@
 
 static Menu menu;
 static InfoPage infop;
-static ServiceId_t id;
+static ServiceId_t enableServicesId[SERVICE_ID_ALL];
+static int selected;
 
 STATE_DEF_ENTER(CardHolder) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
@@ -33,8 +34,8 @@ STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {
 }
 
 static void gotoService() {
-    statusBar()->setInfo(getService(id)->state.name);
-    SM_GOTO(&getService(id)->state);
+    statusBar()->setInfo(getService(enableServicesId[selected])->state.name);
+    SM_GOTO(&getService(enableServicesId[selected])->state);
 }
 
 STATE_DEF_HANDLE(CardHolder, MagEvent) {
@@ -49,7 +50,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     OOP_CALL(&menu, handleItem, ev->key);
     CardHolder *ch = (CardHolder*)state;
     if (ev->key <= KEY_9) {
-        id = (ServiceId_t)((int)ev->key - 1);
+        selected = (ServiceId_t)((int)ev->key - 1);
         if (!ch->isMagSwiped) {
             OOP_CALL(&infop, setData, INFO_T_IMG, ICON_SWIPE_CARD, SWIPE_CARD_TEXT);
             OOP_CALL(&menu, hide);
@@ -60,7 +61,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     }  else if (ev->key == KEY_ESC) {
         SM_GOTO(getState(STATE_ID_IDLE));
     } else if (ev->key == KEY_ENTER) {
-        id = (ServiceId_t)menu.idx;
+        selected = (ServiceId_t)menu.idx;
         if (!ch->isMagSwiped) {
             OOP_CALL(&infop, setData, INFO_T_IMG, ICON_SWIPE_CARD, SWIPE_CARD_TEXT);
             OOP_CALL(&menu, hide);
@@ -73,8 +74,12 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
 
 static void createUi() {
     uiMenu(&menu, getDisplay()->screen);
+    int cnt = 0;
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL, NULL);
+        if (getService(i)->enable) {
+            OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL, NULL);
+            enableServicesId[cnt++] = i;
+        }
     }
     OOP_CALL(&menu, hide);
 }

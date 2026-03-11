@@ -117,7 +117,7 @@ STATE_DEF_ENTER(CheckNewPin) {
         for (size_t i = 0; i < 4; i++) {
             storage->settings->terminal.mOperatePwd[i] = newPin[i];
         }
-        OOP_CALL(storage, applySettings);
+        SAVE_SETTINGS();
         GOTO_INFO(merchantMenu, merchantMenu, "رمز با موفقیت تغییر کرد", "");
     } else {
         GOTO_INFO(merchantMenu, merchantMenu, "تاییدیه رمز نادرست است", "");
@@ -185,7 +185,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(MerchantMenu) {
     createUi();
-    GOTO_MENU(getState(STATE_ID_SUPPORTER), &menu);
+    GOTO_MENU(getState(STATE_ID_SUPPORTER), &menu, NULL);
 }
 
 static void MerchantMenu(State *parent) {
