@@ -41,13 +41,13 @@ STATE_DEF_EXIT(WifiConnect) {
 }
 
 static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
-    snprintf(storage->settings->terminal.mWifiSSID, 
-        sizeof(storage->settings->terminal.mWifiSSID), "%s", ap->essid);
-    snprintf(storage->settings->terminal.mWifiMac,
-        sizeof(storage->settings->terminal.mWifiMac), "%s", ap->mac);
-    storage->settings->terminal.mWifiEnc = ap->secMode;
-    snprintf(storage->settings->terminal.mWifiPwd, 
-        sizeof(storage->settings->terminal.mWifiPwd), "%s", pwd);
+    snprintf(storage->settings->terminal.wfiSSID, 
+        sizeof(storage->settings->terminal.wfiSSID), "%s", ap->essid);
+    snprintf(storage->settings->terminal.wifiMac,
+        sizeof(storage->settings->terminal.wifiMac), "%s", ap->mac);
+    storage->settings->terminal.wifiEnc = ap->secMode;
+    snprintf(storage->settings->terminal.wifiPwd, 
+        sizeof(storage->settings->terminal.wifiPwd), "%s", pwd);
     storage->settings->terminal.netRoute = NET_ROUTE_WIFI;
     OOP_CALL(getNetwork(), setRoute, NET_ROUTE_WIFI);
     SAVE_SETTINGS();

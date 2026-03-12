@@ -306,7 +306,7 @@ static Menu touchMenu;
 
 STATE_DEF_ENTER(TouchSettings) {
     uiOnOffMenu(&touchMenu, getDisplay()->screen);
-    int idx = storage->settings->terminal.mTouchEnable == true ? 0 : 1;
+    int idx = storage->settings->terminal.touchEnable == true ? 0 : 1;
     OOP_CALL(&touchMenu, setChecked, idx);
     OOP_CALL(&touchMenu, show);
 }
@@ -323,7 +323,7 @@ STATE_DEF_HANDLE(TouchSettings, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         bool en = touchMenu.idx == 0;
         //TODO: enable/ disable touch
-        storage->settings->terminal.mTouchEnable = en;
+        storage->settings->terminal.touchEnable = en;
         OOP_CALL(&touchMenu, setChecked, touchMenu.idx);
     }
 }

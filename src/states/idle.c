@@ -40,10 +40,10 @@ static void wifiAutoConnect() {
     }
     WifiApInfo_t apInfo = {0};
     char pwd[64] = {0};
-    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s", storage->settings->terminal.mWifiSSID);
-    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s", storage->settings->terminal.mWifiMac);
-    apInfo.secMode = storage->settings->terminal.mWifiEnc;
-    snprintf(pwd, sizeof(pwd), "%s", storage->settings->terminal.mWifiPwd);
+    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s", storage->settings->terminal.wfiSSID);
+    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s", storage->settings->terminal.wifiMac);
+    apInfo.secMode = storage->settings->terminal.wifiEnc;
+    snprintf(pwd, sizeof(pwd), "%s", storage->settings->terminal.wifiPwd);
     if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 && apInfo.secMode != 0) {
         OOP_CALL(wifi, hconnect, &apInfo, pwd);
     }
