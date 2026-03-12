@@ -58,6 +58,7 @@ static setFixedItemToVariant() {
 }
 
 STATE_DEF_ENTER(EnterFixedAmount) {
+    Input *in = STATE_INPUT;
     if (termStorage->fixedAmountItem == FIXED_AMNT_LISTS) {
         if (listCnt > 0) {
             Input *in = getState(STATE_ID_INPUT);
@@ -169,6 +170,7 @@ STATE_DEF_ENTER(GetMaxAmnt) {
 
 STATE_DEF_ENTER(EnterMaxAmnt) {
     GOTO_INPUT(state->parent, getMaxAmnt, "سقف مبلغ", "(ریال)", 12, IN_MODE_AMOUNT);
+    Input *in = STATE_INPUT;
     in->setAmount(termStorage->maxAmnt);
 }
 

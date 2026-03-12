@@ -763,14 +763,14 @@
 
 #define LV_USE_LABEL      1
 #if LV_USE_LABEL
-    #define LV_LABEL_TEXT_SELECTION 1   /**< Enable selecting text of the label */
+    #define LV_LABEL_TEXT_SELECTION 0   /**< Enable selecting text of the label */
     #define LV_LABEL_LONG_TXT_HINT 1    /**< Store some extra info in labels to speed up drawing of very long text */
     #define LV_LABEL_WAIT_CHAR_COUNT 3  /**< The count of wait chart */
 #endif
 
 #define LV_USE_LED        0
 
-#define LV_USE_LINE       1
+#define LV_USE_LINE       0
 
 #define LV_USE_LIST       0
 

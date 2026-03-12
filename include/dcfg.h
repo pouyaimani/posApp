@@ -22,4 +22,10 @@
 
 #define MAIN_THEME_COLOR 0x652D90
 
+#define MAX_SERVICE_NUM 10
+
+#define MAX_AMOUNT_LIST 13
+
+#define AMOUNT_MAX_CNT  12
+
 #endif

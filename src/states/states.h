@@ -69,15 +69,7 @@ OOP_CLASS(Input) {
 
 OOP_CTOR(Input, State *parent, const char *name);
 
-#define GOTO_INPUT(prev, next, title, body, max, mode)          \
-    Input *in = (Input*)getState(STATE_ID_INPUT);               \
-    in->reset();                                                \
-    in->setData(title, body);                                   \
-    in->setMax(max);                                            \
-    in->setMode(mode);                                          \
-    OOP_CALL(getState(STATE_ID_INPUT), setPrev, prev);           \
-    OOP_CALL(getState(STATE_ID_INPUT), setNext, next);           \
-    SM_GOTO(getState(STATE_ID_INPUT));  
+#define STATE_INPUT getState(STATE_ID_INPUT)
 
 /**********************Card Holder**********************/
 
@@ -97,12 +89,7 @@ OOP_CLASS(Info) {
 
 OOP_CTOR(Info, State *parent, const char *name);
 
-#define GOTO_INFO(prev, next, title, body)                      \
-    Info *info = (Info *)getState(STATE_ID_INFO);               \
-    info->setText(title, body);                                 \
-    OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);           \
-    OOP_CALL(getState(STATE_ID_INFO), setNext, next);           \
-    SM_GOTO(getState(STATE_ID_INFO));                           
+#define STATE_INFO getState(STATE_ID_INFO)
 
 /************************Dev Info*************************/
 
@@ -174,13 +161,6 @@ OOP_CLASS(StMenu) {
 
 OOP_CTOR(StMenu, State *parent, const char *name);
 
-#define GOTO_MENU(prev, amenu, _onExit)                          \
-    StMenu *stMenu = (StMenu *)getState(STATE_ID_MENU);         \
-    stMenu->menu = amenu;                                       \
-    stMenu->onExit = _onExit;                                    \
-    OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);           \
-    SM_GOTO(getState(STATE_ID_MENU));
-
 /************************ Fixed Amount ***********************/
 
 OOP_CLASS(FixedAmount) {
@@ -197,11 +177,6 @@ OOP_CLASS(Communication) {
 
 OOP_CTOR(Communication, State *parent, const char *name);
 
-#define GOTO_COMMU(prev, next)                               \
-    OOP_CALL(getState(STATE_ID_COMMU), setNext, next);       \
-    OOP_CALL(getState(STATE_ID_COMMU), setPrev, prev);       \
-    SM_GOTO(getState(STATE_ID_COMMU));   
-
 /*************************** Communication ***********************/
 
 OOP_CLASS(TxnResult) {
@@ -209,8 +184,3 @@ OOP_CLASS(TxnResult) {
 };
 
 OOP_CTOR(TxnResult, State *parent, const char *name);
-
-#define GOTO_TXN_RES(prev, next)                             \
-    OOP_CALL(getState(STATE_ID_TXN_RES), setNext, next);     \
-    OOP_CALL(getState(STATE_ID_TXN_RES), setPrev, prev);     \
-    SM_GOTO(getState(STATE_ID_TXN_RES));   

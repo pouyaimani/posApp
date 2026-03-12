@@ -23,8 +23,6 @@ STATE_DEF_ENTER(EnterAmount) {
         "مبلغ", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
 }
 
-/******************************************************************/
-
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
@@ -34,16 +32,11 @@ STATE_DEF_ENTER(EnterPassword) {
     // OOP_CALL(packer(), setAmount, in->input);
 }
 
-/******************************************************************/
-
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Communication) {
     GOTO_COMMU(STATE_IDLE, result);
 }
-
-/******************************************************************/
-
 
 /*********************** Result sub state *************************/
 

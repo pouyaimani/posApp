@@ -1,5 +1,6 @@
 #include "states.h"
 #include "dev/dev.h"
+#include "ui/ui.h"
 
 static Startup *startup;
 static Idle *idle;
@@ -98,4 +99,44 @@ State *getState(StateId_t id) {
     default:
         break;
     }
+}
+
+void GOTO_INPUT(State *prev, State *next, const char *title,
+        const char *body, int max, InputMode_t mode) {
+    Input *in = (Input*)getState(STATE_ID_INPUT);
+    in->reset();
+    in->setData(title, body);
+    in->setMax(max);
+    in->setMode(mode);
+    OOP_CALL(getState(STATE_ID_INPUT), setPrev, prev);
+    OOP_CALL(getState(STATE_ID_INPUT), setNext, next);
+    SM_GOTO(getState(STATE_ID_INPUT));
+}
+
+void GOTO_INFO(State *prev, State *next, const char *title, const char *body) {
+    Info *info = (Info *)getState(STATE_ID_INFO);
+    info->setText(title, body);
+    OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);
+    OOP_CALL(getState(STATE_ID_INFO), setNext, next);
+    SM_GOTO(getState(STATE_ID_INFO));
+}
+
+void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit) {
+    StMenu *stMenu = (StMenu *)getState(STATE_ID_MENU);
+    stMenu->menu = amenu;
+    stMenu->onExit = _onExit;
+    OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);
+    SM_GOTO(getState(STATE_ID_MENU));
+}
+
+void GOTO_COMMU(State *prev, State *next) {
+    OOP_CALL(getState(STATE_ID_COMMU), setNext, next);
+    OOP_CALL(getState(STATE_ID_COMMU), setPrev, prev);
+    SM_GOTO(getState(STATE_ID_COMMU));
+}
+
+void GOTO_TXN_RES(State *prev, State *next){
+    OOP_CALL(getState(STATE_ID_TXN_RES), setNext, next);
+    OOP_CALL(getState(STATE_ID_TXN_RES), setPrev, prev);
+    SM_GOTO(getState(STATE_ID_TXN_RES));
 }
