@@ -23,7 +23,7 @@ STATE_DEF_EXIT(Balance) {
 
 STATE_DEF_ENTER(EnterPassword) {
     Input * in = (Input*)getState(STATE_ID_INPUT);
-    OOP_CALL(getState(STATE_ID_INPUT), setPrev, getState(STATE_ID_IDLE));
+    OOP_CALL(getState(STATE_ID_INPUT), setPrev, STATE_IDLE);
     OOP_CALL(getState(STATE_ID_INPUT), setNext, connection);
     in->reset();
     in->setMode(IN_MODE_PASSWORD);
@@ -104,7 +104,7 @@ STATE_DEF_EXIT(ReceiveData) {
 }
 
 STATE_DEF_HANDLE(ReceiveData, KeypadEvent) {
-    SM_GOTO(getState(STATE_ID_IDLE));
+    GOTO_IDLE();
 }
 
 static void ReceiveData(Sale *parent) {

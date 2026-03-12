@@ -73,25 +73,6 @@ static void EnterPassword(Sale *parent) {
 
 /******************************************************************/
 
-/******************** Communication sub state **********************/
-
-STATE_DEF_ENTER(Communication) {
-
-}
-
-STATE_DEF_EXIT(Communication) {
-
-}
-
-static void Communication(Sale *parent) {
-    communication = (SubState *)GET_MEM(sizeof(SubState));
-    OOP_CALL_CTOR(State, communication, &parent->base.state, "Communication");
-    communication->vtable.enter = STATE_ENTER(Communication);
-    communication->vtable.exit = STATE_EXIT(Communication);
-}
-
-/******************************************************************/
-
 /*********************** Result sub state *************************/
 
 STATE_DEF_ENTER(Result) {
@@ -120,6 +101,5 @@ OOP_CTOR(Bill, State *parent, const char *name) {
     EnterBillId(self);
     EnterPayId(self);
     EnterPassword(self);
-    Communication(self);
     Result(self);
 }

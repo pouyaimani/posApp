@@ -60,7 +60,7 @@ STATE_DEF_ENTER(CheckPassword) {
 }
 
 STATE_DEF_ENTER(EnterPassword) {
-    GOTO_INPUT(getState(STATE_ID_IDLE), checkPass,
+    GOTO_INPUT(STATE_IDLE, checkPass,
         "ورود رمز", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD);
 }
 

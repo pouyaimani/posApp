@@ -34,7 +34,7 @@ STATE_DEF_ENTER(Startup) {
     OOP_CALL(dev, setVolume, storage->settings->terminal.devVolume);
     OOP_CALL(dev, setBrightness, storage->settings->terminal.brightness);
     statusBar();
-    SM_GOTO(getState(STATE_ID_IDLE));
+    GOTO_IDLE();
 }
 
 STATE_DEF_EXIT(Startup) {

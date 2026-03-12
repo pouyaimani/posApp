@@ -73,7 +73,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
         }
         gotoService();
     }  else if (ev->key == KEY_ESC) {
-        SM_GOTO(getState(STATE_ID_IDLE));
+        GOTO_IDLE();
     } else if (ev->key == KEY_ENTER) {
         selected = (ServiceId_t)menu.idx;
         if (!ch->isMagSwiped) {

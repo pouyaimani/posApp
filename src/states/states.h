@@ -12,7 +12,9 @@ typedef enum StateId_t {
     STATE_ID_SUPPORTER,
     STATE_ID_DEV_INFO,
     STATE_ID_FIXED_AMOUNT,
-    STATE_ID_MENU
+    STATE_ID_MENU,
+    STATE_ID_COMMU,
+    STATE_ID_TXN_RES
 } StateId_t;
 
 State *getState(StateId_t id);
@@ -33,6 +35,9 @@ OOP_CLASS(Idle) {
 };
 
 OOP_CTOR(Idle, State *parent, const char *name);
+
+#define STATE_IDLE getState(STATE_ID_IDLE)
+#define GOTO_IDLE() SM_GOTO(STATE_IDLE)
 
 /**********************Input**********************/
 
@@ -183,3 +188,29 @@ OOP_CLASS(FixedAmount) {
 };
 
 OOP_CTOR(FixedAmount, State *parent, const char *name);
+
+/*************************** Communication ***********************/
+
+OOP_CLASS(Communication) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(Communication, State *parent, const char *name);
+
+#define GOTO_COMMU(prev, next)                               \
+    OOP_CALL(getState(STATE_ID_COMMU), setNext, next);       \
+    OOP_CALL(getState(STATE_ID_COMMU), setPrev, prev);       \
+    SM_GOTO(getState(STATE_ID_COMMU));   
+
+/*************************** Communication ***********************/
+
+OOP_CLASS(TxnResult) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(TxnResult, State *parent, const char *name);
+
+#define GOTO_TXN_RES(prev, next)                             \
+    OOP_CALL(getState(STATE_ID_TXN_RES), setNext, next);     \
+    OOP_CALL(getState(STATE_ID_TXN_RES), setPrev, prev);     \
+    SM_GOTO(getState(STATE_ID_TXN_RES));   

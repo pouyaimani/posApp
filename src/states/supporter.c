@@ -72,7 +72,7 @@ static void handleKeyAction(State *state, int id) {
 STATE_DEF_HANDLE(Supporter, KeypadEvent) {
     OOP_CALL(&menu, handleItem, ev->key);
     if (ev->key == KEY_ESC) {
-        SM_GOTO(getState(STATE_ID_IDLE));
+        GOTO_IDLE();
     } else if (ev->key == KEY_ENTER) {
         handleKeyAction(state, menu.idx);
     }  else {

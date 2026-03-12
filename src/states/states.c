@@ -12,6 +12,8 @@ static Supporter *supporter;
 static DevInfo *devInfo;
 static StMenu *menu;
 static FixedAmount *fixedAmount;
+static Communication *commu;
+static TxnResult *txnRes;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -81,6 +83,18 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(FixedAmount, fixedAmount, idle, "fixed Amount");
         );
         return (State *)fixedAmount;
+    case STATE_ID_COMMU:
+        CALL_ONCE(
+            commu = GET_MEM(sizeof(Communication));
+            OOP_CALL_CTOR(Communication, commu, idle, "communication");
+        );
+        return (State *)commu;
+    case STATE_ID_TXN_RES:
+        CALL_ONCE(
+            txnRes = GET_MEM(sizeof(TxnResult));
+            OOP_CALL_CTOR(TxnResult, txnRes, idle, "txn result");
+        );
+        return (State *)txnRes;
     default:
         break;
     }
