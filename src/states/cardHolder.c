@@ -16,17 +16,31 @@ static InfoPage infop;
 static ServiceId_t enableServicesId[SERVICE_ID_ALL];
 static int selected;
 
+static void createUi() {
+    uiMenu(&menu, getDisplay()->screen);
+    int cnt = 0;
+    for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
+        if (getService(i)->enable) {
+            OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL, NULL);
+            enableServicesId[cnt++] = i;
+        }
+    }
+    OOP_CALL(&menu, hide);
+}
+
 STATE_DEF_ENTER(CardHolder) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     if (!ch->isMagSwiped) {
         getEventloop()->registerChecker(getMagReader()->ioRead);
     }
+    createUi();
     OOP_CALL(&menu, show);
 }
 
 STATE_DEF_EXIT(CardHolder) {
     OOP_CALL(&menu, hide);
     OOP_CALL(&infop, hide);
+    uiDeleteMenu(&menu);
 }
 
 STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {
@@ -72,18 +86,6 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     }
 }
 
-static void createUi() {
-    uiMenu(&menu, getDisplay()->screen);
-    int cnt = 0;
-    for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        if (getService(i)->enable) {
-            OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL, NULL);
-            enableServicesId[cnt++] = i;
-        }
-    }
-    OOP_CALL(&menu, hide);
-}
-
 OOP_CTOR(CardHolder, State *parent, const char *name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter = STATE_ENTER(CardHolder);
@@ -91,6 +93,5 @@ OOP_CTOR(CardHolder, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(CardHolder, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(CardHolder, TimeOutEvent);
     self->base.vtable.handleMag = STATE_HANDLE(CardHolder, MagEvent);
-    createUi();
     infop = infoPage();
 }

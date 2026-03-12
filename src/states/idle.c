@@ -13,6 +13,7 @@
 #include "storage/storage.h"
 #include "network/network.h"
 #include "timer.h"
+#include "states/merchant/merchant.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -93,7 +94,11 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
 STATE_DEF_HANDLE(Idle, MagEvent) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = true;
-    SM_GOTO(getState(STATE_ID_CARD_HOLDER));
+    if (getStorage()->settings->terminal.fixedAmountItem == FIXED_AMNT_DIS) {
+        SM_GOTO(getState(STATE_ID_CARD_HOLDER));
+    } else {
+        SM_GOTO(getState(STATE_ID_FIXED_AMOUNT));
+    }
     LOG_TRACE("track1 = %s", ev->data->track1.data);
     LOG_TRACE("track2 = %s", ev->data->track2.data);
     LOG_TRACE("track3 = %s", ev->data->track3.data);

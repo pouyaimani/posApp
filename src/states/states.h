@@ -11,6 +11,7 @@ typedef enum StateId_t {
     STATE_ID_DIALOGUE,
     STATE_ID_SUPPORTER,
     STATE_ID_DEV_INFO,
+    STATE_ID_FIXED_AMOUNT,
     STATE_ID_MENU
 } StateId_t;
 
@@ -174,3 +175,11 @@ OOP_CTOR(StMenu, State *parent, const char *name);
     stMenu->onExit = _onExit;                                    \
     OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);           \
     SM_GOTO(getState(STATE_ID_MENU));
+
+/************************ Fixed Amount ***********************/
+
+OOP_CLASS(FixedAmount) {
+    OOP_EXTENDS(State);
+};
+
+OOP_CTOR(FixedAmount, State *parent, const char *name);

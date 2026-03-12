@@ -37,6 +37,14 @@ OOP_CLASS(OtherProjects) {
 
 OOP_CTOR(OtherProjects, State *parent, const char *name);
 
+typedef enum {
+    FIXED_AMNT_DIS = 0,
+    FIXED_AMNT_LISTS,
+    FIXED_AMNT_SINGLE,
+    FIXED_AMNT_VARIANT,
+    FIXED_AMNT_ALL
+} FixedAmntItem_t;
+
 OOP_CLASS(MerchantData) {
     OOP_EXTENDS(State);
 };

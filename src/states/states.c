@@ -11,6 +11,7 @@ static Dialogue *dialogue;
 static Supporter *supporter;
 static DevInfo *devInfo;
 static StMenu *menu;
+static FixedAmount *fixedAmount;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -74,6 +75,12 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(StMenu, menu, idle, "menu");
         );
         return (State *)menu;
+    case STATE_ID_FIXED_AMOUNT:
+        CALL_ONCE(
+            fixedAmount = GET_MEM(sizeof(FixedAmount));
+            OOP_CALL_CTOR(FixedAmount, fixedAmount, idle, "fixed Amount");
+        );
+        return (State *)fixedAmount;
     default:
         break;
     }

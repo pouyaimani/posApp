@@ -37,14 +37,6 @@ static const char* fixecAmntItemTxt[4] = {
     "ثابت با ضریب"
 };
 
-typedef enum {
-    FIXED_AMNT_DIS = 0,
-    FIXED_AMNT_LISTS,
-    FIXED_AMNT_SINGLE,
-    FIXED_AMNT_VARIANT,
-    FIXED_AMNT_ALL
-} FixedAmntItem_t;
-
 static Menu fixedAmntMenu;
 static SubState *enterAmount;
 static int listCnt = 0;
