@@ -3,13 +3,17 @@
 
 #include "oop.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum SmEventType_t {
-    SM_EVENT_TIME_OUT,
+    SM_EVENT_TIME_OUT = 0,
     SM_EVENT_KEYPAD,
     SM_EVENT_MAG,
     SM_EVENT_WIFI,
-    SM_EVENT_CELLULAR
+    SM_EVENT_CELLULAR,
+    SM_EVENT_SOCKET_CONNECT,
+    SM_EVENT_SOCKET_SENT,
+    SM_EVENT_SOCKET_READY_READ
 } SmEventType_t;
 
 /* Forward declarations */
@@ -20,6 +24,7 @@ OOP_DECLARE_CLASS(KeypadEvent);
 OOP_DECLARE_CLASS(MagEvent);
 OOP_DECLARE_CLASS(WifiEvent);
 OOP_DECLARE_CLASS(CellEvent);
+OOP_DECLARE_CLASS(SocketEvent);
 
 /* ===== Event vtable ===== */
 
@@ -156,5 +161,30 @@ OOP_CLASS(CellEvent)
 
 /* ctor */
 OOP_CTOR(CellEvent);
+
+/* ===== Socket ===== */
+
+OOP_CLASS(SocketConnectEvent) {
+    OOP_EXTENDS(Event);
+    bool isConnected;
+};
+/* ctor */
+OOP_CTOR(SocketConnectEvent);
+
+OOP_CLASS(SocketSentEvent) {
+    OOP_EXTENDS(Event);
+    int sendErr;
+};
+/* ctor */
+OOP_CTOR(SocketSentEvent);
+
+OOP_CLASS(SocketReadyReadEvent) {
+    OOP_EXTENDS(Event);
+    uint8_t *recData;
+    size_t recDataLen;
+};
+/* ctor */
+OOP_CTOR(SocketReadyReadEvent);
+
 
 #endif

@@ -16,23 +16,29 @@ static lv_obj_t *startUpPage;
 static lv_obj_t *label;
 static Device *dev;
 static Storage *storage;
+static DevSettings *settings;
 
 STATE_DEF_ENTER(Startup) {
     KEYPAD_INIT();
     MAG_INIT();
     WIFI_INIT();
     TOUCH_INIT();
-    OOP_CALL(getStorage(), reloadSettings);
+    OOP_CALL(storage, reloadSettings);
     Display *disp = getDisplay();
     disp->init();
     Core *core = getSmCore();
     core->registerCallback(disp->update);
     core->registerCallback(getEventloop()->runCycle);
     core->registerCallback(getTimerHanlder()->runCycle);
-    OOP_CALL(getNetwork(), setRoute, getStorage()->settings->terminal.netRoute);
-    LOG_DEBUG("device voulme = %d", storage->settings->terminal.devVolume);
-    OOP_CALL(dev, setVolume, storage->settings->terminal.devVolume);
-    OOP_CALL(dev, setBrightness, storage->settings->terminal.brightness);
+
+    // Network setitings
+    OOP_CALL(getNetwork(), setRoute, settings->terminal.netRoute);
+    OOP_CALL(getNetwork(), setAddr, settings->server.mainServerIp,
+        settings->server.mainServerPort);
+
+    LOG_DEBUG("device voulme = %d", settings->terminal.devVolume);
+    OOP_CALL(dev, setVolume, settings->terminal.devVolume);
+    OOP_CALL(dev, setBrightness, settings->terminal.brightness);
     statusBar();
     GOTO_IDLE();
 }
@@ -53,4 +59,5 @@ OOP_CTOR(Startup, State *parent, const char *name) {
     self->base.vtable.handleTimeout = STATE_HANDLE(Startup, TimeOutEvent);
     dev = getDevice();
     storage = getStorage();
+    settings = storage->settings;
 }

@@ -30,6 +30,9 @@ OOP_DECLARE_CLASS(KeypadEvent);
 OOP_DECLARE_CLASS(MagEvent);
 OOP_DECLARE_CLASS(WifiEvent);
 OOP_DECLARE_CLASS(CellEvent);
+OOP_DECLARE_CLASS(SocketConnectEvent);
+OOP_DECLARE_CLASS(SocketReadyReadEvent);
+OOP_DECLARE_CLASS(SocketSentEvent);
 OOP_DECLARE_CLASS(State);
 
 /* ===== Inner state ===== */
@@ -52,6 +55,9 @@ OOP_VTABLE(State)
     OOP_IMETHOD(void, State, handleMag, MagEvent *ev);
     OOP_IMETHOD(void, State, handleWifi, WifiEvent *ev);
     OOP_IMETHOD(void, State, handleCell, CellEvent *ev);
+    OOP_IMETHOD(void, State, onSocketConnect, SocketConnectEvent *ev);
+    OOP_IMETHOD(void, State, onSocketSent, SocketSentEvent *ev);
+    OOP_IMETHOD(void, State, onSocketReadyRead, SocketReadyReadEvent *ev);
     // These methods shall not be overrided
     OOP_IMETHOD(void, State, goTo, State *);
     OOP_IMETHOD(void, State, setNext, State *);

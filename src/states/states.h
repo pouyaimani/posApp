@@ -184,3 +184,14 @@ OOP_CLASS(TxnResult) {
 };
 
 OOP_CTOR(TxnResult, State *parent, const char *name);
+
+
+
+// Helper functions
+
+void GOTO_INPUT(State *prev, State *next, const char *title,
+        const char *body, int max, InputMode_t mode);
+void GOTO_INFO(State *prev, State *next, const char *title, const char *body);
+void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit);
+void GOTO_COMMU(State *prev, State *next);
+void GOTO_TXN_RES(State *prev, State *next);

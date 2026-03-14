@@ -45,6 +45,15 @@ Event *createEvent(SmEventType_t type) {
     case SM_EVENT_CELLULAR:
         CREATE_EVENT(CellEvent, event);
         break;
+    case SM_EVENT_SOCKET_CONNECT:
+        CREATE_EVENT(SocketConnectEvent, event);
+        break;
+    case SM_EVENT_SOCKET_SENT:
+        CREATE_EVENT(SocketSentEvent, event);
+        break;
+    case SM_EVENT_SOCKET_READY_READ:
+        CREATE_EVENT(SocketReadyReadEvent, event);
+        break;
     default:
         break;
     }
@@ -109,4 +118,30 @@ static void cell_dispatchTo(Event *self, State *state) {
 
 OOP_CTOR(CellEvent) {
     self->base.vtable.dispatchTo = cell_dispatchTo;
+}
+
+/* =================== Socket ================== */
+
+static void socket_connect__dispatchTo(Event *self, State *state) {
+    OOP_CALL(state, onSocketConnect, self);
+}
+
+OOP_CTOR(SocketConnectEvent) {
+    self->base.vtable.dispatchTo = socket_connect__dispatchTo;
+}
+
+static void socket_sent_dispatchTo(Event *self, State *state) {
+    OOP_CALL(state, onSocketSent, self);
+}
+
+OOP_CTOR(SocketSentEvent) {
+    self->base.vtable.dispatchTo = socket_sent_dispatchTo;
+}
+
+static void socket_rr_dispatchTo(Event *self, State *state) {
+    OOP_CALL(state, onSocketReadyRead, self);
+}
+
+OOP_CTOR(SocketReadyReadEvent) {
+    self->base.vtable.dispatchTo = socket_rr_dispatchTo;
 }

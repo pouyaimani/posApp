@@ -2,6 +2,7 @@
 #include "core.h"
 #include <stdio.h>
 #include "logger.h"
+#include "event.h"
 
 /* defaults */
 
@@ -51,6 +52,24 @@ static void default_cell(State *s, CellEvent *ev)
     LOG_WARN("Cellular event hadler is not defined for %s state.", s->name);
 }
 
+static void default_sock_connect(State *s, SocketConnectEvent*ev)
+{
+    (void)ev;
+    LOG_WARN("Socket connect event hadler is not defined for %s state.", s->name);
+}
+
+static void default_sock_sent(State *s, SocketSentEvent *ev)
+{
+    (void)ev;
+    LOG_WARN("Socket sent event hadler is not defined for %s state.", s->name);
+}
+
+static void default_sock_read(State *s, SocketReadyReadEvent *ev)
+{
+    (void)ev;
+    LOG_WARN("Socket read event hadler is not defined for %s state.", s->name);
+}
+
 static void setNext(State *current, State *next) {
     current->next = next;
 }
@@ -68,6 +87,10 @@ OOP_CTOR(State, State *parent, const char *name)
     self->vtable.handleKeypad = default_keypad;
     self->vtable.handleMag = default_mag;
     self->vtable.handleWifi = default_wifi;
+    self->vtable.handleCell = default_cell;
+    self->vtable.onSocketConnect= default_sock_connect;
+    self->vtable.onSocketSent = default_sock_sent;
+    self->vtable.onSocketReadyRead = default_sock_read;
     self->vtable.goTo = goTo;
     self->vtable.setNext = setNext;
     self->vtable.setPrev = setPrev;

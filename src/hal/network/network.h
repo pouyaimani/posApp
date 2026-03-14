@@ -68,6 +68,8 @@ OOP_VTABLE(Network) {
 OOP_CLASS(Network) {
     OOP_IMPLEMENTS(Network);
     SocketAddr_t address;
+    OOP_METHOD(int, connect);
+    OOP_METHOD(int, send, uint8_t *data, size_t len);
 };
 
 OOP_CTOR(Network);
