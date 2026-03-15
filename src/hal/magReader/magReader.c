@@ -2,6 +2,7 @@
 #include "../dev/dev.h"
 #include "eventloop.h"
 #include "logger.h"
+#include <stdint.h>
 
 MagReader *__magReader;
 
@@ -54,12 +55,48 @@ static void readIo() {
     }
 }
 
+static int32_t getCardNoFormTrack(int8_t *track2, int8_t *cardNo, uint32_t cardNoMaxLen)
+{
+    bool isTrack2 = false;
+    int8_t trackData[128] = {0};
+    uint32_t i = 0;
+    uint32_t len = 0;
+
+    if (((track2 == NULL || strlen(track2) == 0)) || cardNo == NULL)
+    {
+        return -1;
+    }
+
+    memcpy(trackData, track2, strlen(track2) > 37 ? 37 : strlen(track2));
+
+    len = strlen(trackData);
+    for (i = 0; i < len; i++)
+    {
+        if (trackData[i] == 'D')
+        {
+            break;
+        }
+    }
+
+    len = (uint8_t) (i > 19 ? 19 : i);
+    trackData[len] = 0;
+
+    snprintf(cardNo, cardNoMaxLen, "%s", trackData);
+    return strlen(cardNo) > 0 ? 0 : -1;
+}
+
+static void getPan(char *pan, size_t len) {
+    TrackData_t track2 = OOP_CALL(__magReader, getTrack2);
+    getCardNoFormTrack(track2.data, pan, len);
+}
+
 OOP_CTOR(MagReader) {
     self->vtable.isSwiped = isSwiped;
     self->vtable.getTrack1 = getTrack1;
     self->vtable.getTrack2 = getTrack2;
     self->vtable.getTrack3 = getTrack3;
     self->ioRead = readIo;
+    self->getPan = getPan;
 }
 
 MagReader *getMagReader() {

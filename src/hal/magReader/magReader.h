@@ -30,6 +30,7 @@ OOP_VTABLE(MagReader) {
 OOP_CLASS(MagReader) {
     OOP_IMPLEMENTS(MagReader);
     OOP_METHOD(void, ioRead);
+    OOP_METHOD(void, getPan, char *pan, size_t len);
     bool swiped;
     MagReaderData_t data;
     MagReaderErr_t error;

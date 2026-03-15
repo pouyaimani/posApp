@@ -2,6 +2,7 @@
 
 #include "ped_t3Rtos.h"
 #include "sdkPed.h"
+#include "utility/arith.h"
 
 #define MASTER_KEY_INDEX 0
 #define MAC_KEY_INDEX 1
@@ -75,11 +76,24 @@ static PedErr_t exitPinEntryMode(Ped* self) {
     return translateSdkErr(sdkPedExitPinInputMode());
 }
 
+static PedErr_t getPinBlock(char *pan, char* out) {
+    u8 dataIn[300] = {0};
+    PedPinBlockData pinBlockData;
+    ascToBcd(dataIn + 2, (pan + strlen(pan) - 13), 12);
+    int ret = sdkPedGetPinBlock(0, PED_KEY_TDES_TPK, 0, PED_PIN_ISO_9564_0, 0, dataIn, 8, &pinBlockData);
+    if (out != NULL) {
+        out[0] = pinBlockData.mPinBlockDataLen;
+        memcpy(out + 1, pinBlockData.mPinbBockData, pinBlockData.mPinBlockDataLen);
+    }
+    return PED_ERR_OK;
+}
+
 OOP_CTOR(PedT3Rtos) {
     self->base.vtable.init = init;
     self->base.vtable.injectKey = injectKey;
     self->base.vtable.enterPinEntryMode = enterPinEntryMode;
     self->base.vtable.exitPinEntryMode = exitPinEntryMode;
+    self->base.vtable.getPinBlock = getPinBlock;
 }
 
 #endif
