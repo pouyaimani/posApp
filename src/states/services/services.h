@@ -10,7 +10,15 @@ extern int serviceCount;
 
 /*********************Service*********************/
 
+OOP_DECLARE_CLASS(Service)
+
+OOP_VTABLE(Service) {
+    OOP_IMETHOD(void, Service, makeReceipt);
+};
+
+
 OOP_CLASS(Service) {
+    OOP_IMPLEMENTS(Service);
     State state;
     bool enable;
 };

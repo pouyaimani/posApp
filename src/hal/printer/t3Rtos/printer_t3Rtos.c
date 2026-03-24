@@ -3,6 +3,7 @@
 #include "printer_t3Rtos.h"
 #include "posplatform.h"
 #include "sdkPrint.h"
+#include "logger.h"
 
 PrinterStatus_t translateSdkStatus(PRINTER_TASK_STATUS st) {
     PrinterStatus_t status;
@@ -19,10 +20,8 @@ PrinterStatus_t translateSdkStatus(PRINTER_TASK_STATUS st) {
     case SDK_PRINT_OVER_TEMP:
         status = PRNT_STAT_OVER_HEAT;
         break;
-    case SDK_PRINT_ERR:
-        status = PRNT_STAT_OTHER;
-        break;
     default:
+        status = PRNT_STAT_OTHER;
         break;
     }
     return status;
@@ -34,6 +33,18 @@ PrinterErr_t translateSdkErr(int err) {
     case SDK_PRINT_OK:
         error = PRNT_ERR_OK;
         break;
+    case SDK_PRINT_ERR_INPUT:
+        error = PRNT_ERR_INPUT;
+        break;
+    case SDK_PRINT_ERR_TIMEOUT:
+        error = PRNT_ERR_TIME_OUT;
+        break;
+    case SDK_PRINT_ERR_NO_PAPER:
+        error = PRNT_ERR_NO_PAPER;
+        break;
+    case SDK_PRINT_ERR_OVER_HEAT:
+        error = PRNT_ERR_OVER_HEAT;
+        break;
     default:
         break;
     }
@@ -41,6 +52,14 @@ PrinterErr_t translateSdkErr(int err) {
 }
 
 static void init(Printer* dev) {
+}
+
+static PrinterErr_t open(Printer* dev) {
+    return translateSdkErr(sdkPrintOpen());
+}
+
+static PrinterErr_t close(Printer* dev) {
+    return translateSdkErr(sdkPrintClose());
 }
 
 static PrinterStatus_t getStatus(Printer* priter) {
@@ -64,19 +83,24 @@ PrinterGrayLevel_t getGray(Printer* priter) {
     return gray;
 }
 
-static PrinterErr_t print(Printer* priter, unsigned char *bmp, uint16_t width, uint16_t height) {
+static PrinterErr_t printBmp(Printer* priter, uint8_t *bmp, uint16_t width, uint16_t height) {
     PrintFormat format = {0};
-    format.mAlign = PRINT_ALIGN_MIDDLE;
-    format.mReverse = PRINT_REV_LINE_FILL;
-    sdkPrintImage(&format, (const u8 *)bmp + 4, width, height);
+    LOG_ERROR("width = %d, height = %d", width, height);
+    int ret = sdkPrintImage(&format, 
+        (const u8 *)bmp, 200, height);
+    LOG_ERROR("sdkPrintImage ret = %d", ret);
+    // return translateSdkErr(ret);
+    return translateSdkErr(ret);
 }
 
 OOP_CTOR(PrinterT3Rtos) {
     self->base.vtable.init = init;
+    self->base.vtable.open = open;
+    self->base.vtable.close = close;
     self->base.vtable.getStatus = getStatus;
     self->base.vtable.setGray = setGray;
     self->base.vtable.getGray = getGray;
-    self->base.vtable.print = print;
+    self->base.vtable.printBmp = printBmp;
 }
 
 #endif

@@ -4,17 +4,22 @@
 #include "oop.h"
 #include "mylvgl.h"
 
-OOP_CLASS(Receipt_t) {
+OOP_CLASS(Receipt) {
     lv_obj_t *root;
-    OOP_METHOD(Receipt_t*, addText, int8_t culCount, ...);
-    OOP_METHOD(Receipt_t*, addSpace, uint16_t height);
-    OOP_METHOD(Receipt_t*, addTable, int8_t culCount, ...);
-    OOP_METHOD(Receipt_t*, addImage, int8_t culCount, ...);
-    OOP_METHOD(lv_img_dsc_t*, snapshot);
+    OOP_METHOD(Receipt*, addText, int culCount, ...);
+    OOP_METHOD(Receipt*, addBoldText, int culCount, ...);
+    OOP_METHOD(Receipt*, addSpace, uint16_t height);
+    OOP_METHOD(Receipt*, addTable, int culCount, ...);
+    OOP_METHOD(Receipt*, addImage, int culCount, ...);
+    OOP_METHOD(Receipt*, addHeader, const char *date, const char *time);
+    OOP_METHOD(Receipt*, addFooter);
+    OOP_METHOD(lv_draw_buf_t*, snapshot);
     OOP_METHOD(void, free);
 
 };
 
-Receipt_t *Receipt();
+OOP_CTOR(Receipt);
+
+Receipt *createReceipt();
 
 #endif

@@ -83,11 +83,61 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 
 }
 
+#include "receipt/receipt.h"
+#include "printer/printer.h"
+
+static void print() {
+    Receipt *rec = createReceipt();
+
+    // rec->addHeader("1404/12/24", "11:38")->addText(2, "param->terminal.uniqueId.data()",
+    //      LV_TEXT_ALIGN_LEFT, "کد کارتخوان", LV_TEXT_ALIGN_RIGHT);
+    // const char * bankName = PosDatabase::BanksName::getInstance()->getBankNameFa(data.pan.substr(0, 6).data());?
+    rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    // std::string trackingId = data.referenceId.substr(data.referenceId.length() - 6, data.referenceId.length() - 1);
+    // std::string refTrack;
+    // refTrack.append(data.referenceId).append(" - ").append(trackingId);
+    // rec->addText(2, "refTrack.data()", LV_TEXT_ALIGN_LEFT, 2, "پیگیری / مرجع", LV_TEXT_ALIGN_RIGHT, 1);
+    // std::string amountSep = amountSeparator(data.amount);
+    // rec->insertAmount(amountSep);
+    // rec->insertServiceFooter(getInfo().name.data());
+    // if (!data.switchMsg.empty()) {
+    //     rec->addText(1, data.switchMsg.data(), TEXT_ALIGN_CENTER);
+    // }
+    rec->addFooter();
+    lv_draw_buf_t *buff = rec->snapshot();
+
+    if (buff == NULL) {
+        LOG_ERROR("snap shot failed");
+    }
+    LOG_ERROR("img width = %d", buff->header.w);
+    LOG_ERROR("img height = %d", buff->header.h);
+    LOG_ERROR("img cf = %d", buff->header.cf);
+    PrinterErr_t err = getPrinter()->print(buff->data,
+        buff->header.w, buff->header.h, COLOR_DEPTH);
+    LOG_ERROR("printer error = %d", err);
+    rec->free();
+}
+
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_FUNCTION) {
         SM_GOTO(getState(STATE_ID_SUPPORTER));
     } else if (ev->key == KEY_CLEAR) {
         GOTO_DEV_INFO(state);
+    } else if (ev->key == KEY_1) {
+        print();
     }
 }
 
