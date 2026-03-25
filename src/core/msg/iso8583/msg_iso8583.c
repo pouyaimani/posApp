@@ -62,7 +62,9 @@ static IsoMsgErr_t pack(Packer *self,const char *data) {
 }
 
 static void setAmount(Packer *self, const char *amt) {
-    strcpy(self->element[ELEMENT_AMOUNT_TRANSACTION].data, amt);
+    snprintf(self->element[ELEMENT_AMOUNT_TRANSACTION].data,
+                isoFields[ELEMENT_AMOUNT_TRANSACTION].maxLen + 1,
+                    "%s", amt);
 }
 
 static const char *getAmount(Packer *self) {
@@ -75,6 +77,12 @@ static void setPan(Packer *self, const char *pan) {
 static const char *getPan(Packer *self) {
 }
 
+static void setCardPwd(Packer *self, const char *pan) {
+}
+
+static const char *getCardPwd(Packer *self) {
+}
+
 static void setDateTime(Packer *self, const char *dt) {
 }
 
@@ -82,10 +90,44 @@ static const char *getDateTime(Packer *self) {
     return self->element[ELEMENT_AMOUNT_TRANSACTION].data;
 }
 
+static void setTerminalId(Packer *self, const char *dt) {
+}
+
+static const char *getTerminalId(Packer *self) {
+}
+
+static void setRRN(Packer *self, const char *dt) {
+}
+
+static const char *getRRN(Packer *self) {
+}
+
+static void setTrack2(Packer *self, const char *t2) {
+}
+
+static const char *getTrack2(Packer *self) {
+}
+
+static void setMac(Packer *self, uint8_t *mac, size_t len) {
+}
+
 OOP_CTOR(Iso8583Packer) {
     self->base.vtable.pack = pack;
     self->base.vtable.setAmount = setAmount;
     self->base.vtable.getAmount = getAmount;
+    self->base.vtable.setPan = setPan;
+    self->base.vtable.getPan = getPan;
+    self->base.vtable.setCardPwd = setCardPwd;
+    self->base.vtable.getCardPwd = getCardPwd;
+    self->base.vtable.setDateTime = setDateTime;
+    self->base.vtable.getDateTime = getDateTime;
+    self->base.vtable.setTerminalId = setTerminalId;
+    self->base.vtable.getTerminalId = getTerminalId;
+    self->base.vtable.setRRN = setRRN;
+    self->base.vtable.getRRN = getRRN;
+    self->base.vtable.setTrack2 = setTrack2;
+    self->base.vtable.getTrack2 = getTrack2;
+    self->base.vtable.setMac = setMac;
     DL_ISO8583_DEFS_1993_GetHandler(&isoHandler);
 }
 

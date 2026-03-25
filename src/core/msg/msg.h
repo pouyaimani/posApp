@@ -50,17 +50,27 @@ OOP_DECLARE_CLASS(Packer);
 
 OOP_VTABLE(Packer) {
     OOP_IMETHOD(IsoMsgErr_t, Packer, pack, char *);
+    OOP_IMETHOD(void, Packer, setTrack2, char *);
+    OOP_IMETHOD(const char *, Packer, getTrack2);
     OOP_IMETHOD(void, Packer, setAmount, char *);
     OOP_IMETHOD(const char *, Packer, getAmount);
     OOP_IMETHOD(void, Packer, setPan, char *);
     OOP_IMETHOD(const char *, Packer, getPan);
     OOP_IMETHOD(void, Packer, setDateTime, char *);
     OOP_IMETHOD(const char *, Packer, getDateTime);
+    OOP_IMETHOD(void, Packer, setCardPwd, char *);
+    OOP_IMETHOD(const char *, Packer, getCardPwd);
+    OOP_IMETHOD(void, Packer, setTerminalId, char *);
+    OOP_IMETHOD(const char *, Packer, getTerminalId);
+    OOP_IMETHOD(void, Packer, setRRN, char *);
+    OOP_IMETHOD(const char *, Packer, getRRN);
+    OOP_IMETHOD(void, Packer, setMac, uint8_t *, size_t);
 };
 
 OOP_CLASS(Packer) {
     OOP_IMPLEMENTS(Packer);
     OOP_METHOD(IsoMsgErr_t, reset);
+    OOP_METHOD(void, setData, int idx, uint8_t *data, size_t len);
     char *buffer;
     DataElement *element;
 };

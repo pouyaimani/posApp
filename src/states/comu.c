@@ -8,6 +8,8 @@
 #include "eventloop.h"
 #include "storage/storage.h"
 #include "network/network.h"
+#include "msg.h"
+#include "magReader/magReader.h"
 
 static Storage *storage;
 static Network *net;
@@ -57,6 +59,17 @@ static void Connecting(State *parent) {
 /******************************************************************/
 
 /******************** Send data sub state **********************/
+
+static void prepareMsg() {
+    char pan[32] = {0};
+    getMagReader()->getPan(pan, sizeof(pan));
+    OOP_CALL(packer(), setPan, pan);
+    OOP_CALL(packer(), setTrack2, "");
+    OOP_CALL(packer(), setDateTime, "");
+    OOP_CALL(packer(), setTerminalId, "");
+    OOP_CALL(packer(), setRRN, "");
+    OOP_CALL(packer(), setMac, "", 0);
+}
 
 STATE_DEF_ENTER(SendData) {
     SHOW_INFO("ارسال اطلاعات", "");

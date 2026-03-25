@@ -27,15 +27,17 @@ STATE_DEF_ENTER(EnterAmount) {
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
+    Input *in = getState(STATE_ID_INPUT);
+    OOP_CALL(packer(), setAmount, in->input);
     GOTO_INPUT(STATE_IDLE, commu,
         "رمز کارت", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD);
-    // Set packager amount before reseting input
-    // OOP_CALL(packer(), setAmount, in->input);
 }
 
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Communication) {
+    Input *in = getState(STATE_ID_INPUT);
+    OOP_CALL(packer(), setCardPwd, in->input);
     GOTO_COMMU(STATE_IDLE, result);
 }
 

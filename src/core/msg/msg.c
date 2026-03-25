@@ -1,7 +1,7 @@
 #include "msg.h"
 #include "dev/dev.h"
 
-static DataElement __dataElements[MSG_FIELDS_CONUT];
+static DataElement *__dataElements;
 static Parser *__parser;
 static Packer *__packer;
 static char *msgBuffer;
@@ -47,6 +47,7 @@ static void reset(int i) {
 
 static void initMsg() {
     CALL_ONCE(
+        __dataElements = GET_MEM(MSG_FIELDS_CONUT * sizeof(DataElement));
         for (size_t i = 0; i < MSG_FIELDS_CONUT; i++) {
             __dataElements[i].data = (uint8_t*)GET_MEM(isoFields[i].maxLen + 1);
             __dataElements[i].isFilled = isFilled;
@@ -65,29 +66,31 @@ OOP_CTOR(Parser) {
 
 Parser *parser() {
     CALL_ONCE(
-        initMsg();
-        constructIso8583(); 
+#if MSG_STANDARD == ISO8583
+        constructIso8583();
+#endif
     );
     return __parser;
 }
 
+static void packerSetData(int idx, uint8_t *data, size_t len) {
+
+}
+
 OOP_CTOR(Packer) {
-    self->vtable.pack = NULL;
-    self->vtable.setAmount = NULL;
-    self->vtable.getAmount = NULL;
-    self->vtable.setPan = NULL;
-    self->vtable.getPan = NULL;
-    self->vtable.setDateTime = NULL;
-    self->vtable.getDateTime = NULL;
+    self->setData = packerSetData;
     self->reset = resetElements;
     self->buffer = msgBuffer;
     self->element = __dataElements;
+
+    initMsg();
 };
 
 Packer *packer() {
     CALL_ONCE(
-        initMsg();
-        constructIso8583(); 
+#if MSG_STANDARD == ISO8583
+        constructIso8583();
+#endif
     );
     return __packer;
 }
