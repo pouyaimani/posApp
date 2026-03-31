@@ -79,7 +79,9 @@ typedef struct _SettingItem {
 #define PROP_TMS_PORT                           "tms_port"
 #define PROP_TMS_BACKUP_IP                      "tms_backup_ip"
 #define PROP_TMS_BACKUP_PORT                    "tms_backup_port"
-
+#define PROP_SSL_EN                             "en_ssl"
+#define PROP_MAIN_SERVER_ID                     "main_server_id"
+#define PROP_TMS_ID                             "tms_id"
 
 #define PROP_IS_RF_FIRST                        "is_rf_first"
 #define PROP_IS_SUPPORT_QPS                     "is_support_qps"
@@ -178,6 +180,9 @@ typedef struct _SettingItem {
 #define VALUE_PROP_TMS_PORT                           libPropertiesGetString(PROP_TMS_PORT)
 #define VALUE_PROP_TMS_BACKUP_IP                      libPropertiesGetString(PROP_TMS_BACKUP_IP)
 #define VALUE_PROP_TMS_BACKUP_PORT                    libPropertiesGetString(PROP_TMS_BACKUP_PORT)
+#define VALIUE_PROP_SSL_EN                            libPropertiesGetString(PROP_SSL_EN)
+#define VALIUE_PROP_MAIN_SERVER_ID                    libPropertiesGetString(PROP_MAIN_SERVER_ID)
+#define VALIUE_PROP_TMS_ID                            libPropertiesGetString(PROP_TMS_ID)
 
 #define VALUE_PROP_IS_RF_FIRST                        libPropertiesGet(PROP_IS_RF_FIRST)
 #define VALUE_PROP_IS_SUPPORT_QPS                     libPropertiesGet(PROP_IS_SUPPORT_QPS)
@@ -247,6 +252,11 @@ typedef struct _SettingItem {
 #define DEFAULT_PROP_FIXED_AMNT_LIST                  0
 #define DEFAULT_PROP_FIXED_AMNT_COEF                  0
 #define DEFAULT_PROP_AMNT_LIST_CNT                    0
+
+#define DEFAULT_PROP_SSL_EN                           0
+
+#define DEFAULT_PROP_MAIN_SERVER_ID                   0
+#define DEFAULT_PROP_TMS_ID                           0
 
 #define OPERATOR_PWD_LEN   4
 #define ADMIN_PWD_LEN      6
@@ -397,11 +407,11 @@ static const SettingItem settingsTable[] = {
     },
     {
         PROP_MAIN_SERVER_PORT,
-        T_ASC,
+        T_INT,
         1,
-        sizeof(_settings.server.mainServerPort) - 1,
+        sizeof(_settings.server.mainServerPort),
         SERVER_PORT,
-        _settings.server.mainServerPort,
+        &_settings.server.mainServerPort,
     },
     {
         PROP_BACKUP_SERVER_IP,
@@ -413,11 +423,27 @@ static const SettingItem settingsTable[] = {
     },
     {
         PROP_BACKUP_SERVER_PORT,
-        T_ASC,
+        T_INT,
         1,
-        sizeof(_settings.server.backupServerPort) - 1,
+        sizeof(_settings.server.backupServerPort),
         BACKUP_SERVER_PORT,
-        _settings.server.backupServerPort,
+        &_settings.server.backupServerPort,
+    },
+    {
+        PROP_MAIN_SERVER_ID,
+        T_INT,
+        1,
+        sizeof(_settings.server.mainServerId),
+        DEFAULT_PROP_MAIN_SERVER_ID,
+        &_settings.server.mainServerId,
+    },
+    {
+        PROP_TMS_ID,
+        T_INT,
+        1,
+        sizeof(_settings.server.tmsId),
+        DEFAULT_PROP_TMS_ID,
+        &_settings.server.tmsId,
     },
     {
         PROP_USE_BACKUP_FIRST,
@@ -437,11 +463,11 @@ static const SettingItem settingsTable[] = {
     },
     {
         PROP_TMS_PORT,
-        T_ASC,
+        T_INT,
         1,
-        sizeof(_settings.server.tmsPort) - 1,
+        sizeof(_settings.server.tmsPort),
         TMS_PORT,
-        _settings.server.tmsPort,
+        &_settings.server.tmsPort,
     },
     {
         PROP_TMS_BACKUP_IP,
@@ -453,11 +479,19 @@ static const SettingItem settingsTable[] = {
     },
     {
         PROP_TMS_BACKUP_PORT,
-        T_ASC,
+        T_INT,
         1,
-        sizeof(_settings.server.tmsBackupPort) - 1,
+        sizeof(_settings.server.tmsBackupPort),
         TMS_PORT,
-        _settings.server.tmsBackupPort,
+        &_settings.server.tmsBackupPort,
+    },
+    {
+        PROP_SSL_EN,
+        T_CHAR,
+        1,
+        sizeof(_settings.server.sslEn),
+        DEFAULT_PROP_SSL_EN,
+        &_settings.server.sslEn,
     },
     {
         PROP_LANGUAGE,

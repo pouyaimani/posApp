@@ -41,11 +41,14 @@ OOP_CTOR(Idle, State *parent, const char *name);
 
 /**********************Input**********************/
 
+#define INPUT_MAX_LEN       50
+
 typedef enum {
     IN_MODE_AMOUNT,
     IN_MODE_PASSWORD,
     IN_MODE_NUMBERS,
-    IN_MODE_ALPHAB
+    IN_MODE_ALPHAB,
+    IN_MODE_IP
 } InputMode_t;
 
 OOP_CLASS(InputCfg) {
@@ -60,9 +63,9 @@ OOP_CLASS(Input) {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setMode, InputMode_t);
     OOP_METHOD(void, setData, const char *, const char *);
-    OOP_METHOD(void, setAmount, const char *);
     OOP_METHOD(void, setMax, int);
     OOP_METHOD(void, reset);
+    OOP_METHOD(void, setInput, const char *);
     char *input;
     char *password;
 };
@@ -148,6 +151,9 @@ OOP_CLASS(Supporter) {
 };
 
 OOP_CTOR(Supporter, State *parent, const char *name);
+
+#define STATE_SUPPORTER getState(STATE_ID_SUPPORTER)
+#define GOTO_SUPPORTER() SM_GOTO(STATE_SUPPORTER)
 
 /************************ Menu ***********************/
 typedef struct Menu Menu;

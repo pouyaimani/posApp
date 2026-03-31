@@ -47,15 +47,18 @@ OOP_CLASS(TerminalSettings)
 
 OOP_CLASS(ServerSettings)
 {
-    char mainServerIp[64];
-    char mainServerPort[6];
-    char backupServerIp[64];
-    char backupServerPort[6];
+    char mainServerIp[12 + 1];
+    uint16_t mainServerPort;
+    uint16_t mainServerId;
+    char backupServerIp[12 + 1];
+    uint16_t backupServerPort;
     bool useBackupAddressFirst;
-    char tmsIp[64];
-    char tmsPort[6];
-    char tmsBackupIp[64];
-    char tmsBackupPort[6];
+    char tmsIp[12 + 1];
+    uint16_t tmsPort;
+    uint16_t tmsId;
+    char tmsBackupIp[12 + 1];
+    uint16_t tmsBackupPort;
+    bool sslEn;
 };
 
 OOP_CLASS(TxnSettings){};

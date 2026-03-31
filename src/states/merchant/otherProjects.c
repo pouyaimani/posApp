@@ -69,43 +69,43 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         switch (listCnt) {
         case 0: {
             GOTO_INPUT(state->parent, state, "مبلغ اول", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 1: {
             GOTO_INPUT(state->parent, state, "مبلغ دوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 2: {
             GOTO_INPUT(state->parent, state, "مبلغ سوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 3: {
             GOTO_INPUT(state->parent, state, "مبلغ چهارم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 4: {
             GOTO_INPUT(state->parent, state, "مبلغ پنجم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 5: {
             GOTO_INPUT(state->parent, state, "مبلغ ششم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 6: {
             GOTO_INPUT(state->parent, state, "مبلغ هفتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 7: {
             GOTO_INPUT(state->parent, state, "مبلغ هشتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 8: {
             GOTO_INPUT(state->parent, state, "مبلغ نهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 9: {
             GOTO_INPUT(state->parent, state, "مبلغ دهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[listCnt]);
+            in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 10: {
             SM_GOTO(state->parent);
@@ -117,7 +117,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_SINGLE) {
         if (listCnt == 0) {
             GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[10]);
+            in->setInput(termStorage->amountList[10]);
             listCnt++;
         } else {
             Input *in = getState(STATE_ID_INPUT);
@@ -128,7 +128,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_VARIANT) {
         if (listCnt == 0) {
             GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
-            in->setAmount(termStorage->amountList[11]);
+            in->setInput(termStorage->amountList[11]);
             listCnt++;
         } else {
             Input *in = getState(STATE_ID_INPUT);
@@ -171,7 +171,7 @@ STATE_DEF_ENTER(GetMaxAmnt) {
 STATE_DEF_ENTER(EnterMaxAmnt) {
     GOTO_INPUT(state->parent, getMaxAmnt, "سقف مبلغ", "(ریال)", 12, IN_MODE_AMOUNT);
     Input *in = STATE_INPUT;
-    in->setAmount(termStorage->maxAmnt);
+    in->setInput(termStorage->maxAmnt);
 }
 
 STATE_DEF_ENTER(MaxAmount) {
