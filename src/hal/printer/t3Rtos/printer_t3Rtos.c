@@ -4,6 +4,15 @@
 #include "posplatform.h"
 #include "sdkPrint.h"
 #include "logger.h"
+#include "lvgl.h"
+
+static u8 *gBuf = NULL;
+
+u32 drawFunc(void *arg) {
+    PRINT_DATA *data = (PRINT_DATA *)arg;
+    data->buf = gBuf;
+    return DRAW_DATA_OK;
+}
 
 PrinterStatus_t translateSdkStatus(PRINTER_TASK_STATUS st) {
     PrinterStatus_t status;
@@ -55,7 +64,8 @@ static void init(Printer* dev) {
 }
 
 static PrinterErr_t open(Printer* dev) {
-    return translateSdkErr(sdkPrintOpen());
+    int ret = translateSdkErr(sdkPrintOpen());
+    return ret;
 }
 
 static PrinterErr_t close(Printer* dev) {
@@ -85,11 +95,14 @@ PrinterGrayLevel_t getGray(Printer* priter) {
 
 static PrinterErr_t printBmp(Printer* priter, uint8_t *bmp, uint16_t width, uint16_t height) {
     PrintFormat format = {0};
-    LOG_ERROR("width = %d, height = %d", width, height);
+    gBuf = bmp;
+    for (size_t i = 0; i < (width >> 3) * height; i++) {
+        gBuf[i] = ~gBuf[i];
+    }
+    sdkPrintSetDrawFunc(drawFunc);
     int ret = sdkPrintImage(&format, 
-        (const u8 *)bmp, 200, height);
-    LOG_ERROR("sdkPrintImage ret = %d", ret);
-    // return translateSdkErr(ret);
+        (const u8 *)gBuf, width, height);
+    ret = sdkPrintStart();
     return translateSdkErr(ret);
 }
 
