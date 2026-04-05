@@ -33,7 +33,9 @@ static void addItem(Menu *menu, const char * text, State *state,
     menu->item[menu->cnt] = btn;
     menu->state[menu->cnt] = state;
     menu->cb[menu->cnt] = cb;
+    menu->userData[menu->cnt] = user_data;
     menu->cnt++;
+
 }
 
 static void addOnOffItem(Menu *menu, const char * text, bool toggle, State *state,
@@ -157,6 +159,7 @@ void uiMenu(Menu *menu, lv_obj_t * parent) {
     menu->state = GET_MEM(MENU_ITEM_MAX * sizeof(State *));
     menu->cb = GET_MEM(MENU_ITEM_MAX * sizeof(CallBack_t *));
     menu->toggle = GET_MEM(MENU_ITEM_MAX * sizeof(bool));
+    menu->userData = GET_MEM(MENU_ITEM_MAX * sizeof(void *));
     for (size_t i = 0; i < MENU_ITEM_MAX; i++) {
         menu->item[i] = NULL;
         menu->state[i] = NULL;

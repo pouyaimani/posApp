@@ -1,5 +1,6 @@
 #include "state.h"
 #include <stdbool.h>
+#include "common.h"
 
 typedef enum StateId_t {
     STATE_ID_START_UP,
@@ -48,6 +49,8 @@ typedef enum {
     IN_MODE_PASSWORD,
     IN_MODE_NUMBERS,
     IN_MODE_ALPHAB,
+    IN_MODE_TIME,
+    IN_MODE_DATE,
     IN_MODE_IP
 } InputMode_t;
 
@@ -68,6 +71,7 @@ OOP_CLASS(Input) {
     OOP_METHOD(void, setInput, const char *);
     char *input;
     char *password;
+    char *out;
 };
 
 OOP_CTOR(Input, State *parent, const char *name);
@@ -157,12 +161,12 @@ OOP_CTOR(Supporter, State *parent, const char *name);
 
 /************************ Menu ***********************/
 typedef struct Menu Menu;
-typedef void (*CallBack_t)();
 
 OOP_CLASS(StMenu) {
     OOP_EXTENDS(State);
     Menu *menu;
     CallBack_t onExit;
+    void *userData;
 };
 
 OOP_CTOR(StMenu, State *parent, const char *name);
@@ -196,8 +200,8 @@ OOP_CTOR(TxnResult, State *parent, const char *name);
 // Helper functions
 
 void GOTO_INPUT(State *prev, State *next, const char *title,
-        const char *body, int max, InputMode_t mode);
+        const char *body, int max, InputMode_t mode, char *out);
 void GOTO_INFO(State *prev, State *next, const char *title, const char *body);
-void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit);
+void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData);
 void GOTO_COMMU(State *prev, State *next);
 void GOTO_TXN_RES(State *prev, State *next);

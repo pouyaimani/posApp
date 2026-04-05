@@ -68,43 +68,43 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         }
         switch (listCnt) {
         case 0: {
-            GOTO_INPUT(state->parent, state, "مبلغ اول", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ اول", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 1: {
-            GOTO_INPUT(state->parent, state, "مبلغ دوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ دوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 2: {
-            GOTO_INPUT(state->parent, state, "مبلغ سوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ سوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 3: {
-            GOTO_INPUT(state->parent, state, "مبلغ چهارم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ چهارم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 4: {
-            GOTO_INPUT(state->parent, state, "مبلغ پنجم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ پنجم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 5: {
-            GOTO_INPUT(state->parent, state, "مبلغ ششم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ ششم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 6: {
-            GOTO_INPUT(state->parent, state, "مبلغ هفتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ هفتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 7: {
-            GOTO_INPUT(state->parent, state, "مبلغ هشتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ هشتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 8: {
-            GOTO_INPUT(state->parent, state, "مبلغ نهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ نهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 9: {
-            GOTO_INPUT(state->parent, state, "مبلغ دهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ دهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 10: {
@@ -116,7 +116,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         listCnt++;
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_SINGLE) {
         if (listCnt == 0) {
-            GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[10]);
             listCnt++;
         } else {
@@ -127,7 +127,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         }
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_VARIANT) {
         if (listCnt == 0) {
-            GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+            GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[11]);
             listCnt++;
         } else {
@@ -148,7 +148,7 @@ STATE_DEF_ENTER(FixedAmount) {
     OOP_CALL(&fixedAmntMenu, addItem, fixecAmntItemTxt[FIXED_AMNT_VARIANT], enterAmount, setFixedItemToVariant, NULL);
     OOP_CALL(&fixedAmntMenu, setChecked, termStorage->fixedAmountItem);
     listCnt = 0;
-    GOTO_MENU(state->parent, &fixedAmntMenu, NULL);
+    GOTO_MENU(state->parent, &fixedAmntMenu, NULL, NULL);
 }
 
 /******************** max amount sub state **********************/
@@ -169,7 +169,7 @@ STATE_DEF_ENTER(GetMaxAmnt) {
 }
 
 STATE_DEF_ENTER(EnterMaxAmnt) {
-    GOTO_INPUT(state->parent, getMaxAmnt, "سقف مبلغ", "(ریال)", 12, IN_MODE_AMOUNT);
+    GOTO_INPUT(state->parent, getMaxAmnt, "سقف مبلغ", "(ریال)", 12, IN_MODE_AMOUNT, NULL);
     Input *in = STATE_INPUT;
     in->setInput(termStorage->maxAmnt);
 }
@@ -184,7 +184,7 @@ STATE_DEF_ENTER(MaxAmount) {
     } else {
         OOP_CALL(&maxAmntMenu, setChecked, 1);
     }
-    GOTO_MENU(state->parent, &maxAmntMenu, NULL);
+    GOTO_MENU(state->parent, &maxAmntMenu, NULL, NULL);
 }
 
 /******************** direct sale sub state **********************/
@@ -204,7 +204,7 @@ STATE_DEF_ENTER(DirectSale) {
     OOP_CALL(&dirSaleMenu, addItem, "فعال", NULL, enDirectSale, NULL);
     OOP_CALL(&dirSaleMenu, addItem, "غیر فعال", NULL, disDirectSale, NULL);
 
-    GOTO_MENU(state->parent, &dirSaleMenu, NULL);
+    GOTO_MENU(state->parent, &dirSaleMenu, NULL, NULL);
 }
 
 /******************** enable services sub state **********************/
@@ -227,7 +227,7 @@ STATE_DEF_ENTER(EnableServices) {
             getService(i)->enable, NULL, NULL, NULL);
     }
 
-    GOTO_MENU(saveServiceStatus, &servMenu, NULL);
+    GOTO_MENU(saveServiceStatus, &servMenu, NULL, NULL);
 }
 
 /*********************** other project state **************************/
@@ -243,7 +243,7 @@ STATE_DEF_ENTER(OtherProjects) {
     for (uint8_t i = 0; i < OTH_PROJ_ALL ; i++) {
         OOP_CALL(&otherMenu, addItem, otherItemTxt[i], subState[i], NULL, NULL);
     }
-    GOTO_MENU(state->parent, &otherMenu, saveSettings);
+    GOTO_MENU(state->parent, &otherMenu, saveSettings, NULL);
 }
 
 OOP_CTOR(OtherProjects, State *parent, const char *name) {

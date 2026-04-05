@@ -233,7 +233,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Connectios) {
     createUi();
-    GOTO_MENU(state->parent, &menu, NULL);
+    GOTO_MENU(state->parent, &menu, NULL, NULL);
 }
 
 OOP_CTOR(Connections, State *parent, const char *name) {

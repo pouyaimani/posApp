@@ -24,11 +24,11 @@ STATE_DEF_ENTER(AmountList) {
         snprintf(str, sizeof(str), "[ %s ] [ %s ]", amount, "ریال");
         OOP_CALL(&amountListMenu, addItem, str, NULL, NULL, NULL);
     }
-    GOTO_MENU(STATE_IDLE, &amountListMenu, NULL);
+    GOTO_MENU(STATE_IDLE, &amountListMenu, NULL, NULL);
 }
 
 STATE_DEF_ENTER(SingleAmount) {
-    GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+    GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
 }
 
 STATE_DEF_ENTER(VariantAmount) {
@@ -36,7 +36,7 @@ STATE_DEF_ENTER(VariantAmount) {
     char amount[AMOUNT_MAX_CNT] = {0};
     amountSeparator(termStorage->amountList[11], amount, AMOUNT_MAX_CNT);
     snprintf(str, sizeof(str), "%s %s", "(ریال)", amount);
-    GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, "تعداد را وارد کنید", 4, IN_MODE_NUMBERS);
+    GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, "تعداد را وارد کنید", 4, IN_MODE_NUMBERS, NULL);
 }
 
 STATE_DEF_ENTER(FixedAmount) {

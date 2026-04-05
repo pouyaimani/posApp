@@ -65,7 +65,7 @@ STATE_DEF_ENTER(CheckPassword) {
 
 STATE_DEF_ENTER(EnterPassword) {
     GOTO_INPUT(STATE_IDLE, checkPass,
-        "ورود رمز", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD);
+        "ورود رمز", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 static void EnterPassword(State *parent) {
@@ -102,7 +102,7 @@ STATE_DEF_ENTER(CheckPin) {
 }
 
 STATE_DEF_ENTER(EnterNewPin) {
-    GOTO_INPUT(state->parent, reEnterNewPin, "رمز جدید", "", 4, IN_MODE_PASSWORD);
+    GOTO_INPUT(state->parent, reEnterNewPin, "رمز جدید", "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(ReEnterNewPin) {
@@ -110,7 +110,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
     for (size_t i = 0; i < 4; i++) {
         newPin[i] = inp->password[i];
     }
-    GOTO_INPUT(supervisorMenu, checkNewPin, "تکرار رمز جدید", "", 4, IN_MODE_PASSWORD);
+    GOTO_INPUT(supervisorMenu, checkNewPin, "تکرار رمز جدید", "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(CheckNewPin) {
@@ -129,7 +129,7 @@ STATE_DEF_ENTER(CheckNewPin) {
 }
 
 STATE_DEF_ENTER(ChangeMerPin) {
-    GOTO_INPUT(state->parent, checkPin, "رمز فعلی", "", 4, IN_MODE_PASSWORD);
+    GOTO_INPUT(state->parent, checkPin, "رمز فعلی", "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 static void ChangeMerPin(State *parent) {
@@ -186,7 +186,7 @@ static const char* serverSetTxt[SUBS_ALL] = {
 
 STATE_DEF_ENTER(EnterIp) {
     GOTO_INPUT(state->parent, enterPort, "لطفا آدرس سرور را وارد کنید",
-        "", IP_MAX_LEN, IN_MODE_IP);
+        "", IP_MAX_LEN, IN_MODE_IP, NULL);
     Input * in = STATE_INPUT;
     if (serverItem == SERV_SET_MAIN) {
         in->setInput(storage->settings->server.mainServerIp);
@@ -199,7 +199,7 @@ STATE_DEF_ENTER(EnterPort) {
     Input * in = STATE_INPUT;
     snprintf(ip, sizeof(ip), "%s", in->input);
     GOTO_INPUT(state->parent, enterServerId, "لظفا درگاه سرور را وارد کنید",
-        "", 4, IN_MODE_NUMBERS);
+        "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(storage->settings->server.mainServerPort, str, sizeof(str));
@@ -213,7 +213,7 @@ STATE_DEF_ENTER(EnterServerId) {
     Input * in = STATE_INPUT;
     port = toInt(in->input);
     GOTO_INPUT(state->parent, getServerId, "لظفا شناسه شبکه را وارد کنید",
-        "", 4, IN_MODE_NUMBERS);
+        "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(storage->settings->server.mainServerId, str, sizeof(str));
@@ -242,7 +242,7 @@ STATE_DEF_ENTER(EnableSsl) {
     sslMenu.checkEnable = true;
     OOP_CALL(&sslMenu, addItem, "فعال", success, enSSL, NULL);
     OOP_CALL(&sslMenu, addItem, "غیر فعال", success, disSSL, NULL);
-    GOTO_MENU(state->parent, &sslMenu, NULL);
+    GOTO_MENU(state->parent, &sslMenu, NULL, NULL);
     OOP_CALL(&sslMenu, setChecked, !storage->settings->server.sslEn);
 }
 
@@ -275,7 +275,7 @@ STATE_DEF_ENTER(NetworkSettings) {
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
-    GOTO_MENU(state->parent, &serverSetMenu, NULL);
+    GOTO_MENU(state->parent, &serverSetMenu, NULL, NULL);
 }
 
 OOP_CTOR(NetworkSettings, State *parent, const char *name) {
@@ -386,7 +386,7 @@ STATE_DEF_ENTER(SupervisorMenu) {
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
         OOP_CALL(&menu, addItem, itemTxt[i], subStates[i], NULL, NULL);
     }
-    GOTO_MENU(getState(STATE_ID_SUPPORTER), &menu, NULL);
+    GOTO_MENU(getState(STATE_ID_SUPPORTER), &menu, NULL, NULL);
 }
 
 static void SupervisorMenu(State *parent) {

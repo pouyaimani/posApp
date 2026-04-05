@@ -21,7 +21,7 @@ static char *amount;
 
 STATE_DEF_ENTER(EnterAmount) {
     GOTO_INPUT(STATE_IDLE, enterPass,
-        "مبلغ", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT);
+        "مبلغ", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
 }
 
 /******************** Enter pass sub state **********************/
@@ -30,7 +30,7 @@ STATE_DEF_ENTER(EnterPassword) {
     Input *in = getState(STATE_ID_INPUT);
     OOP_CALL(packer(), setAmount, in->input);
     GOTO_INPUT(STATE_IDLE, commu,
-        "رمز کارت", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD);
+        "رمز کارت", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 /******************** Connection sub state **********************/

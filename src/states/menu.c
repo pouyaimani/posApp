@@ -32,7 +32,7 @@ STATE_DEF_HANDLE(StMenu, KeypadEvent) {
             OOP_CALL(menu->menu, toggle, menu->menu->idx);
         }
         if (menu->menu->cb[menu->menu->idx]) {
-            menu->menu->cb[menu->menu->idx]();
+            menu->menu->cb[menu->menu->idx](menu->menu->userData[menu->menu->idx]);
         }
         if (menu->menu->state[menu->menu->idx])
             SM_GOTO(menu->menu->state[menu->menu->idx]);
@@ -44,7 +44,7 @@ STATE_DEF_HANDLE(StMenu, KeypadEvent) {
             OOP_CALL(menu->menu, toggle, menu->menu->idx);
         }
         if (menu->menu->cb[ev->key - 1]) {
-            menu->menu->cb[ev->key - 1]();
+            menu->menu->cb[ev->key - 1](menu->menu->userData[menu->menu->idx]);
         }
         if (ev->key < menu->menu->cnt) {
             if (menu->menu->state[ev->key - 1])
@@ -52,7 +52,7 @@ STATE_DEF_HANDLE(StMenu, KeypadEvent) {
         }
     } else if (ev->key == KEY_ESC) {
         if(menu->onExit) {
-            menu->onExit();
+            menu->onExit(menu->userData);
         }
         SM_GOTO(state->prev);
     }

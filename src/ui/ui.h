@@ -6,10 +6,12 @@
 #include "font/myFont.h"
 #include "state.h"
 #include "dev/dev.h"
+#include "common.h"
 
 OOP_CLASS(InputBox) {
     lv_obj_t *main;
     lv_obj_t *textBox;
+    lv_obj_t *cursorLine;
 };
 
 OOP_CLASS(Button) {
@@ -29,8 +31,6 @@ typedef enum {
 typedef enum Key_t Key_t;
 
 OOP_DECLARE_CLASS(Menu);
-
-typedef void (*CallBack_t)();
 
 OOP_VTABLE(Menu) {
     OOP_IMETHOD(void, Menu, addItem, const char * text, State *state,
@@ -52,6 +52,7 @@ OOP_CLASS(Menu) {
     lv_obj_t *checker;
     lv_obj_t **item;
     State **state;
+    void **userData;
     CallBack_t *cb;
     bool *toggle;
     int cnt;

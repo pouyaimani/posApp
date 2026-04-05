@@ -17,7 +17,7 @@ STATE_DEF_ENTER(Balance) {
 
 STATE_DEF_ENTER(EnterPassword) {
     GOTO_INPUT(STATE_IDLE, commu, "رمز کارت",
-        INFO_WAGE, PASSWORD_MAX_LEN, IN_MODE_PASSWORD);
+        INFO_WAGE, PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 /******************** Connection sub state **********************/

@@ -100,9 +100,9 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         idx = energyMenu.idx;
         if (energyMenu.idx == 0) {
-            GOTO_INPUT(state, getValue, "ورود بازه ذخیره انرژی", "", 2, IN_MODE_NUMBERS);
+            GOTO_INPUT(state, getValue, "ورود بازه ذخیره انرژی", "", 2, IN_MODE_NUMBERS, NULL);
         } else if (energyMenu.idx == 1) {
-            GOTO_INPUT(state, getValue, "ورود بازه خاموشی", "", 2, IN_MODE_NUMBERS);
+            GOTO_INPUT(state, getValue, "ورود بازه خاموشی", "", 2, IN_MODE_NUMBERS, NULL);
         }
     }
 }
@@ -152,7 +152,7 @@ STATE_DEF_ENTER(ReceiptSettings) {
     for (uint8_t i = 0; i < 4 ; i++) {
         OOP_CALL(&receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
     }
-    GOTO_MENU(state->parent, &receiptMenu, NULL);
+    GOTO_MENU(state->parent, &receiptMenu, NULL, NULL);
 }
 
 static Menu autoRecMenu;
@@ -179,7 +179,7 @@ STATE_DEF_HANDLE(AutoPrint, KeypadEvent) {
 static SubState *secPrintSuc;
 
 STATE_DEF_ENTER(SecPrintTime) {
-    GOTO_INPUT(state->parent, secPrintSuc, "زمان رسید دوم", "", 2, IN_MODE_NUMBERS);
+    GOTO_INPUT(state->parent, secPrintSuc, "زمان رسید دوم", "", 2, IN_MODE_NUMBERS, NULL);
 }
 
 STATE_DEF_ENTER(SecPrintTimeSuc) {
@@ -371,7 +371,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Settings) {
     createUi();
-    GOTO_MENU(state->parent, &settingsMenu, NULL);
+    GOTO_MENU(state->parent, &settingsMenu, NULL, NULL);
 }
 
 OOP_CTOR(Settings, State *parent, const char *name) {

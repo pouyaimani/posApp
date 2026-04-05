@@ -284,7 +284,7 @@ STATE_DEF_ENTER(HandleReports) {
 }
 
 STATE_DEF_ENTER(ShiftReports) {
-    GOTO_INPUT(state->parent, handleReports, "انتخاب شیفت", "", 3, IN_MODE_NUMBERS);
+    GOTO_INPUT(state->parent, handleReports, "انتخاب شیفت", "", 3, IN_MODE_NUMBERS, NULL);
 }
 
 /******************** Shift settings state **********************/
@@ -298,7 +298,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Shift) {
     createUi();
-    GOTO_MENU(state->parent, &shiftItemMenu, NULL);
+    GOTO_MENU(state->parent, &shiftItemMenu, NULL, NULL);
 }
 
 OOP_CTOR(Shift, State *parent, const char *name) {

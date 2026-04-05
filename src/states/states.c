@@ -102,9 +102,10 @@ State *getState(StateId_t id) {
 }
 
 void GOTO_INPUT(State *prev, State *next, const char *title,
-        const char *body, int max, InputMode_t mode) {
+        const char *body, int max, InputMode_t mode, char *out) {
     Input *in = (Input*)getState(STATE_ID_INPUT);
     in->reset();
+    in->out = out;
     in->setData(title, body);
     in->setMax(max);
     in->setMode(mode);
@@ -121,10 +122,11 @@ void GOTO_INFO(State *prev, State *next, const char *title, const char *body) {
     SM_GOTO(getState(STATE_ID_INFO));
 }
 
-void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit) {
+void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData) {
     StMenu *stMenu = (StMenu *)getState(STATE_ID_MENU);
     stMenu->menu = amenu;
     stMenu->onExit = _onExit;
+    stMenu->userData = userData;
     OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);
     SM_GOTO(getState(STATE_ID_MENU));
 }

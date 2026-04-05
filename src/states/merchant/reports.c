@@ -18,7 +18,24 @@ typedef enum {
     REP_ITEM_ALL
 } ReportsItem_t;
 
+static ReportsItem_t rItem;
+
 static SubState *subReports[REP_ITEM_ALL];
+static SubState *extractData;
+static SubState *getStartDate;
+static SubState *getStartTime;
+static SubState *getEndDate;
+static SubState *getEndTime;
+
+static State *prev;
+static State *mainMenu;
+
+static char startDate[MAX_DATE_IN_LEN + 1];
+static char endDate[MAX_DATE_IN_LEN + 1];
+static char startTime[MAX_TIME_IN_LEN + 1];
+static char endTime[MAX_TIME_IN_LEN + 1];
+static char refNum[MAX_REF_NUM_IN_LEN + 1];
+static char trace[MAX_TRACE_IN_LEN + 1];
 
 static const char* reportsItemTxt[REP_ITEM_ALL] = {
     "چاپ مجدد",
@@ -37,11 +54,34 @@ typedef enum {
     REPRINT_TRACE,
     REPRINT_REF,
     REPRINT_END
-} ReprintItem_t;
+} PrintItem_t;
+
+static PrintItem_t pItem;
+
+void setReprintItem(void *arg) {
+    pItem = (PrintItem_t)(uintptr_t)arg;
+    switch (pItem) {
+    case REPRINT_TRACE:
+        GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
+                 "شماره پیگیری را وارد کنید", "", MAX_TRACE_IN_LEN, IN_MODE_NUMBERS, trace);
+        break;
+    case REPRINT_REF:
+        GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
+                 "شماره مرجع را وارد کنید", "", MAX_REF_NUM_IN_LEN, IN_MODE_NUMBERS, refNum);
+        break;
+    default:
+    if (rItem != REP_ITEM_DETAILS) {
+        SM_GOTO(extractData);
+    } else {
+        SM_GOTO(getStartDate);
+    }
+        break;
+    }
+}
 
 static SubState *startReprint;
 
-static const char* reprintItemTxt[REPRINT_END] = {
+static const char* printItemTxt[REPRINT_END] = {
     "همه تراکنش ها",
     "خرید",
     "پرداخت قبض",
@@ -50,87 +90,56 @@ static const char* reprintItemTxt[REPRINT_END] = {
     "بر اساس پیگیری",
     "بر اساس مرجع"
 };
-static Menu reprintMenu;
+static Menu printMenu;
 
 STATE_DEF_ENTER(RePrint) {
-    uiMenu(&reprintMenu, getDisplay()->screen);
+    uiMenu(&printMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
-        OOP_CALL(&reprintMenu, addItem, reprintItemTxt[i], NULL, NULL, NULL);
+        OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
+                    setReprintItem, (void*)(uintptr_t)i);
     }
-    GOTO_MENU(getState(STATE_ID_SUPPORTER), &reprintMenu, NULL);
-}
-
-STATE_DEF_ENTER(StartRePrint) {
-    SHOW_INFO("لطفا منتظر بمانید", "");
-}
-
-STATE_DEF_EXIT(StartRePrint) {
-    HIDE_INFO();
-}
-
-STATE_DEF_HANDLE(StartRePrint, KeypadEvent) {
-    OOP_CALL(&reprintMenu, handleItem, ev->key);
-    if (ev->key == KEY_ESC) {
-        InfoPage info = infoPage();
-        OOP_CALL(&info, setData, INFO_T_TEXT, "نتیجه ای یافت نشد", "");
-        SM_GOTO(getState(state->parent));
-    }
+    GOTO_MENU(state->parent, &printMenu, NULL, NULL);
 }
 
 static void RePrint(State *parent) {
     subReports[REP_ITEM_REPRINT] = (SubState *)GET_MEM(sizeof(SubState));
-    OOP_CALL_CTOR(State, subReports[REP_ITEM_REPRINT], parent, "re print");
+    OOP_CALL_CTOR(State, subReports[REP_ITEM_REPRINT], parent, "reprint");
     subReports[REP_ITEM_REPRINT]->vtable.enter = STATE_ENTER(RePrint);
-
-    startReprint = (SubState *)GET_MEM(sizeof(SubState));
-    OOP_CALL_CTOR(State, startReprint, subReports[REP_ITEM_REPRINT], "start re print");
-    startReprint->vtable.enter = STATE_ENTER(StartRePrint);
-    startReprint->vtable.exit = STATE_EXIT(StartRePrint);
-    startReprint->vtable.handleKeypad = STATE_HANDLE(StartRePrint, KeypadEvent);
 }
 
 /******************** daily reports sub state **********************/
 
 STATE_DEF_ENTER(DailyReport) {
-
-}
-
-STATE_DEF_EXIT(DailyReport) {
-}
-
-STATE_DEF_HANDLE(DailyReport, KeypadEvent) {
-
+    SM_GOTO(extractData);
 }
 
 static void DailyReport(State *parent) {
     subReports[REP_ITEM_DAILY] = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, subReports[REP_ITEM_DAILY], parent, "daily reports");
     subReports[REP_ITEM_DAILY]->vtable.enter = STATE_ENTER(DailyReport);
-    subReports[REP_ITEM_DAILY]->vtable.exit = STATE_EXIT(DailyReport);
 }
 
 /******************** summary report sub state **********************/
 
 STATE_DEF_ENTER(SummaryReport) {
-}
-
-STATE_DEF_EXIT(SummaryReport) {
-}
-
-STATE_DEF_HANDLE(SummaryReport, KeypadEvent) {
+    SM_GOTO(getStartDate);
 }
 
 static void SummaryReport(State *parent) {
     subReports[REP_ITEM_SUMMARY] = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, subReports[REP_ITEM_SUMMARY], parent, "summary report");
     subReports[REP_ITEM_SUMMARY]->vtable.enter = STATE_ENTER(SummaryReport);
-    subReports[REP_ITEM_SUMMARY]->vtable.exit = STATE_EXIT(SummaryReport);
-    subReports[REP_ITEM_SUMMARY]->vtable.handleKeypad = STATE_HANDLE(SummaryReport, KeypadEvent);
 }
 
 /******************** detail report sub state **********************/
 
 STATE_DEF_ENTER(DetailsReport) {
+    uiMenu(&printMenu, getDisplay()->screen);
+    for (uint8_t i = 0; i < REPRINT_TRACE ; i++) {
+        OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
+                    setReprintItem, (void*)(uintptr_t)i);
+    }
+    GOTO_MENU(state->parent, &printMenu, NULL, NULL);
 }
 
 STATE_DEF_EXIT(DetailsReport) {
@@ -147,23 +156,76 @@ static void DetailsReport(State *parent) {
     subReports[REP_ITEM_DETAILS]->vtable.handleKeypad = STATE_HANDLE(DetailsReport, KeypadEvent);
 }
 
-/******************** Settings sub state **********************/
-static Menu reportsMenu;
+/******************** Get Start Date sub state **********************/
 
-static void createUi() {
-    uiMenu(&reportsMenu, getDisplay()->screen);
-    for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
-        OOP_CALL(&reportsMenu, addItem, reportsItemTxt[i], subReports[i], NULL, NULL);
+STATE_DEF_ENTER(GetStartDate) {
+    GOTO_INPUT(mainMenu, getStartTime, "از تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, startDate);
+}
+
+/******************** Get End Date sub state **********************/
+
+STATE_DEF_ENTER(GetEndDate) {
+    GOTO_INPUT(mainMenu, getEndTime, "تا تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, endDate);
+}
+
+/******************** Get Start Time sub state **********************/
+
+STATE_DEF_ENTER(GetStartTime) {
+    GOTO_INPUT(mainMenu, getEndDate, "از ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, startTime);
+}
+
+/******************** Get End Time sub state **********************/
+
+STATE_DEF_ENTER(GetEndTime) {
+    GOTO_INPUT(mainMenu, extractData, "تا ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, endTime);
+}
+
+/******************** extract data sub state **********************/
+
+STATE_DEF_ENTER(ExtractData) {
+    SHOW_INFO("در حال استخراج اطلاعات"," لطفا منتظر بمانید");
+    LOG_DEBUG("start date = %s", startDate);
+    LOG_DEBUG("start time = %s", startTime);
+    LOG_DEBUG("end date = %s", endDate);
+    LOG_DEBUG("end time = %s", endTime);
+}
+
+STATE_DEF_EXIT(ExtractData) {
+}
+
+STATE_DEF_HANDLE(ExtractData, KeypadEvent) {
+    if (ev->key == KEY_ESC) {
+        GOTO_INFO(prev, prev, "نتیجه ای یافت نشد", "");
     }
 }
 
+static void ExtractData(State *parent) {
+    extractData = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, extractData, parent, "extract data");
+    extractData->vtable.enter = STATE_ENTER(ExtractData);
+    extractData->vtable.exit = STATE_EXIT(ExtractData);
+    extractData->vtable.handleKeypad = STATE_HANDLE(ExtractData, KeypadEvent);
+}
+
+/******************** Settings sub state **********************/
+static Menu reportsMenu;
+
+static void setReportItem(void *arg) {
+    rItem = (PrintItem_t)(uintptr_t)arg;
+    prev = subReports[rItem];
+}
+
 STATE_DEF_ENTER(Reports) {
-    createUi();
-    GOTO_MENU(state->parent, &reportsMenu, NULL);
+    uiMenu(&reportsMenu, getDisplay()->screen);
+    for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
+        OOP_CALL(&reportsMenu, addItem, reportsItemTxt[i], subReports[i], setReportItem, (void*)(uintptr_t)i);
+    }
+    GOTO_MENU(state->parent, &reportsMenu, NULL, NULL);
 }
 
 OOP_CTOR(Reports, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
+    mainMenu = self;
     self->base.vtable.enter = STATE_ENTER(Reports);
     storage = getStorage();
     dev = getDevice();
@@ -172,4 +234,21 @@ OOP_CTOR(Reports, State *parent, const char *name) {
     DailyReport(self);
     SummaryReport(self);
     DetailsReport(self);
+    ExtractData(self);
+
+    getStartDate = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, getStartDate, parent, "get Start Date");
+    getStartDate->vtable.enter = STATE_ENTER(GetStartDate);
+
+    getStartTime = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, getStartTime, parent, "get Start Time");
+    getStartTime->vtable.enter = STATE_ENTER(GetStartTime);
+
+    getEndDate = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, getEndDate, parent, "get End Date");
+    getEndDate->vtable.enter = STATE_ENTER(GetEndDate);
+
+    getEndTime = (SubState *)GET_MEM(sizeof(SubState));
+    OOP_CALL_CTOR(State, getEndTime, parent, "get End Time");
+    getEndTime->vtable.enter = STATE_ENTER(GetEndTime);
 }

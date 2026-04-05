@@ -39,7 +39,7 @@ STATE_DEF_ENTER(Supporter) {
     OOP_CALL(&menu, addItem, itemTxt[1], merchant, NULL, NULL);
     OOP_CALL(&menu, addItem, itemTxt[2], supervisor, NULL, NULL);
     OOP_CALL(&menu, addItem, itemTxt[3], NULL, onExit, NULL);
-    GOTO_MENU(STATE_IDLE, &menu, NULL);
+    GOTO_MENU(STATE_IDLE, &menu, NULL, NULL);
 }
 
 STATE_DEF_HANDLE(Supporter, TimeOutEvent) {
