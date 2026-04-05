@@ -7,6 +7,7 @@
 #include "sdkemvapp.h"
 #include "sdkFile.h"
 #include "CONFIG.h"
+#include "common.h"
 
 #define USER_DATA_ROOT_DIR          "/mtd0/"
 
@@ -48,7 +49,7 @@ typedef struct _SettingItem {
 #define PROP_LOGIN_OPERATOR                     "login_operator"
 #define PROP_HAS_LOGIN_ONLINE                   "has_login_online"
 #define PROP_LOGIN_DATE                         "login_date"
-#define PROP_OPERATOR_PWD                       "operator_pwd"
+#define PROP_MERCHANT_PIN                       "operator_pwd"
 #define PROP_99_PWD                             "pwd_99"
 #define PROP_00_PWD                             "pwd_00"
 #define PROP_SAFE_PWD                           "safe_pwd"
@@ -149,7 +150,7 @@ typedef struct _SettingItem {
 #define VALUE_PROP_LOGIN_OPERATOR                     libPropertiesGet(PROP_LOGIN_OPERATOR)
 #define VALUE_PROP_HAS_LOGIN_ONLINE                   libPropertiesGet(PROP_HAS_LOGIN_ONLINE)
 #define VALUE_PROP_LOGIN_DATE                         libPropertiesGetString(PROP_LOGIN_DATE)
-#define VALUE_PROP_OPERATOR_PWD                       libPropertiesGetString(PROP_OPERATOR_PWD)
+#define VALUE_PROP_MERCHANT_PIN                       libPropertiesGetString(PROP_MERCHANT_PIN)
 #define VALUE_PROP_99_PWD                             libPropertiesGetString(PROP_99_PWD)
 #define VALUE_PROP_00_PWD                             libPropertiesGetString(PROP_00_PWD)
 #define VALUE_PROP_SAFE_PWD                           libPropertiesGetString(PROP_SAFE_PWD)
@@ -258,7 +259,9 @@ typedef struct _SettingItem {
 #define DEFAULT_PROP_MAIN_SERVER_ID                   0
 #define DEFAULT_PROP_TMS_ID                           0
 
-#define OPERATOR_PWD_LEN   4
+#define DEFAULT_PROP_MERCHANT_PIN                     MERCHANT_DEFAULT_PIN
+
+#define MERCHANT_PIN_LEN   4
 #define ADMIN_PWD_LEN      6
 #define SYS_PWD_LEN        8
 #define SAFE_PWD_LEN       8
@@ -326,12 +329,12 @@ static const SettingItem settingsTable[] = {
         _settings.terminal.loginDate,
     },
     {
-        PROP_OPERATOR_PWD,
+        PROP_MERCHANT_PIN,
         T_ASC,
         0,
-        sizeof(_settings.terminal.operatePwd) - 1,
-        DEFAULT_PROP_OPERATOR_PWD,
-        _settings.terminal.operatePwd,
+        sizeof(_settings.terminal.merchantPin) - 1,
+        DEFAULT_PROP_MERCHANT_PIN,
+        _settings.terminal.merchantPin,
     },
     {
         PROP_MERCHANT_NO,
@@ -974,10 +977,16 @@ static void _applySettings(Storage *self) {
     applySettings(DEVICE_PROP_FILE, (SettingItem *) &settingsTable, getDevicePropsTableCount());
 }
 
+static void _resetSettings(Storage *self) {
+    initSettings((SettingItem *) &settingsTable, getDevicePropsTableCount());
+    applySettings(DEVICE_PROP_FILE, (SettingItem *)&settingsTable, getDevicePropsTableCount());
+}
+
 OOP_CTOR(StorageT3Rtos) {
     self->base.vtable.init = _init;
     self->base.vtable.reloadSettings = _reloadSettings;
     self->base.vtable.applySettings = _applySettings;
+    self->base.vtable.resetSettings= _resetSettings;
 }
 
 #endif

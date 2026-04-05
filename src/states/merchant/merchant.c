@@ -50,7 +50,7 @@ static SubState *checkPass;
 
 STATE_DEF_ENTER(CheckPassword) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage->settings->terminal.operatePwd,
+    bool isPassVlaid = validatePass(storage->settings->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(merchantMenu);
@@ -88,7 +88,7 @@ static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage->settings->terminal.operatePwd,
+    bool isPassVlaid = validatePass(storage->settings->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
@@ -115,7 +115,7 @@ STATE_DEF_ENTER(CheckNewPin) {
                 in->password, 4);
     if(isPassVlaid) {
         for (size_t i = 0; i < 4; i++) {
-            storage->settings->terminal.operatePwd[i] = newPin[i];
+            storage->settings->terminal.merchantPin[i] = newPin[i];
         }
         SAVE_SETTINGS();
         GOTO_INFO(merchantMenu, merchantMenu, "رمز با موفقیت تغییر کرد", "");

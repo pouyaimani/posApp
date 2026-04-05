@@ -20,7 +20,7 @@ OOP_CLASS(TerminalSettings)
     char loginOperator;
     char loginDate[6 + 1];
 
-    uint8_t operatePwd[4 + 1];
+    uint8_t merchantPin[4 + 1];
     char merchantNo[15 + 1];
     char terminalNo[15 + 1];
     char merchantName[40 + 1];
@@ -92,6 +92,7 @@ OOP_VTABLE(Storage)
     OOP_IMETHOD(void, Storage, init);
     OOP_IMETHOD(void, Storage, reloadSettings);
     OOP_IMETHOD(void, Storage, applySettings);
+    OOP_IMETHOD(void, Storage, resetSettings);
 };
 
 OOP_CLASS(Storage)
@@ -105,5 +106,6 @@ OOP_CTOR(Storage);
 Storage *getStorage(void);
 
 #define SAVE_SETTINGS() OOP_CALL(getStorage(), applySettings)
+#define RESET_SETTINGS() OOP_CALL(getStorage(), resetSettings)
 
 #endif

@@ -8,6 +8,7 @@
 #include "dev/dev.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
+#include "common.h"
 
 #define PASSWORD_MAX_LEN 4
 #define IP_MAX_LEN 12
@@ -91,7 +92,7 @@ static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage->settings->terminal.operatePwd,
+    bool isPassVlaid = validatePass(storage->settings->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
@@ -118,7 +119,7 @@ STATE_DEF_ENTER(CheckNewPin) {
                 in->password, 4);
     if(isPassVlaid) {
         for (size_t i = 0; i < 4; i++) {
-            storage->settings->terminal.operatePwd[i] = newPin[i];
+            storage->settings->terminal.merchantPin[i] = newPin[i];
         }
         SAVE_SETTINGS();
         GOTO_INFO(supervisorMenu, supervisorMenu, "رمز با موفقیت تغییر کرد", "");
@@ -328,17 +329,19 @@ OOP_CTOR(KeyInjection, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(KeyInjection);
 }
 
-/******************** FARA sub state **********************/
+/******************** Merchant pass reset sub state **********************/
 
 STATE_DEF_ENTER(MerchantPassReset) {
-    GOTO_DEV_INFO(state->parent);
+    snprintf(storage->settings->terminal.merchantPin,
+                MERCHANT_PIN_LEN, "%s", MERCHANT_DEFAULT_PIN);
+        SAVE_SETTINGS();
+    GOTO_INFO(state->parent, state->parent, "رمز با موفقیت تغییر کرد", "");
 }
 
 OOP_CTOR(MerchantPassReset, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(MerchantPassReset);
 }
-
 
 /******************** FARA sub state **********************/
 
@@ -365,7 +368,8 @@ OOP_CTOR(UpdateApp, State *parent, const char *name) {
 /******************** Default Settings sub state **********************/
 
 STATE_DEF_ENTER(DefaultSettings) {
-    GOTO_DEV_INFO(state->parent);
+    RESET_SETTINGS();
+    GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
 }
 
 OOP_CTOR(DefaultSettings, State *parent, const char *name) {
