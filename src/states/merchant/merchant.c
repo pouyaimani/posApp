@@ -8,8 +8,6 @@
 #include "dev/dev.h"
 #include "storage/storage.h"
 
-static Storage *storage;
-
 static bool validatePass(char *pass0, char *pass1, uint8_t len) {
     for (size_t i = 0; i < len ; i++) {
         if (pass0[i] != pass1[i]) {
@@ -50,7 +48,7 @@ static SubState *checkPass;
 
 STATE_DEF_ENTER(CheckPassword) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage->settings->terminal.merchantPin,
+    bool isPassVlaid = validatePass(storage()->settings->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(merchantMenu);
@@ -88,7 +86,7 @@ static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage->settings->terminal.merchantPin,
+    bool isPassVlaid = validatePass(storage()->settings->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
@@ -115,7 +113,7 @@ STATE_DEF_ENTER(CheckNewPin) {
                 in->password, 4);
     if(isPassVlaid) {
         for (size_t i = 0; i < 4; i++) {
-            storage->settings->terminal.merchantPin[i] = newPin[i];
+            storage()->settings->terminal.merchantPin[i] = newPin[i];
         }
         SAVE_SETTINGS();
         GOTO_INFO(merchantMenu, merchantMenu, "رمز با موفقیت تغییر کرد", "");
@@ -216,5 +214,4 @@ OOP_CTOR(Merchant, State *parent, const char *name) {
     subStates[SUBS_MERCHANT_DATA] = (MerchantData *)GET_MEM(sizeof(MerchantData));
     OOP_CALL_CTOR(MerchantData, subStates[SUBS_MERCHANT_DATA], merchantMenu, "merchant data");
 
-    storage = getStorage();
 }

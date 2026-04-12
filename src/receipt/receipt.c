@@ -14,7 +14,6 @@
 char *shaped[MAX_CULOMN_CNT];
 
 static Receipt receipt;
-static Storage *storage;
 
 /* =========================
    Internal Helpers
@@ -299,7 +298,7 @@ static Receipt* addAmount(const char *amount) {
 /* -------- HEADER -------- */
 static Receipt* addHeader(const char *date, const char *time) {
     Receipt *r = &receipt;
-    TerminalSettings *t = &storage->settings->terminal;
+    TerminalSettings *t = &storage()->settings->terminal;
 
     Column row1[] = {
         {t->merchantNo, LV_TEXT_ALIGN_LEFT, 1},
@@ -389,7 +388,6 @@ OOP_CTOR(Receipt) {
     lv_canvas_set_draw_buf(receipt.canvas, &receipt.draw_buf);
     lv_canvas_fill_bg(receipt.canvas, lv_color_white(), LV_OPA_COVER);
     lv_obj_center(receipt.canvas);
-    storage = getStorage();
 }
 
 Receipt* createReceipt(void) {

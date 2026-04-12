@@ -22,7 +22,7 @@ static void createServices() {
     OOP_CALL_CTOR(SimCharge, services[SERVICE_ID_SIM_CHARGE], parent, "خرید شارژ");
 
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        services[i]->enable = getStorage()->settings->terminal.serviceEn[i];
+        services[i]->enable = storage()->settings->terminal.serviceEn[i];
     }
 }
 

@@ -1,7 +1,7 @@
 #ifndef MSG_ISO8583_H_
 #define MSG_ISO8583_H_
 
-#include "../msg.h"
+#include "../iso.h"
 
 #if MSG_STANDARD == ISO8583
 

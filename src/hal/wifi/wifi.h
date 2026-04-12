@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "dcfg.h"
 #include "event.h"
+#include "common.h"
 
 #ifndef WIFI_AP_LIST_SIZE
 #error Wifi AP info list size is undefined.

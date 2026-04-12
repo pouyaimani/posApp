@@ -25,7 +25,6 @@ static lv_obj_t *menuButton;
 static lv_obj_t *menuIcon;
 static lv_obj_t *menuText;
 
-static Storage *storage;
 static Wifi *wifi;
 
 static Timer *timer;
@@ -40,10 +39,10 @@ static void wifiAutoConnect() {
     }
     WifiApInfo_t apInfo = {0};
     char pwd[64] = {0};
-    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s", storage->settings->terminal.wfiSSID);
-    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s", storage->settings->terminal.wifiMac);
-    apInfo.secMode = storage->settings->terminal.wifiEnc;
-    snprintf(pwd, sizeof(pwd), "%s", storage->settings->terminal.wifiPwd);
+    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s", storage()->settings->terminal.wfiSSID);
+    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s", storage()->settings->terminal.wifiMac);
+    apInfo.secMode = storage()->settings->terminal.wifiEnc;
+    snprintf(pwd, sizeof(pwd), "%s", storage()->settings->terminal.wifiPwd);
     if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 && apInfo.secMode != 0) {
         OOP_CALL(wifi, hconnect, &apInfo, pwd);
     }
@@ -144,7 +143,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
 STATE_DEF_HANDLE(Idle, MagEvent) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = true;
-    if (getStorage()->settings->terminal.fixedAmountItem == FIXED_AMNT_DIS) {
+    if (storage()->settings->terminal.fixedAmountItem == FIXED_AMNT_DIS) {
         SM_GOTO(getState(STATE_ID_CARD_HOLDER));
     } else {
         SM_GOTO(getState(STATE_ID_FIXED_AMOUNT));
@@ -220,7 +219,6 @@ OOP_CTOR(Idle, State *parent, const char *name) {
     self->base.vtable.handleMag = STATE_HANDLE(Idle, MagEvent);
 
     createUi();
-    storage = getStorage();
     wifi = getWifi();
 
     timer = TIMER_CREATE(timerCb, SECS(10), false);

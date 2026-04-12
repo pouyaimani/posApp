@@ -13,7 +13,6 @@
 static Wifi *wifi;
 static Cellular *cel;
 static Network *net;
-static Storage *storage;
 static SubState *wifiScan;
 static SubState *wifiConnect;
 static SubState *wifiEnterPass;
@@ -41,14 +40,14 @@ STATE_DEF_EXIT(WifiConnect) {
 }
 
 static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
-    snprintf(storage->settings->terminal.wfiSSID, 
-        sizeof(storage->settings->terminal.wfiSSID), "%s", ap->essid);
-    snprintf(storage->settings->terminal.wifiMac,
-        sizeof(storage->settings->terminal.wifiMac), "%s", ap->mac);
-    storage->settings->terminal.wifiEnc = ap->secMode;
-    snprintf(storage->settings->terminal.wifiPwd, 
-        sizeof(storage->settings->terminal.wifiPwd), "%s", pwd);
-    storage->settings->terminal.netRoute = NET_ROUTE_WIFI;
+    snprintf(storage()->settings->terminal.wfiSSID, 
+        sizeof(storage()->settings->terminal.wfiSSID), "%s", ap->essid);
+    snprintf(storage()->settings->terminal.wifiMac,
+        sizeof(storage()->settings->terminal.wifiMac), "%s", ap->mac);
+    storage()->settings->terminal.wifiEnc = ap->secMode;
+    snprintf(storage()->settings->terminal.wifiPwd, 
+        sizeof(storage()->settings->terminal.wifiPwd), "%s", pwd);
+    storage()->settings->terminal.netRoute = NET_ROUTE_WIFI;
     OOP_CALL(getNetwork(), setRoute, NET_ROUTE_WIFI);
     SAVE_SETTINGS();
 }
@@ -246,7 +245,6 @@ OOP_CTOR(Connections, State *parent, const char *name) {
     CellularLogin(self);
 
     wifi = getWifi();
-    storage = getStorage();
     cel = getCell();
     net = getNetwork();
 }

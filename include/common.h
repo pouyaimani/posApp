@@ -12,4 +12,21 @@ typedef void (*CallBack_t)(void *arg);
 #define MAX_DATE_IN_LEN                                 8
 #define MAX_TIME_IN_LEN                                 6
 
+#define WIFI_AP_LIST_SIZE                               50
+
+#define MAIN_THEME_COLOR                                0x652D90
+
+#define MAX_SERVICE_NUM                                 10
+
+#define MAX_AMOUNT_LIST                                 13
+
+#define AMOUNT_MAX_CNT                                  12
+
+/**********************************************************/
+//                         TMS
+/**********************************************************/
+
+#define TMS_VERSION_CACHE                               "/userdata/tms/version"
+
+
 #endif

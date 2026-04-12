@@ -1,6 +1,7 @@
 #include "states.h"
 #include "dev/dev.h"
 #include "ui/ui.h"
+#include "transmitter.h"
 
 static Startup *startup;
 static Idle *idle;
@@ -13,8 +14,9 @@ static Supporter *supporter;
 static DevInfo *devInfo;
 static StMenu *menu;
 static FixedAmount *fixedAmount;
-static Communication *commu;
+static IsoTransmitter *isoTransmitter;
 static TxnResult *txnRes;
+static HttpTransmitter *httpTransmitter;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -84,18 +86,24 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(FixedAmount, fixedAmount, idle, "fixed Amount");
         );
         return (State *)fixedAmount;
-    case STATE_ID_COMMU:
+    case STATE_ID_ISO_TRANSMITTER:
         CALL_ONCE(
-            commu = GET_MEM(sizeof(Communication));
-            OOP_CALL_CTOR(Communication, commu, idle, "communication");
+            isoTransmitter = GET_MEM(sizeof(IsoTransmitter));
+            OOP_CALL_CTOR(IsoTransmitter, isoTransmitter, idle, "iso transmitter");
         );
-        return (State *)commu;
+        return (State *)isoTransmitter;
     case STATE_ID_TXN_RES:
         CALL_ONCE(
             txnRes = GET_MEM(sizeof(TxnResult));
             OOP_CALL_CTOR(TxnResult, txnRes, idle, "txn result");
         );
         return (State *)txnRes;
+    case STATE_ID_HTTP_TRANSMITTER:
+        CALL_ONCE(
+            httpTransmitter = GET_MEM(sizeof(HttpTransmitter));
+            OOP_CALL_CTOR(HttpTransmitter, httpTransmitter, idle, "http transmitter");
+        );
+        return (State *)httpTransmitter;
     default:
         break;
     }
@@ -131,10 +139,10 @@ void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData) {
     SM_GOTO(getState(STATE_ID_MENU));
 }
 
-void GOTO_COMMU(State *prev, State *next) {
-    OOP_CALL(getState(STATE_ID_COMMU), setNext, next);
-    OOP_CALL(getState(STATE_ID_COMMU), setPrev, prev);
-    SM_GOTO(getState(STATE_ID_COMMU));
+void GOTO_ISO_TRANSMITTER(State *prev, State *next) {
+    OOP_CALL(getState(STATE_ID_ISO_TRANSMITTER), setNext, next);
+    OOP_CALL(getState(STATE_ID_ISO_TRANSMITTER), setPrev, prev);
+    SM_GOTO(getState(STATE_ID_ISO_TRANSMITTER));
 }
 
 void GOTO_TXN_RES(State *prev, State *next){

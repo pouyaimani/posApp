@@ -7,7 +7,6 @@
 #include "dev/dev.h"
 #include "storage/storage.h"
 
-static Storage *storage;
 static Device *dev;
 
 typedef enum {
@@ -227,7 +226,6 @@ OOP_CTOR(Reports, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     mainMenu = self;
     self->base.vtable.enter = STATE_ENTER(Reports);
-    storage = getStorage();
     dev = getDevice();
 
     RePrint(self);

@@ -1,17 +1,16 @@
 #include "states.h"
 #include "logger.h"
 #include "dev.h"
-#include "display.h"
 #include "event.h"
 #include "assets.h"
 #include "ui/ui.h"
 #include "eventloop.h"
 #include "storage/storage.h"
 #include "network/network.h"
-#include "msg.h"
+#include "iso.h"
 #include "magReader/magReader.h"
+#include "transmitter.h"
 
-static Storage *storage;
 static Network *net;
 
 static SubState *connecting;
@@ -127,18 +126,17 @@ static void ReceiveData(State *parent) {
 
 /******************************************************************/
 
-STATE_DEF_ENTER(Communication) {
+STATE_DEF_ENTER(IsoTransmitter) {
     SM_GOTO(connecting);
 }
 
-OOP_CTOR(Communication, State *parent, const char *name) {
+OOP_CTOR(IsoTransmitter, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(Communication);
+    self->base.vtable.enter = STATE_ENTER(IsoTransmitter);
 
     Connecting(self);
     SendData(self);
     ReceiveData(self);
 
-    storage = getStorage();
     net = getNetwork();
 }

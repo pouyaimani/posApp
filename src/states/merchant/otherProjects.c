@@ -195,7 +195,7 @@ static void enDirectSale() {
 }
 
 static void disDirectSale() {
-    getStorage()->settings->terminal.maxAmntEnable = false;
+    storage()->settings->terminal.maxAmntEnable = false;
 }
 
 STATE_DEF_ENTER(DirectSale) {
@@ -281,5 +281,5 @@ OOP_CTOR(OtherProjects, State *parent, const char *name) {
     enterAmount = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, subState[OTH_PROJ_FIXED_AMONT], "enter fixed amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterFixedAmount);
-    termStorage = &getStorage()->settings->terminal;
+    termStorage = &storage()->settings->terminal;
 }

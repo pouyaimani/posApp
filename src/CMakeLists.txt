@@ -108,9 +108,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core/stateMachine
     ${CMAKE_CURRENT_SOURCE_DIR}/core/eventLoop
     ${CMAKE_CURRENT_SOURCE_DIR}/core/timer
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/msg
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/iso
     ${CMAKE_CURRENT_SOURCE_DIR}/hal
     ${CMAKE_CURRENT_SOURCE_DIR}/hal/dev
+    ${CMAKE_CURRENT_SOURCE_DIR}/states
     ${CMAKE_SOURCE_DIR}/assets
 )
 

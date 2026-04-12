@@ -7,7 +7,6 @@
 #include "dev/dev.h"
 #include "storage/storage.h"
 
-static Storage *storage;
 static Device *dev;
 
 typedef enum {
@@ -38,12 +37,12 @@ static Bar soundBar;
 STATE_DEF_ENTER(SoundSettings) {
     uiBar(&soundBar, getDisplay()->screen, 0, dev->maxSound);
     OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
-    OOP_CALL(&soundBar, setValue, storage->settings->terminal.devVolume);
+    OOP_CALL(&soundBar, setValue, storage()->settings->terminal.devVolume);
     OOP_CALL(&soundBar, show);
 }
 
 STATE_DEF_EXIT(SoundSettings) {
-    storage->settings->terminal.devVolume = soundBar.value;
+    storage()->settings->terminal.devVolume = soundBar.value;
     SAVE_SETTINGS();
     OOP_CALL(&soundBar, hide);
     uiBarDelete(&soundBar);
@@ -268,12 +267,12 @@ static Bar brightBar;
 STATE_DEF_ENTER(ScrLightSettings) {
     uiBar(&brightBar, getDisplay()->screen, 1, dev->maxBright);
     OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
-    OOP_CALL(&brightBar, setValue, storage->settings->terminal.brightness);
+    OOP_CALL(&brightBar, setValue, storage()->settings->terminal.brightness);
     OOP_CALL(&brightBar, show);
 }
 
 STATE_DEF_EXIT(ScrLightSettings) {
-    storage->settings->terminal.brightness = brightBar.value;
+    storage()->settings->terminal.brightness = brightBar.value;
     SAVE_SETTINGS();
     OOP_CALL(&brightBar, hide);
     uiBarDelete(&brightBar);
@@ -306,7 +305,7 @@ static Menu touchMenu;
 
 STATE_DEF_ENTER(TouchSettings) {
     uiOnOffMenu(&touchMenu, getDisplay()->screen);
-    int idx = storage->settings->terminal.touchEnable == true ? 0 : 1;
+    int idx = storage()->settings->terminal.touchEnable == true ? 0 : 1;
     OOP_CALL(&touchMenu, setChecked, idx);
     OOP_CALL(&touchMenu, show);
 }
@@ -323,7 +322,7 @@ STATE_DEF_HANDLE(TouchSettings, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         bool en = touchMenu.idx == 0;
         //TODO: enable/ disable touch
-        storage->settings->terminal.touchEnable = en;
+        storage()->settings->terminal.touchEnable = en;
         OOP_CALL(&touchMenu, setChecked, touchMenu.idx);
     }
 }
@@ -377,7 +376,6 @@ STATE_DEF_ENTER(Settings) {
 OOP_CTOR(Settings, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Settings);
-    storage = getStorage();
     dev = getDevice();
     SoundSettings(self);
     EnergySettings(self);

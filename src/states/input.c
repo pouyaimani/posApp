@@ -465,7 +465,6 @@ STATE_DEF_EXIT(Input) {
     LV_HIDE(cancelBut.main);
     LV_HIDE(title);
     LV_HIDE(info);
-    // TODO: pass state to enter and exit method too
 }
 
 STATE_DEF_HANDLE(Input, TimeOutEvent) {

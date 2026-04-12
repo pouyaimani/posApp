@@ -23,7 +23,7 @@ OOP_CTOR(Storage) {
     self->settings = &_settings;
 }
 
-Storage *getStorage() {
+Storage *storage() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

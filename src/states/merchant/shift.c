@@ -7,7 +7,6 @@
 #include "storage/storage.h"
 #include "utility/utility.h"
 
-static Storage *storage;
 static Device *dev;
 
 static Menu shiftItemMenu;
@@ -304,9 +303,8 @@ STATE_DEF_ENTER(Shift) {
 OOP_CTOR(Shift, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Shift);
-    storage = getStorage();
     dev = getDevice();
-    shiftStg = &storage->settings->shift;
+    shiftStg = &storage()->settings->shift;
 
     subShift[SHIFT_ITEM_ENABLE] = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_ENABLE], self, "en/dis shift");

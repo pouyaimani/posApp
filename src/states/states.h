@@ -1,3 +1,7 @@
+
+#ifndef STATES_H_
+#define STATES_H_
+
 #include "state.h"
 #include <stdbool.h>
 #include "common.h"
@@ -14,8 +18,9 @@ typedef enum StateId_t {
     STATE_ID_DEV_INFO,
     STATE_ID_FIXED_AMOUNT,
     STATE_ID_MENU,
-    STATE_ID_COMMU,
-    STATE_ID_TXN_RES
+    STATE_ID_ISO_TRANSMITTER,
+    STATE_ID_TXN_RES,
+    STATE_ID_HTTP_TRANSMITTER
 } StateId_t;
 
 State *getState(StateId_t id);
@@ -179,15 +184,7 @@ OOP_CLASS(FixedAmount) {
 
 OOP_CTOR(FixedAmount, State *parent, const char *name);
 
-/*************************** Communication ***********************/
-
-OOP_CLASS(Communication) {
-    OOP_EXTENDS(State);
-};
-
-OOP_CTOR(Communication, State *parent, const char *name);
-
-/*************************** Communication ***********************/
+/*************************** Txn Result ***********************/
 
 OOP_CLASS(TxnResult) {
     OOP_EXTENDS(State);
@@ -195,13 +192,13 @@ OOP_CLASS(TxnResult) {
 
 OOP_CTOR(TxnResult, State *parent, const char *name);
 
-
-
 // Helper functions
 
 void GOTO_INPUT(State *prev, State *next, const char *title,
         const char *body, int max, InputMode_t mode, char *out);
 void GOTO_INFO(State *prev, State *next, const char *title, const char *body);
 void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData);
-void GOTO_COMMU(State *prev, State *next);
+void GOTO_ISO_TRANSMITTER(State *prev, State *next);
 void GOTO_TXN_RES(State *prev, State *next);
+
+#endif

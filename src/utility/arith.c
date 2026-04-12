@@ -162,3 +162,63 @@ int32_t ascToBcd(uint8_t *pbcDest, const char *pasSrc, uint32_t siSrclen)
 
     return (siSrclen + 1) / 2;
 }
+
+int32_t hexToU32(uint32_t *puiDest, const uint8_t *pheSrc, uint32_t siHexLen)
+{
+    uint32_t i = 0;
+
+    if ((NULL == pheSrc) || (NULL == puiDest) || (siHexLen < 0))
+    {
+
+        return -1;
+    }
+    *puiDest = 0;
+
+    for (i = 0; i < siHexLen; i++)
+    {
+        *puiDest *= 256;
+        *puiDest += pheSrc[i];
+    }
+
+    return 0;
+}
+
+void intToBytes(uint32_t src, uint8_t *bytes, uint32_t bytesLen)
+{
+    if (bytes == NULL || (bytesLen != 2 && bytesLen != 4))
+    {
+        return;
+    }
+
+    if (bytesLen == 2)
+    {
+        bytes[0] = ((src >> 8u) & 0xFFu);
+        bytes[1] = (src & 0xFFu);
+    }
+    else
+    {
+        bytes[0] = ((src >> 24u) & 0xFFu);
+        bytes[1] = ((src >> 16u) & 0xFFu);
+        bytes[2] = ((src >> 8u) & 0xFFu);
+        bytes[3] = (src & 0xFFu);
+    }
+}
+
+int32_t u32ToHex(uint8_t *pheDest, uint32_t const uiSrc, uint32_t siHexLen)
+{
+    uint32_t i = 0;
+    uint32_t num = uiSrc;
+
+    if ((NULL == pheDest) || (siHexLen < 0))
+    {
+        return -1;
+    }
+
+    for (i = siHexLen; i > 0; i--)
+    {
+        *(pheDest + i - 1) = (uint8_t)(num % 256);
+        num /= 256;
+    }
+
+    return siHexLen;
+}

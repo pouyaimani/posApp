@@ -65,6 +65,6 @@ OOP_CTOR(FixedAmount, State *parent, const char *name) {
     OOP_CALL_CTOR(State, variantAmount, parent, "variant amount");
     variantAmount->vtable.enter = STATE_ENTER(VariantAmount);
 
-    fixedAmountItem = &getStorage()->settings->terminal.fixedAmountItem;
-    termStorage = &getStorage()->settings->terminal;
+    fixedAmountItem = &storage()->settings->terminal.fixedAmountItem;
+    termStorage = &storage()->settings->terminal;
 }

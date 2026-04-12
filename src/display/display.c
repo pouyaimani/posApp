@@ -3,6 +3,7 @@
 #include "dev/dev.h"
 #include "touchpad/touchpad.h"
 #include "logger.h"
+#include "common.h"
 
 #define SCREEN_SIZE         DISP_HOR_RES * DISP_VER_RES
 #define BYTES_PER_PIXEL     2

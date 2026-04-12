@@ -15,7 +15,6 @@
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
 static Device *dev;
-static Storage *storage;
 static DevSettings *settings;
 
 STATE_DEF_ENTER(Startup) {
@@ -23,7 +22,7 @@ STATE_DEF_ENTER(Startup) {
     MAG_INIT();
     WIFI_INIT();
     TOUCH_INIT();
-    OOP_CALL(storage, reloadSettings);
+    RELOAD_SETTINGS();
     Display *disp = getDisplay();
     disp->init();
     Core *core = getSmCore();
@@ -58,6 +57,5 @@ OOP_CTOR(Startup, State *parent, const char *name) {
     self->base.vtable.exit = STATE_EXIT(Startup);
     self->base.vtable.handleTimeout = STATE_HANDLE(Startup, TimeOutEvent);
     dev = getDevice();
-    storage = getStorage();
-    settings = storage->settings;
+    settings = storage()->settings;
 }

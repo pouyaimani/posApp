@@ -38,7 +38,6 @@ static SubState *subStates[SUBS_ALL];
 static SubState *enterPass;
 static SubState *supervisorMenu;
 static SubState *changeMerPin;
-static Storage *storage;
 
 static bool validatePass(char *pass0, char *pass1, uint8_t len) {
     for (size_t i = 0; i < len ; i++) {
@@ -92,7 +91,7 @@ static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage->settings->terminal.merchantPin,
+    bool isPassVlaid = validatePass(storage()->settings->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
@@ -119,7 +118,7 @@ STATE_DEF_ENTER(CheckNewPin) {
                 in->password, 4);
     if(isPassVlaid) {
         for (size_t i = 0; i < 4; i++) {
-            storage->settings->terminal.merchantPin[i] = newPin[i];
+            storage()->settings->terminal.merchantPin[i] = newPin[i];
         }
         SAVE_SETTINGS();
         GOTO_INFO(supervisorMenu, supervisorMenu, "رمز با موفقیت تغییر کرد", "");
@@ -189,9 +188,9 @@ STATE_DEF_ENTER(EnterIp) {
         "", IP_MAX_LEN, IN_MODE_IP, NULL);
     Input * in = STATE_INPUT;
     if (serverItem == SERV_SET_MAIN) {
-        in->setInput(storage->settings->server.mainServerIp);
+        in->setInput(storage()->settings->server.mainServerIp);
     } else if (serverItem == SERV_SET_TMS) {
-        in->setInput(storage->settings->server.tmsIp);
+        in->setInput(storage()->settings->server.tmsIp);
     }
 }
 
@@ -202,9 +201,9 @@ STATE_DEF_ENTER(EnterPort) {
         "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
-        intToStr(storage->settings->server.mainServerPort, str, sizeof(str));
+        intToStr(storage()->settings->server.mainServerPort, str, sizeof(str));
     } else if (serverItem == SERV_SET_TMS) {
-        intToStr(storage->settings->server.tmsPort, str, sizeof(str));
+        intToStr(storage()->settings->server.tmsPort, str, sizeof(str));
     }
     in->setInput(str);
 }
@@ -216,9 +215,9 @@ STATE_DEF_ENTER(EnterServerId) {
         "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
-        intToStr(storage->settings->server.mainServerId, str, sizeof(str));
+        intToStr(storage()->settings->server.mainServerId, str, sizeof(str));
     } else if (serverItem == SERV_SET_TMS) {
-        intToStr(storage->settings->server.tmsId, str, sizeof(str));
+        intToStr(storage()->settings->server.tmsId, str, sizeof(str));
     }
     in->setInput(str);
 }
@@ -230,11 +229,11 @@ STATE_DEF_ENTER(GetServerId) {
 }
 
 static void enSSL() {
-    storage->settings->server.sslEn = 1;
+    storage()->settings->server.sslEn = 1;
 }
 
 static void disSSL() {
-    storage->settings->server.sslEn = 0;
+    storage()->settings->server.sslEn = 0;
 }
 
 STATE_DEF_ENTER(EnableSsl) {
@@ -243,20 +242,20 @@ STATE_DEF_ENTER(EnableSsl) {
     OOP_CALL(&sslMenu, addItem, "فعال", success, enSSL, NULL);
     OOP_CALL(&sslMenu, addItem, "غیر فعال", success, disSSL, NULL);
     GOTO_MENU(state->parent, &sslMenu, NULL, NULL);
-    OOP_CALL(&sslMenu, setChecked, !storage->settings->server.sslEn);
+    OOP_CALL(&sslMenu, setChecked, !storage()->settings->server.sslEn);
 }
 
 STATE_DEF_ENTER(Success) {
     if (serverItem == SERV_SET_MAIN) {
-        snprintf(storage->settings->server.mainServerIp,
-                    sizeof(storage->settings->server.mainServerIp), "%s", ip);
-        storage->settings->server.mainServerPort = port;
-        storage->settings->server.mainServerId = serverId;
+        snprintf(storage()->settings->server.mainServerIp,
+                    sizeof(storage()->settings->server.mainServerIp), "%s", ip);
+        storage()->settings->server.mainServerPort = port;
+        storage()->settings->server.mainServerId = serverId;
     } else if (serverItem == SERV_SET_TMS) {
-        snprintf(storage->settings->server.tmsIp,
-                    sizeof(storage->settings->server.tmsIp), "%s", ip);
-        storage->settings->server.tmsPort = port;
-        storage->settings->server.tmsId = serverId;
+        snprintf(storage()->settings->server.tmsIp,
+                    sizeof(storage()->settings->server.tmsIp), "%s", ip);
+        storage()->settings->server.tmsPort = port;
+        storage()->settings->server.tmsId = serverId;
     }
     SAVE_SETTINGS();
     GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
@@ -332,7 +331,7 @@ OOP_CTOR(KeyInjection, State *parent, const char *name) {
 /******************** Merchant pass reset sub state **********************/
 
 STATE_DEF_ENTER(MerchantPassReset) {
-    snprintf(storage->settings->terminal.merchantPin,
+    snprintf(storage()->settings->terminal.merchantPin,
                 MERCHANT_PIN_LEN, "%s", MERCHANT_DEFAULT_PIN);
         SAVE_SETTINGS();
     GOTO_INFO(state->parent, state->parent, "رمز با موفقیت تغییر کرد", "");
@@ -428,5 +427,4 @@ OOP_CTOR(Supervisor, State *parent, const char *name) {
     SupervisorMenu(self);
     ChangeMerPin(self);
 
-    storage = getStorage();
 }

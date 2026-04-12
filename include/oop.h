@@ -77,4 +77,7 @@
 
 #define SECS(x) (x * 1000)
 
+#define ERR_OK      1
+#define ERR_NOK     0
+
 #endif

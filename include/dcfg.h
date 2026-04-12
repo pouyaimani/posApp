@@ -18,14 +18,4 @@
 #error Please define the macro COLOR_DEPTH with the actual screen color depth.
 #endif
 
-#define WIFI_AP_LIST_SIZE 50
-
-#define MAIN_THEME_COLOR 0x652D90
-
-#define MAX_SERVICE_NUM 10
-
-#define MAX_AMOUNT_LIST 13
-
-#define AMOUNT_MAX_CNT  12
-
 #endif

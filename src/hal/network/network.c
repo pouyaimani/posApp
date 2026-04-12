@@ -6,7 +6,6 @@
 #include "storage/storage.h"
 
 Network *__network;
-static Storage *storage;
 
 #ifdef DEVICE_TRENDITT3RTOS
 #include "t3Rtos/network_t3Rtos.h"
@@ -49,8 +48,8 @@ static int connect() {
     SocketAddr_t addr;
     addr.family = NET_AF_INET;
     snprintf(addr.ip, 
-        sizeof(addr.ip), "%s", storage->settings->server.mainServerIp);
-    addr.port = storage->settings->server.mainServerPort;
+        sizeof(addr.ip), "%s", storage()->settings->server.mainServerIp);
+    addr.port = storage()->settings->server.mainServerPort;
     SocketType_t type = NET_STREAM;
     socketId = OOP_CALL(__network, create, &addr, type);
     tick = GET_TICK();
@@ -88,8 +87,6 @@ static int send(uint8_t *data, size_t len) {
 OOP_CTOR(Network) {
     self->connect = connect;
     self->send = send;
-
-    storage = getStorage();
     recBuffer = GET_MEM(REC_BUFF_LEN);
 }
 

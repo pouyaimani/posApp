@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "dcfg.h"
 #include "event.h"
+#include "common.h"
 
 #define MAX_SHIFT_CNT 100
 
@@ -103,9 +104,10 @@ OOP_CLASS(Storage)
 
 OOP_CTOR(Storage);
 
-Storage *getStorage(void);
+Storage *storage(void);
 
-#define SAVE_SETTINGS() OOP_CALL(getStorage(), applySettings)
-#define RESET_SETTINGS() OOP_CALL(getStorage(), resetSettings)
+#define SAVE_SETTINGS() OOP_CALL(storage(), applySettings)
+#define RELOAD_SETTINGS() OOP_CALL(storage(), reloadSettings)
+#define RESET_SETTINGS() OOP_CALL(storage(), resetSettings)
 
 #endif

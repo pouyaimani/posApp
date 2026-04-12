@@ -72,31 +72,42 @@ static const char *getAmount(Packer *self) {
 }
 
 static void setPan(Packer *self, const char *pan) {
+    snprintf(self->element[ELEMENT_PAN].data,
+                isoFields[ELEMENT_PAN].maxLen + 1,
+                    "%s", pan);    
 }
 
 static const char *getPan(Packer *self) {
+    return self->element[ELEMENT_PAN].data;
 }
 
-static void setCardPwd(Packer *self, const char *pan) {
+static void setCardPwd(Packer *self, const char *pwd) {
+    snprintf(self->element[ELEMENT_PIN_DATA].data,
+                isoFields[ELEMENT_PIN_DATA].maxLen + 1,
+                    "%s", pwd);  
 }
 
 static const char *getCardPwd(Packer *self) {
+    return self->element[ELEMENT_PIN_DATA].data;
 }
 
 static void setDateTime(Packer *self, const char *dt) {
+    snprintf(self->element[ELEMENT_TRANSMISSION_DATE_TIME].data,
+                isoFields[ELEMENT_TRANSMISSION_DATE_TIME].maxLen + 1,
+                    "%s", dt);  
 }
 
 static const char *getDateTime(Packer *self) {
-    return self->element[ELEMENT_AMOUNT_TRANSACTION].data;
+    return self->element[ELEMENT_TRANSMISSION_DATE_TIME].data;
 }
 
-static void setTerminalId(Packer *self, const char *dt) {
+static void setTerminalId(Packer *self, const char *id) {
 }
 
 static const char *getTerminalId(Packer *self) {
 }
 
-static void setRRN(Packer *self, const char *dt) {
+static void setRRN(Packer *self, const char *rrn) {
 }
 
 static const char *getRRN(Packer *self) {
