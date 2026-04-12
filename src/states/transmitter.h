@@ -9,6 +9,8 @@
 
 OOP_CLASS(IsoTransmitter) {
     OOP_EXTENDS(State);
+    State *onSucess;
+    State *onFailure;
 };
 
 OOP_CTOR(IsoTransmitter, State *parent, const char *name);
@@ -58,6 +60,8 @@ typedef struct {
 
 OOP_CLASS(HttpTransmitter) {
     OOP_EXTENDS(State);
+    State *onSucess;
+    State *onFailure;
     HttpContext *httpCtx;
 };
 

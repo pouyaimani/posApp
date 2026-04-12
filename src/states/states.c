@@ -139,10 +139,18 @@ void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData) {
     SM_GOTO(getState(STATE_ID_MENU));
 }
 
-void GOTO_ISO_TRANSMITTER(State *prev, State *next) {
-    OOP_CALL(getState(STATE_ID_ISO_TRANSMITTER), setNext, next);
-    OOP_CALL(getState(STATE_ID_ISO_TRANSMITTER), setPrev, prev);
-    SM_GOTO(getState(STATE_ID_ISO_TRANSMITTER));
+void GOTO_ISO_TRANSMITTER(State *onFail, State *onSucess) {
+    IsoTransmitter *isoTrns = STATE_TRNS_ISO;
+    isoTrns->onSucess = onSucess;
+    isoTrns->onFailure = onFail;
+    SM_GOTO(STATE_TRNS_ISO);
+}
+
+void GOTO_HTTP_TRANSMITTER(State *onFail, State *onSucess) {
+    HttpTransmitter *httpTrns = STATE_TRNS_HTTP;
+    httpTrns->onSucess = onSucess;
+    httpTrns->onFailure = onFail;
+    SM_GOTO(STATE_TRNS_HTTP);
 }
 
 void GOTO_TXN_RES(State *prev, State *next){
