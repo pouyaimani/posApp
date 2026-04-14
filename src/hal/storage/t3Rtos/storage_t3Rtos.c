@@ -8,6 +8,7 @@
 #include "sdkFile.h"
 #include "CONFIG.h"
 #include "common.h"
+#include "utility/tlv.h"
 
 #define USER_DATA_ROOT_DIR          "/mtd0/"
 
@@ -655,121 +656,44 @@ static uint16_t getDevicePropsTableCount(void)
     return sizeof(settingsTable) / sizeof(SettingItem);
 }
 
-static uint16_t formTlv(uint8_t *out, const u8 *tag, const u8 *value, uint16_t valueLen)
+typedef struct {
+    SettingItem *settings;
+    uint32_t count;
+} SettingsCtx;
+
+int settings_tlv_handler(const TlvItem *item, void *user)
 {
-    u8 uc_len = 0;
-    uint16_t us_len = 0;
+    SettingsCtx *ctx = (SettingsCtx *)user;
 
-    *out = 0xFF;                   
-    us_len++;
-
-    uc_len = (u8) strlen((const char *) tag);
-    out[us_len++] = uc_len;        
-
-    memcpy(out + us_len, tag, uc_len);    //Tag
-    us_len += uc_len;
-
-    if (valueLen > 0)
+    for (uint32_t i = 0; i < ctx->count; i++)
     {
-        if (valueLen > 255)
-        {
-            out[us_len++] = 0x82;
-            out[us_len++] = (u8) (valueLen / 256);
-        }
-        else if (valueLen > 127)
-        {
-            out[us_len++] = 0x81;
-        }
-        out[us_len++] = (u8) valueLen;
-        memcpy(&out[us_len], value, valueLen);
-        us_len += valueLen;
-    }
-    else
-    {
-        us_len = 0;
-    }
-    return us_len;
-}
+        SettingItem *s = &ctx->settings[i];
 
-static s32 parseTLVData(const u8 *tlvData, uint16_t tlvDataLen, SettingItem *settings, uint32_t itemsCount)
-{
-    char tlvTag[32] = {0};
-    bool isMatchTlvTag = false;
-    uint32_t offset = 0, us_len = 0, us_temp = 0, i, j;
-
-    while (offset < tlvDataLen)
-    {
-        if (offset >= tlvDataLen)
-        {
-            break;
-        }
-
-        if (tlvData[offset] == 0xFF)
-        {
-            offset++;
+        if (strlen(s->mTlvName) != item->tagLen)
             continue;
+
+        if (memcmp(s->mTlvName, item->tag, item->tagLen) != 0)
+            continue;
+
+        // --- VALIDATION ---
+        if ((s->mDataType & T_INT) == T_INT) {
+            if (item->valueLen != sizeof(uint32_t)) return -1;
         }
-        isMatchTlvTag = false;
-
-        us_len = tlvData[offset];     
-        offset++;
-
-        memset(tlvTag, 0, sizeof(tlvTag));
-        memcpy(tlvTag, tlvData + offset, us_len);
-        for (i = 0; i < itemsCount; i++)
-        {
-            if (strcmp(tlvTag, settings[i].mTlvName) != 0)
-            {
-                continue;
-            }
-            isMatchTlvTag = true;
-            break;
+        else if ((s->mDataType & T_CHAR) == T_CHAR) {
+            if (item->valueLen != sizeof(uint8_t)) return -1;
         }
+        else {
+            if (item->valueLen > s->mMaxLen ||
+                item->valueLen < s->mMinLen) return -1;
 
-        offset += us_len;
-
-        if (tlvData[offset] <= 127)        //0x7F
-        {
-            us_len = tlvData[offset];
-            offset++;
-        }
-        else
-        {
-            us_len = 0;
-            us_temp = (uint16_t) (tlvData[offset] & 0x7Fu);
-
-            for (j = 1; j <= us_temp; j++)
-            {
-                us_len = (uint16_t) (us_len * 256 + tlvData[offset + j]);
-            }
-
-            offset += us_temp + 1;
+            memset(s->mAddress, 0, s->mMaxLen + 1);
         }
 
-        if (isMatchTlvTag)
-        {
-
-            if ((settings[i].mDataType & (uint32_t) T_INT) == T_INT)
-            {
-                if (us_len != sizeof(uint32_t)) return SDK_ERR;
-            }
-            else if ((settings[i].mDataType & (uint32_t) T_CHAR) == T_CHAR)
-            {
-                if (us_len != sizeof(u8)) return SDK_ERR;
-            }
-            else
-            {
-                if (us_len > settings[i].mMaxLen || us_len < settings[i].mMinLen) return SDK_ERR;
-                memset((u8 *) settings[i].mAddress, 0, settings[i].mMaxLen + 1);
-            }
-
-            memcpy((u8 *) settings[i].mAddress, tlvData + offset, us_len);
-
-        }
-        offset += us_len;
+        memcpy(s->mAddress, item->value, item->valueLen);
+        break;
     }
 
-    return SDK_OK;
+    return 0;
 }
 
 static void applySettings(char *fileName, SettingItem *settings, uint32_t itemsCount)
@@ -810,7 +734,9 @@ static void applySettings(char *fileName, SettingItem *settings, uint32_t itemsC
         {
             itemWriteLen = settings[i].mMaxLen;
         }
-        writeBufLen += formTlv(fileWriteBuf + writeBufLen, (u8 *) settings[i].mTlvName, (u8 *) settings[i].mAddress, (uint16_t) itemWriteLen);
+        writeBufLen += tlv()->encode(fileWriteBuf + writeBufLen, (u8 *) settings[i].mTlvName, 
+            strlen(settings[i].mTlvName), 
+                (u8 *) settings[i].mAddress, (uint16_t) itemWriteLen);
 
         if (writeBufLen >= SETTINGS_FILE_MAX_SIZE)
         {
@@ -934,7 +860,12 @@ static void reloadSettings(char *fileName, SettingItem *settings, uint32_t items
         goto init_settings;
     }
 
-    parseTLVData(fileCaches, (uint16_t) fileSize, settings, itemsCount);
+    SettingsCtx ctx = {
+        .settings = settings,
+        .count = itemsCount
+    };
+    tlv()->decode(fileCaches, fileSize, settings_tlv_handler, &ctx);
+
     LOG_INFO("parse settings tlv data success ... \r\n");
     sdkSysFreeMem(fileCaches);
     return;

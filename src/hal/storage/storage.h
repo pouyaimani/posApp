@@ -10,8 +10,7 @@
 
 #define MAX_SHIFT_CNT 100
 
-OOP_CLASS(TerminalSettings)
-{
+OOP_CLASS(TerminalSettings) {
     bool touchEnable;
 
     uint8_t netRoute;
@@ -46,8 +45,7 @@ OOP_CLASS(TerminalSettings)
     int fixedAmountCoef;
 };
 
-OOP_CLASS(ServerSettings)
-{
+OOP_CLASS(ServerSettings) {
     char mainServerIp[12 + 1];
     uint16_t mainServerPort;
     uint16_t mainServerId;
@@ -64,8 +62,7 @@ OOP_CLASS(ServerSettings)
 
 OOP_CLASS(TxnSettings){};
 
-OOP_CLASS(Shifts)
-{
+OOP_CLASS(Shifts) {
     struct ShiftsData
     {
         uint32_t startDate;
@@ -78,8 +75,7 @@ OOP_CLASS(Shifts)
     uint8_t isActive;
 };
 
-OOP_CLASS(DevSettings)
-{
+OOP_CLASS(DevSettings) {
     TerminalSettings terminal;
     ServerSettings server;
     TxnSettings txn;
@@ -88,16 +84,14 @@ OOP_CLASS(DevSettings)
 
 OOP_DECLARE_CLASS(Storage)
 
-OOP_VTABLE(Storage)
-{
+OOP_VTABLE(Storage) {
     OOP_IMETHOD(void, Storage, init);
     OOP_IMETHOD(void, Storage, reloadSettings);
     OOP_IMETHOD(void, Storage, applySettings);
     OOP_IMETHOD(void, Storage, resetSettings);
 };
 
-OOP_CLASS(Storage)
-{
+OOP_CLASS(Storage) {
     OOP_IMPLEMENTS(Storage);
     DevSettings *settings;
 };
