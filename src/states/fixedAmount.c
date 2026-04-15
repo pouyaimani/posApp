@@ -5,6 +5,7 @@
 #include "storage/storage.h"
 #include "states/merchant/merchant.h"
 #include "utility/utility.h"
+#include "settings/settings.h"
 
 static int *fixedAmountItem;
 static TerminalSettings *termStorage;
@@ -65,6 +66,6 @@ OOP_CTOR(FixedAmount, State *parent, const char *name) {
     OOP_CALL_CTOR(State, variantAmount, parent, "variant amount");
     variantAmount->vtable.enter = STATE_ENTER(VariantAmount);
 
-    fixedAmountItem = &storage()->settings->terminal.fixedAmountItem;
-    termStorage = &storage()->settings->terminal;
+    fixedAmountItem = &settings()->terminal.fixedAmountItem;
+    termStorage = &settings()->terminal;
 }

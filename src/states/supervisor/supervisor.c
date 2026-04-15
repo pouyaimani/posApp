@@ -9,6 +9,7 @@
 #include "storage/storage.h"
 #include "utility/utility.h"
 #include "common.h"
+#include "settings/settings.h"
 
 #define PASSWORD_MAX_LEN 4
 #define IP_MAX_LEN 12
@@ -91,7 +92,7 @@ static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage()->settings->terminal.merchantPin,
+    bool isPassVlaid = validatePass(settings()->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
@@ -118,9 +119,9 @@ STATE_DEF_ENTER(CheckNewPin) {
                 in->password, 4);
     if(isPassVlaid) {
         for (size_t i = 0; i < 4; i++) {
-            storage()->settings->terminal.merchantPin[i] = newPin[i];
+            settings()->terminal.merchantPin[i] = newPin[i];
         }
-        SAVE_SETTINGS();
+        settings()->save();
         GOTO_INFO(supervisorMenu, supervisorMenu, "رمز با موفقیت تغییر کرد", "");
     } else {
         GOTO_INFO(supervisorMenu, supervisorMenu, "تاییدیه رمز نادرست است", "");
@@ -188,9 +189,9 @@ STATE_DEF_ENTER(EnterIp) {
         "", IP_MAX_LEN, IN_MODE_IP, NULL);
     Input * in = STATE_INPUT;
     if (serverItem == SERV_SET_MAIN) {
-        in->setInput(storage()->settings->server.mainServerIp);
+        in->setInput(settings()->server.mainServerIp);
     } else if (serverItem == SERV_SET_TMS) {
-        in->setInput(storage()->settings->server.tmsIp);
+        in->setInput(settings()->server.tmsIp);
     }
 }
 
@@ -201,9 +202,9 @@ STATE_DEF_ENTER(EnterPort) {
         "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
-        intToStr(storage()->settings->server.mainServerPort, str, sizeof(str));
+        intToStr(settings()->server.mainServerPort, str, sizeof(str));
     } else if (serverItem == SERV_SET_TMS) {
-        intToStr(storage()->settings->server.tmsPort, str, sizeof(str));
+        intToStr(settings()->server.tmsPort, str, sizeof(str));
     }
     in->setInput(str);
 }
@@ -215,9 +216,9 @@ STATE_DEF_ENTER(EnterServerId) {
         "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
-        intToStr(storage()->settings->server.mainServerId, str, sizeof(str));
+        intToStr(settings()->server.mainServerId, str, sizeof(str));
     } else if (serverItem == SERV_SET_TMS) {
-        intToStr(storage()->settings->server.tmsId, str, sizeof(str));
+        intToStr(settings()->server.tmsId, str, sizeof(str));
     }
     in->setInput(str);
 }
@@ -229,11 +230,11 @@ STATE_DEF_ENTER(GetServerId) {
 }
 
 static void enSSL() {
-    storage()->settings->server.sslEn = 1;
+    settings()->server.sslEn = 1;
 }
 
 static void disSSL() {
-    storage()->settings->server.sslEn = 0;
+    settings()->server.sslEn = 0;
 }
 
 STATE_DEF_ENTER(EnableSsl) {
@@ -242,22 +243,22 @@ STATE_DEF_ENTER(EnableSsl) {
     OOP_CALL(&sslMenu, addItem, "فعال", success, enSSL, NULL);
     OOP_CALL(&sslMenu, addItem, "غیر فعال", success, disSSL, NULL);
     GOTO_MENU(state->parent, &sslMenu, NULL, NULL);
-    OOP_CALL(&sslMenu, setChecked, !storage()->settings->server.sslEn);
+    OOP_CALL(&sslMenu, setChecked, !settings()->server.sslEn);
 }
 
 STATE_DEF_ENTER(Success) {
     if (serverItem == SERV_SET_MAIN) {
-        snprintf(storage()->settings->server.mainServerIp,
-                    sizeof(storage()->settings->server.mainServerIp), "%s", ip);
-        storage()->settings->server.mainServerPort = port;
-        storage()->settings->server.mainServerId = serverId;
+        snprintf(settings()->server.mainServerIp,
+                    sizeof(settings()->server.mainServerIp), "%s", ip);
+        settings()->server.mainServerPort = port;
+        settings()->server.mainServerId = serverId;
     } else if (serverItem == SERV_SET_TMS) {
-        snprintf(storage()->settings->server.tmsIp,
-                    sizeof(storage()->settings->server.tmsIp), "%s", ip);
-        storage()->settings->server.tmsPort = port;
-        storage()->settings->server.tmsId = serverId;
+        snprintf(settings()->server.tmsIp,
+                    sizeof(settings()->server.tmsIp), "%s", ip);
+        settings()->server.tmsPort = port;
+        settings()->server.tmsId = serverId;
     }
-    SAVE_SETTINGS();
+    settings()->save();
     GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
 }
 
@@ -331,9 +332,9 @@ OOP_CTOR(KeyInjection, State *parent, const char *name) {
 /******************** Merchant pass reset sub state **********************/
 
 STATE_DEF_ENTER(MerchantPassReset) {
-    snprintf(storage()->settings->terminal.merchantPin,
-                MERCHANT_PIN_LEN, "%s", MERCHANT_DEFAULT_PIN);
-        SAVE_SETTINGS();
+    snprintf(settings()->terminal.merchantPin,
+                MERCHANT_PIN_LEN + 1, "%s", MERCHANT_DEFAULT_PIN);
+    settings()->save();
     GOTO_INFO(state->parent, state->parent, "رمز با موفقیت تغییر کرد", "");
 }
 
@@ -367,7 +368,7 @@ OOP_CTOR(UpdateApp, State *parent, const char *name) {
 /******************** Default Settings sub state **********************/
 
 STATE_DEF_ENTER(DefaultSettings) {
-    RESET_SETTINGS();
+    settings()->reset();
     GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
 }
 
@@ -408,6 +409,10 @@ OOP_CTOR(Supervisor, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(Supervisor);
     self->base.vtable.exit = STATE_EXIT(Supervisor);
 
+    EnterPassword(self);
+    SupervisorMenu(self);
+    ChangeMerPin(self);
+
     subStates[SUBS_NET_SETTINGS] = (NetworkSettings *)GET_MEM(sizeof(NetworkSettings));
     OOP_CALL_CTOR(NetworkSettings, subStates[SUBS_NET_SETTINGS], supervisorMenu, "terminal settings");
     subStates[SUBS_KEY_INJECTION] = (KeyInjection *)GET_MEM(sizeof(KeyInjection));
@@ -422,9 +427,5 @@ OOP_CTOR(Supervisor, State *parent, const char *name) {
     OOP_CALL_CTOR(UpdateApp, subStates[SUBS_UPDATE_APP], supervisorMenu, "update app");
     subStates[SUBS_DEFAULT_SETTINGS] = (DefaultSettings *)GET_MEM(sizeof(DefaultSettings));
     OOP_CALL_CTOR(DefaultSettings, subStates[SUBS_DEFAULT_SETTINGS], supervisorMenu, "default settings");
-
-    EnterPassword(self);
-    SupervisorMenu(self);
-    ChangeMerPin(self);
 
 }

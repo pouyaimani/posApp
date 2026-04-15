@@ -6,6 +6,7 @@
 #include "ui/ui.h"
 #include "dev/dev.h"
 #include "storage/storage.h"
+#include "settings/settings.h"
 
 static Device *dev;
 
@@ -37,13 +38,13 @@ static Bar soundBar;
 STATE_DEF_ENTER(SoundSettings) {
     uiBar(&soundBar, getDisplay()->screen, 0, dev->maxSound);
     OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
-    OOP_CALL(&soundBar, setValue, storage()->settings->terminal.devVolume);
+    OOP_CALL(&soundBar, setValue, settings()->terminal.devVolume);
     OOP_CALL(&soundBar, show);
 }
 
 STATE_DEF_EXIT(SoundSettings) {
-    storage()->settings->terminal.devVolume = soundBar.value;
-    SAVE_SETTINGS();
+    settings()->terminal.devVolume = soundBar.value;
+    settings()->save();
     OOP_CALL(&soundBar, hide);
     uiBarDelete(&soundBar);
 }
@@ -267,13 +268,13 @@ static Bar brightBar;
 STATE_DEF_ENTER(ScrLightSettings) {
     uiBar(&brightBar, getDisplay()->screen, 1, dev->maxBright);
     OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
-    OOP_CALL(&brightBar, setValue, storage()->settings->terminal.brightness);
+    OOP_CALL(&brightBar, setValue, settings()->terminal.brightness);
     OOP_CALL(&brightBar, show);
 }
 
 STATE_DEF_EXIT(ScrLightSettings) {
-    storage()->settings->terminal.brightness = brightBar.value;
-    SAVE_SETTINGS();
+    settings()->terminal.brightness = brightBar.value;
+    settings()->save();
     OOP_CALL(&brightBar, hide);
     uiBarDelete(&brightBar);
 }
@@ -305,7 +306,7 @@ static Menu touchMenu;
 
 STATE_DEF_ENTER(TouchSettings) {
     uiOnOffMenu(&touchMenu, getDisplay()->screen);
-    int idx = storage()->settings->terminal.touchEnable == true ? 0 : 1;
+    int idx = settings()->terminal.touchEnable == true ? 0 : 1;
     OOP_CALL(&touchMenu, setChecked, idx);
     OOP_CALL(&touchMenu, show);
 }
@@ -322,7 +323,7 @@ STATE_DEF_HANDLE(TouchSettings, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         bool en = touchMenu.idx == 0;
         //TODO: enable/ disable touch
-        storage()->settings->terminal.touchEnable = en;
+        settings()->terminal.touchEnable = en;
         OOP_CALL(&touchMenu, setChecked, touchMenu.idx);
     }
 }

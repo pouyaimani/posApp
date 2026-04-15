@@ -29,4 +29,10 @@ typedef void (*CallBack_t)(void *arg);
 #define TMS_VERSION_CACHE                               "/userdata/tms/version"
 
 
+/**********************************************************/
+//                         HELPERS
+/**********************************************************/
+
+#define STR_MAX(field) (sizeof(field) - 1)
+
 #endif

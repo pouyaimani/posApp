@@ -14,6 +14,7 @@
 #include "network/network.h"
 #include "timer.h"
 #include "states/merchant/merchant.h"
+#include "settings/settings.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -39,10 +40,10 @@ static void wifiAutoConnect() {
     }
     WifiApInfo_t apInfo = {0};
     char pwd[64] = {0};
-    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s", storage()->settings->terminal.wfiSSID);
-    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s", storage()->settings->terminal.wifiMac);
-    apInfo.secMode = storage()->settings->terminal.wifiEnc;
-    snprintf(pwd, sizeof(pwd), "%s", storage()->settings->terminal.wifiPwd);
+    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s", settings()->terminal.wfiSSID);
+    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s", settings()->terminal.wifiMac);
+    apInfo.secMode = settings()->terminal.wifiEnc;
+    snprintf(pwd, sizeof(pwd), "%s", settings()->terminal.wifiPwd);
     if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 && apInfo.secMode != 0) {
         OOP_CALL(wifi, hconnect, &apInfo, pwd);
     }
@@ -143,7 +144,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
 STATE_DEF_HANDLE(Idle, MagEvent) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = true;
-    if (storage()->settings->terminal.fixedAmountItem == FIXED_AMNT_DIS) {
+    if (settings()->terminal.fixedAmountItem == FIXED_AMNT_DIS) {
         SM_GOTO(getState(STATE_ID_CARD_HOLDER));
     } else {
         SM_GOTO(getState(STATE_ID_FIXED_AMOUNT));

@@ -77,10 +77,10 @@ static bool httpParseHeader()
     return true;
 }
 
-static void processBodyChunk(uint8_t *data, uint32_t len)
+static void httpProcessBodyChunk(uint8_t *data, uint32_t len)
 {
     if (httpCtx->onBodyChunk) {
-        httpCtx->onBodyChunk(data, len);   // stream to flash
+        httpCtx->onBodyChunk(data, len);
     }
 
     httpCtx->bodyReceived += len;

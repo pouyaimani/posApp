@@ -7,6 +7,7 @@
 #include "ui/ui.h"
 #include "dev/dev.h"
 #include "storage/storage.h"
+#include "settings/settings.h"
 
 static bool validatePass(char *pass0, char *pass1, uint8_t len) {
     for (size_t i = 0; i < len ; i++) {
@@ -48,7 +49,7 @@ static SubState *checkPass;
 
 STATE_DEF_ENTER(CheckPassword) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage()->settings->terminal.merchantPin,
+    bool isPassVlaid = validatePass(settings()->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(merchantMenu);
@@ -86,7 +87,7 @@ static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
     Input *in = getState(STATE_ID_INPUT);
-    bool isPassVlaid = validatePass(storage()->settings->terminal.merchantPin,
+    bool isPassVlaid = validatePass(settings()->terminal.merchantPin,
                 in->password, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
@@ -112,10 +113,8 @@ STATE_DEF_ENTER(CheckNewPin) {
     bool isPassVlaid = validatePass(newPin,
                 in->password, 4);
     if(isPassVlaid) {
-        for (size_t i = 0; i < 4; i++) {
-            storage()->settings->terminal.merchantPin[i] = newPin[i];
-        }
-        SAVE_SETTINGS();
+        snprintf(settings()->terminal.merchantPin, MERCHANT_PIN_LEN + 1, "%s", newPin);
+        settings()->save();
         GOTO_INFO(merchantMenu, merchantMenu, "رمز با موفقیت تغییر کرد", "");
     } else {
         GOTO_INFO(merchantMenu, merchantMenu, "تاییدیه رمز نادرست است", "");

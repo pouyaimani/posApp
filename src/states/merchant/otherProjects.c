@@ -8,6 +8,7 @@
 #include "storage/storage.h"
 #include "utility/utility.h"
 #include "states/services/services.h"
+#include "settings/settings.h"
 
 static TerminalSettings *termStorage;
 
@@ -195,7 +196,7 @@ static void enDirectSale() {
 }
 
 static void disDirectSale() {
-    storage()->settings->terminal.maxAmntEnable = false;
+    settings()->terminal.maxAmntEnable = false;
 }
 
 STATE_DEF_ENTER(DirectSale) {
@@ -235,7 +236,7 @@ STATE_DEF_ENTER(EnableServices) {
 static Menu otherMenu;
 
 static void saveSettings() {
-    SAVE_SETTINGS();
+    settings()->save();
 }
 
 STATE_DEF_ENTER(OtherProjects) {
@@ -281,5 +282,5 @@ OOP_CTOR(OtherProjects, State *parent, const char *name) {
     enterAmount = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, subState[OTH_PROJ_FIXED_AMONT], "enter fixed amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterFixedAmount);
-    termStorage = &storage()->settings->terminal;
+    termStorage = &settings()->terminal;
 }

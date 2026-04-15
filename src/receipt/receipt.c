@@ -6,6 +6,7 @@
 #include "font/myFont.h"
 #include "display/display.h"
 #include "printer/printer.h"
+#include "settings/settings.h"
 
 #define PRINTER_WIDTH_PIX   384
 #define MAX_HEIGHT          100   // dynamic safe max
@@ -298,7 +299,7 @@ static Receipt* addAmount(const char *amount) {
 /* -------- HEADER -------- */
 static Receipt* addHeader(const char *date, const char *time) {
     Receipt *r = &receipt;
-    TerminalSettings *t = &storage()->settings->terminal;
+    TerminalSettings *t = &settings()->terminal;
 
     Column row1[] = {
         {t->merchantNo, LV_TEXT_ALIGN_LEFT, 1},

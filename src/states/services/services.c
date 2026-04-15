@@ -2,6 +2,7 @@
 #include "dev/dev.h"
 #include "../states.h"
 #include "storage/storage.h"
+#include "settings/settings.h"
 
 static Service *services[MAX_SERVICE_NUM];
 static Service *parent;
@@ -22,7 +23,7 @@ static void createServices() {
     OOP_CALL_CTOR(SimCharge, services[SERVICE_ID_SIM_CHARGE], parent, "خرید شارژ");
 
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        services[i]->enable = storage()->settings->terminal.serviceEn[i];
+        services[i]->enable = settings()->terminal.serviceEn[i];
     }
 }
 

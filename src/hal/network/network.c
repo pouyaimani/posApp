@@ -4,6 +4,7 @@
 #include "event.h"
 #include "logger.h"
 #include "storage/storage.h"
+#include "settings/settings.h"
 
 Network *__network;
 
@@ -48,8 +49,8 @@ static int connect() {
     SocketAddr_t addr;
     addr.family = NET_AF_INET;
     snprintf(addr.ip, 
-        sizeof(addr.ip), "%s", storage()->settings->server.mainServerIp);
-    addr.port = storage()->settings->server.mainServerPort;
+        sizeof(addr.ip), "%s", settings()->server.mainServerIp);
+    addr.port = settings()->server.mainServerPort;
     SocketType_t type = NET_STREAM;
     socketId = OOP_CALL(__network, create, &addr, type);
     tick = GET_TICK();

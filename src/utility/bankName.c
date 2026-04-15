@@ -62,6 +62,7 @@ OOP_CTOR(BankName) {
 
 BankName* bankName() {
     CALL_ONCE(
+        __bankName = GET_MEM(sizeof(__bankName));
         OOP_CALL_CTOR(BankName, __bankName);
     );
     return __bankName;

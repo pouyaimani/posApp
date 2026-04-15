@@ -9,6 +9,7 @@
 #include "storage/storage.h"
 #include "network/network.h"
 #include "cellular/cellular.h"
+#include "settings/settings.h"
 
 static Wifi *wifi;
 static Cellular *cel;
@@ -40,16 +41,16 @@ STATE_DEF_EXIT(WifiConnect) {
 }
 
 static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
-    snprintf(storage()->settings->terminal.wfiSSID, 
-        sizeof(storage()->settings->terminal.wfiSSID), "%s", ap->essid);
-    snprintf(storage()->settings->terminal.wifiMac,
-        sizeof(storage()->settings->terminal.wifiMac), "%s", ap->mac);
-    storage()->settings->terminal.wifiEnc = ap->secMode;
-    snprintf(storage()->settings->terminal.wifiPwd, 
-        sizeof(storage()->settings->terminal.wifiPwd), "%s", pwd);
-    storage()->settings->terminal.netRoute = NET_ROUTE_WIFI;
+    snprintf(settings()->terminal.wfiSSID, 
+        sizeof(settings()->terminal.wfiSSID), "%s", ap->essid);
+    snprintf(settings()->terminal.wifiMac,
+        sizeof(settings()->terminal.wifiMac), "%s", ap->mac);
+    settings()->terminal.wifiEnc = ap->secMode;
+    snprintf(settings()->terminal.wifiPwd, 
+        sizeof(settings()->terminal.wifiPwd), "%s", pwd);
+    settings()->terminal.netRoute = NET_ROUTE_WIFI;
     OOP_CALL(getNetwork(), setRoute, NET_ROUTE_WIFI);
-    SAVE_SETTINGS();
+    settings()->save();
 }
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {

@@ -4,6 +4,7 @@
 #include "version.h"
 #include "transmitter.h"
 #include "storage/storage.h"
+#include "settings/settings.h"
 
 static SubState *extractTmsNewVersion;
 

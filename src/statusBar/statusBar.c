@@ -11,6 +11,7 @@
 #include "assets.h"
 #include "network/network.h"
 #include "storage/storage.h"
+#include "settings/settings.h"
 
 static StatusBar *__statusBar;
 static Timer *timer;
@@ -157,7 +158,7 @@ static void update() {
     updateBatteryIcon();
     updateConnectionIcon();
 
-    if (storage()->settings->terminal.devVolume > 0) {
+    if (settings()->terminal.devVolume > 0) {
         lv_img_set_src(soundIcon, ICON_SOUND_ON);
     } else {
         lv_img_set_src(soundIcon, ICON_SOUND_OFF);

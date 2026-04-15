@@ -6,6 +6,7 @@
 #include "dev/dev.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
+#include "settings/settings.h"
 
 static Device *dev;
 
@@ -134,7 +135,7 @@ STATE_DEF_ENTER(ShiftEnable) {
 STATE_DEF_EXIT(ShiftEnable) {
     OOP_CALL(&EnMenu, hide);
     uiDeleteMenu(&EnMenu);
-    SAVE_SETTINGS();
+    settings()->save();
 }
 
 STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
@@ -221,7 +222,7 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
         uint16_t latest = shiftStg->latest;
         shiftStg->data[latest].startDate = sdate;
         shiftStg->data[latest].startTime = stime;
-        SAVE_SETTINGS();
+        settings()->save();
     }
 }
 
@@ -263,7 +264,7 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
         shiftStg->data[latest].endTime = etime;
         shiftStg->isActive = false;
         shiftStg->latest++;
-        SAVE_SETTINGS();
+        settings()->save();
         GOTO_INFO(state->parent, state->parent, "شیفت با موفقیت بسته شد", "");
     }
 }
@@ -304,7 +305,7 @@ OOP_CTOR(Shift, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Shift);
     dev = getDevice();
-    shiftStg = &storage()->settings->shift;
+    shiftStg = &settings()->shift;
 
     subShift[SHIFT_ITEM_ENABLE] = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_ENABLE], self, "en/dis shift");

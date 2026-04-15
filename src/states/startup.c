@@ -11,18 +11,19 @@
 #include "wifi/wifi.h"
 #include "storage/storage.h"
 #include "network/network.h"
+#include "settings/settings.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
 static Device *dev;
-static DevSettings *settings;
 
 STATE_DEF_ENTER(Startup) {
     KEYPAD_INIT();
     MAG_INIT();
     WIFI_INIT();
     TOUCH_INIT();
-    RELOAD_SETTINGS();
+    settings()->reset();
+    settings()->load();
     Display *disp = getDisplay();
     disp->init();
     Core *core = getSmCore();
@@ -31,13 +32,13 @@ STATE_DEF_ENTER(Startup) {
     core->registerCallback(getTimerHanlder()->runCycle);
 
     // Network setitings
-    OOP_CALL(getNetwork(), setRoute, settings->terminal.netRoute);
-    OOP_CALL(getNetwork(), setAddr, settings->server.mainServerIp,
-        settings->server.mainServerPort);
+    OOP_CALL(getNetwork(), setRoute, settings()->terminal.netRoute);
+    OOP_CALL(getNetwork(), setAddr, settings()->server.mainServerIp,
+        settings()->server.mainServerPort);
 
-    LOG_DEBUG("device voulme = %d", settings->terminal.devVolume);
-    OOP_CALL(dev, setVolume, settings->terminal.devVolume);
-    OOP_CALL(dev, setBrightness, settings->terminal.brightness);
+    LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
+    OOP_CALL(dev, setVolume, settings()->terminal.devVolume);
+    OOP_CALL(dev, setBrightness, settings()->terminal.brightness);
     statusBar();
     GOTO_IDLE();
 }
@@ -57,5 +58,4 @@ OOP_CTOR(Startup, State *parent, const char *name) {
     self->base.vtable.exit = STATE_EXIT(Startup);
     self->base.vtable.handleTimeout = STATE_HANDLE(Startup, TimeOutEvent);
     dev = getDevice();
-    settings = storage()->settings;
 }
