@@ -35,19 +35,22 @@ typedef struct {
     DateTime *(*getDateTime)(Device *dev);
 } LogConfig_t;
 
-/* API */
-void initLogger(const LogConfig_t *cfg);
-void log_log(
-             const char *file,
+OOP_CLASS(Logger) {
+    OOP_METHOD(void, init, const LogConfig_t *);
+    OOP_METHOD(void, log, const char *file, int logLevel,
              int line,
              const char *fmt, ...);
+    LogConfig_t cfg;
+};
+
+Logger *logger();
 
 /**********************
  *      MACROS
  **********************/
 #ifndef LOG_TRACE
 #  if LOG_LEVEL <= LOG_LEV_TRACE
-#    define LOG_TRACE(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_TRACE(...) logger()->log(__FILE__, LOG_LEV_TRACE, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_TRACE(...) do {}while(0)
 #  endif
@@ -55,7 +58,7 @@ void log_log(
 
 #ifndef LOG_DEBUG
 #  if LOG_LEVEL <= LOG_LEV_DEBUG
-#    define LOG_DEBUG(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_DEBUG(...) logger()->log(__FILE__, LOG_LEV_DEBUG, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_DEBUG(...) do {}while(0)
 #  endif
@@ -63,7 +66,7 @@ void log_log(
 
 #ifndef LOG_INFO
 #  if LOG_LEVEL <= LOG_LEV_INFO
-#    define LOG_INFO(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_INFO(...) logger()->log(__FILE__, LOG_LEV_INFO, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_INFO(...) do {}while(0)
 #  endif
@@ -71,7 +74,7 @@ void log_log(
 
 #ifndef LOG_WARN
 #  if LOG_LEVEL <= LOG_LEV_WARN
-#    define LOG_WARN(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_WARN(...) logger()->log(__FILE__, LOG_LEV_WARN, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_WARN(...) do {}while(0)
 #  endif
@@ -79,7 +82,7 @@ void log_log(
 
 #ifndef LOG_ERROR
 #  if LOG_LEVEL <= LOG_LEV_ERROR
-#    define LOG_ERROR(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_ERROR(...) logger()->log(__FILE__, LOG_LEV_ERROR, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_ERROR(...) do {}while(0)
 #  endif
@@ -88,7 +91,7 @@ void log_log(
 
 #ifndef LOG_FATAL
 #  if LOG_LEVEL < LOG_LEV_FATAL
-#    define LOG_FATAL(...) log_log(__FILE__, __LINE__, __VA_ARGS__)
+#    define LOG_FATAL(...) logger()->log(__FILE__, LOG_LEV_FATAL, __LINE__, __VA_ARGS__)
 #  else
 #    define LOG_FATAL(...) do {} while(0)
 #  endif

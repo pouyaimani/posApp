@@ -6,9 +6,9 @@
 
 #if USE_LOG
 
-#
-
 #define LOG_BUFFER_SIZE 256
+
+static Logger __logger;
 
 static LogConfig_t g_cfg;
 
@@ -16,17 +16,13 @@ static const char *level_str[] = {
     "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
 };
 
-void initLogger(const LogConfig_t *cfg) {
+static void initLogger(const LogConfig_t *cfg) {
     g_cfg = *cfg;
 }
 
-static size_t format_log_line(char *buf,
-                              size_t buf_size,
-                              const char *file,
-                              int line,
-                              const char *fmt,
-                              va_list ap)
-{
+static size_t format_log_line(char *buf, size_t buf_size,
+                              const char *file, int logLevel,
+                              int line, const char *fmt, va_list ap) {
     size_t n = 0;
     DateTime *dt = NULL;
 
@@ -50,17 +46,17 @@ static size_t format_log_line(char *buf,
 
     n += snprintf(buf + n, buf_size - n,
                   "[%s][%s:%d] ",
-                  level_str[LOG_LEVEL],
+                  level_str[logLevel],
                   file,
                   line);
 
     n += vsnprintf(buf + n, buf_size - n, fmt, ap);
-    n += snprintf(buf + n, buf_size - n, "\n");
+    n += snprintf(buf + n, buf_size - n, "\r\n");
 
     return n;
 }
 
-void log_log(const char *file,
+static void log(const char *file, int logLevel,
              int line,
              const char *fmt, ...)
 {
@@ -73,11 +69,23 @@ void log_log(const char *file,
     va_list ap;
     va_start(ap, fmt);
     size_t len = format_log_line(
-        buf, LOG_BUFFER_SIZE, file, line, fmt, ap
+        buf, LOG_BUFFER_SIZE, file, logLevel, line, fmt, ap
     );
     va_end(ap);
 
     g_cfg.writer.write(getDevice(), buf, len, g_cfg.writer.udata);
+}
+
+OOP_CTOR(Logger) {
+    self->init = initLogger;
+    self->log = log;
+}
+
+Logger *logger() {
+    CALL_ONCE(
+        OOP_CALL_CTOR(Logger, &__logger);
+    );
+    return &__logger;
 }
 
 #endif

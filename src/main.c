@@ -9,7 +9,7 @@ void appMain(void)
     Device *dev = getDevice();
     OOP_CALL(dev, init);
 #if USE_LOG
-    initLogger(&(LogConfig_t)  {
+    logger()->init(&(LogConfig_t)  {
         .writer = {
             .write = dev->vtable.logOut,
             .udata = NULL
