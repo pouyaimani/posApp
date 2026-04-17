@@ -5,6 +5,7 @@ typedef void (*CallBack_t)(void *arg);
 
 #define MERCHANT_PIN_LEN                                4
 #define MERCHANT_DEFAULT_PIN                            "1111"
+#define SYS_PWD_LEN                                     8
 
 #define MAX_REF_NUM_IN_LEN                              12
 #define MAX_TRACE_IN_LEN                                6
