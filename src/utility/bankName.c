@@ -3,25 +3,19 @@
 #include "file/file.h"
 #include "dev/dev.h"
 #include "logger.h"
-
-#define BANK_NAME_JSON ""
+#include "common.h"
 
 static BankName *__bankName;
 static cJSON *nameEn;
 static cJSON *nameFa;
 
-typedef enum {
-    EN = 0,
-    FA
-} Language_t;
-
 static bool findInJson(const char *iin, char *out, size_t size, Language_t lang) {
     char *jsonData = GET_MEM(4096);
-    OOP_CALL(file(), read, BANK_NAME_JSON, jsonData, 0, 4096);
+    OOP_CALL(file(), read, BANK_NAME_JSON_ADDR, jsonData, 0, 4096);
 
     cJSON *root = cJSON_Parse(jsonData);
     if (!root) {
-        LOG_ERROR("Json parse error, file = %s", BANK_NAME_JSON);
+        LOG_ERROR("Json parse error, file = %s", BANK_NAME_JSON_ADDR);
         return false;
     }
 
