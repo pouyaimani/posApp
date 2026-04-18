@@ -6,38 +6,28 @@
 #include <stdint.h>
 #include "dcfg.h"
 
-typedef enum {
-    REC_MATCH_INDEX,
-    REC_MATCH_VOUCHER,
-    REC_MATCH_TIME,
-    REC_MATCH_TRANS_STATUS,
-} RecordMatchType_t;
-
 typedef struct {
-    u8 mStatus;
-    u8 mType;
-    u8 mVoucher[3];
-    u8 mAmount[6];
-    u8 mTime[6];
-    u8 mReserve[8];
-} RecordIdx;
+    uint8_t status;
+    uint8_t type;
 
-OOP_CLASS(TxnRecord) {
-    RecordIdx idx;
-    uint8_t pan[24];
-    uint8_t refId[24];
-    uint8_t date[8];
-    uint8_t time[8];
+    uint8_t voucher[3];
+    uint8_t amount[6];
+
+    uint8_t time[6];
+
+    uint8_t reserve[8];
+
+    char pan[24];
+    char refId[24];
+
     uint16_t prCode;
     uint16_t rrn;
-};
-
-OOP_DECLARE_CLASS(Record)
+} TxnRecord;
 
 OOP_CLASS(Record) {
     OOP_METHOD(void, init);
     OOP_METHOD(void, add, TxnRecord *);
-    OOP_METHOD(void, readByIdx, uint32_t idx, RecordIdx *, TxnRecord *);
+    OOP_METHOD(void, readByIdx, uint32_t idx, TxnRecord *);
     OOP_METHOD(int32_t, getLastIdx);
 };
 
