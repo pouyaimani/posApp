@@ -22,55 +22,53 @@
 /*                                                                            */
 /******************************************************************************/
 
-#include "dl_mem.h"
+#ifndef __INC_DL_MEM
+#define __INC_DL_MEM
+
+#include "dl_base.h"
+#include "dl_err.h"
+
+#include <string.h>
+
+#include "dev/dev.h"
+
+/******************************************************************************/
+//
+// ERROR CODES (1000-1019)
+//
+
+#define kDL_ERR_MEM_ALLOC	(DL_ERR)(1000+0)
+
+/******************************************************************************/
+
+#define DL_MEM_free(ptr)\
+{ if ( (ptr) != NULL ) { FREE_MEM(ptr) ; (ptr) = NULL ; } }
+
+/******************************************************************************/
+
+#define DL_MEM_memset(ptr,value,numBytes)\
+ ((void)memset((void*)(ptr),(int)(value),(size_t)(numBytes)))
+
+#define DL_MEM_memcpy(toPtr,fromPtr,numBytes)\
+ ((void)memcpy((void*)(toPtr),(void*)(fromPtr),(size_t)(numBytes)))
+
+#define DL_MEM_memcmp(aPtr,bPtr,len)\
+ (memcmp((void*)(aPtr),(void*)(bPtr),(size_t)(len)))
 
 /******************************************************************************/
 
 // allocates a chunk of memory
 // returns: error code
 DL_ERR DL_MEM_malloc ( DL_UINT32   iNumBytes,
-					   void      **oPtr )
-{
-	DL_ERR err = 0;
-
-	err = DL_MEM_callocWithInit(1,iNumBytes,oPtr);
-
-	return err;
-}
+					   void      **oPtr );
 
 /* based on calloc - but does not indicate an error if 0 items requested
-   NB also init's the array elements to 0 on success
-   returns: 1 if ok / 0 otherwise */
+   NB also init's the array elements to 0 on success */
+// returns: error code
 DL_ERR DL_MEM_callocWithInit ( DL_UINT32   numItems,
 							   size_t      itemSize,
-							   void      **out )
-{
-	DL_ERR err = 0;
-
-	/* init output params */
-	*out = NULL;
-
-	/* attempt to allocate memory - if numItems > 0 */
-	if ( numItems > 0 )
-	{
-		/* allocate array - with error check */
-		if ( (*out = (void*)calloc(numItems,itemSize)) == NULL )
-		{
-			err = kDL_ERR_MEM_ALLOC;
-		}
-		else /* init array elements (to 0) */
-		{
-			DL_MEM_memset(*out,0,numItems*itemSize);
-		}
-	}
-
-	/* cleanup (on error) */
-	if ( err )
-	{
-		DL_MEM_free(*out);
-	}
-
-	return err;
-}
+							   void      **out );
 
 /******************************************************************************/
+
+#endif /* __INC_DL_MEM */

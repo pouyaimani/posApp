@@ -2,6 +2,7 @@
 #define OOP_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 /* ===== Class declaration ===== */
 
@@ -79,5 +80,10 @@
 
 #define ERR_OK      1
 #define ERR_NOK     0
+
+OOP_CLASS(ByteArray) {
+    uint8_t *data;
+    uint32_t len;
+};
 
 #endif

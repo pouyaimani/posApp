@@ -1,7 +1,24 @@
 #ifndef MSG_ISO8583_H_
 #define MSG_ISO8583_H_
 
-#include "../iso.h"
+#include "oop.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "oscar/dl_iso8583.h"
+
+// Message Standards
+#define ISO8583 1
+
+#define MSG_STANDARD ISO8583
+#define MSG_BUFFER_SIZE 1000
+#define MSG_FIELDS_CONUT 64
+#define MSG_FIELD_SIZE 128
+
+
+#define ISO_MAX_FIELDS     128
+#define ISO_MAX_FIELD_SIZE 256
+#define ISO_MAX_BUFFER     1024
 
 #if MSG_STANDARD == ISO8583
 
@@ -164,84 +181,64 @@ typedef struct {
     uint16_t maxLen;
 } IsofieldDef_t;
 
-#define ISO8583_FIELD_TABLE(X) \
-X(1,   "Bitmap Secondary",                      FMT_B,   LEN_FIXED, 8)   \
-X(2,   "Primary Account Number",                FMT_N,   LEN_LLVAR, 19)  \
-X(3,   "Processing Code",                       FMT_N,   LEN_FIXED, 6)   \
-X(4,   "Amount Transaction",                    FMT_N,   LEN_FIXED, 12)  \
-X(5,   "Amount Settlement",                     FMT_N,   LEN_FIXED, 12)  \
-X(6,   "Amount Cardholder Billing",             FMT_N,   LEN_FIXED, 12)  \
-X(7,   "Transmission Date & Time",              FMT_N,   LEN_FIXED, 10)  \
-X(8,   "Amount Cardholder Billing Fee",         FMT_N,   LEN_FIXED, 8)   \
-X(9,   "Conversion Rate Settlement",            FMT_N,   LEN_FIXED, 8)   \
-X(10,  "Conversion Rate Billing",               FMT_N,   LEN_FIXED, 8)   \
-X(11,  "System Trace Audit Number",             FMT_N,   LEN_FIXED, 6)   \
-X(12,  "Time Local Transaction",                FMT_N,   LEN_FIXED, 6)   \
-X(13,  "Date Local Transaction",                FMT_N,   LEN_FIXED, 4)   \
-X(14,  "Date Expiration",                       FMT_N,   LEN_FIXED, 4)   \
-X(15,  "Date Settlement",                       FMT_N,   LEN_FIXED, 4)   \
-X(16,  "Date Conversion",                       FMT_N,   LEN_FIXED, 4)   \
-X(17,  "Date Capture",                          FMT_N,   LEN_FIXED, 4)   \
-X(18,  "Merchant Type",                         FMT_N,   LEN_FIXED, 4)   \
-X(19,  "Acquiring Institution Country Code",    FMT_N,   LEN_FIXED, 3)   \
-X(20,  "PAN Extended Country Code",             FMT_N,   LEN_FIXED, 3)   \
-X(21,  "Forwarding Institution Country Code",   FMT_N,   LEN_FIXED, 3)   \
-X(22,  "Point of Service Entry Mode",           FMT_N,   LEN_FIXED, 3)   \
-X(23,  "Card Sequence Number",                  FMT_N,   LEN_FIXED, 3)   \
-X(24,  "Network International ID",              FMT_N,   LEN_FIXED, 3)   \
-X(25,  "POS Condition Code",                    FMT_N,   LEN_FIXED, 2)   \
-X(26,  "POS PIN Capture Code",                  FMT_N,   LEN_FIXED, 2)   \
-X(27,  "Authorization ID Response Length",      FMT_N,   LEN_FIXED, 1)   \
-X(28,  "Amount Transaction Fee",                FMT_N,   LEN_FIXED, 8)   \
-X(29,  "Amount Settlement Fee",                 FMT_N,   LEN_FIXED, 8)   \
-X(30,  "Amount Transaction Processing Fee",     FMT_N,   LEN_FIXED, 8)   \
-X(31,  "Amount Settlement Processing Fee",      FMT_N,   LEN_FIXED, 8)   \
-X(32,  "Acquiring Institution ID Code",         FMT_N,   LEN_LLVAR, 11)  \
-X(33,  "Forwarding Institution ID Code",        FMT_N,   LEN_LLVAR, 11)  \
-X(34,  "PAN Extended",                          FMT_ANS,  LEN_LLVAR, 28) \
-X(35,  "Track 2 Data",                          FMT_Z,   LEN_LLVAR, 37)  \
-X(36,  "Track 3 Data",                          FMT_Z,   LEN_LLLVAR,104) \
-X(37,  "Retrieval Reference Number",            FMT_AN,  LEN_FIXED, 12)  \
-X(38,  "Authorization ID Response",             FMT_AN,  LEN_FIXED, 6)   \
-X(39,  "Response Code",                         FMT_AN,  LEN_FIXED, 2)   \
-X(40,  "Service Restriction Code",              FMT_AN,  LEN_FIXED, 3)   \
-X(41,  "Card Acceptor Terminal ID",             FMT_ANS, LEN_FIXED, 8)   \
-X(42,  "Card Acceptor ID Code",                 FMT_ANS, LEN_FIXED, 15)  \
-X(43,  "Card Acceptor Name/Location",           FMT_ANS, LEN_FIXED, 40)  \
-X(44,  "Additional Response Data",              FMT_AN,  LEN_LLVAR, 25)  \
-X(45,  "Track 1 Data",                          FMT_AN,  LEN_LLVAR, 76)  \
-X(46,  "Additional Data ISO",                   FMT_AN,  LEN_LLLVAR,999) \
-X(47,  "Additional Data National",              FMT_AN,  LEN_LLLVAR,999) \
-X(48,  "Additional Data Private",               FMT_AN,  LEN_LLLVAR,999) \
-X(49,  "Currency Code Transaction",             FMT_AN,  LEN_FIXED, 3)   \
-X(50,  "Currency Code Settlement",              FMT_AN,  LEN_FIXED, 3)   \
-X(51,  "Currency Code Billing",                 FMT_AN,  LEN_FIXED, 3)   \
-X(52,  "PIN Data",                              FMT_B,   LEN_FIXED, 8)   \
-X(53,  "Security Related Control Info",         FMT_N,   LEN_FIXED, 16)  \
-X(54,  "Additional Amounts",                    FMT_AN,  LEN_LLLVAR,120) \
-X(55,  "ICC Data EMV",                          FMT_B,   LEN_LLLVAR,255) \
-X(56,  "Reserved ISO",                          FMT_AN,  LEN_LLLVAR,999) \
-X(57,  "Reserved National",                     FMT_AN,  LEN_LLLVAR,999) \
-X(58,  "Reserved National",                     FMT_AN,  LEN_LLLVAR,999) \
-X(59,  "Reserved National",                     FMT_AN,  LEN_LLLVAR,999) \
-X(60,  "Reserved Private",                      FMT_AN,  LEN_LLLVAR,999) \
-X(61,  "Reserved Private",                      FMT_AN,  LEN_LLLVAR,999) \
-X(62,  "Reserved Private",                      FMT_AN,  LEN_LLLVAR,999) \
-X(63,  "Reserved Private",                      FMT_AN,  LEN_LLLVAR,999) \
-X(64,  "Message Authentication Code",           FMT_B,   LEN_FIXED, 8)
+typedef enum {
+    ISO_OK = 0,
+    ISO_ERR_INVALID_FIELD,
+    ISO_ERR_INVALID_FORMAT,
+    ISO_ERR_LENGTH_MISMATCH,
+    ISO_ERR_BUFFER_TOO_SMALL,
+    ISO_ERR_FEILD_TOO_LONG,
+    ISO_ERR_PARSE,
+    ISO_ERR_PACK,
+} IsoStatus_t;
 
+/* ===== ISO8583 Object ===== */
 
-OOP_CLASS(Iso8583Parser) {
-    OOP_EXTENDS(Parser);
+OOP_CLASS(Iso8583) {
+
+    /* methods */
+    OOP_METHOD(void, reset);
+    OOP_METHOD(void, init);
+    OOP_METHOD(void, destroy);
+
+    OOP_METHOD(IsoStatus_t, setMTI, const char *mti);
+    OOP_METHOD(const char*, getMTI);
+
+    OOP_METHOD(IsoStatus_t, setBin, uint16_t field,
+               const void *data, size_t len);
+    OOP_METHOD(IsoStatus_t, setStr, uint16_t field,
+               const void *data);
+
+    OOP_METHOD(IsoStatus_t, getBin, uint16_t field,
+               void *out, size_t *len);
+    OOP_METHOD(IsoStatus_t, getStr, uint16_t field,
+               void *out);
+
+    OOP_METHOD(IsoStatus_t, pack);
+    OOP_METHOD(IsoStatus_t, parse,
+               const uint8_t *data, size_t len);
+
+    /* state */
+    char mti[5];
+
+    uint8_t buffer[ISO_MAX_BUFFER];
+    size_t buffer_len;
+
+    DL_ISO8583_MSG msg;
+    DL_ISO8583_HANDLER handler;
 };
 
-OOP_CTOR(Iso8583Parser);
+Iso8583 *iso8583();
 
-OOP_CLASS(Iso8583Packer) {
-    OOP_EXTENDS(Packer);
-};
-
-OOP_CTOR(Iso8583Packer);
+#define ISO_RESET()                         iso8583()->reset()
+#define ISO_SET_MTI(MTI)                    iso8583()->setMTI(MTI)
+#define ISO_GET_MTI(MTI)                    iso8583()->getMTI(MTI)
+#define ISO_SET_STR(FIELD, DATA)            iso8583()->setStr(FIELD, DATA)
+#define ISO_SET_BIN(FIELD, DATA, LEN)       iso8583()->setBin(FIELD, DATA, LEN)
+#define ISO_GET_STR(FIELD, DATA)            iso8583()->getStr(FIELD, DATA)
+#define ISO_GET_BIN(FIELD, DATA, LEN)       iso8583()->getBin(FIELD, DATA, LEN)
+#define ISO_PACK()                          iso8583()->pack()
+#define ISO_PARSE(DATA, LEN)                iso8583()->parse(DATA, LEN)
 
 #endif
 

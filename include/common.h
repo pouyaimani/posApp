@@ -23,6 +23,14 @@ typedef void (*CallBack_t)(void *arg);
 
 #define AMOUNT_MAX_CNT                                  12
 
+typedef enum {
+    EN = 0,
+    FA
+} Language_t;
+
+#define PHRASES_JSON_ADDR   ""
+#define BANK_NAME_JSON_ADDR ""
+
 /**********************************************************/
 //                         TMS
 /**********************************************************/
