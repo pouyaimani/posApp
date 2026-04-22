@@ -7,6 +7,7 @@
 
 /* ================= CONFIG ================= */
 
+#define MEDB_OK 0
 #define MEDB_ERR_FULL -1
 #define MEDB_ERR_INVALID -2
 
@@ -48,7 +49,7 @@ typedef struct {
 typedef struct {
     const char *tableName;
 
-    MedbField fields[MEDB_MAX_FIELDS];
+    const MedbField *fields;
     uint8_t fieldCount;
 
     uint16_t rowSize;
@@ -93,25 +94,25 @@ typedef struct {
     bool reverse;
 } MedbQuery;
 
-/* ================= STORAGE BACKEND ================= */
+/* ================= STORAGE ================= */
 
 typedef struct {
     bool (*read)(uint32_t index, void *out);
     bool (*write)(uint32_t index, const void *in);
 } MedbStorage;
 
-/* ================= INTERNAL DB STATE ================= */
+/* ================= RUNTIME ================= */
 
 typedef struct {
-    uint32_t start_pos;   // oldest record
-    uint32_t write_pos;   // next write slot
-    uint32_t count;       // valid records
+    uint32_t start_pos;
+    uint32_t write_pos;
+    uint32_t count;
 } MedbRuntime;
 
 /* ================= DB ================= */
 
 typedef struct {
-    MedbTable *schema;
+    const MedbTable *schema;
     MedbStorage storage;
     MedbRuntime rt;
 } Medb;
@@ -123,7 +124,14 @@ static inline const uint8_t* medb_field_ptr(const void *row, uint16_t offset)
     return (const uint8_t*)row + offset;
 }
 
-/* ================= CONDITION EVAL ================= */
+/* ================= CONDITION ================= */
+
+static inline uint32_t medb_read_num(const uint8_t *p, uint8_t size)
+{
+    uint32_t v = 0;
+    memcpy(&v, p, size);
+    return v;
+}
 
 static inline bool medb_eval(
     const void *row,
@@ -136,31 +144,38 @@ static inline bool medb_eval(
     const MedbField *f = &table->fields[c->fieldIndex];
     const uint8_t *p = medb_field_ptr(row, f->offset);
 
-    switch (f->type)
+    if (f->type == MEDB_BLOB)
     {
-        case MEDB_U8:
-        case MEDB_U16:
-        case MEDB_U32:
-        {
-            uint32_t v = 0;
-            memcpy(&v, p, f->size);
+        switch (c->op) {
+            case MEDB_EQ:
+                return memcmp(p, c->value.range.start, f->size) == 0;
 
-            switch (c->op) {
-                case MEDB_EQ:  return v == c->value.num;
-                case MEDB_NEQ: return v != c->value.num;
-                case MEDB_LT:  return v < c->value.num;
-                case MEDB_LTE: return v <= c->value.num;
-                case MEDB_GT:  return v > c->value.num;
-                case MEDB_GTE: return v >= c->value.num;
-                default: return false;
-            }
+            case MEDB_BETWEEN:
+                return memcmp(p, c->value.range.start, f->size) >= 0 &&
+                       memcmp(p, c->value.range.end, f->size) <= 0;
+
+            default:
+                return false;
         }
-
-        case MEDB_BLOB:
-            return memcmp(p, c->value.range.start, f->size) == 0;
     }
 
-    return false;
+    uint32_t v = medb_read_num(p, f->size);
+
+    switch (c->op) {
+        case MEDB_EQ:  return v == c->value.num;
+        case MEDB_NEQ: return v != c->value.num;
+        case MEDB_LT:  return v <  c->value.num;
+        case MEDB_LTE: return v <= c->value.num;
+        case MEDB_GT:  return v >  c->value.num;
+        case MEDB_GTE: return v >= c->value.num;
+
+        case MEDB_BETWEEN:
+            return v >= *(uint32_t*)c->value.range.start &&
+                   v <= *(uint32_t*)c->value.range.end;
+
+        default:
+            return false;
+    }
 }
 
 static inline bool medb_match(
@@ -185,12 +200,13 @@ static inline int medb_select(
     uint32_t maxOut,
     uint32_t *found)
 {
-    const uint32_t total = db->rt.count;
+    uint32_t total = db->rt.count;
     uint32_t cnt = 0;
+    uint32_t stored = 0;
 
     if (total == 0) {
         *found = 0;
-        return 0;
+        return MEDB_OK;
     }
 
     int i = query->reverse ? (int)total - 1 : 0;
@@ -207,8 +223,9 @@ static inline int medb_select(
         if (!medb_match(rowBuf, db->schema, query))
             continue;
 
-        if (cnt < maxOut)
-            outIdx[cnt] = phys;
+        if (stored < maxOut) {
+            outIdx[stored++] = phys;
+        }
 
         cnt++;
 
@@ -217,16 +234,16 @@ static inline int medb_select(
     }
 
     *found = cnt;
-    return 0;
+    return MEDB_OK;
 }
 
-/* ================= INSERT (FIXED CIRCULAR MODEL) ================= */
+/* ================= INSERT ================= */
 
-static inline int medb_insert(Medb *db, void *row)
+static inline int medb_insert(Medb *db, const void *row, uint32_t *outIndex)
 {
-    const uint32_t cap = db->schema->maxRows;
+    uint32_t cap = db->schema->maxRows;
 
-    /* CASE 1: still space available */
+    /* space available */
     if (db->rt.count < cap)
     {
         uint32_t idx = db->rt.write_pos;
@@ -234,39 +251,28 @@ static inline int medb_insert(Medb *db, void *row)
         if (!db->storage.write(idx, row))
             return MEDB_ERR_INVALID;
 
-        db->rt.write_pos = (db->rt.write_pos + 1) % cap;
+        db->rt.write_pos = (idx + 1) % cap;
         db->rt.count++;
 
-        return idx;
+        if (outIndex) *outIndex = idx;
+        return MEDB_OK;
     }
 
-    /* CASE 2: FULL */
+    /* full */
     if (db->schema->writePolicy == MEDB_WRITE_FAIL_IF_FULL)
         return MEDB_ERR_FULL;
 
-    /* CASE 3: CIRCULAR OVERWRITE */
+    /* overwrite */
     uint32_t idx = db->rt.write_pos;
 
     if (!db->storage.write(idx, row))
         return MEDB_ERR_INVALID;
 
-    db->rt.write_pos = (db->rt.write_pos + 1) % cap;
+    db->rt.write_pos = (idx + 1) % cap;
     db->rt.start_pos = (db->rt.start_pos + 1) % cap;
 
-    return idx;
-}
-
-/* ================= QUERY API ================= */
-
-static inline int medb_query(
-    Medb *db,
-    const MedbQuery *q,
-    void *rowBuf,
-    uint32_t *outIdx,
-    uint32_t maxOut,
-    uint32_t *found)
-{
-    return medb_select(db, q, rowBuf, outIdx, maxOut, found);
+    if (outIndex) *outIndex = idx;
+    return MEDB_OK;
 }
 
 #endif
