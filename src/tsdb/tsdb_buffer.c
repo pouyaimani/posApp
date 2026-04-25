@@ -27,22 +27,22 @@ esp_err_t tsdb_alloc_buffer_pool(tsdb_buffer_pool_t *pool,
     pool->total_size = total_size;
 
     // Determine allocation caps based on strategy
-    uint32_t caps = MALLOC_CAP_8BIT;
+    // uint32_t caps = MALLOC_CAP_8BIT;
     if (strategy == TSDB_ALLOC_PSRAM) {
-        caps = MALLOC_CAP_SPIRAM;
-        ESP_LOGI(TAG, "Using PSRAM allocation strategy");
+        // caps = MALLOC_CAP_SPIRAM;
+        LOG_INFO("Using PSRAM allocation strategy");
     } else if (strategy == TSDB_ALLOC_INTERNAL_RAM) {
-        caps = MALLOC_CAP_INTERNAL;
-        ESP_LOGI(TAG, "Using internal RAM allocation strategy");
+        // caps = MALLOC_CAP_INTERNAL;
+        LOG_INFO("Using internal RAM allocation strategy");
     } else {
         // Auto-detect: prefer PSRAM if available
-        if (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) > total_size) {
-            caps = MALLOC_CAP_SPIRAM;
-            ESP_LOGI(TAG, "Auto-detected: using PSRAM");
-        } else {
-            caps = MALLOC_CAP_INTERNAL;
-            ESP_LOGI(TAG, "Auto-detected: using internal RAM");
-        }
+        // if (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) > total_size) {
+        //     // caps = MALLOC_CAP_SPIRAM;
+        //     LOG_INFO("Auto-detected: using PSRAM");
+        // } else {
+        //     // caps = MALLOC_CAP_INTERNAL;
+        //     LOG_INFO("Auto-detected: using internal RAM");
+        // }
     }
 
     if (use_paged) {
@@ -60,7 +60,7 @@ esp_err_t tsdb_alloc_buffer_pool(tsdb_buffer_pool_t *pool,
 
         // Allocate pages
         for (int i = 0; i < pages_needed; i++) {
-            pool->pages[i] = heap_caps_malloc(pool->page_size, caps);
+            pool->pages[i] = (uint8_t*)GET_MEM(pool->page_size);
             if (pool->pages[i] == NULL) {
                 LOG_ERROR("Failed to allocate page %d of %d", i + 1, pages_needed);
                 // LOG_ERROR("Free heap: %d, largest block: %d",
@@ -84,7 +84,7 @@ esp_err_t tsdb_alloc_buffer_pool(tsdb_buffer_pool_t *pool,
     } else {
         // Contiguous allocation mode
         pool->is_paged = false;
-        pool->pages[0] = heap_caps_malloc(total_size, caps);
+        pool->pages[0] = (uint8_t*)GET_MEM(total_size);
 
         if (pool->pages[0] == NULL) {
             LOG_ERROR("Failed to allocate %d KB contiguous buffer", total_size / 1024);

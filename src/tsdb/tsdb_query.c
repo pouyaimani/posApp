@@ -63,7 +63,7 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
 
     if (query->block_buffer == NULL) {
         // Paged mode and spans pages - allocate separately
-        query->block_buffer = heap_caps_malloc(sizeof(tsdb_block_t), MALLOC_CAP_8BIT);
+        query->block_buffer = (uint8_t*)GET_MEM(sizeof(tsdb_block_t));
         if (query->block_buffer == NULL) {
             LOG_ERROR("Failed to allocate query block buffer");
             return ESP_ERR_NO_MEM;
