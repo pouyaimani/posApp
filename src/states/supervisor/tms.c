@@ -75,7 +75,7 @@ static void ExtractTmsNewVersion(State *parent) {
 static void createVersionReq() {
     // uint32_t alreadyDownloadedBytes = loadProgressFromStorage();
 
-    httpBuildContext(storage()->settings->server.mainServerIp, API_CHECK_UPDATES, NULL);
+    // httpBuildContext(storage()->settings->server.mainServerIp, API_CHECK_UPDATES, NULL);
 }
 
 STATE_DEF_ENTER(TMS) {

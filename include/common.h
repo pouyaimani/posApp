@@ -3,6 +3,14 @@
 
 typedef void (*CallBack_t)(void *arg);
 
+typedef enum {
+    EN,
+    FA
+} Language_t;
+
+#define PHRASES_JSON_ADDR ""
+#define BANK_NAME_JSON_ADDR ""
+
 #define MERCHANT_PIN_LEN                                4
 #define MERCHANT_DEFAULT_PIN                            "1111"
 #define SYS_PWD_LEN                                     8

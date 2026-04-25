@@ -134,7 +134,7 @@ static void httpProcessChunked(uint8_t *data, uint32_t len)
         uint32_t toCopy = (remainingChunk < available) ? remainingChunk : available;
 
         if (toCopy > 0) {
-            processBodyChunk(data + offset, toCopy);
+            // processBodyChunk(data + offset, toCopy);
             httpCtx->chunkReceived += toCopy;
             offset += toCopy;
         }
@@ -272,7 +272,7 @@ STATE_DEF_HANDLE(ReceiveData, SocketReadyReadEvent)
             if (httpCtx->bodyType == HTTP_BODY_CHUNKED) {
                 httpProcessChunked(httpCtx->rxBuf + bodyOffset, bodyLen);
             } else {
-                processBodyChunk(httpCtx->rxBuf + bodyOffset, bodyLen);
+                // processBodyChunk(httpCtx->rxBuf + bodyOffset, bodyLen);
             }
         }
 
@@ -283,7 +283,7 @@ STATE_DEF_HANDLE(ReceiveData, SocketReadyReadEvent)
     if (httpCtx->bodyType == HTTP_BODY_CHUNKED) {
         httpProcessChunked(ev->recData, ev->recDataLen);
     } else {
-        processBodyChunk(ev->recData, ev->recDataLen);
+        // processBodyChunk(ev->recData, ev->recDataLen);
     }
 
     // completion

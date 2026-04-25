@@ -28,6 +28,7 @@ OOP_DECLARE_CLASS(File)
 
 OOP_VTABLE(File) {
     OOP_IMETHOD(bool, File, isExist, char *);
+    OOP_IMETHOD(FileErr_t, File, open, char *);
     OOP_IMETHOD(FileErr_t, File, create, char *, uint32_t, uint8_t);
     OOP_IMETHOD(FileErr_t, File, read, char *, uint8_t *, uint32_t, uint32_t *);
     OOP_IMETHOD(FileErr_t, File, write, char *, uint8_t *, uint32_t);
