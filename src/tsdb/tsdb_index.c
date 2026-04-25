@@ -4,7 +4,7 @@
  */
 
 #include "tsdb_internal.h"
-#include "esp_log.h"
+#include "logger.h"
 
 static const char *TAG = "TSDB_INDEX";
 
@@ -33,14 +33,14 @@ esp_err_t tsdb_find_block_for_timestamp(FILE *file,
 
     // Check bounds
     if (timestamp < header->oldest_timestamp) {
-        ESP_LOGD(TAG, "Timestamp %lu before oldest %lu",
+        LOG_DEBUG("Timestamp %lu before oldest %lu",
                  (unsigned long)timestamp, (unsigned long)header->oldest_timestamp);
         *block_num = header->oldest_record_idx / header->records_per_block;
         return ESP_OK;
     }
 
     if (timestamp > header->newest_timestamp) {
-        ESP_LOGD(TAG, "Timestamp %lu after newest %lu",
+        LOG_DEBUG("Timestamp %lu after newest %lu",
                  (unsigned long)timestamp, (unsigned long)header->newest_timestamp);
         *block_num = header->newest_record_idx / header->records_per_block;
         return ESP_OK;
@@ -52,7 +52,7 @@ esp_err_t tsdb_find_block_for_timestamp(FILE *file,
     uint32_t best_block = 0;
     uint32_t best_timestamp = 0;
 
-    ESP_LOGD(TAG, "Binary search for timestamp %lu (entries: %lu)",
+    LOG_DEBUG("Binary search for timestamp %lu (entries: %lu)",
              (unsigned long)timestamp, (unsigned long)header->index_entries);
 
     while (left <= right) {
@@ -69,7 +69,7 @@ esp_err_t tsdb_find_block_for_timestamp(FILE *file,
             break;
         }
 
-        ESP_LOGD(TAG, "Index[%ld]: timestamp=%lu, block=%lu",
+        LOG_DEBUG("Index[%ld]: timestamp=%lu, block=%lu",
                  (long)mid, (unsigned long)entry.timestamp, (unsigned long)entry.block_number);
 
         if (entry.timestamp == 0) {
@@ -81,7 +81,7 @@ esp_err_t tsdb_find_block_for_timestamp(FILE *file,
         if (entry.timestamp == timestamp) {
             // Exact match
             *block_num = entry.block_number;
-            ESP_LOGD(TAG, "Exact match at block %lu", (unsigned long)*block_num);
+            LOG_DEBUG("Exact match at block %lu", (unsigned long)*block_num);
             return ESP_OK;
         } else if (entry.timestamp < timestamp) {
             // This is a candidate, but keep searching right
@@ -96,7 +96,7 @@ esp_err_t tsdb_find_block_for_timestamp(FILE *file,
 
     *block_num = best_block;
 
-    ESP_LOGD(TAG, "Found block %lu (index timestamp=%lu)",
+    LOG_DEBUG("Found block %lu (index timestamp=%lu)",
              (unsigned long)*block_num, (unsigned long)best_timestamp);
 
     return ESP_OK;

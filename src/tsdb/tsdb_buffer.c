@@ -4,8 +4,8 @@
  */
 
 #include "tsdb_internal.h"
-#include "esp_log.h"
-#include "esp_heap_caps.h"
+#include "logger.h"
+#include "dev/dev.h"
 #include <string.h>
 
 static const char *TAG = "TSDB_BUFFER";
@@ -51,21 +51,21 @@ esp_err_t tsdb_alloc_buffer_pool(tsdb_buffer_pool_t *pool,
         size_t pages_needed = (total_size + pool->page_size - 1) / pool->page_size;
 
         if (pages_needed > TSDB_MAX_PAGES) {
-            ESP_LOGE(TAG, "Too many pages needed: %d (max %d)", pages_needed, TSDB_MAX_PAGES);
+            LOG_ERROR("Too many pages needed: %d (max %d)", pages_needed, TSDB_MAX_PAGES);
             return ESP_ERR_INVALID_ARG;
         }
 
-        ESP_LOGI(TAG, "Allocating %d pages of %d bytes each (%d KB total)",
+        LOG_INFO("Allocating %d pages of %d bytes each (%d KB total)",
                  pages_needed, pool->page_size, (pages_needed * pool->page_size) / 1024);
 
         // Allocate pages
         for (int i = 0; i < pages_needed; i++) {
             pool->pages[i] = heap_caps_malloc(pool->page_size, caps);
             if (pool->pages[i] == NULL) {
-                ESP_LOGE(TAG, "Failed to allocate page %d of %d", i + 1, pages_needed);
-                ESP_LOGE(TAG, "Free heap: %d, largest block: %d",
-                         heap_caps_get_free_size(caps),
-                         heap_caps_get_largest_free_block(caps));
+                LOG_ERROR("Failed to allocate page %d of %d", i + 1, pages_needed);
+                // LOG_ERROR("Free heap: %d, largest block: %d",
+                //          heap_caps_get_free_size(caps),
+                //          heap_caps_get_largest_free_block(caps));
 
                 // Cleanup already allocated pages
                 for (int j = 0; j < i; j++) {
@@ -75,10 +75,10 @@ esp_err_t tsdb_alloc_buffer_pool(tsdb_buffer_pool_t *pool,
                 return ESP_ERR_NO_MEM;
             }
             pool->num_pages++;
-            ESP_LOGD(TAG, "Page %d allocated at %p", i, pool->pages[i]);
+            LOG_DEBUG("Page %d allocated at %p", i, pool->pages[i]);
         }
 
-        ESP_LOGI(TAG, "Successfully allocated %d pages (%d KB) from fragmented heap",
+        LOG_INFO("Successfully allocated %d pages (%d KB) from fragmented heap",
                  pool->num_pages, (pool->num_pages * pool->page_size) / 1024);
 
     } else {
@@ -87,15 +87,15 @@ esp_err_t tsdb_alloc_buffer_pool(tsdb_buffer_pool_t *pool,
         pool->pages[0] = heap_caps_malloc(total_size, caps);
 
         if (pool->pages[0] == NULL) {
-            ESP_LOGE(TAG, "Failed to allocate %d KB contiguous buffer", total_size / 1024);
-            ESP_LOGE(TAG, "Free heap: %d, largest block: %d",
-                     heap_caps_get_free_size(caps),
-                     heap_caps_get_largest_free_block(caps));
+            LOG_ERROR("Failed to allocate %d KB contiguous buffer", total_size / 1024);
+            // LOG_ERROR("Free heap: %d, largest block: %d",
+            //          heap_caps_get_free_size(caps),
+            //          heap_caps_get_largest_free_block(caps));
             return ESP_ERR_NO_MEM;
         }
 
         pool->num_pages = 1;
-        ESP_LOGI(TAG, "Successfully allocated %d KB contiguous buffer at %p",
+        LOG_INFO("Successfully allocated %d KB contiguous buffer at %p",
                  total_size / 1024, pool->pages[0]);
     }
 
@@ -117,7 +117,7 @@ void tsdb_free_buffer_pool(tsdb_buffer_pool_t *pool) {
         }
     }
 
-    ESP_LOGI(TAG, "Buffer pool freed (%d pages)", pool->num_pages);
+    LOG_INFO("Buffer pool freed (%d pages)", pool->num_pages);
     memset(pool, 0, sizeof(tsdb_buffer_pool_t));
 }
 
@@ -133,7 +133,7 @@ void* tsdb_get_buffer_ptr(tsdb_buffer_pool_t *pool, size_t offset, size_t size) 
 
     // Check bounds
     if (offset + size > pool->total_size) {
-        ESP_LOGE(TAG, "Buffer access out of bounds: offset=%d, size=%d, total=%d",
+        LOG_ERROR("Buffer access out of bounds: offset=%d, size=%d, total=%d",
                  offset, size, pool->total_size);
         return NULL;
     }
@@ -166,7 +166,7 @@ void tsdb_buffer_read(tsdb_buffer_pool_t *pool, size_t offset, void *dest, size_
 
     // Check bounds
     if (offset + size > pool->total_size) {
-        ESP_LOGE(TAG, "Buffer read out of bounds");
+        LOG_ERROR("Buffer read out of bounds");
         return;
     }
 
@@ -208,7 +208,7 @@ void tsdb_buffer_write(tsdb_buffer_pool_t *pool, size_t offset, const void *src,
 
     // Check bounds
     if (offset + size > pool->total_size) {
-        ESP_LOGE(TAG, "Buffer write out of bounds");
+        LOG_ERROR("Buffer write out of bounds");
         return;
     }
 

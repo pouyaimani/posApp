@@ -4,8 +4,8 @@
  */
 
 #include "tsdb_internal.h"
-#include "esp_log.h"
-#include "esp_heap_caps.h"
+#include "logger.h"
+#include "dev/dev.h"
 #include <string.h>
 
 static const char *TAG = "TSDB_QUERY";
@@ -20,12 +20,12 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
                           const uint8_t *param_indices,
                           uint8_t num_params_to_fetch) {
     if (!g_state.is_open || query == NULL) {
-        ESP_LOGE(TAG, "Invalid state or NULL query");
+        LOG_ERROR("Invalid state or NULL query");
         return ESP_ERR_INVALID_STATE;
     }
 
     if (start_time > end_time) {
-        ESP_LOGE(TAG, "Invalid time range: start > end");
+        LOG_ERROR("Invalid time range: start > end");
         return ESP_ERR_INVALID_ARG;
     }
 
@@ -50,7 +50,7 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
     } else {
         query->num_params_to_fetch = num_params_to_fetch;
         if (num_params_to_fetch > TSDB_MAX_PARAMS) {
-            ESP_LOGE(TAG, "Too many parameters requested: %d", num_params_to_fetch);
+            LOG_ERROR("Too many parameters requested: %d", num_params_to_fetch);
             return ESP_ERR_INVALID_ARG;
         }
         memcpy(query->param_indices, param_indices, num_params_to_fetch);
@@ -65,14 +65,14 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
         // Paged mode and spans pages - allocate separately
         query->block_buffer = heap_caps_malloc(sizeof(tsdb_block_t), MALLOC_CAP_8BIT);
         if (query->block_buffer == NULL) {
-            ESP_LOGE(TAG, "Failed to allocate query block buffer");
+            LOG_ERROR("Failed to allocate query block buffer");
             return ESP_ERR_NO_MEM;
         }
         query->owns_buffer = true;
-        ESP_LOGD(TAG, "Allocated separate query buffer at %p", query->block_buffer);
+        LOG_DEBUG("Allocated separate query buffer at %p", query->block_buffer);
     } else {
         query->owns_buffer = false;
-        ESP_LOGD(TAG, "Using query buffer from pool at %p", query->block_buffer);
+        LOG_DEBUG("Using query buffer from pool at %p", query->block_buffer);
     }
 
     // Find starting block using sparse index
@@ -80,7 +80,7 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
     if (tsdb_find_block_for_timestamp(g_state.file, &query->header,
                                       start_time, &start_block) == ESP_OK) {
         query->current_block_num = start_block;
-        ESP_LOGD(TAG, "Starting block: %lu", (unsigned long)start_block);
+        LOG_DEBUG("Starting block: %lu", (unsigned long)start_block);
     }
 
     // Calculate record index range
@@ -97,7 +97,7 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
     query->offset_in_block = 0;
     query->block_loaded = false;
 
-    ESP_LOGI(TAG, "Query initialized: time=[%lu, %lu], params=%d, records=%lu-%lu",
+    LOG_INFO("Query initialized: time=[%lu, %lu], params=%d, records=%lu-%lu",
              (unsigned long)start_time, (unsigned long)end_time,
              query->num_params_to_fetch,
              (unsigned long)query->current_record_idx,
@@ -120,7 +120,7 @@ esp_err_t tsdb_query_next(tsdb_query_t *query,
             esp_err_t ret = tsdb_read_block(query->file, query->current_block_num,
                                            query->block_buffer);
             if (ret != ESP_OK) {
-                ESP_LOGD(TAG, "Block %lu not found or empty",
+                LOG_DEBUG("Block %lu not found or empty",
                          (unsigned long)query->current_block_num);
                 return ESP_ERR_NOT_FOUND;
             }
@@ -128,7 +128,7 @@ esp_err_t tsdb_query_next(tsdb_query_t *query,
             query->block_loaded = true;
             query->offset_in_block = 0;
 
-            ESP_LOGD(TAG, "Loaded block %lu: %d records",
+            LOG_DEBUG("Loaded block %lu: %d records",
                      (unsigned long)query->current_block_num,
                      TSDB_BLOCK_COUNT((uint8_t *)query->block_buffer));
         }
@@ -148,7 +148,7 @@ esp_err_t tsdb_query_next(tsdb_query_t *query,
                                  query->header.total_records : query->header.max_records);
 
             if (total_scanned >= available) {
-                ESP_LOGD(TAG, "Scanned all available records");
+                LOG_DEBUG("Scanned all available records");
                 return ESP_ERR_NOT_FOUND;
             }
 
@@ -171,7 +171,7 @@ esp_err_t tsdb_query_next(tsdb_query_t *query,
 
         // Check if beyond end time (optimization: stop early)
         if (ts > query->end_time) {
-            ESP_LOGD(TAG, "Reached end time");
+            LOG_DEBUG("Reached end time");
             return ESP_ERR_NOT_FOUND;
         }
 
@@ -226,7 +226,7 @@ esp_err_t tsdb_query_next(tsdb_query_t *query,
                 }
             }
 
-            ESP_LOGD(TAG, "Found record: ts=%lu", (unsigned long)ts);
+            LOG_DEBUG("Found record: ts=%lu", (unsigned long)ts);
             return ESP_OK;
         }
 
@@ -243,7 +243,7 @@ void tsdb_query_close(tsdb_query_t *query) {
     if (query->owns_buffer && query->block_buffer != NULL) {
         free(query->block_buffer);
         query->block_buffer = NULL;
-        ESP_LOGD(TAG, "Freed separate query buffer");
+        LOG_DEBUG("Freed separate query buffer");
     }
 
     memset(query, 0, sizeof(tsdb_query_t));
@@ -275,7 +275,7 @@ esp_err_t tsdb_query_count(uint32_t start_time,
 
     tsdb_query_close(&query);
 
-    ESP_LOGI(TAG, "Counted %lu records in range [%lu, %lu]",
+    LOG_INFO("Counted %lu records in range [%lu, %lu]",
              (unsigned long)*count, (unsigned long)start_time, (unsigned long)end_time);
 
     return ESP_OK;
@@ -295,7 +295,7 @@ esp_err_t tsdb_aggregate(uint32_t start_time,
     }
 
     if (param_index >= (g_state.header.num_params + g_state.extra_param_count)) {
-        ESP_LOGE(TAG, "Invalid parameter index: %d", param_index);
+        LOG_ERROR("Invalid parameter index: %d", param_index);
         return ESP_ERR_INVALID_ARG;
     }
 
@@ -337,7 +337,7 @@ esp_err_t tsdb_aggregate(uint32_t start_time,
     // Calculate result based on aggregation type
     if (count == 0) {
         *result = 0;
-        ESP_LOGW(TAG, "No records found in range");
+        LOG_WARN("No records found in range");
         return ESP_OK;
     }
 
@@ -364,11 +364,11 @@ esp_err_t tsdb_aggregate(uint32_t start_time,
             *result = last_val;
             break;
         default:
-            ESP_LOGE(TAG, "Unknown aggregation type: %d", agg_type);
+            LOG_ERROR("Unknown aggregation type: %d", agg_type);
             return ESP_ERR_INVALID_ARG;
     }
 
-    ESP_LOGI(TAG, "Aggregation complete: type=%d, result=%ld, count=%lu",
+    LOG_INFO("Aggregation complete: type=%d, result=%ld, count=%lu",
              agg_type, (long)*result, (unsigned long)count);
 
     return ESP_OK;
@@ -388,7 +388,7 @@ esp_err_t tsdb_aggregate_multi(uint32_t start_time,
     uint8_t num_unique = 0;
     for (uint8_t i = 0; i < num_requests; i++) {
         if (requests[i].param_index >= (g_state.header.num_params + g_state.extra_param_count)) {
-            ESP_LOGE(TAG, "Invalid parameter index: %d", requests[i].param_index);
+            LOG_ERROR("Invalid parameter index: %d", requests[i].param_index);
             return ESP_ERR_INVALID_ARG;
         }
         // Check if already in unique list
@@ -483,7 +483,7 @@ esp_err_t tsdb_aggregate_multi(uint32_t start_time,
         *record_count = count;
     }
 
-    ESP_LOGI(TAG, "Multi-aggregate complete: %d requests, %lu records scanned",
+    LOG_INFO("Multi-aggregate complete: %d requests, %lu records scanned",
              num_requests, (unsigned long)count);
 
     return ESP_OK;

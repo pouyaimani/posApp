@@ -4,9 +4,8 @@
  */
 
 #include "tsdb_internal.h"
-#include "esp_log.h"
+#include "logger.h"
 #include <string.h>
-#include <unistd.h>
 
 static const char *TAG = "TSDB_WRITE";
 
@@ -28,7 +27,7 @@ esp_err_t tsdb_read_block(FILE *file, uint32_t block_num, tsdb_block_t *block) {
     size_t read = fread(block, TSDB_BLOCK_SIZE, 1, file);
 
     if (read != 1) {
-        ESP_LOGD(TAG, "Block %lu not found or uninitialized", (unsigned long)block_num);
+        LOG_DEBUG("Block %lu not found or uninitialized", (unsigned long)block_num);
         return ESP_ERR_NOT_FOUND;
     }
 
@@ -51,11 +50,11 @@ esp_err_t tsdb_write_block(FILE *file, uint32_t block_num, const tsdb_block_t *b
     fsync(fileno(file));
 
     if (written != 1) {
-        ESP_LOGE(TAG, "Failed to write block %lu", (unsigned long)block_num);
+        LOG_ERROR("Failed to write block %lu", (unsigned long)block_num);
         return ESP_FAIL;
     }
 
-    ESP_LOGD(TAG, "Wrote block %lu at offset %lu",
+    LOG_DEBUG("Wrote block %lu at offset %lu",
              (unsigned long)block_num, (unsigned long)block_offset);
 
     return ESP_OK;
@@ -67,12 +66,12 @@ esp_err_t tsdb_write_block(FILE *file, uint32_t block_num, const tsdb_block_t *b
 
 esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
     if (!g_state.is_open) {
-        ESP_LOGE(TAG, "Not initialized");
+        LOG_ERROR("Not initialized");
         return ESP_ERR_INVALID_STATE;
     }
 
     if (values == NULL) {
-        ESP_LOGE(TAG, "NULL values pointer");
+        LOG_ERROR("NULL values pointer");
         return ESP_ERR_INVALID_ARG;
     }
 
@@ -88,7 +87,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
         g_state.header.total_evictions++;
         g_state.header.oldest_record_idx = (g_state.header.oldest_record_idx + 1) %
                                            g_state.header.max_records;
-        ESP_LOGD(TAG, "LRU eviction: oldest_idx=%lu",
+        LOG_DEBUG("LRU eviction: oldest_idx=%lu",
                  (unsigned long)g_state.header.oldest_record_idx);
     }
 
@@ -96,7 +95,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
     uint32_t block_num = record_idx / g_state.header.records_per_block;
     uint16_t offset_in_block = record_idx % g_state.header.records_per_block;
 
-    ESP_LOGD(TAG, "Writing record %lu: block=%lu, offset=%d",
+    LOG_DEBUG("Writing record %lu: block=%lu, offset=%d",
              (unsigned long)g_state.header.total_records,
              (unsigned long)block_num, offset_in_block);
 
@@ -117,7 +116,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
     // Initialize block if new or read failed
     uint8_t *raw_blk = (uint8_t *)block;
     if (ret != ESP_OK || TSDB_BLOCK_MAGIC(raw_blk) != 0x424C4B54) {
-        ESP_LOGD(TAG, "Initializing new block %lu", (unsigned long)block_num);
+        LOG_DEBUG("Initializing new block %lu", (unsigned long)block_num);
         memset(block, 0, TSDB_BLOCK_SIZE);
         TSDB_BLOCK_MAGIC(raw_blk) = 0x424C4B54;  // "BLKT"
         TSDB_BLOCK_COUNT(raw_blk) = 0;
@@ -139,7 +138,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
     // Write block back to file
     ret = tsdb_write_block(g_state.file, block_num, block);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to write block");
+        LOG_ERROR("Failed to write block");
         return ret;
     }
 
@@ -156,7 +155,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
                                      g_state.extra_param_count,
                                      g_state.file);
         if (ovf_written != g_state.extra_param_count) {
-            ESP_LOGE(TAG, "Failed to write overflow data");
+            LOG_ERROR("Failed to write overflow data");
             // Don't fail the whole write -- base data is already written
         }
     }
@@ -202,7 +201,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
         fseek(g_state.file, index_file_offset, SEEK_SET);
         fwrite(&entry, sizeof(tsdb_index_entry_t), 1, g_state.file);
 
-        ESP_LOGD(TAG, "Updated index entry %lu: timestamp=%lu, block=%lu",
+        LOG_DEBUG("Updated index entry %lu: timestamp=%lu, block=%lu",
                  (unsigned long)index_entry_num,
                  (unsigned long)timestamp,
                  (unsigned long)block_num);
@@ -231,19 +230,19 @@ esp_err_t tsdb_write_batch(const uint32_t *timestamps,
         return ESP_ERR_INVALID_ARG;
     }
 
-    ESP_LOGI(TAG, "Batch writing %lu records", (unsigned long)count);
+    LOG_INFO("Batch writing %lu records", (unsigned long)count);
 
     // Write records one by one
     // TODO: Optimize by batching block writes
     for (uint32_t i = 0; i < count; i++) {
         esp_err_t ret = tsdb_write(timestamps[i], values[i]);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to write record %lu in batch", (unsigned long)i);
+            LOG_ERROR("Failed to write record %lu in batch", (unsigned long)i);
             return ret;
         }
     }
 
-    ESP_LOGI(TAG, "Batch write complete: %lu records", (unsigned long)count);
+    LOG_INFO("Batch write complete: %lu records", (unsigned long)count);
 
     return ESP_OK;
 }
