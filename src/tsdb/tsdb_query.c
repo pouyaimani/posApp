@@ -37,7 +37,7 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
     // Set query parameters
     query->start_time = start_time;
     query->end_time = end_time;
-    query->file = g_state.file;
+    query->io = g_state.io;
 
     // Setup parameter indices
     if (param_indices == NULL) {
@@ -77,7 +77,7 @@ esp_err_t tsdb_query_init(tsdb_query_t *query,
 
     // Find starting block using sparse index
     uint32_t start_block = 0;
-    if (tsdb_find_block_for_timestamp(g_state.file, &query->header,
+    if (tsdb_find_block_for_timestamp(g_state.io, &query->header,
                                       start_time, &start_block) == ESP_OK) {
         query->current_block_num = start_block;
         LOG_DEBUG("Starting block: %lu", (unsigned long)start_block);
@@ -117,7 +117,7 @@ esp_err_t tsdb_query_next(tsdb_query_t *query,
     while (true) {
         // Load block if needed
         if (!query->block_loaded) {
-            esp_err_t ret = tsdb_read_block(query->file, query->current_block_num,
+            esp_err_t ret = tsdb_read_block(query->io, query->current_block_num,
                                            query->block_buffer);
             if (ret != ESP_OK) {
                 LOG_DEBUG("Block %lu not found or empty",
@@ -212,15 +212,19 @@ esp_err_t tsdb_query_next(tsdb_query_t *query,
                                          (overflow_idx * g_state.overflow_record_size) +
                                          (extra_idx * sizeof(int16_t));
 
-                    long saved_pos = ftell(query->file);
-                    fseek(query->file, ovf_offset, SEEK_SET);
+                    // long saved_pos = ftell(query->file);
+                    long saved_pos = query->io->tell(query->io->handle);
+                    // fseek(query->file, ovf_offset, SEEK_SET);
+                    query->io->seek(query->io->handle, ovf_offset, FILE_IO_SEEK_SET);
                     int16_t extra_val = 0;
-                    if (fread(&extra_val, sizeof(int16_t), 1, query->file) == 1) {
+                    // if (fread(&extra_val, sizeof(int16_t), 1, query->file) == 1) {
+                    if (query->io->read(&extra_val, sizeof(int16_t), 1, query->io->handle)) {
                         values[i] = extra_val;
                     } else {
                         values[i] = 0;
                     }
-                    fseek(query->file, saved_pos, SEEK_SET);
+                    // fseek(query->file, saved_pos, SEEK_SET);
+                    query->io->seek(query->io->handle, saved_pos, FILE_IO_SEEK_SET);
                 } else {
                     values[i] = 0;  // Pre-overflow or invalid index
                 }

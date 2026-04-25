@@ -16,15 +16,17 @@ static const char *TAG = "TSDB_WRITE";
 /**
  * @brief Read a data block from file
  */
-esp_err_t tsdb_read_block(FILE *file, uint32_t block_num, tsdb_block_t *block) {
+esp_err_t tsdb_read_block(file_io_t *file, uint32_t block_num, tsdb_block_t *block) {
     if (file == NULL || block == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
 
     uint32_t block_offset = tsdb_calc_block_offset(&g_state.header, block_num);
 
-    fseek(file, block_offset, SEEK_SET);
-    size_t read = fread(block, TSDB_BLOCK_SIZE, 1, file);
+    // fseek(file, block_offset, SEEK_SET);
+    file->seek(file->handle, block_offset, FILE_IO_SEEK_SET);
+    // size_t read = fread(block, TSDB_BLOCK_SIZE, 1, file);
+    size_t read = file->read(block, TSDB_BLOCK_SIZE, 1, file->handle);
 
     if (read != 1) {
         LOG_DEBUG("Block %lu not found or uninitialized", (unsigned long)block_num);
@@ -37,17 +39,21 @@ esp_err_t tsdb_read_block(FILE *file, uint32_t block_num, tsdb_block_t *block) {
 /**
  * @brief Write a data block to file
  */
-esp_err_t tsdb_write_block(FILE *file, uint32_t block_num, const tsdb_block_t *block) {
+esp_err_t tsdb_write_block(file_io_t *file, uint32_t block_num, const tsdb_block_t *block) {
     if (file == NULL || block == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
 
     uint32_t block_offset = tsdb_calc_block_offset(&g_state.header, block_num);
 
-    fseek(file, block_offset, SEEK_SET);
-    size_t written = fwrite(block, TSDB_BLOCK_SIZE, 1, file);
-    fflush(file);
-    fsync(fileno(file));
+    // fseek(file, block_offset, SEEK_SET);
+    file->seek(file->handle, block_offset, FILE_IO_SEEK_SET);
+    // size_t written = fwrite(block, TSDB_BLOCK_SIZE, 1, file);
+    size_t written = file->write(block, TSDB_BLOCK_SIZE, 1, file->handle);
+    // fflush(file);
+    file->flush(file->handle);
+    // fsync(fileno(file));
+    file->sync(file->handle);
 
     if (written != 1) {
         LOG_ERROR("Failed to write block %lu", (unsigned long)block_num);
@@ -111,7 +117,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
     }
 
     // Read existing block
-    esp_err_t ret = tsdb_read_block(g_state.file, block_num, block);
+    esp_err_t ret = tsdb_read_block(g_state.io, block_num, block);
 
     // Initialize block if new or read failed
     uint8_t *raw_blk = (uint8_t *)block;
@@ -136,7 +142,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
     }
 
     // Write block back to file
-    ret = tsdb_write_block(g_state.file, block_num, block);
+    ret = tsdb_write_block(g_state.io, block_num, block);
     if (ret != ESP_OK) {
         LOG_ERROR("Failed to write block");
         return ret;
@@ -149,11 +155,16 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
         uint32_t ovf_offset = g_state.overflow_data_offset +
                               (overflow_idx * g_state.overflow_record_size);
 
-        fseek(g_state.file, ovf_offset, SEEK_SET);
-        size_t ovf_written = fwrite(&values[g_state.header.num_params],
-                                     sizeof(int16_t),
-                                     g_state.extra_param_count,
-                                     g_state.file);
+        // fseek(g_state.file, ovf_offset, SEEK_SET);
+        g_state.io->seek(g_state.io->handle, ovf_offset, FILE_IO_SEEK_SET);
+        // size_t ovf_written = fwrite(&values[g_state.header.num_params],
+        //                              sizeof(int16_t),
+        //                              g_state.extra_param_count,
+        //                              g_state.file);
+        size_t ovf_written = g_state.io->write(&values[g_state.header.num_params],
+                                        sizeof(int16_t),
+                                        g_state.extra_param_count,
+                                        g_state.io->handle);
         if (ovf_written != g_state.extra_param_count) {
             LOG_ERROR("Failed to write overflow data");
             // Don't fail the whole write -- base data is already written
@@ -180,7 +191,7 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
             oldest_block_data = &temp_oldest;
         }
 
-        if (tsdb_read_block(g_state.file, oldest_block, oldest_block_data) == ESP_OK) {
+        if (tsdb_read_block(g_state.io, oldest_block, oldest_block_data) == ESP_OK) {
             g_state.header.oldest_timestamp = TSDB_BLOCK_TS((uint8_t *)oldest_block_data, oldest_offset);
         }
     } else if (g_state.header.total_records == 1) {
@@ -198,8 +209,10 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
         uint32_t index_file_offset = g_state.header.index_offset +
                                      (index_entry_num * sizeof(tsdb_index_entry_t));
 
-        fseek(g_state.file, index_file_offset, SEEK_SET);
-        fwrite(&entry, sizeof(tsdb_index_entry_t), 1, g_state.file);
+        // fseek(g_state.file, index_file_offset, SEEK_SET);
+        g_state.io->seek(g_state.io->handle, index_file_offset, FILE_IO_SEEK_SET);
+        // fwrite(&entry, sizeof(tsdb_index_entry_t), 1, g_state.file);
+        g_state.io->write(&entry, sizeof(tsdb_index_entry_t), 1, g_state.io->handle);
 
         LOG_DEBUG("Updated index entry %lu: timestamp=%lu, block=%lu",
                  (unsigned long)index_entry_num,
@@ -208,11 +221,14 @@ esp_err_t tsdb_write(uint32_t timestamp, const int16_t *values) {
     }
 
     // Update header in file
-    tsdb_write_header(g_state.file, &g_state.header);
-    fflush(g_state.file);
-    fsync(fileno(g_state.file));
+    tsdb_write_header(g_state.io, &g_state.header);
+    // fflush(g_state.file);
+    g_state.io->flush(g_state.io->handle);
+    // fsync(fileno(g_state.file));
+    g_state.io->sync(g_state.io->handle);
+    
 
-    ESP_LOGD(TAG, "Write complete: total_records=%lu, newest_ts=%lu",
+    LOG_DEBUG("Write complete: total_records=%lu, newest_ts=%lu",
              (unsigned long)g_state.header.total_records,
              (unsigned long)g_state.header.newest_timestamp);
 
