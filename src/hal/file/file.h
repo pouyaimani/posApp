@@ -28,7 +28,6 @@ OOP_CLASS(FileHandle) {
     int fd;
     void *file_ptr;
     char path[128];
-    bool opened;
     long pos;
 };
 

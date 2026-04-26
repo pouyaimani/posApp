@@ -4,35 +4,35 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct file_io_handle_t {
+typedef struct tsdb_file_io_handle_t {
     int fd;                      /* Your SDK's file descriptor */
     void* file_ptr;          /* Or a pointer your SDK returns */
     /* Add any other fields your specific SDK requires */
-} file_io_handle_t;
+} tsdb_file_io_handle_t; 
 
 /* Standardized seek origins matching POSIX-style semantics */
 typedef enum {
     FILE_IO_SEEK_SET = 0,  /* From beginning of file */
     FILE_IO_SEEK_CUR = 1,  /* From current position */
     FILE_IO_SEEK_END = 2   /* From end of file */
-} file_io_seek_origin_t;
+} tsdb_file_io_seek_origin_t;
 
 /* Forward declaration - opaque handle, implementation defined by user */
-typedef struct file_io_handle_t file_io_handle_t;
+typedef struct tsdb_file_io_handle_t tsdb_file_io_handle_t;
 
 /* The main interface struct */
-typedef struct file_io_interface_t {
+typedef struct {
     
     /* Open a file and return an opaque handle.
      * Parameters:
      *   path: file path/identifier
      *   mode: "rb", "wb", "ab", "rb+", "wb+", "ab+" etc.
      * Returns: handle pointer on success, NULL on failure */
-    file_io_handle_t* (*open)(const char* path, const char* mode);
+    tsdb_file_io_handle_t* (*open)(const char* path, const char* mode);
     
     /* Close a previously opened file handle.
      * Returns: 0 on success, non-zero on failure */
-    int (*close)(file_io_handle_t* handle);
+    int (*close)(tsdb_file_io_handle_t* handle);
     
     /* Read data from file.
      * Parameters:
@@ -41,7 +41,7 @@ typedef struct file_io_interface_t {
      *   count: number of elements
      *   handle: file handle from open()
      * Returns: number of elements successfully read */
-    size_t (*read)(void* buffer, size_t size, size_t count, file_io_handle_t* handle);
+    size_t (*read)(void* buffer, size_t size, size_t count, tsdb_file_io_handle_t* handle);
     
     /* Write data to file.
      * Parameters:
@@ -50,7 +50,7 @@ typedef struct file_io_interface_t {
      *   count: number of elements
      *   handle: file handle from open()
      * Returns: number of elements successfully written */
-    size_t (*write)(const void* buffer, size_t size, size_t count, file_io_handle_t* handle);
+    size_t (*write)(const void* buffer, size_t size, size_t count, tsdb_file_io_handle_t* handle);
     
     /* Seek to position in file.
      * Parameters:
@@ -58,19 +58,19 @@ typedef struct file_io_interface_t {
      *   offset: byte offset
      *   origin: reference point (SEEK_SET, SEEK_CUR, or SEEK_END)
      * Returns: 0 on success, non-zero on failure */
-    int (*seek)(file_io_handle_t* handle, long offset, file_io_seek_origin_t origin);
+    int (*seek)(tsdb_file_io_handle_t* handle, long offset, tsdb_file_io_seek_origin_t origin);
     
     /* Get current position in file.
      * Returns: current byte position, -1 on error */
-    long (*tell)(file_io_handle_t* handle);
+    long (*tell)(tsdb_file_io_handle_t* handle);
     
     /* Flush/sync any buffered writes to storage.
      * Returns: 0 on success, non-zero on failure */
-    int (*flush)(file_io_handle_t* handle);
+    int (*flush)(tsdb_file_io_handle_t* handle);
     
     /* Get file size.
      * Returns: file size in bytes, -1 on error */
-    long (*size)(file_io_handle_t* handle);
+    long (*size)(tsdb_file_io_handle_t* handle);
     
     /* Check if file exists (optional, for convenience).
      * Returns: 1 if exists, 0 if not */
@@ -80,10 +80,8 @@ typedef struct file_io_interface_t {
      * Returns: 0 on success, non-zero on failure */
     int (*remove)(const char* path);
 
-    int (*sync)(file_io_handle_t* handle);
-
-    file_io_handle_t *handle;
+    int (*sync)(tsdb_file_io_handle_t* handle);
     
-} file_io_t;
+} tsdb_file_io_t;
 
 #endif

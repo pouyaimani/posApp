@@ -58,10 +58,10 @@ void tsdb_buffer_write(tsdb_buffer_pool_t *pool, size_t offset, const void *src,
  * @brief Internal state
  */
 typedef struct {
-    file_io_t *io;
     tsdb_header_t header;
     char filepath[128];
     bool is_open;
+    tsdb_file_io_handle_t *file;
 
     // Buffer pool
     tsdb_buffer_pool_t pool;
@@ -93,16 +93,16 @@ extern tsdb_state_t g_state;
 // Note: struct tsdb_query_s is now in esp_tsdb.h (public API)
 
 // Core operations (tsdb_core.c)
-esp_err_t tsdb_read_header(file_io_t *file, tsdb_header_t *header);
-esp_err_t tsdb_write_header(file_io_t *file, const tsdb_header_t *header);
+esp_err_t tsdb_read_header(tsdb_file_io_handle_t *file, tsdb_header_t *header);
+esp_err_t tsdb_write_header(tsdb_file_io_handle_t *file, const tsdb_header_t *header);
 
 // Block operations (tsdb_write.c, tsdb_query.c)
-esp_err_t tsdb_read_block(file_io_t *file, uint32_t block_num, tsdb_block_t *block);
-esp_err_t tsdb_write_block(file_io_t *file, uint32_t block_num, const tsdb_block_t *block);
+esp_err_t tsdb_read_block(tsdb_file_io_handle_t *file, uint32_t block_num, tsdb_block_t *block);
+esp_err_t tsdb_write_block(tsdb_file_io_handle_t *file, uint32_t block_num, const tsdb_block_t *block);
 uint32_t tsdb_calc_block_offset(const tsdb_header_t *header, uint32_t block_num);
 
 // Index operations (tsdb_index.c)
-esp_err_t tsdb_find_block_for_timestamp(file_io_t *file,
+esp_err_t tsdb_find_block_for_timestamp(tsdb_file_io_handle_t *file,
                                         const tsdb_header_t *header,
                                         uint32_t timestamp,
                                         uint32_t *block_num);

@@ -49,7 +49,6 @@ typedef enum {
  */
 typedef struct {
     const char *filepath;           // Full path (e.g., "/littlefs/data.tsdb")
-    file_io_t *io;
 
     // Data structure
     uint8_t num_params;             // Number of parameters to store (1-16)
@@ -65,6 +64,11 @@ typedef struct {
     bool use_paged_allocation;      // true = use paged buffers (fragmented heap)
     size_t page_size;               // Page size if using paged allocation (default: 2048)
 } tsdb_config_t;
+
+/**
+ * @brief User defined configuration
+ */
+extern tsdb_file_io_t tsdb_file_io;
 
 /**
  * @brief Helper macro to calculate max records for a storage size
@@ -236,8 +240,8 @@ typedef struct {
  * Note: Callers should allocate this on the stack
  */
 struct tsdb_query_s {
-    file_io_t *io;
     tsdb_header_t header;
+    tsdb_file_io_handle_t *file;
 
     // Query parameters
     uint32_t start_time;

@@ -17,7 +17,7 @@ static const char *TAG = "TSDB_INDEX";
  * @param block_num Output block number
  * @return ESP_OK on success
  */
-esp_err_t tsdb_find_block_for_timestamp(file_io_t *file,
+esp_err_t tsdb_find_block_for_timestamp(tsdb_file_io_handle_t *file,
                                         const tsdb_header_t *header,
                                         uint32_t timestamp,
                                         uint32_t *block_num) {
@@ -64,9 +64,9 @@ esp_err_t tsdb_find_block_for_timestamp(file_io_t *file,
                                      (mid * sizeof(tsdb_index_entry_t));
 
         // fseek(file, index_file_offset, SEEK_SET);
-        file->seek(file->handle, index_file_offset, FILE_IO_SEEK_SET);
+        tsdb_file_io.seek(file, index_file_offset, FILE_IO_SEEK_SET);
         // if (fread(&entry, sizeof(tsdb_index_entry_t), 1, file) != 1) {
-        if (file->read(&entry, sizeof(tsdb_index_entry_t), 1, file->handle) != 1) {
+        if (tsdb_file_io.read(&entry, sizeof(tsdb_index_entry_t), 1, file) != 1) {
             LOG_ERROR("Failed to read index entry %ld", (long)mid);
             break;
         }
