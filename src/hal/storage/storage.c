@@ -99,12 +99,20 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
     uint32_t readSize = SETTINGS_FILE_HEADER_LEN;
     uint8_t fileSizeBytes[SETTINGS_FILE_HEADER_LEN] = {0};
     int32_t ret = 0;
-
-    ret = OOP_CALL(file(), read, addr, fileSizeBytes, 0, &readSize);
-    if (ret != FILE_ERR_OK || readSize != SETTINGS_FILE_HEADER_LEN)
+    FileHandle *fp = OOP_CALL(file(), open, addr, "rb");
+    if (!fp) {
+        return -1;
+    }
+    if (OOP_CALL(file(), seek, fp, 0 , FILE_SEEK_SET) != 0) {
+        OOP_CALL(file(), close, fp);
+        return -1;
+    }
+    size_t readsize = OOP_CALL(file(), read, fileSizeBytes, 4 , 1, fp);
+    if (readsize != SETTINGS_FILE_HEADER_LEN)
     {
         LOG_ERROR("File read error. file read error = %d, read size = %d, "
                     "setting file header len = %d", ret, readSize, SETTINGS_FILE_HEADER_LEN);
+        OOP_CALL(file(), close, fp);
         return -1;
     }
     *fileSize = (uint32_t) (fileSizeBytes[0] * 256 + fileSizeBytes[1]);
@@ -113,11 +121,12 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
     {
         LOG_ERROR("File read error. file size = %d, max file size = %d",
                  fileSize, SETTINGS_FILE_MAX_SIZE);
+        OOP_CALL(file(), close, fp);
         return -1;
     }
 
     *fileCrc = (uint32_t) (fileSizeBytes[2] * 256 + fileSizeBytes[3]);
-
+    OOP_CALL(file(), close, fp);
     return 0;
 }
 
@@ -192,7 +201,15 @@ static void saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
     fileWriteBuf[1] = (uint8_t)(dataLen % 256);
     fileWriteBuf[2] = (uint8_t) (crc16 >> 8u);
     fileWriteBuf[3] = (uint8_t) (crc16 & 0xFFu);
-    ret = OOP_CALL(file(), write, addr, fileWriteBuf, writeBufLen);
+    FileHandle *fp = OOP_CALL(file(), open, addr, "wb");
+    if (!fp) {
+        return -1;
+    }
+    ret = OOP_CALL(file(), write, fileWriteBuf, writeBufLen, 1, fp);
+    OOP_CALL(file(), close, fp);
+    if (ret < 0) {
+        return -1;
+    }
     LOG_TRACE("Saving storage is successfully done.");
     FREE_MEM(fileWriteBuf);
 }
@@ -225,12 +242,22 @@ static void loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
     }
     memset(fileCaches, 0, fileSize);
     readSize = fileSize;
-    ret = OOP_CALL(file(), read, addr, fileCaches, SETTINGS_FILE_HEADER_LEN, &readSize);
-    if (ret != FILE_ERR_OK || readSize != fileSize) {
+    FileHandle *fp = OOP_CALL(file(), open, addr, "rb");
+    if (!fp) {
+        return -1;
+    }
+    if (OOP_CALL(file(), seek, fp, SETTINGS_FILE_HEADER_LEN , FILE_SEEK_SET) != 0) {
+        OOP_CALL(file(), close, fp);
+        return -1;
+    }
+    readSize = OOP_CALL(file(), read, fileCaches, fileSize, 1, fp);
+    if (readSize != fileSize) {
         LOG_ERROR("Error in reading storage. error = %d, read sise = %d, "
                         "file size = %d", ret, readSize, fileSize);
+        OOP_CALL(file(), close, fp);
         goto init_settings;
     }
+    OOP_CALL(file(), close, fp);
     if (!isSettingsFileCorrect(fileCaches, fileSize, fileCrc))
     {
         LOG_ERROR("error in file verifying.");
