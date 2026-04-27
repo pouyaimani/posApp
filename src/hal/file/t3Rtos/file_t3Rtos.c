@@ -5,79 +5,114 @@
 #include <sdkKey.h>
 #include "sdkemvapp.h"
 #include "sdkFile.h"
+#include "dev/dev.h"
+#include "logger.h"
 
-static FileErr_t translateSskErr(int err) {
-    FileErr_t ret = FILE_ERR_NONE;
-    switch (err) {
-    case SDK_FILE_CRCERR:
-        ret = FILE_ERR_CRCERR;
-        break;
-    case SDK_FILE_ERROR:
-        ret = FILE_ERROR;
-        break;
-    case SDK_FILE_SEEK_ERROR:
-        ret = FILE_SEEK_ERROR;
-        break;
-    case SDK_FILE_EOF:
-        ret = FILE_ERR_EOF;
-        break;
-    case SDK_FILE_OK:
-        ret = FILE_ERR_OK;
-        break;
-    default:
-        break;
-    }
-    return ret;
-}
-
-static bool isExist(File *self, char *path) {
+static bool exists(File* self, const char* path) {
     return sdkFileIsExist(path);
 }
 
-static FileErr_t create(File *self, char *filename, uint32_t len, uint8_t initValue) {
-    return translateSskErr(sdkFileCreate(filename, len, initValue));
+static FileHandle* open(File *self, const char* path, const char* mode) {
+    if (!exists(self, path)) {
+        int ret = sdkFileCreate(path, 2, 0);
+        if (ret != SDK_FILE_OK) {
+            return NULL;
+        }
+    }
+    FileHandle *handle = GET_MEM(sizeof(FileHandle));
+    snprintf(handle->path, sizeof(handle->path), "%s", path);
+    handle->pos = sdkFileGetSize(handle->path);
+    return handle;
 }
 
-static FileErr_t read(File *self, char *path, uint8_t *pheDest,
-                uint32_t siStart, uint32_t *psiDestLen) {
-    return translateSskErr(sdkFileRead(path, pheDest, siStart, psiDestLen));
+static int close(File *self, FileHandle *handle) {
+    if (handle) {
+        FREE_MEM(handle);
+    }
+    return 0;
 }
 
-static FileErr_t write(File *self, char *path, u8 *pheSrc, u32 siSrcLen) {
-    return translateSskErr(sdkFileWrite(path, pheSrc, siSrcLen));
+static bool seeked = false;
+
+static int seek(File* self, FileHandle* handle, long offset, FileSeekOrigin_t origin) {
+    u32 size = sdkFileGetSize(handle->path);
+
+    u32 base;
+    switch(origin) {
+        case SEEK_SET: base = 0; break;
+        case SEEK_CUR: base = handle->pos; break;
+        case SEEK_END: base = size; break;
+        default:       return -1; // invalid origin
+    }
+    long newPos = (long)base + offset;
+    if (newPos < 0 || (u32)newPos > size) // bounds check as needed
+        return -1;
+    handle->pos = (u32)newPos;
+    return 0;
 }
 
-static FileErr_t append(File *self, char *path, uint8_t *pheSrc,
-                uint32_t siSrcLen) {
-    return translateSskErr(sdkFileAppend(path, pheSrc, siSrcLen));
+
+static size_t read(File* self, void* buffer, size_t size, size_t count, FileHandle* handle) {
+    u32 len = (u32)size * count;
+    s32 r = sdkFileRead(handle->path, buffer, handle->pos, &len);
+    if (r != SDK_FILE_OK)
+        return 0; // Error
+    handle->pos += len; // advance the position
+    return len;
+}
+
+static size_t write(File* self, const void* buffer, size_t size, size_t count, FileHandle* handle) {
+    u32 bytesToWrite = size * count;
+    LOG_DEBUG("writing to [%s]", handle->path);
+    s32 r = sdkFileWrite(handle->path, (u8*)buffer, (u32)bytesToWrite);
+    if (r != SDK_FILE_OK)
+        return 0; // Error
+    handle->pos += (u32)bytesToWrite;
+    return bytesToWrite;
+}
+
+static long tell(File* self, FileHandle* handle) {
+    return handle->pos;
+}
+
+static int flush(File* self, FileHandle* handle) {
+    return 0;
+}
+
+static long size(File* self, FileHandle* handle) {
+    return sdkFileGetSize(handle->path);
+}
+
+static int removeFile(File* self, const char* path) {
+    return sdkFileDel(path);
+}
+
+static int sync(File* self, FileHandle* handle) {
+    return 0;
+}
+
+static long getFreeSpace(File* self, char *path) {
+    return sdkFileGetFreeSpace(path);
 }
 
 static FileErr_t insert(File *self, char *path, uint8_t *pheSrc,
                 uint32_t siStart, uint32_t siSrclen) {
-    return translateSskErr(sdkFileInsert(path, pheSrc, siStart, siSrclen));
-}
-
-static FileErr_t delete(File *self, char *path) {
-    return translateSskErr(sdkFileDel(path));
-}
-
-static uint32_t getSize(File *self, char *path) {
-    return sdkFileGetSize(path);
-}
-
-static uint32_t getFreeSpace(File *self, char *freeSpace) {
-    return sdkFileGetFreeSpace(freeSpace);
+    return sdkFileInsert(path, pheSrc, siStart, siSrclen);
 }
 
 OOP_CTOR(FileT3Rtos) {
-    self->base.vtable.append = append;
-    self->base.vtable.create = create;
-    self->base.vtable.delete = delete;
+    self->base.vtable.close = close;
+    self->base.vtable.exists = exists;
+    self->base.vtable.flush = flush;
     self->base.vtable.getFreeSpace = getFreeSpace;
-    self->base.vtable.getSize = getSize;
     self->base.vtable.insert = insert;
-    self->base.vtable.isExist = isExist;
+    self->base.vtable.open = open;
     self->base.vtable.read = read;
+    self->base.vtable.remove = removeFile;
+    self->base.vtable.seek = seek;
+    self->base.vtable.size = size;
+    self->base.vtable.sync = sync;
+    self->base.vtable.tell = tell;
     self->base.vtable.write = write;
 }
 

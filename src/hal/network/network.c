@@ -3,7 +3,6 @@
 #include "eventloop.h"
 #include "event.h"
 #include "logger.h"
-#include "storage/storage.h"
 #include "settings/settings.h"
 
 Network *__network;
@@ -25,12 +24,21 @@ static void constructT3Rtos() {
 #define REC_TIME_OUT 20000
 #define REC_BUFF_LEN 1024
 
-static int socketId;
 static uint32_t tick;
 static uint8_t *recBuffer;
 
+static NetError_t init() {
+    NetError_t err = OOP_CALL(network(), setRoute, settings()->terminal.netRoute);
+    if (err != NET_ERR_OK) {
+        return err;
+    }
+    err = OOP_CALL(network(), setAddr, settings()->server.mainServerIp,
+        settings()->server.mainServerPort);
+    return err;
+}
+
 static void checkSocketConnectStatus() {
-    SocketStatus_t st = OOP_CALL(__network, getStatus, socketId);
+    SocketStatus_t st = OOP_CALL(__network, getStatus, __network->id);
     if (st != NET_STATUS_CONNECTING) {
         SocketConnectEvent *ev = (WifiEvent*)createEvent(SM_EVENT_SOCKET_CONNECT);
         ev->isConnected = st == NET_STATUS_CONNECTED;
@@ -52,32 +60,23 @@ static int connect() {
         sizeof(addr.ip), "%s", settings()->server.mainServerIp);
     addr.port = settings()->server.mainServerPort;
     SocketType_t type = NET_STREAM;
-    socketId = OOP_CALL(__network, create, &addr, type);
+    __network->id = OOP_CALL(__network, create, &addr, type);
     tick = GET_TICK();
     getEventloop()->registerChecker(checkSocketConnectStatus);
-    return socketId;
+    return __network->id;
 }
 
 static void checkSocketReceive() {
-    int ret = OOP_CALL(__network, receive, socketId, recBuffer, REC_BUFF_LEN);
-    if (ret > 0) {
-        SocketReadyReadEvent *ev = (WifiEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
-        ev->recData = recBuffer;
-        ev->recDataLen = ret;
-        DISPATCH_EVENT(ev);
-        getEventloop()->unregisterChecker(checkSocketReceive);
-    }
-    if (GET_TICK() - tick >= REC_TIME_OUT) {
-        SocketReadyReadEvent *ev = (WifiEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
-        ev->recData = NULL;
-        ev->recDataLen = -1;
-        DISPATCH_EVENT(ev);
-        getEventloop()->unregisterChecker(checkSocketReceive);
-    }
+    int ret = OOP_CALL(__network, receive, __network->id, recBuffer, REC_BUFF_LEN);
+    SocketReadyReadEvent *ev = (SocketReadyReadEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
+    ev->ba.data = ret > 0 ? recBuffer : NULL;
+    ev->ba.len = ret;
+    DISPATCH_EVENT(ev);
+    getEventloop()->unregisterChecker(checkSocketReceive);
 }
 
 static int send(uint8_t *data, size_t len) {
-    int ret = OOP_CALL(__network, send, socketId, data, len, SEND_TIME_OUT);
+    int ret = OOP_CALL(__network, send, __network->id, data, len, SEND_TIME_OUT);
     if (ret == len) {
         getEventloop()->registerChecker(checkSocketReceive);
         tick = GET_TICK();
@@ -85,13 +84,19 @@ static int send(uint8_t *data, size_t len) {
     return ret;
 }
 
+static void disconnect() {
+    OOP_CALL(__network, close, __network->id);
+}
+
 OOP_CTOR(Network) {
+    self->init = init;
     self->connect = connect;
     self->send = send;
+    self->disconnect = disconnect;
     recBuffer = GET_MEM(REC_BUFF_LEN);
 }
 
-Network *getNetwork() {
+Network *network() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

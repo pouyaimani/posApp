@@ -1,104 +1,146 @@
 #include "record.h"
-#include "medb.h"
-#include "file/file.h"
+#include "embedDB/embedDB.h"
+#include "embedDB/embedDBsetup.h"
+#include "embedDB/embedDB_mem.h"
+#include "logger.h"
 
 Record *__record;
 
-#define RECORD_FILE "/mtd0/txn_rec"
+#define TRANS_RECORD_PATH   "/mtd0/txn_records"
+
 #define MAX_RECORDS 6000
 
-/* ================= SCHEMA ================= */
+#define WRITE_LOG "written.log"
+#define READ_LOG  "read.log"
 
-static const MedbField recordFields[] = {
-    { "status",  offsetof(TxnRecord, status),  1, MEDB_U8 },
-    { "type",    offsetof(TxnRecord, type),    1, MEDB_U8 },
-    { "time",    offsetof(TxnRecord, time),    6, MEDB_BLOB },
-    { "voucher", offsetof(TxnRecord, voucher), 3, MEDB_BLOB },
-};
+// ---------- Transaction Data ----------
+typedef struct {
+    int32_t amount;
+    int32_t timestamp;
+    int32_t type;
+} TxnData;
 
-static const MedbTable recordTable = {
-    .tableName = "txn",
-    .fields = recordFields,
-    .fieldCount = 4,
-    .rowSize = sizeof(TxnRecord),
-    .maxRows = MAX_RECORDS,
-    .writePolicy = MEDB_WRITE_CIRCULAR_OVERWRITE
-};
+// ---------- Global ----------
+embedDBState *state;
 
-/* ================= STORAGE ================= */
-
-static bool rec_read(uint32_t index, void *out)
-{
-    uint32_t len = sizeof(TxnRecord);
-
-    return OOP_CALL(file(), read,
-        RECORD_FILE,
-        out,
-        index * sizeof(TxnRecord),
-        &len) == FILE_ERR_OK;
+// ---------- Logging ----------
+void log_write(uint32_t idx, uint32_t key, TxnData *d) {
+    LOG_DEBUG("W idx=%03u key=%03u amount=%d ts=%d type=%d\n",
+            idx, key, d->amount, d->timestamp, d->type);
 }
 
-static bool rec_write(uint32_t index, const void *in)
-{
-    return OOP_CALL(file(), insert,
-        RECORD_FILE,
-        (uint8_t*)in,
-        index * sizeof(TxnRecord),
-        sizeof(TxnRecord)) == FILE_ERR_OK;
-}
-
-static Medb db = {
-    .schema = &recordTable,
-    .storage = {
-        .read = rec_read,
-        .write = rec_write
+void log_read(uint32_t idx, uint32_t key, int found, TxnData *d) {
+    if (found) {
+        LOG_DEBUG(
+                "R idx=%03u key=%03u FOUND amount=%d ts=%d type=%d\n",
+                idx, key, d->amount, d->timestamp, d->type);
+    } else {
+        LOG_DEBUG(
+                "R idx=%03u key=%03u NOT_FOUND\n",
+                idx, key);
     }
-};
-
-/* ================= INIT ================= */
-
-static void recordInit(void)
-{
-    db.rt.start_pos = 0;
-    db.rt.write_pos = 0;
-    db.rt.count = 0;
-
-    /* TODO: load from persistent header in future */
 }
 
-/* ================= INSERT ================= */
+// ---------- TearDown ----------
+void tearDownEmbedDB() {
+    embedDBClose(state);
+    tearDownFile(state->dataFile);
 
-static int32_t recordAdd(TxnRecord *r)
-{
-    uint32_t idx;
-
-    int rc = medb_insert(&db, r, &idx);
-    return (rc == MEDB_OK) ? ERR_OK : ERR_NOK;
+    EMDB_MEM_FREE(state->buffer);
+    EMDB_MEM_FREE(state->fileInterface);
+    EMDB_MEM_FREE(state);
 }
 
-/* ================= INFO ================= */
+// ---------- Unity hooks ----------
+void setUp(void) {}
+void tearDown(void) {}
 
-static uint32_t recordCount(void)
-{
-    return db.rt.count;
+// ============================================================
+// 🧪 TEST: Circular Overwrite + Logging
+// ============================================================
+void test_circular_overwrite_with_logs() {
+    state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
+    setupEmbedDB(state, TRANS_RECORD_PATH, 10000,
+                                  sizeof(TxnData), sizeof(uint32_t));
+
+    uint32_t totalInsert = 150; // force overwrite
+    // ---------- WRITE ----------
+    for (uint32_t i = 0; i < totalInsert; i++) {
+        uint32_t key = i;
+
+        TxnData data;
+        data.amount = i * 10;
+        data.timestamp = i + 1000;
+        data.type = i % 2;
+
+        log_write(i, key, &data);
+
+        int8_t res = embedDBPut(state, &key, &data);
+    }
+LOG_DEBUG("---------------------");
+    embedDBFlush(state);
+
+    // ---------- Compute capacity ----------
+    uint32_t capacity =
+        state->numDataPages * state->maxRecordsPerPage;
+
+    uint32_t minValidKey =
+        (totalInsert > capacity) ? (totalInsert - capacity) : 0;
+
+    // ---------- READ ----------
+// ---------- ITERATOR READ + LOG ----------
+    embedDBIterator it;
+    memset(&it, 0, sizeof(it));
+
+    embedDBInitIterator(state, &it);
+    LOG_DEBUG("---------------------");
+
+    uint8_t *seen = EMDB_MEM_ALLOC(totalInsert);
+    memset(seen, 0 , totalInsert);
+    // TEST_ASSERT_NOT_NULL(seen);
+
+    uint32_t key;
+    TxnData data;
+    uint32_t read_idx = 0;
+
+    while (embedDBNext(state, &it, &key, &data)) {
+
+        // mark seen
+        if (key < totalInsert)
+            seen[key] = 1;
+
+        // -------- LOG READ --------
+        log_read(read_idx,
+                key,1,
+                &data);
+
+        read_idx++;
+
+        // optional: data integrity check
+        // TEST_ASSERT_EQUAL_INT32(key * 10, data.amount);
+        // TEST_ASSERT_EQUAL_INT32(key + 1000, data.timestamp);
+        // TEST_ASSERT_EQUAL_INT32(key % 2, data.type);
+    }
+LOG_DEBUG("---------------------");
+    embedDBCloseIterator(&it);
+LOG_DEBUG("---------------------");
+    tearDownEmbedDB();
 }
 
-static int32_t recordGetLastIndex(void)
-{
-    if (db.rt.count == 0)
-        return ERR_NOK;
-
-    uint32_t lastLogical = db.rt.count - 1;
-    return (db.rt.start_pos + lastLogical) % db.schema->maxRows;
+// ============================================================
+// 🚀 Runner
+// ============================================================
+int doTest(void) {
+    test_circular_overwrite_with_logs();
 }
 
 /* ================= OOP ================= */
 
 OOP_CTOR(Record) {
-    self->init = recordInit;
-    self->add = recordAdd;
-    self->getLastIdx = recordGetLastIndex;
-    // self->count = recordCount;
+    // self->init = recordInit;
+    // self->add = recordAdd;
+    // self->getLastIdx = recordGetLastIndex;
+    // // self->count = recordCount;
 }
 
 Record *record()

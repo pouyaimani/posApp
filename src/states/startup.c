@@ -22,7 +22,7 @@ STATE_DEF_ENTER(Startup) {
     MAG_INIT();
     WIFI_INIT();
     TOUCH_INIT();
-    settings()->reset();
+    // settings()->reset();
     settings()->load();
     Display *disp = getDisplay();
     disp->init();
@@ -32,9 +32,7 @@ STATE_DEF_ENTER(Startup) {
     core->registerCallback(getTimerHanlder()->runCycle);
 
     // Network setitings
-    OOP_CALL(getNetwork(), setRoute, settings()->terminal.netRoute);
-    OOP_CALL(getNetwork(), setAddr, settings()->server.mainServerIp,
-        settings()->server.mainServerPort);
+    network()->init();
 
     LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
     OOP_CALL(dev, setVolume, settings()->terminal.devVolume);

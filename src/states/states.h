@@ -20,7 +20,11 @@ typedef enum StateId_t {
     STATE_ID_MENU,
     STATE_ID_ISO_TRANSMITTER,
     STATE_ID_TXN_RES,
-    STATE_ID_HTTP_TRANSMITTER
+    STATE_ID_HTTP_TRANSMITTER,
+    STATE_ID_NET_CONNECT,
+    STATE_ID_NET_SEND,
+    STATE_ID_NET_RECEIVE
+    
 } StateId_t;
 
 State *getState(StateId_t id);
@@ -192,6 +196,44 @@ OOP_CLASS(TxnResult) {
 
 OOP_CTOR(TxnResult, State *parent, const char *name);
 
+/*************************** Network connect ***********************/
+
+OOP_CLASS(NetConnect) {
+    OOP_EXTENDS(State);
+    State *onSucess;
+    State *onFailure;
+};
+
+OOP_CTOR(NetConnect, State *parent, const char *name);
+
+#define STATE_NET_CONNECT getState(STATE_ID_NET_CONNECT)
+
+/*************************** Network send ***********************/
+
+OOP_CLASS(NetSend) {
+    OOP_EXTENDS(State);
+    State *onSucess;
+    State *onFailure;
+    ByteArray *ba;
+};
+
+OOP_CTOR(NetSend, State *parent, const char *name);
+
+#define STATE_NET_SEND getState(STATE_ID_NET_SEND)
+
+/*************************** Network receive ***********************/
+
+OOP_CLASS(NetReceive) {
+    OOP_EXTENDS(State);
+    State *onSucess;
+    State *onFailure;
+    ByteArray ba;
+};
+
+OOP_CTOR(NetReceive, State *parent, const char *name);
+
+#define STATE_NET_RECEIVE getState(STATE_ID_NET_RECEIVE)
+
 // Helper functions
 
 void GOTO_INPUT(State *prev, State *next, const char *title,
@@ -201,5 +243,8 @@ void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData);
 void GOTO_ISO_TRANSMITTER(State *onFail, State *onSucess);
 void GOTO_HTTP_TRANSMITTER(State *onFail, State *onSucess);
 void GOTO_TXN_RES(State *prev, State *next);
+void GOTO_NET_CONNNECT(State *onFail, State *onSucess);
+void GOTO_NET_SEND(const ByteArray *, State *onFail, State *onSucess);
+void GOTO_NET_RECEIVE(ByteArray *, State *onFail, State *onSucess);
 
 #endif

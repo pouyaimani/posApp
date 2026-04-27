@@ -7,6 +7,7 @@
 #include "display/display.h"
 #include "printer/printer.h"
 #include "settings/settings.h"
+#include "assets.h"
 
 #define PRINTER_WIDTH_PIX   384
 #define MAX_HEIGHT          100   // dynamic safe max
@@ -80,7 +81,7 @@ static Receipt* addText(int count, Column *cols) {
     for(int i = 0; i < count; i++) {
         int w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
 
-        uint16_t h = measure_text_height(cols[i].text, w, &FONT_16);
+        uint16_t h = measure_text_height(cols[i].src, w, &FONT_16);
         if(h > height) height = h;
     }
     flushIfNeeded(r, height);
@@ -91,7 +92,7 @@ static Receipt* addText(int count, Column *cols) {
     lv_canvas_init_layer(r->canvas, &layer);
     for(int i = 0; i < count; i++) {
         int w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
-        lv_text_ap_proc(cols[i].text, shaped[i]);
+        lv_text_ap_proc(cols[i].src, shaped[i]);
         draw_text_line(&layer,
                        x,
                        r->height,
@@ -118,7 +119,7 @@ static Receipt* addTable(int count, Column *cols) {
     // Calculate row height
     for(int i = 0; i < count; i++) {
         int w = PRINTER_WIDTH_PIX / totalWeight;
-        uint16_t h = measure_text_height(cols[i].text, w - 4, &FONT_16);
+        uint16_t h = measure_text_height(cols[i].src, w - 4, &FONT_16);
         if(h > max_h) max_h = h;
     }
 
@@ -171,7 +172,7 @@ static Receipt* addTable(int count, Column *cols) {
                        r->height + 2,
                        w - 4,
                        max_h,
-                       cols[i].text,
+                       cols[i].src,
                        cols[i].align,
                        &FONT_16);
 
@@ -193,26 +194,8 @@ static Receipt* addTable(int count, Column *cols) {
 }
 
 /* -------- IMAGE -------- */
-static Receipt* addImage(const void *src) {
-    Receipt *r = &receipt;
-    flushReceipt(r);
-    lv_layer_t layer;
-    lv_canvas_init_layer(r->canvas, &layer);
+static Receipt* addImage(int count, Column *cols) {
 
-    lv_draw_image_dsc_t dsc;
-    lv_draw_image_dsc_init(&dsc);
-
-    lv_area_t coords = {
-        .x1 = 0,
-        .y1 = r->height,
-        .x2 = PRINTER_WIDTH_PIX,
-        .y2 = r->height + 100
-    };
-    dsc.src = src;
-    lv_draw_image(&layer, &dsc, &coords);
-    lv_canvas_finish_layer(r->canvas, &layer);
-    r->height += 100; // TODO: dynamic size if needed
-    return r;
 }
 
 /* -------- SPACE -------- */
@@ -305,7 +288,6 @@ static Receipt* addHeader(const char *date, const char *time) {
         {t->merchantNo, LV_TEXT_ALIGN_LEFT, 1},
         {t->merchantName, LV_TEXT_ALIGN_RIGHT, 1}
     };
-
     addText(2, row1);
 
     char buf[64];
@@ -323,8 +305,12 @@ static Receipt* addHeader(const char *date, const char *time) {
 }
 
 /* -------- FOOTER -------- */
-static Receipt* addFooter()
-{
+static Receipt* addFooter() {
+    Column row1[] = {
+        {ICON_BANK_REC, LV_ALIGN_LEFT_MID, 1},
+        {ICON_SHAPARAK, LV_ALIGN_RIGHT_MID, 1}
+    };
+    addImage(2, row1);
     return &receipt;
 }
 

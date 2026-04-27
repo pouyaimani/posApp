@@ -17,6 +17,9 @@ static FixedAmount *fixedAmount;
 static IsoTransmitter *isoTransmitter;
 static TxnResult *txnRes;
 static HttpTransmitter *httpTransmitter;
+static NetConnect *netConnect;
+static NetSend *netSend;
+static NetReceive *netReceive;
 
 State *getState(StateId_t id) {
     switch (id) {
@@ -104,6 +107,24 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(HttpTransmitter, httpTransmitter, idle, "http transmitter");
         );
         return (State *)httpTransmitter;
+    case STATE_ID_NET_CONNECT:
+        CALL_ONCE(
+            netConnect = GET_MEM(sizeof(NetConnect));
+            OOP_CALL_CTOR(NetConnect, netConnect, idle, "net connect");
+        );
+        return (State *)netConnect;
+    case STATE_ID_NET_SEND:
+        CALL_ONCE(
+            netSend = GET_MEM(sizeof(NetSend));
+            OOP_CALL_CTOR(NetSend, netSend, idle, "net send");
+        );
+        return (State *)netSend;
+    case STATE_ID_NET_RECEIVE:
+        CALL_ONCE(
+            netReceive = GET_MEM(sizeof(NetReceive));
+            OOP_CALL_CTOR(NetReceive, netReceive, idle, "net receive");
+        );
+        return (State *)netReceive;
     default:
         break;
     }
@@ -158,3 +179,27 @@ void GOTO_TXN_RES(State *prev, State *next){
     OOP_CALL(getState(STATE_ID_TXN_RES), setPrev, prev);
     SM_GOTO(getState(STATE_ID_TXN_RES));
 }
+
+void GOTO_NET_CONNNECT(State *onFail, State *onSucess) {
+    STATE_NET_CONNECT;
+    netConnect->onSucess = onSucess;
+    netConnect->onFailure = onFail;
+    SM_GOTO(STATE_NET_CONNECT);
+}
+
+void GOTO_NET_SEND(const ByteArray *ba, State *onFail, State *onSucess) {
+    STATE_NET_SEND;
+    netSend->onSucess = onSucess;
+    netSend->onFailure = onFail;
+    netSend->ba = ba;
+    SM_GOTO(STATE_NET_SEND);
+}
+
+void GOTO_NET_RECEIVE(ByteArray *ba,State *onFail, State *onSucess) {
+    STATE_NET_RECEIVE;
+    netReceive->onSucess = onSucess;
+    netReceive->onFailure = onFail;
+    netSend->ba = ba;
+    SM_GOTO(STATE_NET_RECEIVE);
+}
+

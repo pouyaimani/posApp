@@ -7,7 +7,7 @@
 #include "eventloop.h"
 #include "storage/storage.h"
 #include "network/network.h"
-#include "iso.h"
+#include "iso8583.h"
 #include "magReader/magReader.h"
 #include "transmitter.h"
 
@@ -62,12 +62,12 @@ static void Connecting(State *parent) {
 static void prepareMsg() {
     char pan[32] = {0};
     getMagReader()->getPan(pan, sizeof(pan));
-    OOP_CALL(packer(), setPan, pan);
-    OOP_CALL(packer(), setTrack2, "");
-    OOP_CALL(packer(), setDateTime, "");
-    OOP_CALL(packer(), setTerminalId, "");
-    OOP_CALL(packer(), setRRN, "");
-    OOP_CALL(packer(), setMac, "", 0);
+    // OOP_CALL(packer(), setPan, pan);
+    // OOP_CALL(packer(), setTrack2, "");
+    // OOP_CALL(packer(), setDateTime, "");
+    // OOP_CALL(packer(), setTerminalId, "");
+    // OOP_CALL(packer(), setRRN, "");
+    // OOP_CALL(packer(), setMac, "", 0);
 }
 
 STATE_DEF_ENTER(SendData) {
@@ -138,5 +138,5 @@ OOP_CTOR(IsoTransmitter, State *parent, const char *name) {
     SendData(self);
     ReceiveData(self);
 
-    net = getNetwork();
+    net = network();
 }

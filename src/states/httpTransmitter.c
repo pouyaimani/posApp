@@ -134,7 +134,7 @@ static void httpProcessChunked(uint8_t *data, uint32_t len)
         uint32_t toCopy = (remainingChunk < available) ? remainingChunk : available;
 
         if (toCopy > 0) {
-            processBodyChunk(data + offset, toCopy);
+            httpProcessBodyChunk(data + offset, toCopy);
             httpCtx->chunkReceived += toCopy;
             offset += toCopy;
         }
@@ -253,15 +253,15 @@ STATE_DEF_HANDLE(ReceiveData, KeypadEvent) {
 
 STATE_DEF_HANDLE(ReceiveData, SocketReadyReadEvent)
 {
-    if (ev->recDataLen <= 0) {
+    if (ev->ba.len <= 0) {
         GOTO_INFO(onFailure, onFailure, "HTTP Recv Error", "");
         return;
     }
 
     // append to buffer (for header only)
     if (!httpCtx->headerParsed) {
-        memcpy(httpCtx->rxBuf + httpCtx->rxLen, ev->recData, ev->recDataLen);
-        httpCtx->rxLen += ev->recDataLen;
+        memcpy(httpCtx->rxBuf + httpCtx->rxLen, ev->ba.data, ev->ba.len);
+        httpCtx->rxLen += ev->ba.len;
 
         if (!httpParseHeader()) return;
 
@@ -272,7 +272,7 @@ STATE_DEF_HANDLE(ReceiveData, SocketReadyReadEvent)
             if (httpCtx->bodyType == HTTP_BODY_CHUNKED) {
                 httpProcessChunked(httpCtx->rxBuf + bodyOffset, bodyLen);
             } else {
-                processBodyChunk(httpCtx->rxBuf + bodyOffset, bodyLen);
+                httpProcessBodyChunk(httpCtx->rxBuf + bodyOffset, bodyLen);
             }
         }
 
@@ -281,9 +281,9 @@ STATE_DEF_HANDLE(ReceiveData, SocketReadyReadEvent)
 
     // body phase
     if (httpCtx->bodyType == HTTP_BODY_CHUNKED) {
-        httpProcessChunked(ev->recData, ev->recDataLen);
+        httpProcessChunked(ev->ba.data, ev->ba.len);
     } else {
-        processBodyChunk(ev->recData, ev->recDataLen);
+        httpProcessBodyChunk(ev->ba.data, ev->ba.len);
     }
 
     // completion
@@ -365,5 +365,5 @@ OOP_CTOR(HttpTransmitter, State *parent, const char *name) {
     ReceiveData(self);
     ProcessHttp(self);
 
-    net = getNetwork();
+    net = network();
 }

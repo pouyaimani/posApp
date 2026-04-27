@@ -53,7 +53,7 @@ typedef enum  {
 OOP_DECLARE_CLASS(Network)
 
 OOP_VTABLE(Network) {
-    OOP_IMETHOD(void, Network, init);
+    OOP_IMETHOD(NetError_t, Network, init);
     OOP_IMETHOD(NetRoute_t, Network, getRoute);
     OOP_IMETHOD(NetError_t, Network, setRoute, NetRoute_t);
     OOP_IMETHOD(NetError_t, Network, setAddr, const char *, uint16_t);
@@ -69,11 +69,14 @@ OOP_CLASS(Network) {
     OOP_IMPLEMENTS(Network);
     SocketAddr_t address;
     OOP_METHOD(int, connect);
+    OOP_METHOD(void, disconnect);
+    OOP_METHOD(NetError_t, init);
     OOP_METHOD(int, send, uint8_t *data, size_t len);
+    int id;
 };
 
 OOP_CTOR(Network);
 
-Network *getNetwork(void);
+Network *network(void);
 
 #endif

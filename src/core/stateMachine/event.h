@@ -180,8 +180,7 @@ OOP_CTOR(SocketSentEvent);
 
 OOP_CLASS(SocketReadyReadEvent) {
     OOP_EXTENDS(Event);
-    uint8_t *recData;
-    size_t recDataLen;
+    ByteArray ba;
 };
 /* ctor */
 OOP_CTOR(SocketReadyReadEvent);

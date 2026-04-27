@@ -318,17 +318,6 @@ OOP_CTOR(Configuration, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(Configuration);
 }
 
-/******************** Key Injection sub state **********************/
-
-STATE_DEF_ENTER(KeyInjection) {
-    GOTO_DEV_INFO(state->parent);
-}
-
-OOP_CTOR(KeyInjection, State *parent, const char *name) {
-    OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(KeyInjection);
-}
-
 /******************** Merchant pass reset sub state **********************/
 
 STATE_DEF_ENTER(MerchantPassReset) {

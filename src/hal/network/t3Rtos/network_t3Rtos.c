@@ -6,7 +6,7 @@
 #include "dev/dev.h"
 #include "logger.h"
 
-static void init(Network *self) {
+static NetError_t init(Network *self) {
 
 }
 

@@ -59,9 +59,17 @@ static bool isUpdateAvalable() {
 }
 
 /******************** Extract tms new version sub state **********************/
+static uint8_t *versionBuf;
+static uint32_t versionLen = 0;
+
+static void fillVersionBuffer(uint8_t *data, uint32_t len) {
+    memcpy(versionBuf + versionLen, data, len);
+    versionLen += len;
+}
 
 STATE_DEF_ENTER(ExtractTmsNewVersion) {
 
+    FREE_MEM(versionBuf);
 }
 
 static void ExtractTmsNewVersion(State *parent) {
@@ -73,9 +81,8 @@ static void ExtractTmsNewVersion(State *parent) {
 /*************************** TMS state *******************************/
 
 static void createVersionReq() {
-    // uint32_t alreadyDownloadedBytes = loadProgressFromStorage();
-
-    httpBuildContext(storage()->settings->server.mainServerIp, API_CHECK_UPDATES, NULL);
+    versionBuf = GET_MEM(512);
+    httpBuildContext(settings()->server.mainServerIp, API_CHECK_UPDATES, fillVersionBuffer);
 }
 
 STATE_DEF_ENTER(TMS) {

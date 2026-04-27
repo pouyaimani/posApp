@@ -2,7 +2,7 @@
 #include "states/states.h"
 #include "dev/dev.h"
 #include "ui/ui.h"
-#include "iso.h"
+#include "iso8583.h"
 #include "receipt/receipt.h"
 
 static SubState *enterAmount;
@@ -28,7 +28,7 @@ STATE_DEF_ENTER(EnterAmount) {
 
 STATE_DEF_ENTER(EnterPassword) {
     Input *in = getState(STATE_ID_INPUT);
-    OOP_CALL(packer(), setAmount, in->input);
+    // OOP_CALL(packer(), setAmount, in->input);
     GOTO_INPUT(STATE_IDLE, commu,
         "رمز کارت", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
@@ -37,7 +37,7 @@ STATE_DEF_ENTER(EnterPassword) {
 
 STATE_DEF_ENTER(Communication) {
     Input *in = getState(STATE_ID_INPUT);
-    OOP_CALL(packer(), setCardPwd, in->input);
+    // OOP_CALL(packer(), setCardPwd, in->input);
     GOTO_ISO_TRANSMITTER(STATE_IDLE, result);
 }
 

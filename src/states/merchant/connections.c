@@ -49,7 +49,7 @@ static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
     snprintf(settings()->terminal.wifiPwd, 
         sizeof(settings()->terminal.wifiPwd), "%s", pwd);
     settings()->terminal.netRoute = NET_ROUTE_WIFI;
-    OOP_CALL(getNetwork(), setRoute, NET_ROUTE_WIFI);
+    OOP_CALL(network(), setRoute, NET_ROUTE_WIFI);
     settings()->save();
 }
 
@@ -247,5 +247,5 @@ OOP_CTOR(Connections, State *parent, const char *name) {
 
     wifi = getWifi();
     cel = getCell();
-    net = getNetwork();
+    net = network();
 }

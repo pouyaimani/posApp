@@ -91,7 +91,7 @@ static void updateBatteryIcon() {
 }
 
 static void updateConnectionIcon() {
-    NetRoute_t route = OOP_CALL(getNetwork(), getRoute);
+    NetRoute_t route = OOP_CALL(network(), getRoute);
     if(1) {
         if (OOP_CALL(getWifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
             switch (OOP_CALL(getWifi(), getSignalStrength)) {

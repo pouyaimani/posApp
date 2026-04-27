@@ -15,6 +15,7 @@
 #include "timer.h"
 #include "states/merchant/merchant.h"
 #include "settings/settings.h"
+#include "record/record.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -31,7 +32,7 @@ static Wifi *wifi;
 static Timer *timer;
 
 static void wifiAutoConnect() {
-    if (OOP_CALL(getNetwork(), getRoute) != NET_ROUTE_WIFI) {
+    if (OOP_CALL(network(), getRoute) != NET_ROUTE_WIFI) {
         return;
     }
     WifiConnectSt_t conSt = OOP_CALL(getWifi(), getConnectStatus);
@@ -88,13 +89,34 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 
 static void print() {
     Receipt *rec = createReceipt();
+    Column row[] = {
+        {"سلام", LV_TEXT_ALIGN_LEFT, 1},
+        {"بله", LV_TEXT_ALIGN_RIGHT, 1}
+    };
+    Column row1[] = {
+        {"لللللللللللللللللللللللللل", LV_TEXT_ALIGN_LEFT, 1},
+        {"کد کارتخوان", LV_TEXT_ALIGN_RIGHT, 1}
+    };
 
-    // rec->addHeader("1404/12/24", "11:38")->addText(2, "param->terminal.uniqueId.data()",
-    //      LV_TEXT_ALIGN_LEFT, "کد کارتخوان", LV_TEXT_ALIGN_RIGHT);
+
+    // rec->addHeader("1404/12/24", "11:38")->addText(2, row1);
     // const char * bankName = PosDatabase::BanksName::getInstance()->getBankNameFa(data.pan.substr(0, 6).data());?
-    rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
+    rec->addText(2, row1);
+    // rec->addText(2, row1);
+        // rec->addText(2, col);
+    // rec->addTable(2, col);
+    // rec->addTable(2, col);
+    //     rec->addTable(2, col);
+    // rec->addTable(2, col);
+    // rec->addTable(2, col);
+    //     rec->addTable(2, col);
+    // rec->addTable(2, col);
+    // rec->addTable(2, col);
+    //     rec->addTable(2, col);
+    // rec->addTable(2, col);
+    // rec->addTable(2, col);
+    // rec->addText(2, col);
+    // rec->addText(2, col);
     // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
     // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
     // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
@@ -117,17 +139,7 @@ static void print() {
     //     rec->addText(1, data.switchMsg.data(), TEXT_ALIGN_CENTER);
     // }
     rec->addFooter();
-    lv_draw_buf_t *buff = rec->snapshot();
-
-    if (buff == NULL) {
-        LOG_ERROR("snap shot failed");
-    }
-    LOG_ERROR("img width = %d", buff->header.w);
-    LOG_ERROR("img height = %d", buff->header.h);
-    LOG_ERROR("img cf = %d", buff->header.cf);
-    PrinterErr_t err = getPrinter()->print(buff->data,
-        buff->header.w, buff->header.h, COLOR_DEPTH);
-    LOG_ERROR("printer error = %d", err);
+    rec->flush();
     rec->free();
 }
 
@@ -138,7 +150,18 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         GOTO_DEV_INFO(state);
     } else if (ev->key == KEY_1) {
         print();
+    }  else if (ev->key == KEY_2) {
+        doTest();
     }
+}
+
+STATE_DEF_HANDLE(Idle, SocketConnectEvent) {
+    if(ev->isConnected) {
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, "error in connecting", "");
+    } else {
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, "connected", "");
+    }
+    network()->disconnect();
 }
 
 STATE_DEF_HANDLE(Idle, MagEvent) {
@@ -218,6 +241,7 @@ OOP_CTOR(Idle, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(Idle, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Idle, TimeOutEvent);
     self->base.vtable.handleMag = STATE_HANDLE(Idle, MagEvent);
+    self->base.vtable.onSocketConnect = STATE_HANDLE(Idle, SocketConnectEvent);
 
     createUi();
     wifi = getWifi();

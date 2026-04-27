@@ -273,13 +273,40 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
 
 static SubState *handleReports;
 
+
 STATE_DEF_ENTER(HandleReports) {
     Input *in = getState(STATE_ID_INPUT);
-    int shiftNum = libAtoi(in->input) - 1;
-    if (shiftNum >= shiftStg->latest) {
+    int inval = libAtoi(in->input);
+    int shiftNum = inval - 1;
+    if (inval <= 0 || shiftNum >= shiftStg->latest) {
         GOTO_INFO(state->parent, state->parent, "شیفت مورد نظر یافت نشد", "");
     } else {
-        GOTO_INFO(state->parent, state->parent, "این قسمت پیاده نشده هنوز", "");
+        uint32_t sdate = shiftStg->data[shiftNum].startDate;
+        uint32_t stime = shiftStg->data[shiftNum].startTime;
+        uint32_t edate = shiftStg->data[shiftNum].endDate;
+        uint32_t etime = shiftStg->data[shiftNum].endTime;
+        char sdt[24] = {0};
+        char edt[24] = {0};
+        shiftMenu = createShiftMenu(getDisplay()->screen);
+        dateTimeToStr(sdate, stime, sdt, sizeof(sdt));
+        dateTimeToStr(edate, etime, edt, sizeof(edt));
+        showShift(shiftMenu, shiftNum, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
+        LV_SHOW(shiftMenu);
+    }
+}
+
+STATE_DEF_EXIT(HandleReports) {
+    if(lv_obj_is_valid(shiftMenu)) {
+        LV_HIDE(shiftMenu);
+        LV_DELETE(shiftMenu);
+    }
+}
+
+STATE_DEF_HANDLE(HandleReports, KeypadEvent) {
+    if (ev->key == KEY_ESC) {
+        SM_GOTO(state->parent);
+    } else {
+        SM_GOTO(state->parent);
     }
 }
 
@@ -338,4 +365,6 @@ OOP_CTOR(Shift, State *parent, const char *name) {
     handleReports = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, handleReports, self, "Shift reports");
     handleReports->vtable.enter = STATE_ENTER(HandleReports);
+    handleReports->vtable.exit = STATE_EXIT(HandleReports);
+    handleReports->vtable.handleKeypad = STATE_HANDLE(HandleReports, KeypadEvent);
 }
