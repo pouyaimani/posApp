@@ -112,6 +112,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/hal
     ${CMAKE_CURRENT_SOURCE_DIR}/hal/dev
     ${CMAKE_CURRENT_SOURCE_DIR}/states
+    ${CMAKE_CURRENT_SOURCE_DIR}/embedDB
+    ${CMAKE_CURRENT_SOURCE_DIR}/embedDB/EmbedDB-Utility
     ${CMAKE_SOURCE_DIR}/assets
 )
 
