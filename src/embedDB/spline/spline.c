@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "debug_print.h"
 
 #if defined(ARDUINO)
 #include "serial_c_iface.h"
@@ -255,20 +256,20 @@ void splineBuild(spline *spl, void **data, id_t size, size_t maxError) {
  */
 void splinePrint(spline *spl) {
     if (spl == NULL) {
-        printf("No spline to print.\n");
+        debug_log("No spline to print.\n");
         return;
     }
-    printf("Spline max error (%u):\n", spl->maxError);
-    printf("Spline points (%lu):\n", spl->count);
+    debug_log("Spline max error (%u):\n", spl->maxError);
+    debug_log("Spline points (%lu):\n", spl->count);
     uint64_t keyVal = 0;
     uint32_t page = 0;
     for (id_t i = 0; i < spl->count; i++) {
         void *point = splinePointLocation(spl, i);
         memcpy(&keyVal, point, spl->keySize);
         memcpy(&page, (int8_t *)point + spl->keySize, sizeof(uint32_t));
-        printf("[%u]: (%lu, %d)\n", i, keyVal, page);
+        debug_log("[%u]: (%lu, %d)\n", i, keyVal, page);
     }
-    printf("\n");
+    debug_log("\n");
 }
 
 /**

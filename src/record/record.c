@@ -3,6 +3,7 @@
 #include "embedDB/embedDBsetup.h"
 #include "embedDB/embedDB_mem.h"
 #include "logger.h"
+#include "file/file.h"
 
 Record *__record;
 

@@ -43,6 +43,7 @@
 #if defined(ARDUINO)
 #include "serial_c_iface.h"
 #endif
+#include "debug_print.h"
 
 /**
  * @return	Returns -1, 0, 1 as a comparator normally would
@@ -128,19 +129,19 @@ int8_t exec(embedDBOperator* op) {
 void initTableScan(embedDBOperator* op) {
     if (op->input != NULL) {
 #ifdef PRINT_ERRORS
-        printf("WARNING: TableScan operator should not have an input operator\n");
+        debug_log("WARNING: TableScan operator should not have an input operator\n");
 #endif
     }
     if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: TableScan operator needs its schema defined\n");
+        debug_log("ERROR: TableScan operator needs its schema defined\n");
 #endif
         return;
     }
 
     if (op->schema->numCols < 2) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: When creating a table scan, you must include at least two columns: one for the key and one for the data from the iterator\n");
+        debug_log("ERROR: When creating a table scan, you must include at least two columns: one for the key and one for the data from the iterator\n");
 #endif
         return;
     }
@@ -149,13 +150,13 @@ void initTableScan(embedDBOperator* op) {
     embedDBState* embedDBstate = (embedDBState*)(((void**)op->state)[0]);
     if (op->schema->columnSizes[0] <= 0 || abs(op->schema->columnSizes[0]) != embedDBstate->keySize) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Make sure the the key column is at index 0 of the schema initialization and that it matches the keySize in the state and is unsigned\n");
+        debug_log("ERROR: Make sure the the key column is at index 0 of the schema initialization and that it matches the keySize in the state and is unsigned\n");
 #endif
         return;
     }
     if (getRecordSizeFromSchema(op->schema) != (embedDBstate->keySize + embedDBstate->dataSize)) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Size of provided schema doesn't match the size that will be returned by the provided iterator\n");
+        debug_log("ERROR: Size of provided schema doesn't match the size that will be returned by the provided iterator\n");
 #endif
         return;
     }
@@ -165,7 +166,7 @@ void initTableScan(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to allocate buffer for TableScan operator\n");
+            debug_log("ERROR: Failed to allocate buffer for TableScan operator\n");
 #endif
             return;
         }
@@ -176,7 +177,7 @@ int8_t nextTableScan(embedDBOperator* op) {
     // Check that a schema was set
     if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Must provide a base schema for a table scan operator\n");
+        debug_log("ERROR: Must provide a base schema for a table scan operator\n");
 #endif
         return 0;
     }
@@ -209,7 +210,7 @@ embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* i
     // Ensure all fields are not NULL
     if (state == NULL || it == NULL || baseSchema == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: All parameters must be provided to create a TableScan operator\n");
+        debug_log("ERROR: All parameters must be provided to create a TableScan operator\n");
 #endif
         return NULL;
     }
@@ -217,7 +218,7 @@ embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* i
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
 #endif
         return NULL;
     }
@@ -225,7 +226,7 @@ embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* i
     op->state = EMDB_MEM_ALLOC(2 * sizeof(void*));
     if (op->state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
 #endif
         return NULL;
     }
@@ -246,7 +247,7 @@ embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* i
 void initProjection(embedDBOperator* op) {
     if (op->input == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Projection operator needs an input operator\n");
+        debug_log("ERROR: Projection operator needs an input operator\n");
 #endif
         return;
     }
@@ -264,7 +265,7 @@ void initProjection(embedDBOperator* op) {
         op->schema = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
         if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to allocate space for projection schema\n");
+            debug_log("ERROR: Failed to allocate space for projection schema\n");
 #endif
             return;
         }
@@ -273,7 +274,7 @@ void initProjection(embedDBOperator* op) {
         op->schema->columnTypes = EMDB_MEM_ALLOC(numCols * sizeof(ColumnType));
         if (op->schema->columnSizes == NULL || op->schema->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to allocate space for projection while building schema\n");
+            debug_log("ERROR: Failed to allocate space for projection while building schema\n");
 #endif
             return;
         }
@@ -289,7 +290,7 @@ void initProjection(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to allocate buffer for TableScan operator\n");
+            debug_log("ERROR: Failed to allocate buffer for TableScan operator\n");
 #endif
             return;
         }
@@ -338,7 +339,7 @@ embedDBOperator* createProjectionOperator(embedDBOperator* input, uint8_t numCol
     uint8_t* state = EMDB_MEM_ALLOC(numCols + 1);
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: EMDB_MEM_ALLOC failed while creating Projection operator\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating Projection operator\n");
 #endif
         return NULL;
     }
@@ -348,7 +349,7 @@ embedDBOperator* createProjectionOperator(embedDBOperator* input, uint8_t numCol
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: EMDB_MEM_ALLOC failed while creating Projection operator\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating Projection operator\n");
 #endif
         return NULL;
     }
@@ -373,7 +374,7 @@ struct selectionInfo {
 void initSelection(embedDBOperator* op) {
     if (op->input == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Projection operator needs an input operator\n");
+        debug_log("ERROR: Projection operator needs an input operator\n");
 #endif
         return;
     }
@@ -391,7 +392,7 @@ void initSelection(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to allocate buffer for TableScan operator\n");
+            debug_log("ERROR: Failed to allocate buffer for TableScan operator\n");
 #endif
             return;
         }
@@ -444,7 +445,7 @@ embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum, 
     struct selectionInfo* state = EMDB_MEM_ALLOC(sizeof(struct selectionInfo));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection operator\n");
 #endif
         return NULL;
     }
@@ -455,7 +456,7 @@ embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum, 
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection operator\n");
 #endif
         return NULL;
     }
@@ -473,7 +474,7 @@ embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum, 
 void initOrderBy(embedDBOperator* op) {
     if (op == NULL || op->input == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: ORDER BY: NULL input operator\n");
+        debug_log("ERROR: ORDER BY: NULL input operator\n");
 #endif
         return;
     }
@@ -488,7 +489,7 @@ void initOrderBy(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: ORDER BY: Failed to allocate buffer\n");
+            debug_log("ERROR: ORDER BY: Failed to allocate buffer\n");
 #endif
             return;
         }
@@ -504,7 +505,7 @@ void initOrderBy(embedDBOperator* op) {
 int8_t nextOrderBy(embedDBOperator* op) {
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: ORDER BY: NULL input operator\n");
+        debug_log("ERROR: ORDER BY: NULL input operator\n");
 #endif
         return 0;
     }
@@ -534,7 +535,7 @@ void closeOrderBy(embedDBOperator* op) {
 embedDBOperator* createOrderByOperator(embedDBState* dbState, embedDBOperator* input, int8_t colNum, int32_t limit, int8_t (*compareFn)(void* a, void* b)) {
     if (input == NULL || dbState == NULL || compareFn == NULL || colNum < 0) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: ORDER BY: Invalid Input data\n");
+        debug_log("ERROR: ORDER BY: Invalid Input data\n");
 #endif
         return NULL;
     }
@@ -545,7 +546,7 @@ embedDBOperator* createOrderByOperator(embedDBState* dbState, embedDBOperator* i
 
     if (state == NULL || op == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: ORDER BY: EMDB_MEM_ALLOC failed\n");
+        debug_log("ERROR: ORDER BY: EMDB_MEM_ALLOC failed\n");
 #endif
         return NULL;
     }
@@ -581,7 +582,7 @@ struct aggregateInfo {
 void initAggregate(embedDBOperator* op) {
     if (op->input == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Aggregate operator needs an input operator\n");
+        debug_log("ERROR: Aggregate operator needs an input operator\n");
 #endif
         return;
     }
@@ -597,7 +598,7 @@ void initAggregate(embedDBOperator* op) {
         op->schema = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
         if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
 #endif
             return;
         }
@@ -606,7 +607,7 @@ void initAggregate(embedDBOperator* op) {
         op->schema->columnTypes = EMDB_MEM_ALLOC(state->functionsLength);
         if (op->schema->columnSizes == NULL || op->schema->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
 #endif
             return;
         }
@@ -622,7 +623,7 @@ void initAggregate(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
 #endif
             return;
         }
@@ -631,7 +632,7 @@ void initAggregate(embedDBOperator* op) {
         state->lastRecordBuffer = EMDB_MEM_ALLOC(state->bufferSize);
         if (state->lastRecordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
 #endif
             return;
         }
@@ -725,7 +726,7 @@ embedDBOperator* createAggregateOperator(embedDBOperator* input, int8_t (*groupf
     struct aggregateInfo* state = EMDB_MEM_ALLOC(sizeof(struct aggregateInfo));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate operator\n");
 #endif
         return NULL;
     }
@@ -738,7 +739,7 @@ embedDBOperator* createAggregateOperator(embedDBOperator* input, int8_t (*groupf
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate operator\n");
 #endif
         return NULL;
     }
@@ -774,7 +775,7 @@ void initKeyJoin(embedDBOperator* op) {
     // Check that join is compatible
     if (schema1->columnSizes[0] != schema2->columnSizes[0] || schema1->columnSizes[0] < 0 || schema2->columnSizes[0] < 0) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: The first columns of the two tables must be the key and must be the same size. Make sure you haven't projected them out.\n");
+        debug_log("ERROR: The first columns of the two tables must be the key and must be the same size. Make sure you haven't projected them out.\n");
 #endif
         return;
     }
@@ -784,7 +785,7 @@ void initKeyJoin(embedDBOperator* op) {
         op->schema = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
         if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
 #endif
             return;
         }
@@ -793,7 +794,7 @@ void initKeyJoin(embedDBOperator* op) {
         op->schema->columnTypes = EMDB_MEM_ALLOC(op->schema->numCols * sizeof(ColumnType));
         if (op->schema->columnSizes == NULL || op->schema->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
 #endif
             return;
         }
@@ -807,7 +808,7 @@ void initKeyJoin(embedDBOperator* op) {
     op->recordBuffer = EMDB_MEM_ALLOC(getRecordSizeFromSchema(op->schema));
     if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
 #endif
         return;
     }
@@ -896,7 +897,7 @@ embedDBOperator* createKeyJoinOperator(embedDBOperator* input1, embedDBOperator*
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
 #endif
         return NULL;
     }
@@ -904,7 +905,7 @@ embedDBOperator* createKeyJoinOperator(embedDBOperator* input1, embedDBOperator*
     struct keyJoinInfo* state = EMDB_MEM_ALLOC(sizeof(struct keyJoinInfo));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
 #endif
         return NULL;
     }
@@ -950,7 +951,7 @@ embedDBAggregateFunc* createCountAggregate() {
 void sumReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
     if (abs(inputSchema->columnSizes[*((uint8_t*)aggFunc->state + sizeof(int64_t))]) > 8) {
 #ifdef PRINT_ERRORS
-        printf("WARNING: Can't use this sum function for columns bigger than 8 bytes\n");
+        debug_log("WARNING: Can't use this sum function for columns bigger than 8 bytes\n");
 #endif
     }
     *(int64_t*)aggFunc->state = 0;
@@ -1009,7 +1010,7 @@ void minReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
     int8_t colSize = inputSchema->columnSizes[state->colNum];
     if (aggFunc->colSize != colSize) {
 #ifdef PRINT_ERRORS
-        printf("WARNING: Your provided column size for min aggregate function doesn't match the column size in the input schema\n");
+        debug_log("WARNING: Your provided column size for min aggregate function doesn't match the column size in the input schema\n");
 #endif
     }
     int8_t isSigned = embedDB_IS_COL_SIGNED(colSize);
@@ -1046,14 +1047,14 @@ embedDBAggregateFunc* createMinAggregate(uint8_t colNum, int8_t colSize) {
     embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
     if (aggFunc == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating min aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating min aggregate function\n");
 #endif
         return NULL;
     }
     struct minMaxState* state = EMDB_MEM_ALLOC(sizeof(struct minMaxState));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating min aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating min aggregate function\n");
 #endif
         return NULL;
     }
@@ -1061,7 +1062,7 @@ embedDBAggregateFunc* createMinAggregate(uint8_t colNum, int8_t colSize) {
     state->current = EMDB_MEM_ALLOC(abs(colSize));
     if (state->current == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating min aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating min aggregate function\n");
 #endif
         return NULL;
     }
@@ -1079,7 +1080,7 @@ void maxReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
     int8_t colSize = inputSchema->columnSizes[state->colNum];
     if (aggFunc->colSize != colSize) {
 #ifdef PRINT_ERRORS
-        printf("WARNING: Your provided column size for max aggregate function doesn't match the column size in the input schema\n");
+        debug_log("WARNING: Your provided column size for max aggregate function doesn't match the column size in the input schema\n");
 #endif
     }
     int8_t isSigned = embedDB_IS_COL_SIGNED(colSize);
@@ -1111,14 +1112,14 @@ embedDBAggregateFunc* createMaxAggregate(uint8_t colNum, int8_t colSize) {
     embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
     if (aggFunc == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating max aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating max aggregate function\n");
 #endif
         return NULL;
     }
     struct minMaxState* state = EMDB_MEM_ALLOC(sizeof(struct minMaxState));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating max aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating max aggregate function\n");
 #endif
         return NULL;
     }
@@ -1126,7 +1127,7 @@ embedDBAggregateFunc* createMaxAggregate(uint8_t colNum, int8_t colSize) {
     state->current = EMDB_MEM_ALLOC(abs(colSize));
     if (state->current == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating max aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating max aggregate function\n");
 #endif
         return NULL;
     }
@@ -1196,7 +1197,7 @@ void avgAdd(struct embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, co
         }
         default:
 #ifdef PRINT_ERRORS
-            printf("WARNING: avgAdd encountered unsupported column type: %d\n", state->colType);
+            debug_log("WARNING: avgAdd encountered unsupported column type: %d\n", state->colType);
 #endif
             return;
     }
@@ -1228,7 +1229,7 @@ void avgCompute(struct embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchem
         }
         default:
 #ifdef PRINT_ERRORS
-            printf("WARNING: avgCompute encountered unsupported column type\n");
+            debug_log("WARNING: avgCompute encountered unsupported column type\n");
 #endif
             return;
     }
@@ -1243,14 +1244,14 @@ embedDBAggregateFunc* createAvgAggregate(uint8_t colNum, int8_t outputFloatSize)
     embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
     if (aggFunc == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating avg aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating avg aggregate function\n");
 #endif
         return NULL;
     }
     struct avgState* state = EMDB_MEM_ALLOC(sizeof(struct avgState));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: Failed to allocate while creating avg aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating avg aggregate function\n");
 #endif
         return NULL;
     }
@@ -1258,12 +1259,12 @@ embedDBAggregateFunc* createAvgAggregate(uint8_t colNum, int8_t outputFloatSize)
     aggFunc->state = state;
     if (outputFloatSize > 8 || (outputFloatSize < 8 && outputFloatSize > 4)) {
 #ifdef PRINT_ERRORS
-        printf("WARNING: The size of the output float for AVG must be exactly 4 or 8. Defaulting to 8.");
+        debug_log("WARNING: The size of the output float for AVG must be exactly 4 or 8. Defaulting to 8.");
 #endif
         aggFunc->colSize = 8;
     } else if (outputFloatSize < 4) {
 #ifdef PRINT_ERRORS
-        printf("WARNING: The size of the output float for AVG must be exactly 4 or 8. Defaulting to 4.");
+        debug_log("WARNING: The size of the output float for AVG must be exactly 4 or 8. Defaulting to 4.");
 #endif
         aggFunc->colSize = 4;
     } else {

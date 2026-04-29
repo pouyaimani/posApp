@@ -1,6 +1,7 @@
 #include "embedDBsetup.h"
 #include "embedDB_mem.h"
 #include "EmbedDB_Utility/embedDBUtility.h"
+#include "logger.h"
 
 typedef struct {
     uint32_t pageSize;
@@ -26,25 +27,26 @@ static uint32_t pick_page_size(uint32_t recordSize) {
 }
 
 EmbedDBTune embeddb_calc_config(uint32_t maxStorageBytes,
-                                  uint32_t recordSize)
+                                  uint32_t dataSize, uint32_t keySize)
 {
     EmbedDBTune cfg = {0};
 
     // 1. Pick page size
-    cfg.pageSize = pick_page_size(recordSize);
+    cfg.pageSize = pick_page_size(dataSize);
 
     // 2. Compute records per page
     cfg.recordsPerPage =
-        (cfg.pageSize - HEADER_SIZE) / recordSize;
+        (cfg.pageSize - HEADER_SIZE) / (dataSize + keySize);
 
     // 3. Compute number of pages
     cfg.numDataPages = maxStorageBytes / cfg.pageSize;
 
     // 4. Set erase block size
-    cfg.eraseSizeInPages = 4;
+    cfg.eraseSizeInPages = 1;
 
     // 5. Enforce minimum pages constraint
-    if (cfg.numDataPages < 2 * cfg.eraseSizeInPages) {
+    if (cfg.numDataPages < 2 * cfg.eraseSizeInPages)
+    {
         cfg.numDataPages = 2 * cfg.eraseSizeInPages;
     }
 
@@ -52,25 +54,30 @@ EmbedDBTune embeddb_calc_config(uint32_t maxStorageBytes,
 }
 
 void setupEmbedDB(embedDBState *state, const char *dbName, uint32_t maxStorageBytes,
-                                  uint32_t recordSize, uint32_t keySize) {
+                  uint32_t dataSize, uint32_t keySize)
+{
 
-    EmbedDBTune tune = embeddb_calc_config(maxStorageBytes, recordSize);
+    EmbedDBTune tune = embeddb_calc_config(maxStorageBytes, dataSize, keySize);
+    LOG_DEBUG("tune.pageSize = %d", tune.pageSize);
+    LOG_DEBUG("tune.numDataPages = %d", tune.numDataPages);
+    LOG_DEBUG("tune.eraseSizeInPages = %d", tune.eraseSizeInPages);
+    LOG_DEBUG("tune.recordsPerPage = %d", tune.recordsPerPage);
 
     state->keySize = keySize;
-    state->dataSize = recordSize;
+    state->dataSize = dataSize;
 
-    state->pageSize = 512;
+    state->pageSize = tune.pageSize;
     // state->maxRecordsPerPage = tune.recordsPerPage;
     state->bufferSizeInBlocks = 2;
     state->buffer = EMDB_MEM_ALLOC(state->bufferSizeInBlocks * state->pageSize);
 
     state->numSplinePoints = 8;
-    state->numDataPages = 4;
+    state->numDataPages = tune.numDataPages;
     state->numIndexPages = 0;
 
     state->parameters = EMBEDDB_RESET_DATA;
 
-    state->eraseSizeInPages = 1;
+    state->eraseSizeInPages = tune.eraseSizeInPages;
     state->rules = NULL;
     state->numRules = 0;
 

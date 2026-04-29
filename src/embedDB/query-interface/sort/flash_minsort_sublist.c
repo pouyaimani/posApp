@@ -303,10 +303,10 @@ char *next_MinSort_sublist(MinSortStateSublist *ms, external_sort_t *es, void *t
 
 void close_MinSort_sublist(MinSortStateSublist *ms, external_sort_t *es) {
     /*
-    printf("Tuples out:  %lu\r\n", ms->op.tuples_out);
-    printf("Blocks read: %lu\r\n", ms->op.blocks_read);
-    printf("Tuples read: %lu\r\n", ms->op.tuples_read);
-    printf("Bytes read:  %lu\r\n", ms->op.bytes_read);
+    debug_log("Tuples out:  %lu\r\n", ms->op.tuples_out);
+    debug_log("Blocks read: %lu\r\n", ms->op.blocks_read);
+    debug_log("Tuples read: %lu\r\n", ms->op.tuples_read);
+    debug_log("Bytes read:  %lu\r\n", ms->op.bytes_read);
     */
 }
 
@@ -345,7 +345,7 @@ int flash_minsort_sublist(
     int8_t (*compareFn)(void *a, void *b),
     long numSubList) {
 #ifdef FLASH_MINSORT_PRINT
-    printf("*Flash Minsort (sorted sublist version)*\n");
+    debug_log("*Flash Minsort (sorted sublist version)*\n");
 #endif
 
     MinSortStateSublist ms;
@@ -387,15 +387,15 @@ int flash_minsort_sublist(
             lastWritePos += es->page_size;
             metric->num_writes += 1;
             /*
-            printf("Loc2: %lu\n", ftell(outputFile));
+            debug_log("Loc2: %lu\n", ftell(outputFile));
                          if (blockIndex % 16 == 0)
-                            printf("Last write pos: %lu Block: %d\n", lastWritePos, blockIndex);
+                            debug_log("Last write pos: %lu Block: %d\n", lastWritePos, blockIndex);
                             */
 #ifdef DEBUG_OUTPUT
             debug_log("Wrote output block. Block index: %d\n", blockIndex);
             for (int k = 0; k < values_per_page; k++) {
                 test_record_t *buf = (void *)(outputBuffer + es->headerSize + k * es->record_size);
-                printf("%d: Output Record: %d\n", k, buf->key);
+                debug_log("%d: Output Record: %d\n", k, buf->key);
             }
 #endif
             blockIndex++;
@@ -430,7 +430,7 @@ int flash_minsort_sublist(
     EMDB_MEM_FREE(ms.current);
     EMDB_MEM_FREE(ms.next);
 
-    //    printf("Complete. Comparisons: %d  MemCopies: %d  TransferIn: %d  TransferOut: %d TransferOther: %d\n", metric->num_compar, metric->num_memcpys, numShiftIntoOutput, numShiftOutOutput, numShiftOtherBlock);
+    //    debug_log("Complete. Comparisons: %d  MemCopies: %d  TransferIn: %d  TransferOut: %d TransferOther: %d\n", metric->num_compar, metric->num_memcpys, numShiftIntoOutput, numShiftOutOutput, numShiftOtherBlock);
 
     return 0;
 }

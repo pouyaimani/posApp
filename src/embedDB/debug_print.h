@@ -5,6 +5,6 @@
 
 #include <stdarg.h>
 
-#define debug_log(format, ...) LOG_DEBUG(format, ##__VA_ARGS__)
+#define debug_log(format, ...) LOG_ERROR(format, ##__VA_ARGS__)
 
 #endif  // DEBUG_PRINT_H_

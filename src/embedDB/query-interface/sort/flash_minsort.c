@@ -161,7 +161,7 @@ void init_MinSort(MinSortState *ms, external_sort_t *es, metrics_t *metric, int8
     ms->min_initialized = (int8_t *)(ms->min + es->key_size * ms->numRegions);
 
 #ifdef DEBUG
-    // printf("Memory overhead: %d  Max regions: %d\r\n", 2 * SORT_KEY_SIZE + INT_SIZE, j);
+    // debug_log("Memory overhead: %d  Max regions: %d\r\n", 2 * SORT_KEY_SIZE + INT_SIZE, j);
     debug_log("Page size: %d, Memory size: %d Record size: %d, Number of records: %lu, Number of blocks: %d, Blocks per region: %d  Regions: %d\r\n",
               es->page_size, ms->memoryAvailable, ms->record_size, ms->num_records, ms->numBlocks, ms->blocks_per_region, ms->numRegions);
 #endif
@@ -373,10 +373,10 @@ done2:
 
 void close_MinSort(MinSortState *ms, external_sort_t *es) {
     /*
-    printf("Tuples out:  %lu\r\n", ms->op.tuples_out);
-    printf("Blocks read: %lu\r\n", ms->op.blocks_read);
-    printf("Tuples read: %lu\r\n", ms->op.tuples_read);
-    printf("Bytes read:  %lu\r\n", ms->op.bytes_read);
+    debug_log("Tuples out:  %lu\r\n", ms->op.tuples_out);
+    debug_log("Blocks read: %lu\r\n", ms->op.blocks_read);
+    debug_log("Tuples read: %lu\r\n", ms->op.tuples_read);
+    debug_log("Bytes read:  %lu\r\n", ms->op.bytes_read);
     */
 
     if (ms->current) {

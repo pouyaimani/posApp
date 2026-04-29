@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "debug_print.h"
 
 #if defined(ARDUINO)
 #include "serial_c_iface.h"
@@ -66,7 +67,7 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes, int8_t* co
         totalSize += colSize;
         if (colSize <= 0) {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Column size must be greater than zero\n");
+            debug_log("ERROR: Column size must be greater than zero\n");
 #endif
             return NULL;
         }
@@ -76,7 +77,7 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes, int8_t* co
             schema->columnSizes[i] = colSizes[i];
         } else {
 #ifdef PRINT_ERRORS
-            printf("ERROR: Must only use embedDB_COLUMN_SIGNED or embedDB_COLUMN_UNSIGNED to describe column signedness\n");
+            debug_log("ERROR: Must only use embedDB_COLUMN_SIGNED or embedDB_COLUMN_UNSIGNED to describe column signedness\n");
 #endif
             return NULL;
         }
@@ -116,7 +117,7 @@ embedDBSchema* copySchema(const embedDBSchema* schema) {
     embedDBSchema* copy = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
     if (copy == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
 #endif
         return NULL;
     }
@@ -125,7 +126,7 @@ embedDBSchema* copySchema(const embedDBSchema* schema) {
     copy->columnTypes = EMDB_MEM_ALLOC(schema->numCols * sizeof(ColumnType));
     if (copy->columnSizes == NULL || copy->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-        printf("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
 #endif
         return NULL;
     }
@@ -159,10 +160,10 @@ uint16_t getRecordSizeFromSchema(embedDBSchema* schema) {
 void printSchema(embedDBSchema* schema) {
     for (uint8_t i = 0; i < schema->numCols; i++) {
         if (i) {
-            printf(", ");
+            debug_log(", ");
         }
         int8_t col = schema->columnSizes[i];
-        printf("%sint%d", embedDB_IS_COL_SIGNED(col) ? "" : "u", abs(col));
+        debug_log("%sint%d", embedDB_IS_COL_SIGNED(col) ? "" : "u", abs(col));
     }
-    printf("\n");
+    debug_log("\n");
 }

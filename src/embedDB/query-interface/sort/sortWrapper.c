@@ -496,11 +496,11 @@ uint8_t readNextRecord(void *data, void *buffer) {
     iteratorState->currentRecord++;
 
     // #ifdef DEBUG
-    //         printf("DEBUG: ROWDATA from file:\n");
+    //         debug_log("DEBUG: ROWDATA from file:\n");
     //         for (int i = 0; i < iteratorState->recordSize - SORT_KEY_SIZE; i++) {
-    //             printf("%2x ", ((uint8_t *)buffer)[i]);
+    //             debug_log("%2x ", ((uint8_t *)buffer)[i]);
     //         }
-    //         printf("\n");
+    //         debug_log("\n");
     // #endif
     return 0;
 }

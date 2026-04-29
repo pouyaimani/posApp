@@ -3,6 +3,7 @@
 #include "dev/dev.h"
 #include "file/file.h"
 #include "logger.h"
+#include "debug_print.h"
 
 typedef struct {
     char *filename;
@@ -51,14 +52,15 @@ int8_t FILE_REMOVE(void *finfo) {
 int8_t FILE_READ(void *buffer, uint32_t pageNum, uint32_t pageSize, void *finfo) {
     FILE_INFO *fileInfo = (FILE_INFO *)finfo;
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum, FILE_SEEK_ORG_SET);
-    return OOP_CALL(file(), read, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
+    size_t readLen = OOP_CALL(file(), read, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
+    return readLen == pageSize;
 }
 
 int8_t FILE_WRITE(void *buffer, uint32_t pageNum, uint32_t pageSize, void *finfo) {
     FILE_INFO *fileInfo = (FILE_INFO *)finfo;
-    LOG_DEBUG("writing file [%s]", fileInfo->filename);
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum, FILE_SEEK_ORG_SET);
-    return OOP_CALL(file(), write, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
+    size_t written = OOP_CALL(file(), write, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
+    return written == pageSize;
 }
 
 int8_t FILE_ERASE(uint32_t startPage, uint32_t endPage, uint32_t pageSize, void *file) {
@@ -127,7 +129,7 @@ int32_t FILE_TELL(void *finfo) {
 
 char *tempFilePath(void) {
     static char tempPathBuffer[256];
-    snprintf(tempPathBuffer, sizeof(tempPathBuffer),
+    debug_log(tempPathBuffer, sizeof(tempPathBuffer),
                  "embeddb_%lu.tmp", (unsigned long)rand());
 
     char *out = EMDB_MEM_ALLOC(strlen(tempPathBuffer) + 1);

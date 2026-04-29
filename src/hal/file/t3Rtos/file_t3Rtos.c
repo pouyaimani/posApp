@@ -39,9 +39,9 @@ static int seek(File* self, FileHandle* handle, long offset, FileSeekOrigin_t or
 
     u32 base;
     switch(origin) {
-        case SEEK_SET: base = 0; break;
-        case SEEK_CUR: base = handle->pos; break;
-        case SEEK_END: base = size; break;
+        case FILE_SEEK_ORG_SET: base = 0; break;
+        case FILE_SEEK_ORG_CUR: base = handle->pos; break;
+        case FILE_SEEK_ORG_END: base = size; break;
         default:       return -1; // invalid origin
     }
     long newPos = (long)base + offset;
@@ -62,9 +62,8 @@ static size_t read(File* self, void* buffer, size_t size, size_t count, FileHand
 }
 
 static size_t write(File* self, const void* buffer, size_t size, size_t count, FileHandle* handle) {
-    u32 bytesToWrite = size * count;
-    LOG_DEBUG("writing to [%s]", handle->path);
-    s32 r = sdkFileWrite(handle->path, (u8*)buffer, (u32)bytesToWrite);
+    size_t bytesToWrite = size * count;
+    s32 r = sdkFileInsert(handle->path, (u8*)buffer, handle->pos, (u32)bytesToWrite);
     if (r != SDK_FILE_OK)
         return 0; // Error
     handle->pos += (u32)bytesToWrite;
