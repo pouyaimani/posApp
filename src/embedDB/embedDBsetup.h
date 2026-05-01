@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include "embedDB.h"
+#include "embedDB_mem.h"
+#include "embedDB/debug_print.h"
+#include "EmbedDB_Utility/embedDBUtility.h"
 
 #define EMBEDDB_TUNE_FINE       8
 #define EMBEDDB_TUNE_BALANCED   16
@@ -20,6 +23,12 @@
 
 #define EMBEDDB_IS_GOOD_RPP(rpp) ((rpp) >= EMBEDDB_RPP_TARGET)
 
-void setupEmbedDB(embedDBState *state, const char *dbName, uint32_t maxStorageBytes,
-                                  uint32_t recordSize, uint32_t keySize);
+int8_t embedDBSetup(embedDBState *state,
+                    const char *dbName,
+                    uint16_t keySize,
+                    uint16_t dataSize,
+                    uint32_t pageNum,
+                    uint16_t recordsPerPage);
+int8_t embedDBtearDown(embedDBState *state);
+
 #endif

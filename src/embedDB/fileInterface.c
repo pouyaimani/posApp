@@ -53,14 +53,14 @@ int8_t FILE_READ(void *buffer, uint32_t pageNum, uint32_t pageSize, void *finfo)
     FILE_INFO *fileInfo = (FILE_INFO *)finfo;
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum, FILE_SEEK_ORG_SET);
     size_t readLen = OOP_CALL(file(), read, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
-    return readLen == pageSize;
+    return readLen == pageSize ? 1 : 0;
 }
 
 int8_t FILE_WRITE(void *buffer, uint32_t pageNum, uint32_t pageSize, void *finfo) {
     FILE_INFO *fileInfo = (FILE_INFO *)finfo;
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum, FILE_SEEK_ORG_SET);
     size_t written = OOP_CALL(file(), write, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
-    return written == pageSize;
+    return written == pageSize ? 1 : 0;
 }
 
 int8_t FILE_ERASE(uint32_t startPage, uint32_t endPage, uint32_t pageSize, void *file) {
@@ -81,7 +81,6 @@ int8_t FILE_FLUSH(void *finfo) {
 
 int8_t FILE_OPEN(void *finfo, uint8_t mode) {
     FILE_INFO *fileInfo = (FILE_INFO *)finfo;
-    LOG_DEBUG("opening file [%s]", fileInfo->file->path);
     if (mode == EMBEDDB_FILE_MODE_W_PLUS_B) {
         fileInfo->file = OOP_CALL(file(), open, fileInfo->filename, "w+b");
     } else if (mode == EMBEDDB_FILE_MODE_R_PLUS_B) {
@@ -89,8 +88,9 @@ int8_t FILE_OPEN(void *finfo, uint8_t mode) {
     } else {
         return 0;
     }
-    LOG_DEBUG("opening file [%s]", fileInfo->file->path);
+    LOG_TRACE("file [%s] is opened", fileInfo->file->path);
     if (fileInfo->file == NULL) {
+        LOG_DEBUG("fileInfo->file is NULL", fileInfo->file->path);
         return 0;
     } else {
         return 1;

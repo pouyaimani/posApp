@@ -1,92 +1,101 @@
 #include "embedDBsetup.h"
-#include "embedDB_mem.h"
-#include "EmbedDB_Utility/embedDBUtility.h"
 #include "logger.h"
-
-typedef struct {
-    uint32_t pageSize;
-    uint32_t numDataPages;
-    uint32_t eraseSizeInPages;
-    uint32_t recordsPerPage;
-} EmbedDBTune;
+#include <math.h>
 
 #define HEADER_SIZE 6
 
-static uint32_t pick_page_size(uint32_t recordSize) {
-    uint32_t candidates[] = {256, 512, 1024};
+#define POW2(n) (1 << (n))
 
-    for (int i = 0; i < 3; i++) {
-        uint32_t usable = candidates[i] - HEADER_SIZE;
-        uint32_t rpp = usable / recordSize;
+#define TWO_MAX_POWER 32
 
-        if (EMBEDDB_IS_GOOD_RPP(rpp))
-            return candidates[i];
+static uint32_t pick_page_size(uint32_t size)
+{
+    for (size_t i = 0; i < TWO_MAX_POWER; i++) {
+        uint32_t candidate = pow(2,i);
+        if (candidate > size) {
+            return candidate;
+        }
     }
-
-    return 1024; // fallback
+    return 0;
 }
 
-EmbedDBTune embeddb_calc_config(uint32_t maxStorageBytes,
-                                  uint32_t dataSize, uint32_t keySize)
+
+int8_t embedDBSetup(embedDBState *state,
+                    const char *dbName,
+                    uint16_t keySize,
+                    uint16_t dataSize,
+                    uint32_t pageNum,
+                    uint16_t recordsPerPage)
 {
-    EmbedDBTune cfg = {0};
+    uint32_t recordSize = keySize + dataSize;
 
-    // 1. Pick page size
-    cfg.pageSize = pick_page_size(dataSize);
-
-    // 2. Compute records per page
-    cfg.recordsPerPage =
-        (cfg.pageSize - HEADER_SIZE) / (dataSize + keySize);
-
-    // 3. Compute number of pages
-    cfg.numDataPages = maxStorageBytes / cfg.pageSize;
-
-    // 4. Set erase block size
-    cfg.eraseSizeInPages = 1;
-
-    // 5. Enforce minimum pages constraint
-    if (cfg.numDataPages < 2 * cfg.eraseSizeInPages)
-    {
-        cfg.numDataPages = 2 * cfg.eraseSizeInPages;
-    }
-
-    return cfg;
-}
-
-void setupEmbedDB(embedDBState *state, const char *dbName, uint32_t maxStorageBytes,
-                  uint32_t dataSize, uint32_t keySize)
-{
-
-    EmbedDBTune tune = embeddb_calc_config(maxStorageBytes, dataSize, keySize);
-    LOG_DEBUG("tune.pageSize = %d", tune.pageSize);
-    LOG_DEBUG("tune.numDataPages = %d", tune.numDataPages);
-    LOG_DEBUG("tune.eraseSizeInPages = %d", tune.eraseSizeInPages);
-    LOG_DEBUG("tune.recordsPerPage = %d", tune.recordsPerPage);
-
+    /* Basic configuration */
     state->keySize = keySize;
     state->dataSize = dataSize;
+    state->parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY;
 
-    state->pageSize = tune.pageSize;
-    // state->maxRecordsPerPage = tune.recordsPerPage;
+    state->recordSize = recordSize;
+
+    /* Default header size */
+    state->headerSize = 6;
+
+    /* Compute page size */
+    state->pageSize = pick_page_size(state->headerSize + recordSize * recordsPerPage);
+
+    /* Default erase block size */
+    state->eraseSizeInPages = 1;
+
+    /* Ensure page count aligns with erase blocks */
+    uint32_t alignedPages =
+        (pageNum / state->eraseSizeInPages) * state->eraseSizeInPages;
+
+    if (alignedPages < 2 * state->eraseSizeInPages) {
+#ifdef PRINT_ERRORS
+        debug_log("ERROR: Not enough pages for embedDB.\n");
+#endif
+        return -1;
+    }
+
+    state->numDataPages = alignedPages;
+
+    /* Minimum buffers */
     state->bufferSizeInBlocks = 2;
-    state->buffer = EMDB_MEM_ALLOC(state->bufferSizeInBlocks * state->pageSize);
+    size_t bufferSize = state->bufferSizeInBlocks * state->pageSize;
+    state->buffer = EMDB_MEM_ALLOC(bufferSize);
+    if (!state->buffer) {
+#ifdef PRINT_ERRORS
+        debug_log("ERROR: state->buffer memory allocation failed");
+#endif
+        return -1;
+    }
+    memset(state->buffer, 0, bufferSize);
 
+    /* Default spline config */
     state->numSplinePoints = 8;
-    state->numDataPages = tune.numDataPages;
-    state->numIndexPages = 0;
 
-    state->parameters = EMBEDDB_RESET_DATA;
-
-    state->eraseSizeInPages = tune.eraseSizeInPages;
-    state->rules = NULL;
-    state->numRules = 0;
-
+    // Function pointers that can compare two keys/data
     state->compareKey = int32Comparator;
-    state->compareData = NULL;
+    // state->compareData = dataComparator;
 
     state->fileInterface = getFileInterface();
     state->dataFile = setupFile(dbName);
 
-    int8_t res = embedDBInit(state, 1);
-    return res;
+    state->rules = NULL;
+    state->numRules = 0;
+
+    if (recordsPerPage < 2) {
+#ifdef PRINT_ERRORS
+        debug_log("ERROR: records per page must be greater than 1.");
+#endif
+        return -1;        
+    }
+
+    /* Initialize database */
+    return embedDBInit(state, recordsPerPage / 2);
+}
+
+int8_t embedDBtearDown(embedDBState *state) {
+    state->fileInterface->teardown(state->dataFile);
+    EMDB_MEM_FREE(state->buffer);
+    EMDB_MEM_FREE(state->fileInterface);
 }
