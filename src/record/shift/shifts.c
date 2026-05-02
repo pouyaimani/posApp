@@ -33,7 +33,7 @@ static int shiftInsert(uint32_t index, ShiftData *shift) {
 
 static int shiftGet(uint32_t index, ShiftData *shift) {
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, sizeof(uint32_t),
-             sizeof(ShiftData), PAGE_NUMBER, RECORDS_PER_PAGE) != 0) {
+             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
                 EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
@@ -47,23 +47,21 @@ static int shiftGet(uint32_t index, ShiftData *shift) {
     bool found = false;
     while (embedDBNext(state, &it, &key, shift)) {
         if (key == index) {
-            LOG_DEBUG("shift is found...");
+            // LOG_DEBUG("shift is found...");
             found = true;
             break;
         }
     }
     if (!found) {
-        LOG_DEBUG("shift is not found...");
+        // LOG_DEBUG("shift is not found...");
     }
     embedDBCloseIterator(&it);
     embedDBClose(state);
     embedDBtearDown(state);
-    // LOG_DEBUG("merchant pin = %s", __settings.terminal.merchantPin);
     return found ? 0 : -1;
 }
 
-
-void deleteAll() {
+void reset() {
     OOP_CALL(file(), remove, SHIFTS_RECORD_PATH);
 }
 
@@ -71,7 +69,7 @@ OOP_CTOR(Shiftss) {
     self->init = NULL;
     self->get = shiftGet;
     self->insert = shiftInsert;
-    self->deleteAll = deleteAll;
+    self->reset = reset;
 
     state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
     if (!state) {

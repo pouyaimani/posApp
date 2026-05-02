@@ -10,7 +10,7 @@ OOP_CLASS(Shiftss) {
     OOP_METHOD(int, insert, uint32_t index, ShiftData *);
     OOP_METHOD(int, flush);
     OOP_METHOD(int, get, uint32_t, ShiftData *);
-    OOP_METHOD(void, deleteAll);
+    OOP_METHOD(void, reset);
 };
 
 Shiftss *shifts();

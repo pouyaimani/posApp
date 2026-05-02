@@ -533,6 +533,15 @@ void embedDBResetStats(embedDBState *state);
  */
 void embedDBClose(embedDBState *state);
 
+/**
+ * @brief   Return the largest key in the node
+ * @param   state   embedDB algorithm state structure
+ * @param   buffer  In memory page buffer with node data
+ */
+void *embedDBGetMaxKey(embedDBState *state, void *buffer);
+
+uint32_t embedDBGetLatestKey32(embedDBState *state);
+
 #ifdef __cplusplus
 }
 #endif

@@ -24,8 +24,8 @@ int8_t embedDBSetup(embedDBState *state,
                     const char *dbName,
                     uint16_t keySize,
                     uint16_t dataSize,
-                    uint32_t pageNum,
-                    uint16_t recordsPerPage)
+                    uint32_t pageSize,
+                    uint16_t pageNum)
 {
     uint32_t recordSize = keySize + dataSize;
 
@@ -40,26 +40,23 @@ int8_t embedDBSetup(embedDBState *state,
     state->headerSize = 6;
 
     /* Compute page size */
-    state->pageSize = pick_page_size(state->headerSize + recordSize * recordsPerPage);
+    state->pageSize = pageSize;
 
     /* Default erase block size */
     state->eraseSizeInPages = 1;
 
-    /* Ensure page count aligns with erase blocks */
-    uint32_t alignedPages =
-        (pageNum / state->eraseSizeInPages) * state->eraseSizeInPages;
-
-    if (alignedPages < 2 * state->eraseSizeInPages) {
+    if (pageNum < 2 * state->eraseSizeInPages) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: Not enough pages for embedDB.\n");
 #endif
         return -1;
     }
 
-    state->numDataPages = alignedPages;
+    uint16_t safetyMargin = 2;
+    state->numDataPages = pageNum + safetyMargin;
 
     /* Minimum buffers */
-    state->bufferSizeInBlocks = 2;
+    state->bufferSizeInBlocks = 4;
     size_t bufferSize = state->bufferSizeInBlocks * state->pageSize;
     state->buffer = EMDB_MEM_ALLOC(bufferSize);
     if (!state->buffer) {
@@ -83,15 +80,12 @@ int8_t embedDBSetup(embedDBState *state,
     state->rules = NULL;
     state->numRules = 0;
 
-    if (recordsPerPage < 2) {
-#ifdef PRINT_ERRORS
-        debug_log("ERROR: records per page must be greater than 1.");
-#endif
-        return -1;        
-    }
-
     /* Initialize database */
-    return embedDBInit(state, recordsPerPage / 2);
+    int ret = embedDBInit(state, 1);
+
+    // embedDBPrintInit(state);
+
+    return ret;
 }
 
 int8_t embedDBtearDown(embedDBState *state) {

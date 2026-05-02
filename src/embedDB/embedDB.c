@@ -2363,3 +2363,14 @@ void embedDBClose(embedDBState *state) {
         state->spl = NULL;
     }
 }
+
+
+uint32_t embedDBGetLatestKey32(embedDBState *state) {
+    int16_t count = EMBEDDB_GET_COUNT(state->buffer);
+    if (count == 0) {
+        return 0;
+    }
+    uint32_t maxKey;
+    memcpy(&maxKey, embedDBGetMaxKey(state, state->buffer), state->keySize);
+    return maxKey;
+}

@@ -23,12 +23,17 @@
 
 #define EMBEDDB_IS_GOOD_RPP(rpp) ((rpp) >= EMBEDDB_RPP_TARGET)
 
+#define PAGE_SIZE_512       512
+#define PAGE_SIZE_1024      1024
+#define PAGE_SIZE_2048      2048
+#define PAGE_SIZE_4096      4096
+
 int8_t embedDBSetup(embedDBState *state,
                     const char *dbName,
                     uint16_t keySize,
                     uint16_t dataSize,
-                    uint32_t pageNum,
-                    uint16_t recordsPerPage);
+                    uint32_t pageSize,
+                    uint16_t pageNum);
 int8_t embedDBtearDown(embedDBState *state);
 
 #endif
