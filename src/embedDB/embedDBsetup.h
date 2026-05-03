@@ -29,7 +29,8 @@
 #define PAGE_SIZE_4096      4096
 
 int8_t embedDBSetup(embedDBState *state,
-                    const char *dbName,
+                    const char *dbPath,
+                    const char *dbIndexPath,
                     uint16_t keySize,
                     uint16_t dataSize,
                     uint32_t pageSize,

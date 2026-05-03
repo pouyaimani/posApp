@@ -3,7 +3,8 @@
 #include "logger.h"
 #include "file/file.h"
 
-#define SHIFTS_RECORD_PATH   "/mtd0/shifts_records"
+#define SHIFTS_RECORD_PATH          "/mtd0/shifts_records"
+#define SHIFTS_RECORD_IDX_PATH      "/mtd0/shifts_records_idx"
 #define RECORDS_PER_PAGE    50
 #define PAGE_NUMBER         4
 
@@ -11,51 +12,40 @@ static Shifts __shifts;
 static embedDBState *state;
 
 static int shiftInsert(uint32_t index, ShiftData *shift) {
-    if (embedDBSetup(state, SHIFTS_RECORD_PATH, sizeof(uint32_t),
-             sizeof(ShiftData), PAGE_NUMBER, RECORDS_PER_PAGE) != 0) {
-                embedDBtearDown(state);
-                EMDB_MEM_FREE(state);
-                LOG_ERROR("Error in setuping embedDB.");
-                return -1;
-    }
-    int8_t res = embedDBPut(state, &index, shift);
-    if (res != 0) {
-        LOG_ERROR("Shift: error in inserting record. error = %d", res);
-        return -1;
-    }
-    // if (embedDBFlush(state) != 0) {
-    //     LOG_ERROR("Shift: error in flushing record");
-    // }
-    embedDBClose(state);
-    embedDBtearDown(state);
-    return 0;
-}
-
-static int shiftGet(uint32_t index, ShiftData *shift) {
-    if (embedDBSetup(state, SHIFTS_RECORD_PATH, sizeof(uint32_t),
+    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
                 EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
                 return -1;
     }
-    embedDBIterator it;
-    memset(&it, 0, sizeof(it));
+    uint32_t maxKey = embedDBGetLatestKey32(state);
+    maxKey++;
+    LOG_ERROR("EmbedDB max key = %d.", maxKey);
+    int8_t res = embedDBPut(state, &maxKey, shift);
+    if (res != 0) {
+        LOG_ERROR("Shift: error in inserting record. error = %d", res);
+        return -1;
+    }
+    LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
+            maxKey, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
+    embedDBClose(state);
+    embedDBtearDown(state);
+    return 0;
+}
 
-    embedDBInitIterator(state, &it);
-    uint32_t key;
+static int shiftGet(uint32_t index, ShiftData *shift) {
+    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
+             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
+                embedDBtearDown(state);
+                EMDB_MEM_FREE(state);
+                LOG_ERROR("Error in setuping embedDB.");
+                return -1;
+    }
     bool found = false;
-    while (embedDBNext(state, &it, &key, shift)) {
-        if (key == index) {
-            // LOG_DEBUG("shift is found...");
-            found = true;
-            break;
-        }
+    if (embedDBGet(state, &index, shift) == 0) {
+        found = true;
     }
-    if (!found) {
-        // LOG_DEBUG("shift is not found...");
-    }
-    embedDBCloseIterator(&it);
     embedDBClose(state);
     embedDBtearDown(state);
     return found ? 0 : -1;
@@ -63,6 +53,7 @@ static int shiftGet(uint32_t index, ShiftData *shift) {
 
 void reset() {
     OOP_CALL(file(), remove, SHIFTS_RECORD_PATH);
+    OOP_CALL(file(), remove, SHIFTS_RECORD_IDX_PATH);
 }
 
 OOP_CTOR(Shiftss) {

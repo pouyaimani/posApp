@@ -2,61 +2,95 @@
 #include "logger.h"
 #include <math.h>
 
-#define HEADER_SIZE 6
+static inline void setBitmapSize(embedDBState *state, uint32_t numPages) {
+    // Roughly one bucket per ~4 pages, but clamped
+    uint32_t buckets = numPages / 4;
 
-#define POW2(n) (1 << (n))
-
-#define TWO_MAX_POWER 32
-
-static uint32_t pick_page_size(uint32_t size)
-{
-    for (size_t i = 0; i < TWO_MAX_POWER; i++) {
-        uint32_t candidate = pow(2,i);
-        if (candidate > size) {
-            return candidate;
-        }
+    if (buckets < 8) {
+        buckets = 8;    // minimum useful
+    } else if (buckets < 16) {
+        buckets = 16;
+    } else {
+        buckets = 64;   // maximum realistic
     }
-    return 0;
+    state->bitmapSize = (buckets + 7) / 8;   // round up
+
+    if (state->bitmapSize == 1) {
+        state->inBitmap = inBitmapInt8;
+        state->updateBitmap = updateBitmapInt8;
+        state->buildBitmapFromRange = buildBitmapInt8FromRange;
+    } else if(state->bitmapSize == 2) {
+        state->inBitmap = inBitmapInt16;
+        state->updateBitmap = updateBitmapInt16;
+        state->buildBitmapFromRange = buildBitmapInt16FromRange;
+    } else if (state->bitmapSize == 8) {
+        state->inBitmap = inBitmapInt64;
+        state->updateBitmap = updateBitmapInt64;
+        state->buildBitmapFromRange = buildBitmapInt64FromRange;
+    }
+}
+
+static int getBufferCount(uint32_t parameters) {
+    int count = 2;
+    if(EMBEDDB_USING_INDEX(parameters)) count += 2;
+    if(EMBEDDB_USING_VDATA(parameters)) count += 2;
+    return count;
+
+}
+static inline uint32_t calcNumIndexPages(uint32_t numPages)
+{
+    uint32_t n = numPages / 50;    // ≈2%
+    if (n < 4) n = 4;              // minimum required for stability
+    return n;
 }
 
 
 int8_t embedDBSetup(embedDBState *state,
-                    const char *dbName,
+                    const char *dbPath,
+                    const char *dbIndexPath,
                     uint16_t keySize,
                     uint16_t dataSize,
                     uint32_t pageSize,
                     uint16_t pageNum)
 {
-    uint32_t recordSize = keySize + dataSize;
-
     /* Basic configuration */
     state->keySize = keySize;
     state->dataSize = dataSize;
     state->parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY;
 
-    state->recordSize = recordSize;
-
-    /* Default header size */
-    state->headerSize = 6;
-
+    state->recordSize = keySize + dataSize;
     /* Compute page size */
     state->pageSize = pageSize;
 
     /* Default erase block size */
     state->eraseSizeInPages = 1;
-
-    if (pageNum < 2 * state->eraseSizeInPages) {
-#ifdef PRINT_ERRORS
-        debug_log("ERROR: Not enough pages for embedDB.\n");
-#endif
-        return -1;
-    }
-
     uint16_t safetyMargin = 2;
     state->numDataPages = pageNum + safetyMargin;
 
+    /* Default spline config */
+    state->numSplinePoints = 8;
+
+    // Function pointers that can compare two keys/data
+    state->compareKey = int32Comparator;
+    // state->compareData = dataComparator;
+
+    state->fileInterface = getFileInterface();
+    state->dataFile = setupFile(dbPath);
+
+    state->rules = NULL;
+    state->numRules = 0;
+
+    if (dbIndexPath) {
+        state->parameters |= (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
+        setBitmapSize(state, pageNum);
+        state->numIndexPages = calcNumIndexPages(pageNum);
+        state->indexFile = setupFile(dbIndexPath);
+    } else {
+        state->indexFile = NULL;
+    }
+
     /* Minimum buffers */
-    state->bufferSizeInBlocks = 4;
+    state->bufferSizeInBlocks = getBufferCount(state->parameters);
     size_t bufferSize = state->bufferSizeInBlocks * state->pageSize;
     state->buffer = EMDB_MEM_ALLOC(bufferSize);
     if (!state->buffer) {
@@ -67,29 +101,24 @@ int8_t embedDBSetup(embedDBState *state,
     }
     memset(state->buffer, 0, bufferSize);
 
-    /* Default spline config */
-    state->numSplinePoints = 8;
-
-    // Function pointers that can compare two keys/data
-    state->compareKey = int32Comparator;
-    // state->compareData = dataComparator;
-
-    state->fileInterface = getFileInterface();
-    state->dataFile = setupFile(dbName);
-
-    state->rules = NULL;
-    state->numRules = 0;
-
     /* Initialize database */
     int ret = embedDBInit(state, 1);
 
-    // embedDBPrintInit(state);
+    static bool once = true;
+    if (once) {
+        embedDBPrintInit(state);
+        debug_log("state->numIndexPages, %d", state->numIndexPages);
+        debug_log("state->bufferSizeInBlocks, %d", state->bufferSizeInBlocks);
+        debug_log("state->bitmapSize, %d", state->bitmapSize);
+        once = false;
+    }
 
     return ret;
 }
 
 int8_t embedDBtearDown(embedDBState *state) {
     state->fileInterface->teardown(state->dataFile);
+    state->fileInterface->teardown(state->indexFile);
     EMDB_MEM_FREE(state->buffer);
     EMDB_MEM_FREE(state->fileInterface);
 }
