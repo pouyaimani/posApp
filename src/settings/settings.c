@@ -110,11 +110,8 @@ static const DataDescriptor settingsDsc[] = {
     DSC_BYTE(__settings.terminal.connectMode, DEFAULT_CONNECT_MODE),
 
     // 🔹 Shift
-    DSC_BIN(__settings.shift.data, sizeof(__settings.shift.data), sizeof(__settings.shift.data), NULL),
-
-    DSC_INT(__settings.shift.latest, DEFAULT_SHIFT_LATEST),
-    DSC_INT(__settings.shift.isEnable, DEFAULT_SHIFT_ENABLE),
-    DSC_INT(__settings.shift.isActive, DEFAULT_SHIFT_ACTIVE),
+    DSC_INT(__settings.terminal.shiftEnable, DEFAULT_SHIFT_ENABLE),
+    DSC_INT(__settings.terminal.shiftActive, DEFAULT_SHIFT_ACTIVE),
 
     // 🔹 Amount settings
     DSC_INT(__settings.terminal.maxAmntEnable, DEFAULT_MAX_AMNT_EN),

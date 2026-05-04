@@ -5,14 +5,23 @@
 #include <stdint.h>
 #include "settings/settings.h"
 
-OOP_CLASS(Shiftss) {
-    OOP_METHOD(void, init);
-    OOP_METHOD(int, insert, uint32_t index, ShiftData *);
-    OOP_METHOD(int, flush);
+typedef struct __attribute__((packed)) {
+        uint32_t startDate;
+        uint32_t startTime;
+        uint32_t endDate;
+        uint32_t endTime;
+} ShiftData;
+
+OOP_CLASS(Shifts) {
+    OOP_METHOD(int, keep, ShiftData *);
+    OOP_METHOD(int, getKeeped, ShiftData *);
+    OOP_METHOD(int, insert, ShiftData *);
     OOP_METHOD(int, get, uint32_t, ShiftData *);
+    OOP_METHOD(int, getLatest, uint32_t *, ShiftData *);
+    OOP_METHOD(uint32_t, getLatestIdx);
     OOP_METHOD(void, reset);
 };
 
-Shiftss *shifts();
+Shifts *shifts();
 
 #endif

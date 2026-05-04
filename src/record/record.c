@@ -61,8 +61,8 @@ void tearDown(void) {}
 // ============================================================
 void test_circular_overwrite_with_logs() {
     state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
-    setupEmbedDB(state, TRANS_RECORD_PATH, 10000,
-                                  sizeof(TxnData), sizeof(uint32_t));
+    // setupEmbedDB(state, TRANS_RECORD_PATH, 10000,
+    //                               sizeof(TxnData), sizeof(uint32_t));
 
     uint32_t totalInsert = 150; // force overwrite
     // ---------- WRITE ----------
