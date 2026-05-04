@@ -7,13 +7,15 @@
 #include "storage/storage.h"
 #include "utility/utility.h"
 #include "settings/settings.h"
+#include "record/shift/shifts.h"
+#include "logger.h"
 
 static Device *dev;
 
 static Menu shiftItemMenu;
 static lv_obj_t *shiftMenu;
 
-static Shifts *shiftStg;
+static TerminalSettings *terminalStg;
 
 typedef enum {
     SHIFT_ITEM_ENABLE = 0,
@@ -128,7 +130,7 @@ static void dateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size) 
 
 STATE_DEF_ENTER(ShiftEnable) {
     uiOnOffMenu(&EnMenu, getDisplay()->screen);
-    OOP_CALL(&EnMenu, setChecked, !shiftStg->isEnable);
+    OOP_CALL(&EnMenu, setChecked, !terminalStg->shiftEnable);
     OOP_CALL(&EnMenu, show);
 }
 
@@ -144,27 +146,32 @@ STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
         if (EnMenu.idx) {
-            if (shiftStg->isActive) {
+            if (terminalStg->shiftActive) {
                 GOTO_INFO(state->parent, state->parent, "شیفت فعال می باشد", "ابتدا شیفت فعال را ببندید");
                 return;
             }
         }
         OOP_CALL(&EnMenu, setChecked, EnMenu.idx);
-        shiftStg->isEnable = !EnMenu.idx;
+        terminalStg->shiftEnable = !EnMenu.idx;
     }
 }
 
 /******************** Show current shift sub state **********************/
 
 STATE_DEF_ENTER(ShowCurrentShift) {
-    if (shiftStg->isActive) {
-        uint16_t latest = shiftStg->latest;
-        uint32_t sdate = shiftStg->data[latest].startDate;
-        uint32_t stime = shiftStg->data[latest].startTime;
+    if (terminalStg->shiftActive) {
+        uint32_t idx = shifts()->getLatestIdx();
+        ShiftData data;
+        if (shifts()->getKeeped(&data) != 0) {
+            return;
+        }
+
+        uint32_t sdate = data.startDate;
+        uint32_t stime = data.startTime;
         char dt[24] = {0};
         shiftMenu = createShiftMenu(getDisplay()->screen);
         dateTimeToStr(sdate, stime, dt, sizeof(dt));
-        showShift(shiftMenu, latest, dt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
+        showShift(shiftMenu, idx, dt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
         GOTO_INFO(state->parent, state->parent, "شیفت فعالی یافت نشد", "");
@@ -189,17 +196,17 @@ STATE_DEF_HANDLE(ShowCurrentShift, KeypadEvent) {
 static uint32_t sdate, stime;
 
 STATE_DEF_ENTER(CreateShift) {
-    if (!shiftStg->isEnable) {
+    if (!terminalStg->shiftEnable) {
         GOTO_INFO(state->parent, state->parent, "شیفت غیر فعال می باشد", "ابتدا شیفت را فعال کنید");
         return;
     }
-    if (!shiftStg->isActive) {
-        uint16_t latest = shiftStg->latest;
+    if (!terminalStg->shiftActive) {
+        uint16_t idx = shifts()->getLatestIdx();
         shiftMenu = createShiftMenu(getDisplay()->screen);
         char sdt[24];
         dateTimeToInt(&sdate, &stime);
         dateTimeToStr(sdate, stime, sdt, sizeof(sdt));
-        showShift(shiftMenu, latest, sdt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
+        showShift(shiftMenu, idx, sdt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
         GOTO_INFO(state->parent, state->parent, "شیفت در حال اجرا می باشد", "");
@@ -218,11 +225,11 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
         SM_GOTO(state->parent);
     } else {
         GOTO_INFO(state->parent, state->parent, "شیفت با موفقیت فعال شد", "");
-        shiftStg->isActive = true;
-        uint16_t latest = shiftStg->latest;
-        shiftStg->data[latest].startDate = sdate;
-        shiftStg->data[latest].startTime = stime;
-        settings()->save();
+        terminalStg->shiftActive = true;
+        ShiftData data;
+        data.startDate = sdate;
+        data.startTime = stime;
+        shifts()->keep(&data);
     }
 }
 
@@ -231,17 +238,17 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
 static uint32_t edate, etime;
 
 STATE_DEF_ENTER(CloseShift) {
-    if (shiftStg->isActive) {
-        uint16_t latest = shiftStg->latest;
-        uint32_t sdate = shiftStg->data[latest].startDate;
-        uint32_t stime = shiftStg->data[latest].startTime;
+    if (terminalStg->shiftActive) {
+        uint16_t idx = shifts()->getLatestIdx();
+        ShiftData data;
+        shifts()->getKeeped(&data);
         dateTimeToInt(&edate, &etime);
         char sdt[24] = {0};
         char edt[24] = {0};
         shiftMenu = createShiftMenu(getDisplay()->screen);
-        dateTimeToStr(sdate, stime, sdt, sizeof(sdt));
+        dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
         dateTimeToStr(edate, etime, edt, sizeof(edt));
-        showShift(shiftMenu, latest, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
+        showShift(shiftMenu, idx, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
         LV_SHOW(shiftMenu);
     } else {
         GOTO_INFO(state->parent, state->parent, "شیفت فعالی یافت نشد", "");
@@ -259,13 +266,16 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else {
-        uint16_t latest = shiftStg->latest;
-        shiftStg->data[latest].endDate = edate;
-        shiftStg->data[latest].endTime = etime;
-        shiftStg->isActive = false;
-        shiftStg->latest++;
-        settings()->save();
-        GOTO_INFO(state->parent, state->parent, "شیفت با موفقیت بسته شد", "");
+        ShiftData data;
+        shifts()->getKeeped(&data);
+        data.endDate = edate;
+        data.endTime = etime;
+        terminalStg->shiftActive = false;
+        if (shifts()->insert(&data) == 0) {
+            GOTO_INFO(state->parent, state->parent, "شیفت با موفقیت بسته شد", "");
+        } else {
+            GOTO_INFO(state->parent, state->parent, "خطا در بستن شیفت", "");
+        }
     }
 }
 
@@ -276,23 +286,21 @@ static SubState *handleReports;
 
 STATE_DEF_ENTER(HandleReports) {
     Input *in = getState(STATE_ID_INPUT);
-    int inval = libAtoi(in->input);
-    int shiftNum = inval - 1;
-    if (inval <= 0 || shiftNum >= shiftStg->latest) {
+    int shiftNum = libAtoi(in->input);
+    ShiftData data;
+    if (shifts()->get(shiftNum, &data) != 0) {
         GOTO_INFO(state->parent, state->parent, "شیفت مورد نظر یافت نشد", "");
-    } else {
-        uint32_t sdate = shiftStg->data[shiftNum].startDate;
-        uint32_t stime = shiftStg->data[shiftNum].startTime;
-        uint32_t edate = shiftStg->data[shiftNum].endDate;
-        uint32_t etime = shiftStg->data[shiftNum].endTime;
-        char sdt[24] = {0};
-        char edt[24] = {0};
-        shiftMenu = createShiftMenu(getDisplay()->screen);
-        dateTimeToStr(sdate, stime, sdt, sizeof(sdt));
-        dateTimeToStr(edate, etime, edt, sizeof(edt));
-        showShift(shiftMenu, shiftNum, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
-        LV_SHOW(shiftMenu);
+        return;
     }
+    char sdt[24] = {0};
+    char edt[24] = {0};
+    shiftMenu = createShiftMenu(getDisplay()->screen);
+    LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
+            shiftNum, data.startTime, data.endTime, data.startDate, data.endDate);
+    dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
+    dateTimeToStr(data.endDate, data.endTime, edt, sizeof(edt));
+    showShift(shiftMenu, shiftNum - 1, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
+    LV_SHOW(shiftMenu);
 }
 
 STATE_DEF_EXIT(HandleReports) {
@@ -332,7 +340,7 @@ OOP_CTOR(Shift, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Shift);
     dev = getDevice();
-    shiftStg = &settings()->shift;
+    terminalStg = &settings()->terminal;
 
     subShift[SHIFT_ITEM_ENABLE] = (SubState *)GET_MEM(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_ENABLE], self, "en/dis shift");

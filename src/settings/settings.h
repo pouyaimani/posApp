@@ -41,6 +41,8 @@ typedef struct  __attribute__((packed)) {
     char amountList[12 + 1][MAX_AMOUNT_LIST];
     int amountListCnt;
     int fixedAmountCoef;
+    uint8_t shiftEnable;
+    uint8_t shiftActive;
 } TerminalSettings;
 
 typedef struct __attribute__((packed)) {
@@ -63,27 +65,12 @@ OOP_CLASS(TxnSettings){
 };
 
 typedef struct __attribute__((packed)) {
-        uint32_t startDate;
-        uint32_t startTime;
-        uint32_t endDate;
-        uint32_t endTime;
-} ShiftData;
-
-typedef struct __attribute__((packed)) {
-    ShiftData data[MAX_SHIFT_CNT];
-    uint16_t latest;
-    uint8_t isEnable;
-    uint8_t isActive;
-} Shifts;
-
-typedef struct __attribute__((packed)) {
     OOP_METHOD(int, save);
     OOP_METHOD(int, load);
     OOP_METHOD(int, reset);
     TerminalSettings terminal;
     ServerSettings server;
     TxnSettings txn;
-    Shifts shift;
 } DevSettings;
 
 DevSettings *settings();
