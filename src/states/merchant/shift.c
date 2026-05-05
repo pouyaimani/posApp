@@ -7,7 +7,7 @@
 #include "storage/storage.h"
 #include "utility/utility.h"
 #include "settings/settings.h"
-#include "record/shift/shifts.h"
+#include "record/shiftRecs.h"
 #include "logger.h"
 
 static Device *dev;

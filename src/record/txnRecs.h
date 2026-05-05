@@ -1,10 +1,9 @@
-#ifndef RECORD_H_
-#define RECORD_H_
+#ifndef TXNRECS_H_
+#define TXNRECS_H_
 
 #include "oop.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "dcfg.h"
 
 typedef enum {
 	TS_START = 0,
@@ -31,7 +30,6 @@ typedef enum {
 typedef enum {
 	CL_NORMAL = 1,
 	CL_SPECIFIC = 2,
-
 } ChargeLevel;
 
 typedef struct {
@@ -57,17 +55,16 @@ typedef struct {
 	char ResponseCode[2+1];
 
 	TransactionStatus  Status;
-} TxnRecord;
+} TxnData_t;
 
-OOP_CLASS(Record) {
-    OOP_METHOD(void, init);
-    OOP_METHOD(void, insert, TxnRecord *);
-    OOP_METHOD(void, get, TxnRecord *);
+OOP_CLASS(TxnRecord) {
+    OOP_METHOD(void, insert, TxnData_t *);
+    OOP_METHOD(void, get, TxnData_t *);
+	OOP_METHOD(int, getLatest, TxnData_t *);
+    OOP_METHOD(void, reset);
 };
 
-OOP_CTOR(Record);
-
-Record *record(void);
+TxnRecord *txnrecord(void);
 
 int doTest(void);
 
