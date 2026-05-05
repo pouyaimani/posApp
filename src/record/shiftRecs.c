@@ -21,10 +21,10 @@ static uint32_t latestIdx;
 static ShiftData tmpShift;
 BEGIN_DSC_ARRAY;
 static const DataDescriptor shiftDesc[] = {
-    DSC_INT(tmpShift.startTime, 0),
+    DSC_INT(tmpShift.startDate, 0),
     DSC_INT(tmpShift.startTime, 0),
     DSC_INT(tmpShift.endDate, 0),
-    DSC_INT(tmpShift.endDate, 0),
+    DSC_INT(tmpShift.endTime, 0),
 };
 
 static int8_t shiftInsert(ShiftData *shift) {
@@ -33,21 +33,21 @@ static int8_t shiftInsert(ShiftData *shift) {
                 embedDBtearDown(state);
                 EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
-                return -1;
+                return ERR_NOK;
     }
     uint32_t idx = latestIdx + 1;
     LOG_ERROR("EmbedDB max key = %d.", idx);
     int8_t res = embedDBPut(state, &idx, shift);
     if (res != 0) {
         LOG_ERROR("Shift: error in inserting record. error = %d", res);
-        return -1;
+        return ERR_NOK;
     }
     LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
             idx, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
     embedDBClose(state);
     embedDBtearDown(state);
     latestIdx++;
-    return 0;
+    return ERR_OK;
 }
 
 static int8_t shiftGet(uint32_t index, ShiftData *shift) {
@@ -64,7 +64,7 @@ static int8_t shiftGet(uint32_t index, ShiftData *shift) {
     }
     embedDBClose(state);
     embedDBtearDown(state);
-    return found ? 0 : -1;
+    return found ? ERR_OK : ERR_NOK;
 }
 
 static uint32_t getLatestIdx() {
@@ -72,6 +72,7 @@ static uint32_t getLatestIdx() {
 }
 
 static int8_t getLatest(uint32_t *latest, ShiftData *shift) {
+    *latest = latestIdx;
     return shiftGet(latestIdx, shift);
 }
 
@@ -86,7 +87,7 @@ static int8_t getLatestFirstTime(uint32_t *latest) {
     *latest = embedDBGetLatestKey32(state);
     embedDBClose(state);
     embedDBtearDown(state);
-    return 0;
+    return ERR_OK;
 }
 
 static int8_t keep(ShiftData *data) {
@@ -94,16 +95,19 @@ static int8_t keep(ShiftData *data) {
     tmpShift.startTime = data->startTime;
     tmpShift.endDate = data->endDate;
     tmpShift.endTime = data->endTime;
-    storage()->save(shiftDesc, sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP);
+    return storage()->save(shiftDesc, sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP);
 }
 
 static int8_t getKeeped(ShiftData *data) {
-    storage()->load(shiftDesc, sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP);
+    if (storage()->load(shiftDesc, 
+        sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP) != ERR_OK) {
+            return ERR_NOK;
+    }
     data->startDate = tmpShift.startDate;
     data->startTime = tmpShift.startTime;
     data->endDate = tmpShift.endDate;
     data->endTime = tmpShift.endTime;
-    return 0;
+    return ERR_OK;
 }
 
 
@@ -111,9 +115,10 @@ static int8_t reset() {
     if (embedDBreset(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 LOG_ERROR("Error in setuping embedDB.");
-                return -1;
+                return ERR_NOK;
     }
-    return 0;
+    latestIdx = 0;
+    return ERR_OK;
 }
 
 OOP_CTOR(Shifts) {
@@ -128,7 +133,7 @@ OOP_CTOR(Shifts) {
     state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
     if (!state) {
         LOG_ERROR("Shifts: not enough memory for embedDB.");
-        return -1;
+        return;
     }
     uint32_t idx;
     if (getLatestFirstTime(&idx) == 0) {

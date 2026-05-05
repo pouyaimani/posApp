@@ -33,23 +33,23 @@ int storageTlvHandler(const TlvItem *item, void *user) {
         if ((s->type) == T_INT) {
             if (item->valueLen != sizeof(uint32_t)) {
                 LOG_TRACE("item %d valueLen = %d, expcted len = %d", i, item->valueLen, sizeof(uint32_t));
-                return -1;
+                return ERR_NOK;
             }
         } else if ((s->type) == T_BYTE) {
             if (item->valueLen != sizeof(uint8_t))  {
                 LOG_TRACE("item %d valueLen = %d, expcted len = %d", i, item->valueLen, sizeof(uint8_t));
-                return -1;
+                return ERR_NOK;
             }
         } else if (s->type == T_BINARY) {
             if (item->valueLen != s->maxLen) {
                 LOG_TRACE("binary size mismatch");
-                return -1;
+                return ERR_NOK;
             }
         } else {
             if (item->valueLen > s->maxLen ||
                 item->valueLen < s->minLen) {
                     LOG_TRACE("item %d valueLen = %d, max len = %d, min len = %d", i, item->valueLen, s->maxLen, s->minLen);
-                    return -1;
+                    return ERR_NOK;
                 }
             memset(s->address, 0, s->maxLen + 1);
         }
@@ -58,12 +58,11 @@ int storageTlvHandler(const TlvItem *item, void *user) {
         break;
     }
 
-    return 0;
+    return ERR_OK;
 }
 
 static void init(DataDescriptor *dsc, uint32_t itemsCount) {
     uint32_t i = 0;
-    LOG_TRACE("itemsCount = %d", itemsCount);
 
     for (i = 0; i < itemsCount; i++)
     {
@@ -101,12 +100,12 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
     int32_t ret = 0;
     FileHandle *fp = OOP_CALL(file(), open, addr, "rb");
     if (!fp) {
-        return -1;
+        return ERR_NOK;
     }
     LOG_DEBUG("--------------------");
     if (OOP_CALL(file(), seek, fp, 0 , FILE_SEEK_ORG_SET) != 0) {
         OOP_CALL(file(), close, fp);
-        return -1;
+        return ERR_NOK;
     }
     LOG_DEBUG("--------------------");
     size_t readsize = OOP_CALL(file(), read, fileSizeBytes, 4 , 1, fp);
@@ -115,7 +114,7 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
         LOG_ERROR("File read error. file read error = %d, read size = %d, "
                     "setting file header len = %d", ret, readsize, SETTINGS_FILE_HEADER_LEN);
         OOP_CALL(file(), close, fp);
-        return -1;
+        return ERR_NOK;
     }
     LOG_DEBUG("--------------------");
     *fileSize = (uint32_t) (fileSizeBytes[0] * 256 + fileSizeBytes[1]);
@@ -125,12 +124,12 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
         LOG_ERROR("File read error. file size = %d, max file size = %d",
                  fileSize, SETTINGS_FILE_MAX_SIZE);
         OOP_CALL(file(), close, fp);
-        return -1;
+        return ERR_NOK;
     }
 LOG_DEBUG("--------------------");
     *fileCrc = (uint32_t) (fileSizeBytes[2] * 256 + fileSizeBytes[3]);
     OOP_CALL(file(), close, fp);
-    return 0;
+    return ERR_OK;
 }
 
 static DataDescriptor *getDataDescriptor(char *name, DataDescriptor *dsc, uint32_t itemCount) {
@@ -149,7 +148,7 @@ static DataDescriptor *getDataDescriptor(char *name, DataDescriptor *dsc, uint32
     return item;
 }
 
-static void saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
+static int8_t saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
     uint8_t *fileWriteBuf = NULL;
     uint32_t itemWriteLen = 0;
     uint16_t crc16 = 0;
@@ -160,7 +159,7 @@ static void saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
     if (addr == NULL || strlen(addr) == 0)
     {
         LOG_ERROR("Address format err ...");
-        return;
+        return ERR_NOK;
     }
 
     writeBufLen += SETTINGS_FILE_HEADER_LEN;
@@ -168,7 +167,7 @@ static void saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
     fileWriteBuf = (uint8_t *) GET_MEM(SETTINGS_FILE_MAX_SIZE);
     if (fileWriteBuf == NULL)
     {
-        return;
+        return ERR_NOK;
     }
 
     memset(fileWriteBuf, 0, SETTINGS_FILE_MAX_SIZE);
@@ -206,22 +205,23 @@ static void saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
     fileWriteBuf[3] = (uint8_t) (crc16 & 0xFFu);
     FileHandle *fp = OOP_CALL(file(), open, addr, "wb");
     if (!fp) {
-        return -1;
+        return ERR_NOK;
     }
     if (OOP_CALL(file(), seek, fp, 0 , FILE_SEEK_ORG_SET) != 0) {
         OOP_CALL(file(), close, fp);
-        return -1;
+        return ERR_NOK;
     }
     ret = OOP_CALL(file(), write, fileWriteBuf, writeBufLen, 1, fp);
     OOP_CALL(file(), close, fp);
     if (ret < 0) {
-        return -1;
+        return ERR_NOK;
     }
     LOG_TRACE("Saving storage is successfully done.");
     FREE_MEM(fileWriteBuf);
+    return ERR_OK;
 }
 
-static void loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
+static int8_t loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
     uint8_t *fileCaches = NULL;
     uint32_t fileSize = 0;
     uint32_t fileCrc = 0;
@@ -232,7 +232,7 @@ static void loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
     if (addr == NULL || strlen(addr) == 0)
     {
         LOG_ERROR("reloadSettings err , addr is err format or func is null...");
-        return;
+        return ERR_NOK;
     }
 
     ret = readSettingsFileHeadInfo(addr, &fileSize, &fileCrc);
@@ -251,11 +251,11 @@ static void loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
     readSize = fileSize;
     FileHandle *fp = OOP_CALL(file(), open, addr, "rb");
     if (!fp) {
-        return -1;
+        return ERR_NOK;
     }
     if (OOP_CALL(file(), seek, fp, SETTINGS_FILE_HEADER_LEN , FILE_SEEK_ORG_SET) != 0) {
         OOP_CALL(file(), close, fp);
-        return -1;
+        return ERR_NOK;
     }
     readSize = OOP_CALL(file(), read, fileCaches, fileSize, 1, fp);
     if (readSize != fileSize) {
@@ -283,19 +283,19 @@ static void loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr
 
     LOG_TRACE("parse settings tlv data success ... ");
     FREE_MEM(fileCaches);
-    return;
+    return ERR_OK;
 
     init_settings:
 
     if (fileCaches != NULL) FREE_MEM(fileCaches);
 
     init(dsc, itemsCount);
-    saveStorage(dsc, itemsCount, addr);
+    return saveStorage(dsc, itemsCount, addr);
 }
 
-static void resetStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
+static int8_t resetStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
     init(dsc, itemsCount);
-    saveStorage(dsc, itemsCount, addr);
+    return saveStorage(dsc, itemsCount, addr);
 }
 
 OOP_CTOR(Storage) {

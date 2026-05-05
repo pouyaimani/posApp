@@ -45,9 +45,9 @@ typedef struct {
 } DataDescriptor;
 
 OOP_CLASS(Storage){
-    OOP_METHOD(void, load, DataDescriptor *dsc, size_t itemsCount, const char *addr);
-    OOP_METHOD(void, save, DataDescriptor *dsc, size_t itemsCount, const char *addr);
-    OOP_METHOD(void, reset, DataDescriptor *dsc, size_t itemsCount, const char *addr);
+    OOP_METHOD(int8_t, load, DataDescriptor *dsc, size_t itemsCount, const char *addr);
+    OOP_METHOD(int8_t, save, DataDescriptor *dsc, size_t itemsCount, const char *addr);
+    OOP_METHOD(int8_t, reset, DataDescriptor *dsc, size_t itemsCount, const char *addr);
 };
 
 OOP_CTOR(Storage);

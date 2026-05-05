@@ -53,6 +53,8 @@ int8_t embedDBSetup(embedDBState *state,
                     uint32_t pageSize,
                     uint16_t pageNum)
 {
+    if (!state) 
+        return -1;
     /* Basic configuration */
     state->keySize = keySize;
     state->dataSize = dataSize;
@@ -123,6 +125,8 @@ int8_t embedDBreset(embedDBState *state,
                     uint16_t dataSize,
                     uint32_t pageSize,
                     uint16_t pageNum) {
+    if (!state) 
+        return -1;                        
     state->fileInterface->removeFile(dbPath);
     state->fileInterface->removeFile(dbIndexPath);
     memset(state, 0 , sizeof(state));
@@ -141,8 +145,11 @@ int8_t embedDBreset(embedDBState *state,
 }
 
 int8_t embedDBtearDown(embedDBState *state) {
+    if (!state) 
+        return -1;
     state->fileInterface->teardown(state->dataFile);
     state->fileInterface->teardown(state->indexFile);
     EMDB_MEM_FREE(state->buffer);
     EMDB_MEM_FREE(state->fileInterface);
+    return 0;
 }
