@@ -653,3 +653,90 @@ void toPersianDigits(char *out, size_t out_size, int value)
         }
     }
 }
+
+void getDateTimeUint(uint32_t *date, uint32_t *time) {
+    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+    Date_t jd = getJalaliDate();
+    int hh, mm, ss;
+    sscanf(dt->time, "%2d%2d%2d", &hh, &mm, &ss);
+    *date = jd.year * 10000 + 
+            jd.month * 100 + jd.day;
+    *time = hh * 10000 + 
+            mm * 100 + ss;
+}
+
+void dateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size) {
+    char dt[24] = {0};
+    int yy = date / 10000;
+    int tmp = (date % 10000);
+    int mm = tmp / 100;
+    int dd = tmp % 100;
+
+    int hh = time / 10000;
+    tmp = (time % 10000);
+    int min = tmp / 100;
+    int ss = tmp % 100;
+    snprintf(str, size, "%02d:%02d:%02d-%02d/%02d/%04d", ss, min, hh, dd, mm, yy);
+}
+
+void extractDatetimeStr(const char *buf, char *date, char *time) {
+    // Basic length check (optional, for safety)
+    if (strlen(buf) < 14) {
+        // invalid input, you can handle error as needed
+        date[0] = '\0';
+        time[0] = '\0';
+        return;
+    }
+
+    // Copy "yyyymmdd"
+    memcpy(date, buf, 8);
+    date[8] = '\0';
+
+    // Copy "hhmmss"
+    memcpy(time, buf + 8, 6);
+    time[6] = '\0';
+}
+
+void extractDatetimeInt(const char *buf, uint32_t *date, uint32_t *time)
+{
+    char tmp[9];  // enough for "yyyymmdd" + '\0'
+
+    if (strlen(buf) < 14) {
+        *date = -1;
+        *time = -1;
+        return;
+    }
+
+    // Extract date (yyyymmdd)
+    memcpy(tmp, buf, 8);
+    tmp[8] = '\0';
+    *date = toInt(tmp);
+
+    // Extract time (hhmmss)
+    memcpy(tmp, buf + 8, 6);
+    tmp[6] = '\0';
+    *time = toInt(tmp);
+}
+
+#include <stdint.h>
+
+/*
+ * Combines two uint32_t values into a single uint64_t
+ * date: yyyymmdd (high 32 bits)
+ * time: hhmmss   (low 32 bits)
+ * returns: uint64_t combined as (date << 32) | time
+ */
+uint64_t packDateTime(uint32_t date, uint32_t time) {
+    return ((uint64_t)date << 32) | time;
+}
+
+/*
+ * Extract date and time from uint64_t
+ * dateTime: packed value
+ * date: output pointer to uint32_t (YYYMMDD)
+ * time: output pointer to uint32_t (HHMMSS)
+ */
+void unpackDateTime(uint64_t dateTime, uint32_t *date, uint32_t *time) {
+    *date = (uint32_t)(dateTime >> 32);
+    *time = (uint32_t)(dateTime & 0xFFFFFFFFULL);
+}

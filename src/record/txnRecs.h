@@ -4,6 +4,8 @@
 #include "oop.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include "embedDB/embedDB.h"
+#include "embedDB/query-interface/advancedQueries.h"
 
 typedef enum {
 	TS_START = 0,
@@ -33,34 +35,58 @@ typedef enum {
 } ChargeLevel;
 
 typedef struct {
-	int id;
-	char ProcessCode[6+1];
-	char MaskedPan[16+1];
-	char PurchaseId[31];
-	char Amount[12+1];
-	char PriceWithDiscount[12+1];
-	char STAN[6+1];
-	char Trace[6+1];
-	char DateTime[14+1];
-	long long RawTime;
+	long long timeStamp;
+} TxnIndex_t;
+
+typedef struct {
+	uint8_t id;
+	char processCode[6+1];
+	char maskedPan[16+1];
+	char purchaseId[31];
+	char amount[12+1];
+	char priceWithDiscount[12+1];
+	char stan[6+1];
+	char trace[6+1];
+	char dateTime[14+1];
 	char RRN[12+1];
-	char BillId[24];
-	char PaymentId[24];
+	char billId[24];
+	char paymentId[24];
 	unsigned long companyId;
 	char companyName[64]; // 116 kahroba
-	char CellphonNumber[11+1]; // For Kahroba
+	char phoneNumber[11+1]; // For Kahroba
 	ChargeLevel chargeLevel;
-	char AccountIndex[8];
-	char AccountCaption[32+1];
-	char ResponseCode[2+1];
+	char accountIndex[8];
+	char accountCaption[32+1];
+	char responseCode[2+1];
 
 	TransactionStatus  Status;
 } TxnData_t;
 
+typedef enum {
+	QUERY_CUL_DATE_TIME = 0,
+	QUERY_CUL_STAN,
+	QUERY_CUL_REF_NUM,
+	QUERY_CUL_TXN_TYPE
+} QueryColumn_t;
+
+typedef struct {
+	embedDBIterator *it;
+	embedDBOperator *op;
+} QueryOperation_t;
+
+
+typedef bool (*TxnHandler)(const TxnData_t* rec, void* userData);
+
+OOP_CLASS(TxnQuery) {
+	OOP_METHOD(void, init, QueryOperation_t *);
+	OOP_METHOD(void, where, QueryOperation_t *, QueryColumn_t, int, void *value);
+};
+
+TxnQuery *txnquery(void);
+
 OOP_CLASS(TxnRecord) {
     OOP_METHOD(void, insert, TxnData_t *);
-    OOP_METHOD(void, get, TxnData_t *);
-	OOP_METHOD(int, getLatest, TxnData_t *);
+	OOP_METHOD(void, select, QueryOperation_t *, TxnHandler handler);
     OOP_METHOD(void, reset);
 };
 

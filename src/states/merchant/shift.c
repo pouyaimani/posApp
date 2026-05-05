@@ -101,31 +101,6 @@ static void showShift(lv_obj_t *menu, int latest, const char *sdt,
     ShiftMenuAdd(menu, "زمان پایان  ", edt, eAlign);
 }
 
-static void dateTimeToInt(uint32_t *date, uint32_t *time) {
-    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
-    Date_t jd = getJalaliDate();
-    int hh, mm, ss;
-    sscanf(dt->time, "%2d%2d%2d", &hh, &mm, &ss);
-    *date = jd.year * 10000 + 
-            jd.month * 100 + jd.day;
-    *time = hh * 10000 + 
-            mm * 100 + ss;
-}
-
-static void dateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size) {
-    char dt[24] = {0};
-    int yy = date / 10000;
-    int tmp = (date % 10000);
-    int mm = tmp / 100;
-    int dd = tmp % 100;
-
-    int hh = time / 10000;
-    tmp = (time % 10000);
-    int min = tmp / 100;
-    int ss = tmp % 100;
-    snprintf(str, size, "%02d:%02d:%02d-%02d/%02d/%04d", ss, min, hh, dd, mm, yy);
-}
-
 /******************** En/Dis shift sub state **********************/
 
 STATE_DEF_ENTER(ShiftEnable) {
@@ -204,7 +179,7 @@ STATE_DEF_ENTER(CreateShift) {
         uint16_t idx = shifts()->getLatestIdx();
         shiftMenu = createShiftMenu(getDisplay()->screen);
         char sdt[24];
-        dateTimeToInt(&sdate, &stime);
+        getDateTimeUint(&sdate, &stime);
         dateTimeToStr(sdate, stime, sdt, sizeof(sdt));
         showShift(shiftMenu, idx, sdt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
@@ -242,7 +217,7 @@ STATE_DEF_ENTER(CloseShift) {
         uint16_t idx = shifts()->getLatestIdx();
         ShiftData data;
         shifts()->getKeeped(&data);
-        dateTimeToInt(&edate, &etime);
+        getDateTimeUint(&edate, &etime);
         char sdt[24] = {0};
         char edt[24] = {0};
         shiftMenu = createShiftMenu(getDisplay()->screen);

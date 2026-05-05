@@ -49,4 +49,26 @@ int gregorianToJalaliStr(const char *in_date, char *out_date);
 
 Date_t getJalaliDate();
 
+void dateTimeToInt(uint32_t *date, uint32_t *time);
+void dateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size);
+
+void extractDatetimeStr(const char *buf, char *date, char *time);
+void extractDatetimeInt(const char *buf, uint32_t *date, uint32_t *time);
+
+/*
+ * Combines two uint32_t values into a single uint64_t
+ * date: yyyymmdd (high 32 bits)
+ * time: hhmmss   (low 32 bits)
+ * returns: uint64_t combined as (date << 32) | time
+ */
+uint64_t packDateTime(uint32_t date, uint32_t time);
+
+/*
+ * Extract date and time from uint64_t
+ * dateTime: packed value
+ * date: output pointer to uint32_t (YYYMMDD)
+ * time: output pointer to uint32_t (HHMMSS)
+ */
+void unpackDateTime(uint64_t dateTime, uint32_t *date, uint32_t *time);
+
 #endif
