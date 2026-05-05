@@ -13,13 +13,13 @@ typedef struct __attribute__((packed)) {
 } ShiftData;
 
 OOP_CLASS(Shifts) {
-    OOP_METHOD(int, keep, ShiftData *);
-    OOP_METHOD(int, getKeeped, ShiftData *);
-    OOP_METHOD(int, insert, ShiftData *);
-    OOP_METHOD(int, get, uint32_t, ShiftData *);
-    OOP_METHOD(int, getLatest, uint32_t *, ShiftData *);
+    OOP_METHOD(int8_t, keep, ShiftData *);
+    OOP_METHOD(int8_t, getKeeped, ShiftData *);
+    OOP_METHOD(int8_t, insert, ShiftData *);
+    OOP_METHOD(int8_t, get, uint32_t, ShiftData *);
+    OOP_METHOD(int8_t, getLatest, uint32_t *, ShiftData *);
     OOP_METHOD(uint32_t, getLatestIdx);
-    OOP_METHOD(void, reset);
+    OOP_METHOD(int8_t, reset);
 };
 
 Shifts *shifts();

@@ -15,7 +15,7 @@
 #include "timer.h"
 #include "states/merchant/merchant.h"
 #include "settings/settings.h"
-#include "record/record.h"
+#include "record/txnRecs.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -151,7 +151,6 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_1) {
         print();
     }  else if (ev->key == KEY_2) {
-        doTest();
     }
 }
 

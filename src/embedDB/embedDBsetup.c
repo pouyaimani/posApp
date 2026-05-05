@@ -56,7 +56,7 @@ int8_t embedDBSetup(embedDBState *state,
     /* Basic configuration */
     state->keySize = keySize;
     state->dataSize = dataSize;
-    state->parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY;
+    state->parameters |= EMBEDDB_RECORD_LEVEL_CONSISTENCY;
 
     state->recordSize = keySize + dataSize;
     /* Compute page size */
@@ -114,6 +114,30 @@ int8_t embedDBSetup(embedDBState *state,
     }
 
     return ret;
+}
+
+int8_t embedDBreset(embedDBState *state,
+                    const char *dbPath,
+                    const char *dbIndexPath,
+                    uint16_t keySize,
+                    uint16_t dataSize,
+                    uint32_t pageSize,
+                    uint16_t pageNum) {
+    state->fileInterface->removeFile(dbPath);
+    state->fileInterface->removeFile(dbIndexPath);
+    memset(state, 0 , sizeof(state));
+    state->parameters |= EMBEDDB_RESET_DATA;
+    bool reseted = false;
+    if (embedDBSetup(state, dbPath, dbIndexPath, keySize,
+             dataSize, pageSize, pageNum) == 0) {
+                reseted = true;
+    }
+    embedDBClose(state);
+    embedDBtearDown(state);
+    if (!reseted) {
+        debug_log("embedDB: Error in reseting embedDB.");
+    }
+    return reseted ? 0 : -1;
 }
 
 int8_t embedDBtearDown(embedDBState *state) {

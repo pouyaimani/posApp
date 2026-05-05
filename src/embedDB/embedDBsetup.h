@@ -37,4 +37,12 @@ int8_t embedDBSetup(embedDBState *state,
                     uint16_t pageNum);
 int8_t embedDBtearDown(embedDBState *state);
 
+int8_t embedDBreset(embedDBState *state,
+                    const char *dbPath,
+                    const char *dbIndexPath,
+                    uint16_t keySize,
+                    uint16_t dataSize,
+                    uint32_t pageSize,
+                    uint16_t pageNum);
+
 #endif

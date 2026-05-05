@@ -27,7 +27,7 @@ static const DataDescriptor shiftDesc[] = {
     DSC_INT(tmpShift.endDate, 0),
 };
 
-static int shiftInsert(ShiftData *shift) {
+static int8_t shiftInsert(ShiftData *shift) {
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
@@ -50,7 +50,7 @@ static int shiftInsert(ShiftData *shift) {
     return 0;
 }
 
-static int shiftGet(uint32_t index, ShiftData *shift) {
+static int8_t shiftGet(uint32_t index, ShiftData *shift) {
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
@@ -71,11 +71,11 @@ static uint32_t getLatestIdx() {
     return latestIdx;
 }
 
-static int getLatest(uint32_t *latest, ShiftData *shift) {
+static int8_t getLatest(uint32_t *latest, ShiftData *shift) {
     return shiftGet(latestIdx, shift);
 }
 
-static uint8_t getLatestFirstTime(uint32_t *latest) {
+static int8_t getLatestFirstTime(uint32_t *latest) {
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
@@ -89,7 +89,7 @@ static uint8_t getLatestFirstTime(uint32_t *latest) {
     return 0;
 }
 
-static int keep(ShiftData *data) {
+static int8_t keep(ShiftData *data) {
     tmpShift.startDate = data->startDate;
     tmpShift.startTime = data->startTime;
     tmpShift.endDate = data->endDate;
@@ -97,7 +97,7 @@ static int keep(ShiftData *data) {
     storage()->save(shiftDesc, sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP);
 }
 
-static int getKeeped(ShiftData *data) {
+static int8_t getKeeped(ShiftData *data) {
     storage()->load(shiftDesc, sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP);
     data->startDate = tmpShift.startDate;
     data->startTime = tmpShift.startTime;
@@ -107,10 +107,13 @@ static int getKeeped(ShiftData *data) {
 }
 
 
-void reset() {
-    OOP_CALL(file(), remove, SHIFTS_RECORD_PATH);
-    OOP_CALL(file(), remove, SHIFTS_RECORD_IDX_PATH);
-    memset(state, 0 , sizeof(state));
+static int8_t reset() {
+    if (embedDBreset(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
+             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
+                LOG_ERROR("Error in setuping embedDB.");
+                return -1;
+    }
+    return 0;
 }
 
 OOP_CTOR(Shifts) {
