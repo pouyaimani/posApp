@@ -8,6 +8,7 @@
 #include "utility/utility.h"
 #include "settings/settings.h"
 #include "record/shift/shifts.h"
+#include "logger.h"
 
 static Device *dev;
 
@@ -159,8 +160,7 @@ STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
 
 STATE_DEF_ENTER(ShowCurrentShift) {
     if (terminalStg->shiftActive) {
-        // keeped shift index = latest index + 1
-        uint32_t idx = shifts()->getLatestIdx() + 1;
+        uint32_t idx = shifts()->getLatestIdx();
         ShiftData data;
         if (shifts()->getKeeped(&data) != 0) {
             return;
@@ -201,8 +201,7 @@ STATE_DEF_ENTER(CreateShift) {
         return;
     }
     if (!terminalStg->shiftActive) {
-        // keeped shift index = latest index + 1
-        uint16_t idx = shifts()->getLatestIdx() + 1;
+        uint16_t idx = shifts()->getLatestIdx();
         shiftMenu = createShiftMenu(getDisplay()->screen);
         char sdt[24];
         dateTimeToInt(&sdate, &stime);
@@ -240,8 +239,7 @@ static uint32_t edate, etime;
 
 STATE_DEF_ENTER(CloseShift) {
     if (terminalStg->shiftActive) {
-        // keeped shift index = latest index + 1
-        uint16_t idx = shifts()->getLatestIdx() + 1;
+        uint16_t idx = shifts()->getLatestIdx();
         ShiftData data;
         shifts()->getKeeped(&data);
         dateTimeToInt(&edate, &etime);
@@ -288,19 +286,20 @@ static SubState *handleReports;
 
 STATE_DEF_ENTER(HandleReports) {
     Input *in = getState(STATE_ID_INPUT);
-    int inval = libAtoi(in->input);
-    int shiftNum = inval - 1;
+    int shiftNum = libAtoi(in->input);
     ShiftData data;
-    if (shifts()->get(inval, &data) == 0) {
+    if (shifts()->get(shiftNum, &data) != 0) {
         GOTO_INFO(state->parent, state->parent, "شیفت مورد نظر یافت نشد", "");
         return;
     }
     char sdt[24] = {0};
     char edt[24] = {0};
     shiftMenu = createShiftMenu(getDisplay()->screen);
+    LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
+            shiftNum, data.startTime, data.endTime, data.startDate, data.endDate);
     dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
     dateTimeToStr(data.endDate, data.endTime, edt, sizeof(edt));
-    showShift(shiftMenu, shiftNum, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
+    showShift(shiftMenu, shiftNum - 1, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
     LV_SHOW(shiftMenu);
 }
 

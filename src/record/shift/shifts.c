@@ -35,17 +35,18 @@ static int shiftInsert(ShiftData *shift) {
                 LOG_ERROR("Error in setuping embedDB.");
                 return -1;
     }
-    latestIdx++;
-    LOG_ERROR("EmbedDB max key = %d.", latestIdx);
-    int8_t res = embedDBPut(state, &latestIdx, shift);
+    uint32_t idx = latestIdx + 1;
+    LOG_ERROR("EmbedDB max key = %d.", idx);
+    int8_t res = embedDBPut(state, &idx, shift);
     if (res != 0) {
         LOG_ERROR("Shift: error in inserting record. error = %d", res);
         return -1;
     }
     LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
-            latestIdx, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
+            idx, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
     embedDBClose(state);
     embedDBtearDown(state);
+    latestIdx++;
     return 0;
 }
 
@@ -74,7 +75,7 @@ static int getLatest(uint32_t *latest, ShiftData *shift) {
     return shiftGet(latestIdx, shift);
 }
 
-static uint32_t getLatestFirstTime() {
+static uint8_t getLatestFirstTime(uint32_t *latest) {
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
@@ -82,10 +83,10 @@ static uint32_t getLatestFirstTime() {
                 LOG_ERROR("Error in setuping embedDB.");
                 return -1;
     }
-    uint32_t latest = embedDBGetLatestKey32(state);
+    *latest = embedDBGetLatestKey32(state);
     embedDBClose(state);
     embedDBtearDown(state);
-    return;
+    return 0;
 }
 
 static int keep(ShiftData *data) {
@@ -109,6 +110,7 @@ static int getKeeped(ShiftData *data) {
 void reset() {
     OOP_CALL(file(), remove, SHIFTS_RECORD_PATH);
     OOP_CALL(file(), remove, SHIFTS_RECORD_IDX_PATH);
+    memset(state, 0 , sizeof(state));
 }
 
 OOP_CTOR(Shifts) {
@@ -122,11 +124,17 @@ OOP_CTOR(Shifts) {
 
     state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
     if (!state) {
-        LOG_DEBUG("Shifts: not enough memory for embedDB.");
+        LOG_ERROR("Shifts: not enough memory for embedDB.");
         return -1;
     }
-
-    latestIdx = getLatestFirstTime();
+    uint32_t idx;
+    if (getLatestFirstTime(&idx) == 0) {
+        LOG_ERROR("Shifts: latest index = %d.", idx);
+        latestIdx = idx;
+    } else {
+        LOG_ERROR("Shifts: could not get latest index of shifts.");
+        latestIdx = 0;
+    }
 }
 
 Shifts *shifts() {
