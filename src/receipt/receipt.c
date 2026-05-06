@@ -1,7 +1,6 @@
 #include "receipt.h"
 #include "lvgl.h"
 #include "dev/dev.h"
-#include "storage/storage.h"
 #include "logger.h"
 #include "font/myFont.h"
 #include "display/display.h"
@@ -11,32 +10,46 @@
 
 #define PRINTER_WIDTH_PIX   384
 #define MAX_HEIGHT          100   // dynamic safe max
-#define MAX_CULOMN_CNT      5
-
-char *shaped[MAX_CULOMN_CNT];
-
-static Receipt receipt;
+#define SHAPED_MAX          128
 
 /* =========================
    Internal Helpers
    ========================= */
 
-static void flushReceipt() {
-    // Send current buffer to printer
-    getPrinter()->print(receipt.bitmap,
-        receipt.width, receipt.height);
-
-    // Clear canvas
-    lv_canvas_fill_bg(receipt.canvas, lv_color_white(), LV_OPA_COVER);
-
-    // Reset cursor
-    receipt.height = 0;
+static int safe_shape(const char *in, char *out, size_t max) {
+    if (!in || !out) {
+        return ERR_NOK;
+    }
+    size_t len = strlen(in);
+    if (len >= max) {
+        LOG_ERROR("Text too long for shaping buffer");
+        return ERR_NOK;
+    }
+    lv_text_ap_proc(in, out);
+    return ERR_OK;
 }
 
-static void flushIfNeeded(Receipt *r, uint16_t next_h) {
+static void flushReceipt(Receipt *rec) {
+    // Send current buffer to printer
+    getPrinter()->print(rec->bitmap,
+        rec->width, rec->height);
+
+    // Clear canvas
+    lv_canvas_fill_bg(rec->canvas, lv_color_white(), LV_OPA_COVER);
+
+    // Reset cursor
+    rec->height = 0;
+}
+
+static bool flushIfNeeded(Receipt *r, uint16_t next_h) {
+    if (next_h > r->maxHeight) {
+        LOG_ERROR("Receipt: height of object is greater than maximum.");
+        return false;
+    }
     if (r->height + next_h > r->maxHeight) {
         flushReceipt(r);
     }
+    return true;
 }
 
 static void draw_text_line(lv_layer_t *layer,
@@ -65,40 +78,57 @@ static void draw_text_line(lv_layer_t *layer,
 
 static uint16_t measure_text_height(const char *txt, int width, const lv_font_t *font) {
     lv_point_t size;
-    char tmp[256];
-    lv_text_ap_proc(txt, tmp);
-    lv_text_get_size(&size, tmp, font, 0, 0, width, LV_TEXT_FLAG_NONE);
+    lv_text_get_size(&size, txt, font, 0, 0, width, LV_TEXT_FLAG_NONE);
     return size.y;
 }
 
-static Receipt* addText(int count, Column *cols) {
-    Receipt *r = &receipt;
+static uint8_t addText(Receipt *r, int count, const Column *cols) {
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
     int totalWeight = 0;
+    if (count > MAX_CULOMN_CNT) {
+        LOG_ERROR("Too many columns");
+        count = MAX_CULOMN_CNT;
+    }
+    if (count == 0) {
+        return ERR_NOK;
+    }
+    if (!cols) {
+        return ERR_NOK;
+    }
     for(int i = 0; i < count; i++) totalWeight += cols[i].weight;
 
+    if (totalWeight == 0) {
+        LOG_ERROR("Receipt addText: total weight = 0. choosing column size equal.");
+        return ERR_NOK;
+    }
+
     uint16_t height = 0;
-
     for(int i = 0; i < count; i++) {
-        int w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
-
-        uint16_t h = measure_text_height(cols[i].src, w, &FONT_16);
+        uint32_t w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
+        if (safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX) != ERR_OK) {
+            return ERR_NOK;
+        }
+        uint16_t h = measure_text_height(r->shaped[i], w, &FONT_16);
         if(h > height) height = h;
     }
-    flushIfNeeded(r, height);
+    if (!flushIfNeeded(r, height)) {
+        return ERR_NOK;
+    }
 
     int x = 0;
 
     lv_layer_t layer;
     lv_canvas_init_layer(r->canvas, &layer);
     for(int i = 0; i < count; i++) {
-        int w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
-        lv_text_ap_proc(cols[i].src, shaped[i]);
+        uint32_t w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
         draw_text_line(&layer,
                        x,
                        r->height,
                        w,
                        height,
-                       shaped[i],
+                       r->shaped[i],
                        cols[i].align,
                        &FONT_16);
 
@@ -106,28 +136,49 @@ static Receipt* addText(int count, Column *cols) {
     }
     lv_canvas_finish_layer(r->canvas, &layer);
     r->height += height;
-    return r;
+    return ERR_OK;
 }
 
-static Receipt* addTable(int count, Column *cols) {
-    Receipt *r = &receipt;
-
+static uint8_t addTable(Receipt *r,int count, const Column *cols) {
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
+    if (count > MAX_CULOMN_CNT) {
+        LOG_ERROR("Too many columns");
+        count = MAX_CULOMN_CNT;
+    }
+    if (count == 0) {
+        return ERR_NOK;
+    }
+    if (!cols) {
+        return ERR_NOK;
+    }
     int totalWeight = count;   // equal width columns
+    if (count > MAX_CULOMN_CNT) {
+        LOG_ERROR("Too many columns");
+        count = MAX_CULOMN_CNT;
+    }
+    if (count == 0) {
+        return ERR_NOK;
+    }
     int x = 0;
     uint16_t max_h = 0;
 
     // Calculate row height
     for(int i = 0; i < count; i++) {
-        int w = PRINTER_WIDTH_PIX / totalWeight;
+        uint32_t w = PRINTER_WIDTH_PIX / totalWeight;
         uint16_t h = measure_text_height(cols[i].src, w - 4, &FONT_16);
         if(h > max_h) max_h = h;
     }
 
     // Add some padding
+    // TODO: add pading based on font
     max_h += 6;
 
     // Flush if needed
-    flushIfNeeded(r, max_h);
+    if (!flushIfNeeded(r, max_h)) {
+        return ERR_NOK;
+    }
 
     // Start drawing
     lv_layer_t layer;
@@ -190,39 +241,60 @@ static Receipt* addTable(int count, Column *cols) {
 
     r->height += max_h;
 
-    return r;
+    return ERR_OK;
 }
 
 /* -------- IMAGE -------- */
-static Receipt* addImage(int count, Column *cols) {
-
+static uint8_t addImage(Receipt *r, int count, const Column *cols) {
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
+    if (count > MAX_CULOMN_CNT) {
+        LOG_ERROR("Too many columns");
+        count = MAX_CULOMN_CNT;
+    }
+    if (count == 0) {
+        return ERR_NOK;
+    }
+    if (!cols) {
+        return ERR_NOK;
+    }
+    return ERR_OK;
 }
 
 /* -------- SPACE -------- */
-static Receipt* addSpace(uint16_t h) {
-    Receipt *r = &receipt;
-    flushIfNeeded(r, h);
+static uint8_t addSpace(Receipt *r, uint16_t h) {
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
+    if (!flushIfNeeded(r, h)) {
+        return ERR_NOK;
+    }
     r->height += h;
-    return r;
+    return ERR_OK;
 }
 
-static Receipt* addHighlightedText(const char *text,
+static uint8_t addHighlightedText(Receipt *r, const char *text,
                                    const lv_font_t *font,
                                    lv_text_align_t align)
 {
-    Receipt *r = &receipt;
-
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
     if (!font) font = &FONT_16;
 
     // Measure text ---
     uint16_t text_h = measure_text_height(text, PRINTER_WIDTH_PIX, font);
 
+    // TODO: add pading based on font
     uint16_t padding_top = 4;
     uint16_t padding_bottom = 4;
     uint16_t height = text_h + padding_top + padding_bottom;
 
     // Flush if needed ---
-    flushIfNeeded(r, height);
+    if (!flushIfNeeded(r, height)) {
+        return ERR_NOK;
+    }
 
     // Start drawing ---
     lv_layer_t layer;
@@ -251,9 +323,11 @@ static Receipt* addHighlightedText(const char *text,
     label_dsc.align = align;
     label_dsc.flag |= LV_TEXT_FLAG_EXPAND;
     label_dsc.bidi_dir = LV_BASE_DIR_AUTO;
-    char tmp[256];
-    lv_text_ap_proc(text, tmp);
-    label_dsc.text = tmp;
+    if (safe_shape(text, r->shaped[0], SHAPED_MAX) != ERR_OK) {
+        lv_canvas_finish_layer(r->canvas, &layer);
+        return ERR_NOK;
+    }
+    label_dsc.text = r->shaped[0];
 
     lv_area_t txt_area = {
         .x1 = 0,
@@ -269,26 +343,36 @@ static Receipt* addHighlightedText(const char *text,
 
     r->height += height;
 
-    return r;
+    return ERR_OK;
 }
 
-static Receipt* addAmount(const char *amount) {
+static uint8_t addAmount(Receipt *r,const char *amount) {
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
+    if (!amount) {
+        return ERR_NOK;
+    }
     char buf[64];
     snprintf(buf, sizeof(buf), " مبلغ: %s ریال ", amount);
 
-    return addHighlightedText(buf, &FONT_16, LV_TEXT_ALIGN_CENTER);
+    return addHighlightedText(r, buf, &FONT_16, LV_TEXT_ALIGN_CENTER);
 }
 
 /* -------- HEADER -------- */
-static Receipt* addHeader(const char *date, const char *time) {
-    Receipt *r = &receipt;
+static uint8_t addHeader(Receipt *r, const char *date, const char *time) {
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
     TerminalSettings *t = &settings()->terminal;
 
     Column row1[] = {
         {t->merchantNo, LV_TEXT_ALIGN_LEFT, 1},
         {t->merchantName, LV_TEXT_ALIGN_RIGHT, 1}
     };
-    addText(2, row1);
+    if (addText(r, 2, row1) != ERR_OK) {
+        return ERR_NOK;
+    }
 
     char buf[64];
     snprintf(buf, sizeof(buf), "%s - %s / %s",
@@ -299,23 +383,22 @@ static Receipt* addHeader(const char *date, const char *time) {
         {" پایانه / زمان", LV_TEXT_ALIGN_RIGHT, 1}
     };
 
-    addText(2, row2);
-
-    return r;
+    return addText(r, 2, row2);
 }
 
 /* -------- FOOTER -------- */
-static Receipt* addFooter() {
+static uint8_t addFooter(Receipt* r) {
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
     Column row1[] = {
         {ICON_BANK_REC, LV_ALIGN_LEFT_MID, 1},
         {ICON_SHAPARAK, LV_ALIGN_RIGHT_MID, 1}
     };
-    addImage(2, row1);
-    return &receipt;
+    return addImage(r, 2, row1);
 }
 
-static void freeReceipt() {
-    Receipt *r = &receipt;
+static void freeReceipt(Receipt *r) {
     if (r->canvas) {
         LV_DELETE(r->canvas);
         r->canvas = NULL;
@@ -324,60 +407,55 @@ static void freeReceipt() {
         FREE_MEM(r->buf);
         r->buf = NULL;
     }
-
-    for (size_t i = 0; i < MAX_CULOMN_CNT; i++) {
-        FREE_MEM(shaped[i]);
-    }
 }
 
 OOP_CTOR(Receipt) {
-    self->addText = addText;
-    self->addSpace = addSpace;
-    self->addTable = addTable;
-    self->addImage = addImage;
-    self->addHeader = addHeader;
-    self->addFooter = addFooter;
+    self->vtable.addText = addText;
+    self->vtable.addSpace = addSpace;
+    self->vtable.addTable = addTable;
+    self->vtable.addImage = addImage;
+    self->vtable.addHeader = addHeader;
+    self->vtable.addFooter = addFooter;
     // self->addBoldText = addBoldText;
-    self->free = freeReceipt;
-    self->flush = flushReceipt;
-    self->addAmount = addAmount;
+    self->vtable.free = freeReceipt;
+    self->vtable.flush = flushReceipt;
+    self->vtable.addAmount = addAmount;
 
-    for (size_t i = 0; i < MAX_CULOMN_CNT; i++) {
-        shaped[i] = GET_MEM(256);
-    }
-
-    receipt.maxHeight = MAX_HEIGHT;
-    receipt.height = 0;
-    receipt.width = PRINTER_WIDTH_PIX;
+    self->maxHeight = MAX_HEIGHT;
+    self->height = 0;
+    self->width = PRINTER_WIDTH_PIX;
     uint32_t stride = (PRINTER_WIDTH_PIX + 7) / 8;  // bytes per row
     uint32_t paletteSize =
         LV_COLOR_INDEXED_PALETTE_SIZE(LV_COLOR_FORMAT_I1) * sizeof(lv_color32_t);
 
     uint32_t bufSize = stride * MAX_HEIGHT + LV_DRAW_BUF_ALIGN + 
         paletteSize;
-    receipt.buf = GET_MEM(bufSize);
+    self->buf = GET_MEM(bufSize);
 
-    if(!receipt.buf) {
-        return NULL;
+    if(!self->buf) {
+        LOG_ERROR("Receipt: error in allocating memory for buffer.");
+        self->canvas = NULL;
+        self->bitmap = NULL;
+        return;
     }
 
-    lv_draw_buf_init(&receipt.draw_buf,
+    lv_draw_buf_init(&self->draw_buf,
                      PRINTER_WIDTH_PIX,
                      MAX_HEIGHT,
                      LV_COLOR_FORMAT_I1,
                      stride,
-                     receipt.buf,
+                     self->buf,
                      bufSize);
 
-    receipt.bitmap = receipt.draw_buf.data + paletteSize;
+    self->bitmap = self->draw_buf.data + paletteSize;
 
-    receipt.canvas = lv_canvas_create(NULL);
-    lv_canvas_set_draw_buf(receipt.canvas, &receipt.draw_buf);
-    lv_canvas_fill_bg(receipt.canvas, lv_color_white(), LV_OPA_COVER);
-    lv_obj_center(receipt.canvas);
+    self->canvas = lv_canvas_create(NULL);
+    lv_canvas_set_draw_buf(self->canvas, &self->draw_buf);
+    lv_canvas_fill_bg(self->canvas, lv_color_white(), LV_OPA_COVER);
+    lv_obj_center(self->canvas);
 }
 
-Receipt* createReceipt(void) {
-    OOP_CALL_CTOR(Receipt, &receipt);
-    return &receipt;
+bool createReceipt(Receipt* receipt) {
+    OOP_CALL_CTOR(Receipt, receipt);
+    return receipt->buf ? true : false;
 }

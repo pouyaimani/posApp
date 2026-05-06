@@ -88,7 +88,8 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 #include "printer/printer.h"
 
 static void print() {
-    Receipt *rec = createReceipt();
+    Receipt rec;
+    createReceipt(&rec);
     Column row[] = {
         {"سلام", LV_TEXT_ALIGN_LEFT, 1},
         {"بله", LV_TEXT_ALIGN_RIGHT, 1}
@@ -101,7 +102,7 @@ static void print() {
 
     // rec->addHeader("1404/12/24", "11:38")->addText(2, row1);
     // const char * bankName = PosDatabase::BanksName::getInstance()->getBankNameFa(data.pan.substr(0, 6).data());?
-    rec->addText(2, row1);
+    OOP_CALL(&rec, addText, 2, row1);
     // rec->addText(2, row1);
         // rec->addText(2, col);
     // rec->addTable(2, col);
@@ -138,9 +139,9 @@ static void print() {
     // if (!data.switchMsg.empty()) {
     //     rec->addText(1, data.switchMsg.data(), TEXT_ALIGN_CENTER);
     // }
-    rec->addFooter();
-    rec->flush();
-    rec->free();
+    OOP_CALL(&rec, addFooter);
+    OOP_CALL(&rec, flush);
+    OOP_CALL(&rec, free);
 }
 
 STATE_DEF_HANDLE(Idle, KeypadEvent) {

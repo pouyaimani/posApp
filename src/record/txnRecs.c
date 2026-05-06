@@ -18,9 +18,9 @@ static TxnQuery __txnquery;
 static embedDBState *state;
 static embedDBSchema *schema;
 
-static int txnInsert(TxnData_t *txn) {
+static int txnInsert(TxnData *txn) {
     if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(TxnIndex_t),
-             sizeof(TxnData_t), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
+             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
                 EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
@@ -42,7 +42,7 @@ static int txnInsert(TxnData_t *txn) {
 
 static int8_t txnReset() {
     if (embedDBreset(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(TxnIndex_t),
-             sizeof(TxnData_t), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
+             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 LOG_ERROR("Error in setuping embedDB.");
                 return ERR_NOK;
     }
@@ -92,8 +92,8 @@ static void txnSelect(QueryOperation_t *qo, TxnHandler handler) {
     int32_t recordsReturned = 0;
     while (exec(op.op)) {
         recordsReturned++;
-        TxnData_t data;
-        memcpy(&data, op.op->recordBuffer, sizeof(TxnData_t));
+        TxnData data;
+        memcpy(&data, op.op->recordBuffer, sizeof(TxnData));
         handler(&data, NULL);
     }
 
