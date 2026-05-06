@@ -69,6 +69,18 @@ int8_t embedDBSetup(embedDBState *state,
     uint16_t safetyMargin = 2;
     state->numDataPages = pageNum + safetyMargin;
 
+        /* Minimum buffers */
+    state->bufferSizeInBlocks = getBufferCount(state->parameters);
+    size_t bufferSize = state->bufferSizeInBlocks * state->pageSize;
+    state->buffer = EMDB_MEM_ALLOC(bufferSize);
+    if (!state->buffer) {
+#ifdef PRINT_ERRORS
+        debug_log("ERROR: state->buffer memory allocation failed");
+#endif
+        return -1;
+    }
+    memset(state->buffer, 0, bufferSize);
+
     /* Default spline config */
     state->numSplinePoints = 8;
 
@@ -91,20 +103,13 @@ int8_t embedDBSetup(embedDBState *state,
         state->indexFile = NULL;
     }
 
-    /* Minimum buffers */
-    state->bufferSizeInBlocks = getBufferCount(state->parameters);
-    size_t bufferSize = state->bufferSizeInBlocks * state->pageSize;
-    state->buffer = EMDB_MEM_ALLOC(bufferSize);
-    if (!state->buffer) {
-#ifdef PRINT_ERRORS
-        debug_log("ERROR: state->buffer memory allocation failed");
-#endif
-        return -1;
-    }
-    memset(state->buffer, 0, bufferSize);
 
     /* Initialize database */
     int ret = embedDBInit(state, 1);
+    if (ret != 0) {
+        embedDBtearDown(state);
+        return -1;
+    }
 
     static bool once = true;
     if (once) {
@@ -129,7 +134,7 @@ int8_t embedDBreset(embedDBState *state,
         return -1;                        
     state->fileInterface->removeFile(dbPath);
     state->fileInterface->removeFile(dbIndexPath);
-    memset(state, 0 , sizeof(state));
+    memset(state, 0 , sizeof(embedDBState));
     state->parameters |= EMBEDDB_RESET_DATA;
     bool reseted = false;
     if (embedDBSetup(state, dbPath, dbIndexPath, keySize,

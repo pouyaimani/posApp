@@ -28,10 +28,10 @@ static const DataDescriptor shiftDesc[] = {
 };
 
 static int8_t shiftInsert(ShiftData *shift) {
+    if (!shift) return ERR_NOK;
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
-                EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
                 return ERR_NOK;
     }
@@ -51,10 +51,10 @@ static int8_t shiftInsert(ShiftData *shift) {
 }
 
 static int8_t shiftGet(uint32_t index, ShiftData *shift) {
+    if (!shift) return ERR_NOK;
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
-                EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
                 return -1;
     }
@@ -77,10 +77,10 @@ static int8_t getLatest(uint32_t *latest, ShiftData *shift) {
 }
 
 static int8_t getLatestFirstTime(uint32_t *latest) {
+    if (!state) return ERR_NOK;
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 embedDBtearDown(state);
-                EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
                 return -1;
     }
@@ -91,14 +91,13 @@ static int8_t getLatestFirstTime(uint32_t *latest) {
 }
 
 static int8_t keep(ShiftData *data) {
-    tmpShift.startDate = data->startDate;
-    tmpShift.startTime = data->startTime;
-    tmpShift.endDate = data->endDate;
-    tmpShift.endTime = data->endTime;
+    if (!data) return ERR_NOK;
+    tmpShift = *data;
     return storage()->save(shiftDesc, sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP);
 }
 
 static int8_t getKeeped(ShiftData *data) {
+    if (!data) return ERR_NOK;
     if (storage()->load(shiftDesc, 
         sizeof(shiftDesc) / sizeof(DataDescriptor), SHIFTS_RECORD_TMP) != ERR_OK) {
             return ERR_NOK;
@@ -112,6 +111,7 @@ static int8_t getKeeped(ShiftData *data) {
 
 
 static int8_t reset() {
+    if (!state) return ERR_NOK;
     if (embedDBreset(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
              sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
                 LOG_ERROR("Error in setuping embedDB.");
