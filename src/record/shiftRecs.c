@@ -29,12 +29,7 @@ static const DataDescriptor shiftDesc[] = {
 
 static int8_t shiftInsert(ShiftData *shift) {
     if (!shift) return ERR_NOK;
-    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
-             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
-                embedDBtearDown(state);
-                LOG_ERROR("Error in setuping embedDB.");
-                return ERR_NOK;
-    }
+    if (!state) return ERR_NOK;
     uint32_t idx = latestIdx + 1;
     LOG_ERROR("EmbedDB max key = %d.", idx);
     int8_t res = embedDBPut(state, &idx, shift);
@@ -44,26 +39,22 @@ static int8_t shiftInsert(ShiftData *shift) {
     }
     LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
             idx, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
-    embedDBClose(state);
-    embedDBtearDown(state);
+    res = embedDBFlush(state);
+    if (res != 0) {
+        LOG_ERROR("Shift: error in flushing db to file. error = %d", res);
+        return ERR_NOK;
+    }
     latestIdx++;
     return ERR_OK;
 }
 
 static int8_t shiftGet(uint32_t index, ShiftData *shift) {
-    if (!shift) return ERR_NOK;
-    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
-             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
-                embedDBtearDown(state);
-                LOG_ERROR("Error in setuping embedDB.");
-                return -1;
-    }
+    if (!shift || !state) return ERR_NOK;
+    if (index <= 0 || index > latestIdx) return ERR_NOK;
     bool found = false;
     if (embedDBGet(state, &index, shift) == 0) {
         found = true;
     }
-    embedDBClose(state);
-    embedDBtearDown(state);
     return found ? ERR_OK : ERR_NOK;
 }
 
@@ -72,21 +63,14 @@ static uint32_t getLatestIdx() {
 }
 
 static int8_t getLatest(uint32_t *latest, ShiftData *shift) {
+    if (!latest || !shift) return ERR_NOK;
     *latest = latestIdx;
     return shiftGet(latestIdx, shift);
 }
 
 static int8_t getLatestFirstTime(uint32_t *latest) {
-    if (!state) return ERR_NOK;
-    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
-             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
-                embedDBtearDown(state);
-                LOG_ERROR("Error in setuping embedDB.");
-                return -1;
-    }
+    if (!state || !latest) return ERR_NOK;
     *latest = embedDBGetLatestKey32(state);
-    embedDBClose(state);
-    embedDBtearDown(state);
     return ERR_OK;
 }
 
@@ -134,6 +118,16 @@ OOP_CTOR(Shifts) {
     if (!state) {
         LOG_ERROR("Shifts: not enough memory for embedDB.");
         return;
+    }
+
+    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
+             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
+                embedDBClose(state);
+                embedDBtearDown(state);
+                EMDB_MEM_FREE(state);
+                state = NULL;
+                LOG_ERROR("Error in setuping embedDB.");
+                return;
     }
     uint32_t idx;
     if (getLatestFirstTime(&idx) == 0) {
