@@ -16,6 +16,7 @@
 #include "states/merchant/merchant.h"
 #include "settings/settings.h"
 #include "record/txnRecs.h"
+#include "record/shiftRecs.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -144,6 +145,49 @@ static void print() {
     OOP_CALL(&rec, free);
 }
 
+void generateRandomShift(ShiftData *shift)
+{
+    static int rd = 1;
+    shift->startDate = 20240101 + rd++;
+    shift->startTime = rd % 86400;
+
+    uint32_t duration = 3600 + rd % (8 * 3600);
+
+    shift->endDate = shift->startDate;
+    shift->endTime = shift->startTime + duration;
+
+    if (shift->endTime >= 86400) {
+        shift->endTime -= 86400;
+        shift->endDate++;
+    }
+}
+
+#define shifts_count 20
+
+void insertRandomShifts()
+{
+    ShiftData shift;
+
+    for (int i = 0; i < shifts_count; i++) {
+        generateRandomShift(&shift);
+        if (shifts()->insert(&shift) == 0) {
+        }
+    }
+}
+
+void readAllShifts()
+{
+
+    ShiftData shift;
+    for (int i = 0 ; i < 120 ; i++) {
+        if (shifts()->get(i, &shift) == 0) {
+        LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
+            i, shift.startTime, shift.endTime, shift.startDate, shift.endDate);
+        }
+    }
+}
+
+
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_FUNCTION) {
         SM_GOTO(getState(STATE_ID_SUPPORTER));
@@ -151,7 +195,12 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         GOTO_DEV_INFO(state);
     } else if (ev->key == KEY_1) {
         print();
-    }  else if (ev->key == KEY_2) {
+    } else if (ev->key == KEY_3) {
+        insertRandomShifts();
+    }  else if (ev->key == KEY_4) {
+        readAllShifts();
+    }  else if (ev->key == KEY_5) {
+        shifts()->reset();
     }
 }
 
