@@ -177,10 +177,11 @@ void insertRandomShifts()
 
 void readAllShifts()
 {
-
     ShiftData shift;
+    shifts()->get(0, &shift);
+return;
     for (int i = 0 ; i < 120 ; i++) {
-        if (shifts()->get(i, &shift) == 0) {
+        if (shifts()->get(0, &shift) == 0) {
         LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
             i, shift.startTime, shift.endTime, shift.startDate, shift.endDate);
         }

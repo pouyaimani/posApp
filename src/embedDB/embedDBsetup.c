@@ -2,9 +2,10 @@
 #include "logger.h"
 #include <math.h>
 
+#define safetyMargin 2
+
 static inline void setBitmapSize(embedDBState *state, uint32_t numPages) {
-    // Roughly one bucket per ~4 pages, but clamped
-    uint32_t buckets = numPages / 4;
+    uint32_t buckets = numPages;
 
     if (buckets < 8) {
         buckets = 8;    // minimum useful
@@ -51,22 +52,21 @@ int8_t embedDBSetup(embedDBState *state,
                     uint16_t keySize,
                     uint16_t dataSize,
                     uint32_t pageSize,
-                    uint16_t pageNum)
+                    uint16_t pageNum, uint16_t parameters)
 {
     if (!state) 
         return -1;
     /* Basic configuration */
     state->keySize = keySize;
     state->dataSize = dataSize;
-    state->parameters |= EMBEDDB_RECORD_LEVEL_CONSISTENCY;
+    state->parameters = parameters;
 
     state->recordSize = keySize + dataSize;
     /* Compute page size */
     state->pageSize = pageSize;
 
     /* Default erase block size */
-    state->eraseSizeInPages = 1;
-    uint16_t safetyMargin = 2;
+    state->eraseSizeInPages = 2;
     state->numDataPages = pageNum + safetyMargin;
 
         /* Minimum buffers */
@@ -95,18 +95,17 @@ int8_t embedDBSetup(embedDBState *state,
     state->numRules = 0;
 
     if (dbIndexPath) {
-        state->parameters |= (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
-        setBitmapSize(state, pageNum);
-        state->numIndexPages = calcNumIndexPages(pageNum);
-        state->indexFile = setupFile(dbIndexPath);
+        // setBitmapSize(state, pageNum);
+        // state->numIndexPages = calcNumIndexPages(pageNum);
+        // state->indexFile = setupFile(dbIndexPath);
     } else {
         state->indexFile = NULL;
     }
 
 
     /* Initialize database */
-    int ret = embedDBInit(state, 1);
-    if (ret != 0) {
+    if (embedDBInit(state, 1) != 0) {
+        embedDBClose(state);
         embedDBtearDown(state);
         return -1;
     }
@@ -120,33 +119,37 @@ int8_t embedDBSetup(embedDBState *state,
         once = false;
     }
 
-    return ret;
+    return 0;
 }
 
 int8_t embedDBreset(embedDBState *state,
                     const char *dbPath,
-                    const char *dbIndexPath,
-                    uint16_t keySize,
-                    uint16_t dataSize,
-                    uint32_t pageSize,
-                    uint16_t pageNum) {
+                    const char *dbIndexPath) {
     if (!state) 
-        return -1;                        
-    state->fileInterface->removeFile(dbPath);
-    state->fileInterface->removeFile(dbIndexPath);
-    memset(state, 0 , sizeof(embedDBState));
-    state->parameters |= EMBEDDB_RESET_DATA;
-    bool reseted = false;
-    if (embedDBSetup(state, dbPath, dbIndexPath, keySize,
-             dataSize, pageSize, pageNum) == 0) {
-                reseted = true;
-    }
+        return -1;
+    uint32_t keySize = state->keySize;
+    uint32_t dataSize = state->dataSize;
+    uint32_t pageSize = state->pageSize;
+    uint32_t pageNum = state->numDataPages - safetyMargin;
+    uint32_t parameters = state->parameters;
+    parameters |= EMBEDDB_RESET_DATA;
     embedDBClose(state);
+    if (state->fileInterface->removeFile(state->dataFile) != 1)
+        return ERR_NOK;
+
+    if (state->indexFile &&
+        state->fileInterface->removeFile(state->indexFile) != 1)
+        return ERR_NOK;
     embedDBtearDown(state);
-    if (!reseted) {
-        debug_log("embedDB: Error in reseting embedDB.");
+    memset(state, 0 , sizeof(embedDBState));
+    if (embedDBSetup(state, dbPath, dbIndexPath, keySize,
+             dataSize, pageSize, pageNum, parameters) != 0) {
+                embedDBClose(state);
+                embedDBtearDown(state);
+                LOG_ERROR("Error in setuping embedDB.");
+                return -1;
     }
-    return reseted ? 0 : -1;
+    return 0;
 }
 
 int8_t embedDBtearDown(embedDBState *state) {

@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "settings/settings.h"
 
-typedef struct __attribute__((packed)) {
+typedef struct {
         uint32_t startDate;
         uint32_t startTime;
         uint32_t endDate;

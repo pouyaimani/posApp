@@ -20,7 +20,7 @@ static embedDBSchema *schema;
 
 static int txnInsert(TxnData *txn) {
     if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(TxnIndex_t),
-             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
+             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER, 0) != 0) {
                 embedDBtearDown(state);
                 EMDB_MEM_FREE(state);
                 LOG_ERROR("Error in setuping embedDB.");
@@ -41,8 +41,7 @@ static int txnInsert(TxnData *txn) {
 }
 
 static int8_t txnReset() {
-    if (embedDBreset(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(TxnIndex_t),
-             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER) != 0) {
+    if (embedDBreset(state, TRANS_RECORD_PATH, TRANS_IDX_PATH) != 0) {
                 LOG_ERROR("Error in setuping embedDB.");
                 return ERR_NOK;
     }

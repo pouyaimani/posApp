@@ -42,7 +42,7 @@ int8_t FILE_REMOVE(void *finfo) {
         if (OOP_CALL(file(), remove, fileInfo->filename) != 0) {
             result = 0;
 #ifdef PRINT_ERRORS
-            perror("ERROR: Failed to remove temp file");
+            LOG_DEBUG("ERROR: Failed to remove temp file");
 #endif
         }
         return result;
@@ -50,6 +50,7 @@ int8_t FILE_REMOVE(void *finfo) {
 }
 
 int8_t FILE_READ(void *buffer, uint32_t pageNum, uint32_t pageSize, void *finfo) {
+    LOG_DEBUG("FILE_READ: page num = %d, page size = %d.", pageNum, pageSize);
     FILE_INFO *fileInfo = (FILE_INFO *)finfo;
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum, FILE_SEEK_ORG_SET);
     size_t readLen = OOP_CALL(file(), read, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
@@ -57,6 +58,7 @@ int8_t FILE_READ(void *buffer, uint32_t pageNum, uint32_t pageSize, void *finfo)
 }
 
 int8_t FILE_WRITE(void *buffer, uint32_t pageNum, uint32_t pageSize, void *finfo) {
+    LOG_DEBUG("FILE_WRITE: page num = %d, page size = %d.", pageNum, pageSize);
     FILE_INFO *fileInfo = (FILE_INFO *)finfo;
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum, FILE_SEEK_ORG_SET);
     size_t written = OOP_CALL(file(), write, buffer, pageSize, 1, (FileHandle*)fileInfo->file);
@@ -99,12 +101,14 @@ int8_t FILE_OPEN(void *finfo, uint8_t mode) {
 
 int8_t FILE_ERR(void *file) {
     FILE_INFO *fileInfo = (FILE_INFO *)file;
-    return ferror(fileInfo->file);
+    LOG_ERROR("FILE_ERR[%s]", fileInfo->file);
+    return -1;
 }
 
 int8_t FILE_EOF(void *file) {
     FILE_INFO *fileInfo = (FILE_INFO *)file;
-    return feof(fileInfo->file);
+    LOG_ERROR("FILE_EOF[%s]", fileInfo->file);
+    return -1;
 }
 
 int8_t FILE_READ_REL(void *buffer, uint32_t size, uint32_t n, void *finfo) {

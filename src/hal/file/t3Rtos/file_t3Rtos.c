@@ -85,7 +85,8 @@ static long size(File* self, FileHandle* handle) {
 }
 
 static int removeFile(File* self, const char* path) {
-    return sdkFileDel(path);
+    int ret = sdkFileDel(path);
+    return ret == SDK_FILE_OK ? 0 : -1;
 }
 
 static int sync(File* self, FileHandle* handle) {
