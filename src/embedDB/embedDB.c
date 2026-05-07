@@ -2380,3 +2380,40 @@ uint32_t embedDBGetLatestKey32(embedDBState *state) {
     debug_log("latest key = %d", maxKey);
     return maxKey;
 }
+
+int8_t embedDBGetLatestKey(embedDBState *state, void *outKey)
+{
+    if (state->nextDataPageId == 0) {
+        // database empty
+        return -1;
+    }
+
+    uint32_t logicalPage = state->nextDataPageId - 1;
+
+    while (1) {
+        uint32_t physicalPage = logicalPage % state->numDataPages;
+
+        if (readPage(state, physicalPage) != 0) {
+            return -1;
+        }
+
+        int16_t count = EMBEDDB_GET_COUNT(state->buffer);
+
+        if (count > 0) {
+            // get ptr to last record in this page
+            void *rec = embedDBGetMaxKey(state, state->buffer);
+
+            // copy exact key bytes to user buffer
+            memcpy(outKey, rec, state->keySize);
+            return 0;
+        }
+
+        // no records → move to previous logical page
+        if (logicalPage == 0)
+            break;  // reached the beginning
+
+        logicalPage--;
+    }
+
+    return -1;
+}

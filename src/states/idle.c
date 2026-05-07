@@ -72,6 +72,7 @@ STATE_DEF_ENTER(Idle) {
     // LV_SHOW(swipCardCont);
     LV_SHOW(mainIcon);
     statusBar()->enDateTimeMode();
+    shifts();
 }
 
 STATE_DEF_EXIT(Idle) {
@@ -195,7 +196,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_CLEAR) {
         GOTO_DEV_INFO(state);
     } else if (ev->key == KEY_1) {
-        print();
+        shifts()->init();
     } else if (ev->key == KEY_3) {
         insertRandomShifts();
     }  else if (ev->key == KEY_4) {

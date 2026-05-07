@@ -66,7 +66,7 @@ int8_t embedDBSetup(embedDBState *state,
     state->pageSize = pageSize;
 
     /* Default erase block size */
-    state->eraseSizeInPages = 2;
+    state->eraseSizeInPages = 1;
     state->numDataPages = pageNum + safetyMargin;
 
         /* Minimum buffers */

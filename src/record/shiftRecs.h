@@ -13,6 +13,7 @@ typedef struct {
 } ShiftData;
 
 OOP_CLASS(Shifts) {
+    OOP_METHOD(int8_t, init);
     OOP_METHOD(int8_t, keep, ShiftData *);
     OOP_METHOD(int8_t, getKeeped, ShiftData *);
     OOP_METHOD(int8_t, insert, ShiftData *);

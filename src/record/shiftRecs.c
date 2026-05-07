@@ -7,17 +7,18 @@
 #define SHIFTS_RECORD_PATH          "/mtd0/shifts_records"
 #define SHIFTS_RECORD_IDX_PATH      "/mtd0/shifts_records_idx"
 #define SHIFTS_RECORD_TMP           "/mtd0/shifts_record_tmp"
-#define PAGE_NUMBER                 100
+#define PAGE_NUMBER                 8
+
+#define MAX_SHIFT_COUNT             200
 
 static Shifts __shifts;
 
 static embedDBState *state;
 
-// Load latest index in boot and keep it in RAM 
+// static uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY | (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
+
 static uint32_t latestIdx;
 
-// static uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY | (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
-uint32_t parameters = 0;
 // Using storage to keep open shifts temporary and insert it 
 // into db when shifts is closed
 static ShiftData tmpShift;
@@ -29,11 +30,37 @@ static const DataDescriptor shiftDesc[] = {
     DSC_INT(tmpShift.endTime, 0),
 };
 
+static int8_t getLatestFirstTime(uint32_t *latest) {
+    if (!state || !latest) return ERR_NOK;
+    embedDBIterator it;
+    embedDBInitIterator(state, &it);
+    uint32_t key;
+    uint32_t tmp = 0;
+    ShiftData shift;
+    it.nextDataPage = 0;
+    while (embedDBNext(state, &it, &key, &shift)) {
+        if (key > tmp) {
+            tmp = key;
+        }
+    }
+    embedDBCloseIterator(&it);
+    *latest = tmp;
+    return ERR_OK;
+}
+
+static void extractLatestIdx() {
+    CALL_ONCE(
+        getLatestFirstTime(&latestIdx);
+    );
+}
+
 static int8_t shiftInsert(ShiftData *shift) {
-    if (!shift) return ERR_NOK;
-    if (!state) return ERR_NOK;
+    if (!shift || !state) return ERR_NOK;
+    extractLatestIdx();
+    if (latestIdx >= MAX_SHIFT_COUNT) {
+        return ERR_NOK;
+    }
     uint32_t idx = latestIdx + 1;
-    LOG_ERROR("EmbedDB max key = %d.", idx);
     int8_t res = embedDBPut(state, &idx, shift);
     if (res != 0) {
         LOG_ERROR("Shift: error in inserting record. error = %d", res);
@@ -41,11 +68,6 @@ static int8_t shiftInsert(ShiftData *shift) {
     }
     LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
             idx, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
-    res = embedDBFlush(state);
-    if (res != 0) {
-        LOG_ERROR("Shift: error in flushing db to file. error = %d", res);
-        return ERR_NOK;
-    }
     latestIdx++;
     return ERR_OK;
 }
@@ -57,7 +79,6 @@ static int8_t shiftGet(uint32_t index, ShiftData *shift) {
     embedDBIterator it;
     embedDBInitIterator(state, &it);
     uint32_t key;
-    int i = 1;
     while (embedDBNext(state, &it, &key, shift)) {
         LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
             key, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
@@ -73,16 +94,11 @@ static uint32_t getLatestIdx() {
     return latestIdx;
 }
 
+
 static int8_t getLatest(uint32_t *latest, ShiftData *shift) {
     if (!latest || !shift) return ERR_NOK;
     *latest = latestIdx;
     return shiftGet(latestIdx, shift);
-}
-
-static int8_t getLatestFirstTime(uint32_t *latest) {
-    if (!state || !latest) return ERR_NOK;
-    *latest = embedDBGetLatestKey32(state);
-    return ERR_OK;
 }
 
 static int8_t keep(ShiftData *data) {
@@ -115,6 +131,21 @@ static int8_t reset() {
     return ERR_OK;
 }
 
+static int8_t init() {
+    uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY
+                            | (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
+    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
+             sizeof(ShiftData), 512, 8, parameters) != 0) {
+                embedDBClose(state);
+                embedDBtearDown(state);
+                EMDB_MEM_FREE(state);
+                state = NULL;
+                LOG_ERROR("Error in setuping embedDB.");
+                return ERR_NOK;
+    }
+    return ERR_OK;
+}
+
 OOP_CTOR(Shifts) {
     self->get = shiftGet;
     self->insert = shiftInsert;
@@ -123,23 +154,13 @@ OOP_CTOR(Shifts) {
     self->getLatest = getLatest;
     self->getLatestIdx = getLatestIdx;
     self->keep = keep;
+    self->init = init;
 
     state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
     if (!state) {
         LOG_ERROR("Shifts: not enough memory for embedDB.");
         return;
     }
-
-    if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
-             sizeof(ShiftData), 28, PAGE_NUMBER, parameters) != 0) {
-                embedDBClose(state);
-                embedDBtearDown(state);
-                EMDB_MEM_FREE(state);
-                state = NULL;
-                LOG_ERROR("Error in setuping embedDB.");
-                return;
-    }
-    latestIdx = state->recordCount;
 }
 
 Shifts *shifts() {

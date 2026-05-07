@@ -543,6 +543,8 @@ void *embedDBGetMaxKey(embedDBState *state, void *buffer);
 
 uint32_t embedDBGetLatestKey32(embedDBState *state);
 
+int8_t embedDBGetLatestKey(embedDBState *state, void *outKey);
+
 #ifdef __cplusplus
 }
 #endif

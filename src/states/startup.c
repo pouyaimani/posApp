@@ -12,6 +12,7 @@
 #include "storage/storage.h"
 #include "network/network.h"
 #include "settings/settings.h"
+#include "record/shiftRecs.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
@@ -33,6 +34,8 @@ STATE_DEF_ENTER(Startup) {
 
     // Network setitings
     network()->init();
+
+    shifts()->init();
 
     LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
     OOP_CALL(dev, setVolume, settings()->terminal.devVolume);
