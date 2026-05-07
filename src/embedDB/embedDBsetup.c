@@ -94,14 +94,19 @@ int8_t embedDBSetup(embedDBState *state,
     state->rules = NULL;
     state->numRules = 0;
 
-    if (dbIndexPath) {
-        // setBitmapSize(state, pageNum);
-        // state->numIndexPages = calcNumIndexPages(pageNum);
-        // state->indexFile = setupFile(dbIndexPath);
-    } else {
-        state->indexFile = NULL;
-    }
+    state->indexFile = NULL;
 
+    if (EMBEDDB_USING_INDEX(parameters)) {
+        if (!dbIndexPath) {
+            debug_log("ERROR: index file is not provided.");
+            return -1;
+        }
+        state->numIndexPages = calcNumIndexPages(pageNum);
+        state->indexFile = setupFile(dbIndexPath);
+    }
+    if (EMBEDDB_USING_BMAP(parameters)) {
+        setBitmapSize(state, pageNum);
+    }
 
     /* Initialize database */
     if (embedDBInit(state, 1) != 0) {

@@ -23,6 +23,8 @@ OOP_CLASS(Shifts) {
     OOP_METHOD(int8_t, reset);
 };
 
+void deleteShiftFiles();
+
 Shifts *shifts();
 
 #endif

@@ -281,7 +281,6 @@ int8_t embedDBInitData(embedDBState *state) {
     state->nextDataPageId = 0;
     state->numAvailDataPages = state->numDataPages;
     state->minDataPageId = 0;
-    state->recordCount = 0;
 
     if (state->dataFile == NULL) {
 #ifdef PRINT_ERRORS
@@ -374,8 +373,6 @@ int8_t embedDBInitDataFromFile(embedDBState *state) {
             break;
         }
     }
-
-    state->recordCount = count;
 
     /*
      * Now we need to find where the page with the smallest key that is still valid.

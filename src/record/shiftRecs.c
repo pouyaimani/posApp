@@ -32,18 +32,16 @@ static const DataDescriptor shiftDesc[] = {
 
 static int8_t getLatestFirstTime(uint32_t *latest) {
     if (!state || !latest) return ERR_NOK;
-    embedDBIterator it;
-    embedDBInitIterator(state, &it);
-    uint32_t key;
     uint32_t tmp = 0;
     ShiftData shift;
-    it.nextDataPage = 0;
-    while (embedDBNext(state, &it, &key, &shift)) {
-        if (key > tmp) {
-            tmp = key;
+    for (size_t i = 0; i <= MAX_SHIFT_COUNT; i++) {
+        if (embedDBGet(state, &i, &shift) == 0) {
+            if (i > tmp) {
+                tmp = i;
+            }
         }
     }
-    embedDBCloseIterator(&it);
+    
     *latest = tmp;
     return ERR_OK;
 }
@@ -74,26 +72,18 @@ static int8_t shiftInsert(ShiftData *shift) {
 
 static int8_t shiftGet(uint32_t index, ShiftData *shift) {
     if (!shift || !state) return ERR_NOK;
+    extractLatestIdx();
     if (index < 0 || index > latestIdx) return ERR_NOK;
     bool found = false;
-    embedDBIterator it;
-    embedDBInitIterator(state, &it);
-    uint32_t key;
-    while (embedDBNext(state, &it, &key, shift)) {
-        LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
-            key, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
+    if (embedDBGet(state, &index, shift) == 0) {
+        found = true;
     }
-    embedDBCloseIterator(&it);
-    // if (embedDBGet(state, &index, shift) == 0) {
-    //     found = true;
-    // }
     return found ? ERR_OK : ERR_NOK;
 }
 
 static uint32_t getLatestIdx() {
     return latestIdx;
 }
-
 
 static int8_t getLatest(uint32_t *latest, ShiftData *shift) {
     if (!latest || !shift) return ERR_NOK;
@@ -120,7 +110,6 @@ static int8_t getKeeped(ShiftData *data) {
     return ERR_OK;
 }
 
-
 static int8_t reset() {
     if (!state) return ERR_NOK;
     if (embedDBreset(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH) != 0) {
@@ -132,10 +121,15 @@ static int8_t reset() {
 }
 
 static int8_t init() {
+    state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
+    if (!state) {
+        LOG_ERROR("Shifts: not enough memory for embedDB.");
+        return ERR_NOK;
+    }
     uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY
                             | (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
     if (embedDBSetup(state, SHIFTS_RECORD_PATH, SHIFTS_RECORD_IDX_PATH, sizeof(uint32_t),
-             sizeof(ShiftData), 512, 8, parameters) != 0) {
+             sizeof(ShiftData), PAGE_SIZE_512, PAGE_NUMBER, parameters) != 0) {
                 embedDBClose(state);
                 embedDBtearDown(state);
                 EMDB_MEM_FREE(state);
@@ -146,7 +140,13 @@ static int8_t init() {
     return ERR_OK;
 }
 
+void deleteShiftFiles() {
+    OOP_CALL(file(), remove, SHIFTS_RECORD_PATH);
+    OOP_CALL(file(), remove, SHIFTS_RECORD_IDX_PATH);
+}
+
 OOP_CTOR(Shifts) {
+    self->init = init;
     self->get = shiftGet;
     self->insert = shiftInsert;
     self->reset = reset;
@@ -154,13 +154,6 @@ OOP_CTOR(Shifts) {
     self->getLatest = getLatest;
     self->getLatestIdx = getLatestIdx;
     self->keep = keep;
-    self->init = init;
-
-    state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
-    if (!state) {
-        LOG_ERROR("Shifts: not enough memory for embedDB.");
-        return;
-    }
 }
 
 Shifts *shifts() {

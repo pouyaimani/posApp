@@ -311,7 +311,6 @@ typedef struct {
     uint8_t recordHasVarData;                                             /* Internal flag to signal that the record currently being written has var data */
     struct activeRule **rules;                                            /* Array of active rules */
     uint32_t numRules;                                                    /* Number of active rules */
-    uint32_t recordCount;
 } embedDBState;
 
 typedef struct {
