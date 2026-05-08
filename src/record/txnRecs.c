@@ -11,7 +11,7 @@ static TxnQuery __txnquery;
 #define TRANS_RECORD_PATH       "/mtd0/txn_records.bin"
 #define TRANS_IDX_PATH          "/mtd0/txn_idx.bin"
 
-#define PAGE_NUMBER             1
+#define PAGE_NUMBER             10
 
 #define MAX_RECORDS 6000
 
@@ -19,30 +19,38 @@ static embedDBState *state;
 static embedDBSchema *schema;
 
 static int txnInsert(TxnData *txn) {
-    if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(TxnIndex_t),
-             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER, 0) != 0) {
-                embedDBtearDown(state);
-                EMDB_MEM_FREE(state);
-                LOG_ERROR("Error in setuping embedDB.");
-                return -1;
-    }
+    if (!txn || !state) return ERR_NOK;
+    LOG_DEBUG("time stamp = %llu", txn->dateTime);
     uint32_t date, time;
-    extractDatetimeInt(txn->dateTime, &date, &time);
-    long long timeStamp = packDateTime(date, time);
-    if (embedDBPut(state, &timeStamp, txn) != 0) {
+    unpackDateTime(txn->dateTime, &date, &time);
+    if (embedDBPut(state, &txn->dateTime, txn) != 0) {
         LOG_ERROR("Transaction record: error in inserting record.");
         return -1;
     }
-    // LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
-    //         latestIdx, shift->startTime, shift->endTime, shift->startDate, shift->endDate);
-    embedDBClose(state);
-    embedDBtearDown(state);
+    LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, stan = %s, rrn = %s, amount = %s",
+                date, time, txn->trace, txn->stan, txn->RRN, txn->amount);
     return 0;
 }
 
+static int8_t iterateThrough() {
+    if (!state) return ERR_NOK;
+    embedDBIterator it;
+    embedDBInitIterator(state, &it);
+    uint64_t timeStamp;
+    TxnData data;
+    while (embedDBNext(state, &it, &timeStamp, &data)) {
+        uint32_t date, time;
+        unpackDateTime(data.dateTime, &date, &time);
+        LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, stan = %s, rrn = %s, amount = %s",
+                 date, time, data.trace, data.stan, data.RRN, data.amount);
+    }
+    return ERR_OK;
+}
+
 static int8_t txnReset() {
+    if (!state) return ERR_NOK;
     if (embedDBreset(state, TRANS_RECORD_PATH, TRANS_IDX_PATH) != 0) {
-                LOG_ERROR("Error in setuping embedDB.");
+                LOG_ERROR("Error in reseting embedDB.");
                 return ERR_NOK;
     }
     return ERR_OK;
@@ -50,10 +58,10 @@ static int8_t txnReset() {
 
 static QueryOperation_t queryInit(QueryOperation_t *qo) {
     qo->it = GET_MEM(sizeof(embedDBIterator));
-    embedDBInitIterator(state, &qo->it);
-    QueryOperation_t qop;
-    qop.op = createTableScanOperator(state, &qo->it, schema);
-    return qop;
+    embedDBInitIterator(state, qo->it);
+    QueryOperation_t newOp;
+    newOp.op = createTableScanOperator(state, &qo->it, schema);
+    return newOp;
 }
 
 static void queryWhere(QueryOperation_t *qo, QueryColumn_t culomn, int comparison, void *value) {
@@ -63,7 +71,7 @@ static void queryWhere(QueryOperation_t *qo, QueryColumn_t culomn, int compariso
 }
 
 static void txnSelect(QueryOperation_t *qo, TxnHandler handler) {
-    QueryOperation_t op;
+    QueryOperation_t newop;
         uint16_t Col[] = {
         0,  // id
         1,  // processCode
@@ -86,25 +94,21 @@ static void txnSelect(QueryOperation_t *qo, TxnHandler handler) {
         18,  // responseCode
         19   // Status
     };
-    op.op = createProjectionOperator(qo->op, 20, Col);
-    op.op->init(op.op);
+    newop.op = createProjectionOperator(qo->op, 20, Col);
+    newop.op->init(newop.op);
     int32_t recordsReturned = 0;
-    while (exec(op.op)) {
+    while (exec(newop.op)) {
         recordsReturned++;
         TxnData data;
-        memcpy(&data, op.op->recordBuffer, sizeof(TxnData));
+        memcpy(&data, newop.op->recordBuffer, sizeof(TxnData));
         handler(&data, NULL);
     }
 
-    op.op->close(op.op);
-    embedDBFreeOperatorRecursive(&op.op);
+    newop.op->close(newop.op);
+    embedDBFreeOperatorRecursive(&newop.op);
 }
 
-OOP_CTOR(TxnRecord) {
-    self->insert = txnInsert;
-    self->select = txnSelect;
-    self->reset = txnReset;
-
+static int8_t init(TxnRecord *self) {
     state = (embedDBState *)EMDB_MEM_ALLOC(sizeof(embedDBState));
     if (!state) {
         LOG_ERROR("Transaction records: not enough memory for embedDB.");
@@ -119,7 +123,7 @@ OOP_CTOR(TxnRecord) {
         13, // priceWithDiscount
         7,  // stan
         7,  // trace
-        15, // dateTime
+        8, // dateTime
         13, // RRN
         24, // billId
         24, // paymentId
@@ -164,7 +168,7 @@ OOP_CTOR(TxnRecord) {
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
+        embedDB_COLUMN_UINT64,
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
@@ -178,7 +182,28 @@ OOP_CTOR(TxnRecord) {
         embedDB_COLUMN_INT32
     };
 
-    schema = embedDBCreateSchema(20, colSizes, colSignedness, colTypes);
+    uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY
+                            | (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
+    LOG_ERROR("size of txnData = %u.", sizeof(TxnData));                  
+    if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(uint64_t),
+             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER, parameters) != 0) {
+                embedDBClose(state);
+                embedDBtearDown(state);
+                EMDB_MEM_FREE(state);
+                state = NULL;
+                LOG_ERROR("Error in setuping embedDB.");
+                return ERR_NOK;
+    }
+
+    // schema = embedDBCreateSchema(20, colSizes, colSignedness, colTypes);
+}
+
+OOP_CTOR(TxnRecord) {
+    self->init = init;
+    self->insert = txnInsert;
+    self->select = txnSelect;
+    self->reset = txnReset;
+    self->iterate = iterateThrough;
 }
 
 TxnRecord *txnrecord() {

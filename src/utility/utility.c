@@ -718,8 +718,6 @@ void extractDatetimeInt(const char *buf, uint32_t *date, uint32_t *time)
     *time = toInt(tmp);
 }
 
-#include <stdint.h>
-
 /*
  * Combines two uint32_t values into a single uint64_t
  * date: yyyymmdd (high 32 bits)
@@ -727,8 +725,16 @@ void extractDatetimeInt(const char *buf, uint32_t *date, uint32_t *time)
  * returns: uint64_t combined as (date << 32) | time
  */
 uint64_t packDateTime(uint32_t date, uint32_t time) {
-    return ((uint64_t)date << 32) | time;
+    if (date > 99999999UL)   // 8-digit date
+        return 0;           // or handle error
+
+    if (time > 245959UL)     // max time you defined
+        return 0;
+
+    uint64_t dt = ((uint64_t)date << 18) | (uint64_t)time;
+    return dt;
 }
+
 
 /*
  * Extract date and time from uint64_t
@@ -736,7 +742,7 @@ uint64_t packDateTime(uint32_t date, uint32_t time) {
  * date: output pointer to uint32_t (YYYMMDD)
  * time: output pointer to uint32_t (HHMMSS)
  */
-void unpackDateTime(uint64_t dateTime, uint32_t *date, uint32_t *time) {
-    *date = (uint32_t)(dateTime >> 32);
-    *time = (uint32_t)(dateTime & 0xFFFFFFFFULL);
+void unpackDateTime(uint64_t dt, uint32_t *date, uint32_t *time) {
+    *time = dt & ((1ULL << 18) - 1);
+    *date = dt >> 18;
 }

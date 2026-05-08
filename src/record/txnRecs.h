@@ -8,9 +8,7 @@
 #include "embedDB/query-interface/advancedQueries.h"
 #include "txn.h"
 
-typedef struct {
-	long long timeStamp;
-} TxnIndex_t;
+typedef uint64_t TxnIndex_t;
 
 typedef enum {
 	QUERY_CUL_DATE_TIME = 0,
@@ -34,7 +32,9 @@ OOP_CLASS(TxnQuery) {
 TxnQuery *txnquery(void);
 
 OOP_CLASS(TxnRecord) {
+	OOP_METHOD(void, init);
     OOP_METHOD(void, insert, TxnData *);
+	OOP_METHOD(void, iterate);
 	OOP_METHOD(void, select, QueryOperation_t *, TxnHandler handler);
     OOP_METHOD(void, reset);
 };

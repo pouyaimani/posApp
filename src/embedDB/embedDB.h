@@ -281,15 +281,15 @@ typedef struct {
     spline *spl;                                                          /* Spline model */
     uint32_t numSplinePoints;                                             /* Number of spline points to allocate */
     int32_t indexMaxError;                                                /* Max error for indexing structure (Spline or PGM) */
-    int8_t bufferSizeInBlocks;                                            /* Size of buffer in blocks */
+    int16_t bufferSizeInBlocks;                                            /* Size of buffer in blocks */
     count_t pageSize;                                                     /* Size of physical page on device */
     int16_t parameters;                                                   /* Parameter flags for indexing and bitmaps */
-    int8_t keySize;                                                       /* Size of key in bytes (fixed-size records) */
-    int8_t dataSize;                                                      /* Size of data in bytes (fixed-size records). Do not include space for variable size records if you are using them. */
-    int8_t recordSize;                                                    /* Size of record in bytes (fixed-size records) */
-    int8_t headerSize;                                                    /* Size of header in bytes (calculated during init()) */
-    int8_t variableDataHeaderSize;                                        /* Size of page header in variable data files (calculated during init()) */
-    int8_t bitmapSize;                                                    /* Size of bitmap in bytes */
+    int16_t keySize;                                                       /* Size of key in bytes (fixed-size records) */
+    int16_t dataSize;                                                      /* Size of data in bytes (fixed-size records). Do not include space for variable size records if you are using them. */
+    int16_t recordSize;                                                    /* Size of record in bytes (fixed-size records) */
+    int16_t headerSize;                                                    /* Size of header in bytes (calculated during init()) */
+    int16_t variableDataHeaderSize;                                        /* Size of page header in variable data files (calculated during init()) */
+    int16_t bitmapSize;                                                    /* Size of bitmap in bytes */
     count_t maxRecordsPerPage;                                            /* Maximum records per page */
     count_t maxIdxRecordsPerPage;                                         /* Maximum index records per page */
     int8_t (*compareKey)(void *a, void *b);                               /* Function that compares two arbitrary keys passed as parameters */

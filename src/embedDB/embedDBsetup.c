@@ -85,7 +85,11 @@ int8_t embedDBSetup(embedDBState *state,
     state->numSplinePoints = 8;
 
     // Function pointers that can compare two keys/data
-    state->compareKey = int32Comparator;
+    if (keySize == sizeof(uint32_t)) {
+        state->compareKey = int32Comparator;
+    } else if (keySize == sizeof(uint64_t)) {
+        state->compareKey = int64Comparator;
+    }
     // state->compareData = dataComparator;
 
     state->fileInterface = getFileInterface();
@@ -114,16 +118,11 @@ int8_t embedDBSetup(embedDBState *state,
         embedDBtearDown(state);
         return -1;
     }
-
-    static bool once = true;
-    if (once) {
-        embedDBPrintInit(state);
+    debug_log("db: %s", dbPath);
+    embedDBPrintInit(state);
         debug_log("state->numIndexPages, %d", state->numIndexPages);
         debug_log("state->bufferSizeInBlocks, %d", state->bufferSizeInBlocks);
         debug_log("state->bitmapSize, %d", state->bitmapSize);
-        once = false;
-    }
-
     return 0;
 }
 

@@ -262,6 +262,7 @@ static SubState *handleReports;
 STATE_DEF_ENTER(HandleReports) {
     Input *in = getState(STATE_ID_INPUT);
     int shiftNum = libAtoi(in->input);
+    LOG_DEBUG("shiftNum = %d", shiftNum);
     ShiftData data;
     if (shifts()->get(shiftNum, &data) != 0) {
         GOTO_INFO(state->parent, state->parent, "شیفت مورد نظر یافت نشد", "");
@@ -270,8 +271,6 @@ STATE_DEF_ENTER(HandleReports) {
     char sdt[24] = {0};
     char edt[24] = {0};
     shiftMenu = createShiftMenu(getDisplay()->screen);
-    LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
-            shiftNum, data.startTime, data.endTime, data.startDate, data.endDate);
     dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
     dateTimeToStr(data.endDate, data.endTime, edt, sizeof(edt));
     showShift(shiftMenu, shiftNum - 1, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);

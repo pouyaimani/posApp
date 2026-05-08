@@ -1743,6 +1743,7 @@ int8_t embedDBNext(embedDBState *state, embedDBIterator *it, void *key, void *da
     int searchWriteBuf = 0;
     while (1) {
         if (it->nextDataPage > state->nextDataPageId) {
+            debug_log("it->nextDataPage = %d, state->nextDataPageId = %d", it->nextDataPage, state->nextDataPageId);
             return 0;
         }
         if (it->nextDataPage == state->nextDataPageId) {
@@ -1762,6 +1763,7 @@ int8_t embedDBNext(embedDBState *state, embedDBIterator *it, void *key, void *da
 #ifdef PRINT_ERRORS
                     debug_log("ERROR: Failed to read index page %i (%i)\n", indexPage, indexPage % state->numIndexPages);
 #endif
+                    debug_log("************************");
                     return 0;
                 }
 
@@ -1781,6 +1783,7 @@ int8_t embedDBNext(embedDBState *state, embedDBIterator *it, void *key, void *da
 #ifdef PRINT_ERRORS
             debug_log("ERROR: Failed to read data page %i (%i)\n", it->nextDataPage, it->nextDataPage % state->numDataPages);
 #endif
+debug_log("************************");
             return 0;
         }
 

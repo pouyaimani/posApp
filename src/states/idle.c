@@ -17,6 +17,7 @@
 #include "settings/settings.h"
 #include "record/txnRecs.h"
 #include "record/shiftRecs.h"
+#include "utility/utility.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -100,47 +101,7 @@ static void print() {
         {"لللللللللللللللللللللللللل", LV_TEXT_ALIGN_LEFT, 1},
         {"کد کارتخوان", LV_TEXT_ALIGN_RIGHT, 1}
     };
-
-
-    // rec->addHeader("1404/12/24", "11:38")->addText(2, row1);
-    // const char * bankName = PosDatabase::BanksName::getInstance()->getBankNameFa(data.pan.substr(0, 6).data());?
     OOP_CALL(&rec, addText, 2, row1);
-    // rec->addText(2, row1);
-        // rec->addText(2, col);
-    // rec->addTable(2, col);
-    // rec->addTable(2, col);
-    //     rec->addTable(2, col);
-    // rec->addTable(2, col);
-    // rec->addTable(2, col);
-    //     rec->addTable(2, col);
-    // rec->addTable(2, col);
-    // rec->addTable(2, col);
-    //     rec->addTable(2, col);
-    // rec->addTable(2, col);
-    // rec->addTable(2, col);
-    // rec->addText(2, col);
-    // rec->addText(2, col);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, 1, "bankName", LV_TEXT_ALIGN_RIGHT, 1);
-    // std::string trackingId = data.referenceId.substr(data.referenceId.length() - 6, data.referenceId.length() - 1);
-    // std::string refTrack;
-    // refTrack.append(data.referenceId).append(" - ").append(trackingId);
-    // rec->addText(2, "refTrack.data()", LV_TEXT_ALIGN_LEFT, 2, "پیگیری / مرجع", LV_TEXT_ALIGN_RIGHT, 1);
-    // std::string amountSep = amountSeparator(data.amount);
-    // rec->insertAmount(amountSep);
-    // rec->insertServiceFooter(getInfo().name.data());
-    // if (!data.switchMsg.empty()) {
-    //     rec->addText(1, data.switchMsg.data(), TEXT_ALIGN_CENTER);
-    // }
     OOP_CALL(&rec, addFooter);
     OOP_CALL(&rec, flush);
     OOP_CALL(&rec, free);
@@ -179,10 +140,10 @@ void insertRandomShifts()
 void readAllShifts()
 {
     ShiftData shift;
-    shifts()->get(0, &shift);
-return;
-    for (int i = 0 ; i < 120 ; i++) {
-        if (shifts()->get(0, &shift) == 0) {
+//     shifts()->get(0, &shift);
+// return;
+    for (int i = 0 ; i < 200 ; i++) {
+        if (shifts()->get(i, &shift) == 0) {
         LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
             i, shift.startTime, shift.endTime, shift.startDate, shift.endDate);
         }
@@ -190,12 +151,90 @@ return;
 }
 
 
+static uint32_t seed = 123456789;
+
+static uint32_t my_rand()
+{
+    seed = (1103515245 * seed + 12345);
+    return seed;
+}
+
+static uint32_t my_rand_range(uint32_t max)
+{
+    return my_rand() % max;
+}
+
+static void rand_digits(char *buf, size_t len)
+{
+    for (size_t i = 0; i < len; i++)
+        buf[i] = '0' + my_rand_range(10);
+    buf[len] = '\0';
+}
+
+static void rand_alnum(char *buf, size_t len)
+{
+    const char chars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (size_t i = 0; i < len; i++)
+        buf[i] = chars[my_rand_range(36)];
+    buf[len] = '\0';
+}
+
+static void rand_letters(char *buf, size_t len)
+{
+    const char chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (size_t i = 0; i < len; i++)
+        buf[i] = chars[my_rand_range(26)];
+    buf[len] = '\0';
+}
+
+
+void generate_random_txn(TxnData *t)
+{
+    t->id = my_rand_range(255);
+
+    rand_digits(t->processCode, 6);
+    rand_digits(t->maskedPan, 16);
+    rand_alnum(t->purchaseId, 30);
+    rand_digits(t->amount, 12);
+    rand_digits(t->priceWithDiscount, 12);
+    rand_digits(t->stan, 6);
+    rand_digits(t->trace, 6);
+    uint32_t date, time;
+    getDateTimeUint(&date, &time);
+    LOG_DEBUG("date = %u, time = %u", date, time);
+    t->dateTime = packDateTime(date, time);
+    rand_digits(t->RRN, 12);
+    rand_alnum(t->billId, 23);
+    rand_alnum(t->paymentId, 23);
+
+    t->companyId = my_rand();
+
+    rand_letters(t->companyName, 20);
+    rand_digits(t->phoneNumber, 11);
+
+    t->chargeLevel = my_rand_range(4);   // adjust to enum size
+    rand_digits(t->accountIndex, 7);
+    rand_letters(t->accountCaption, 20);
+    rand_digits(t->responseCode, 2);
+
+    t->Status = my_rand_range(4);        // adjust to enum size
+}
+
+
+static void insertTxn() {
+    TxnData txn;
+    generate_random_txn(&txn);
+    txnrecord()->insert(&txn);
+}
+
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_FUNCTION) {
         SM_GOTO(getState(STATE_ID_SUPPORTER));
     } else if (ev->key == KEY_CLEAR) {
         GOTO_DEV_INFO(state);
     } else if (ev->key == KEY_1) {
+        deleteShiftFiles();
+    } else if (ev->key == KEY_2) {
         shifts()->init();
     } else if (ev->key == KEY_3) {
         insertRandomShifts();
@@ -203,6 +242,14 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         readAllShifts();
     }  else if (ev->key == KEY_5) {
         shifts()->reset();
+    } else if (ev->key == KEY_6) {
+        insertTxn();
+    } else if (ev->key == KEY_7) {
+        txnrecord()->iterate();
+    } else if (ev->key == KEY_8) {
+        txnrecord()->reset();
+    } else if (ev->key == KEY_9) {
+        txnrecord()->init();
     }
 }
 

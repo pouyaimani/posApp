@@ -31,7 +31,7 @@ typedef enum {
 	CL_SPECIFIC = 2,
 } ChargeLevel;
 
-OOP_CLASS(TxnData) {
+typedef struct {
 	uint8_t id;
 	char processCode[6+1];
 	char maskedPan[16+1];
@@ -40,7 +40,7 @@ OOP_CLASS(TxnData) {
 	char priceWithDiscount[12+1];
 	char stan[6+1];
 	char trace[6+1];
-	char dateTime[14+1];
+	uint64_t dateTime;
 	char RRN[12+1];
 	char billId[24];
 	char paymentId[24];
@@ -53,7 +53,7 @@ OOP_CLASS(TxnData) {
 	char responseCode[2+1];
 
 	TransactionStatus  Status;
-};
+} TxnData;
 
 
 #endif
