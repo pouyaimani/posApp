@@ -48,8 +48,6 @@ extern "C" {
 
 #include "spline/spline.h"
 
-#define PRINT_ERRORS 1
-
 /* Define type for page ids (physical and logical). */
 typedef uint32_t id_t;
 

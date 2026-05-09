@@ -8,25 +8,43 @@
 #include "embedDB/query-interface/advancedQueries.h"
 #include "txn.h"
 
+enum TxnField {
+	TXN_KEY = 0,
+    TXN_ID,
+    TXN_PROCESS_CODE,
+    TXN_MASKED_PAN,
+    TXN_PURCHASE_ID,
+    TXN_AMOUNT,
+    TXN_PRICE_WITH_DISCOUNT,
+    TXN_STAN,
+    TXN_TRACE,
+    TXN_DATETIME,
+    TXN_RRN,
+    TXN_BILL_ID,
+    TXN_PAYMENT_ID,
+    TXN_COMPANY_ID,
+    TXN_COMPANY_NAME,
+    TXN_PHONE_NUMBER,
+    TXN_CHARGE_LEVEL,
+    TXN_ACCOUNT_INDEX,
+    TXN_ACCOUNT_CAPTION,
+    TXN_RESPONSE_CODE,
+    TXN_STATUS,
+    TXN_FIELD_COUNT
+};
+
 typedef uint64_t TxnIndex_t;
 
-typedef enum {
-	QUERY_CUL_DATE_TIME = 0,
-	QUERY_CUL_STAN,
-	QUERY_CUL_REF_NUM,
-	QUERY_CUL_TXN_TYPE
-} QueryColumn_t;
-
 typedef struct {
-	embedDBIterator *it;
 	embedDBOperator *op;
-} QueryOperation_t;
+	embedDBIterator *it;
+} QueryOperator;
 
 typedef bool (*TxnHandler)(const TxnData* rec, void* userData);
 
 OOP_CLASS(TxnQuery) {
-	OOP_METHOD(void, init, QueryOperation_t *);
-	OOP_METHOD(void, where, QueryOperation_t *, QueryColumn_t, int, void *value);
+	OOP_METHOD(int8_t, init, QueryOperator *);
+	OOP_METHOD(void, where, QueryOperator *operator, int column, int, void *value);
 };
 
 TxnQuery *txnquery(void);
@@ -35,7 +53,7 @@ OOP_CLASS(TxnRecord) {
 	OOP_METHOD(void, init);
     OOP_METHOD(void, insert, TxnData *);
 	OOP_METHOD(void, iterate);
-	OOP_METHOD(void, select, QueryOperation_t *, TxnHandler handler);
+	OOP_METHOD(void, select, QueryOperator *, TxnHandler handler);
     OOP_METHOD(void, reset);
 };
 

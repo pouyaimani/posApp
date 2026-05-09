@@ -56,56 +56,45 @@ static int8_t txnReset() {
     return ERR_OK;
 }
 
-static QueryOperation_t queryInit(QueryOperation_t *qo) {
-    qo->it = GET_MEM(sizeof(embedDBIterator));
+static int8_t queryInit(QueryOperator *qo) {
+    qo->it = (embedDBIterator*)GET_MEM(sizeof(embedDBIterator));
+    if (!qo->it) {
+        LOG_ERROR("Txn record: Failed to allocate iterator.");
+        return ERR_NOK;
+    }
+    memset(qo->it, 0, sizeof(embedDBIterator));
     embedDBInitIterator(state, qo->it);
-    QueryOperation_t newOp;
-    newOp.op = createTableScanOperator(state, &qo->it, schema);
-    return newOp;
+    qo->op = createTableScanOperator(state, qo->it, schema);
+    if (!(qo->op)) {
+        LOG_ERROR("Failed to create table scan operator.");
+        EMDB_MEM_FREE(qo->it);
+        return ERR_NOK;
+    }
+    return ERR_OK;
 }
 
-static void queryWhere(QueryOperation_t *qo, QueryColumn_t culomn, int comparison, void *value) {
-    QueryOperation_t op;
-    op.op = createSelectionOperator(qo->op, culomn, comparison, value);
-    return op;
+static void queryWhere(QueryOperator *qo,
+                        int column,
+                        int comparison,
+                        void *value) {
+    if (!qo || !value)
+        return;
+    qo->op = createSelectionOperator(qo->op, column, comparison, value);
 }
 
-static void txnSelect(QueryOperation_t *qo, TxnHandler handler) {
-    QueryOperation_t newop;
-        uint16_t Col[] = {
-        0,  // id
-        1,  // processCode
-        2, // maskedPan
-        3, // purchaseId
-        4, // amount
-        5, // priceWithDiscount
-        6,  // stan
-        7,  // trace
-        8, // dateTime
-        9, // RRN
-        10, // billId
-        11, // paymentId
-        12,  // companyId
-        13, // companyName
-        14, // phoneNumber
-        15,  // chargeLevel
-        16,  // accountIndex
-        17, // accountCaption
-        18,  // responseCode
-        19   // Status
-    };
-    newop.op = createProjectionOperator(qo->op, 20, Col);
-    newop.op->init(newop.op);
-    int32_t recordsReturned = 0;
-    while (exec(newop.op)) {
-        recordsReturned++;
+static void txnSelect(QueryOperator *qo, TxnHandler handler) {
+    if (!qo || !handler)
+        return;
+    (qo->op)->init(qo->op);
+    while (exec(qo->op)) {
         TxnData data;
-        memcpy(&data, newop.op->recordBuffer, sizeof(TxnData));
+        memcpy(&data, (qo->op)->recordBuffer + state->keySize, sizeof(TxnData));
         handler(&data, NULL);
     }
-
-    newop.op->close(newop.op);
-    embedDBFreeOperatorRecursive(&newop.op);
+    embedDBCloseIterator(qo->it);
+    (qo->op)->close((qo->op));
+    EMDB_MEM_FREE(qo->it);
+    embedDBFreeOperatorRecursive(qo->op);
 }
 
 static int8_t init(TxnRecord *self) {
@@ -114,7 +103,8 @@ static int8_t init(TxnRecord *self) {
         LOG_ERROR("Transaction records: not enough memory for embedDB.");
         return -1;
     }
-    uint16_t colSizes[] = {
+    int8_t colSizes[] = {
+        8, // key
         1,  // id
         7,  // processCode
         17, // maskedPan
@@ -134,10 +124,11 @@ static int8_t init(TxnRecord *self) {
         8,  // accountIndex
         33, // accountCaption
         3,  // responseCode
-        4   // Status
+        2   // Status
     };
 
     int8_t colSignedness[] = {
+        embedDB_COLUMN_UNSIGNED, // key
         embedDB_COLUMN_UNSIGNED, // id
         embedDB_COLUMN_UNSIGNED, // processCode
         embedDB_COLUMN_UNSIGNED, // maskedPan
@@ -160,6 +151,7 @@ static int8_t init(TxnRecord *self) {
         embedDB_COLUMN_SIGNED    // Status
     };
     ColumnType colTypes[] = {
+        embedDB_COLUMN_UINT64,
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
@@ -195,7 +187,12 @@ static int8_t init(TxnRecord *self) {
                 return ERR_NOK;
     }
 
-    // schema = embedDBCreateSchema(20, colSizes, colSignedness, colTypes);
+    schema = embedDBCreateSchema(21, colSizes, colSignedness, colTypes);
+    if (!schema) {
+        LOG_ERROR("Txn query error: failed to create schema.");
+        return ERR_NOK;
+    }
+    return ERR_OK;
 }
 
 OOP_CTOR(TxnRecord) {
@@ -215,7 +212,7 @@ TxnRecord *txnrecord() {
 
 OOP_CTOR(TxnQuery) {
     self->init = queryInit;
-    self->where = queryInit;
+    self->where = queryWhere;
 }
 
 TxnQuery *txnquery() {

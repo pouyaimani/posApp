@@ -227,6 +227,13 @@ static void insertTxn() {
     txnrecord()->insert(&txn);
 }
 
+static bool txnHand(const TxnData* txn, void* userData) {
+    uint32_t date, time;
+    unpackDateTime(txn->dateTime, &date, &time);
+    LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, stan = %s, rrn = %s, amount = %s",
+                date, time, txn->trace, txn->stan, txn->RRN, txn->amount);
+}
+
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_FUNCTION) {
         SM_GOTO(getState(STATE_ID_SUPPORTER));
@@ -250,6 +257,12 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         txnrecord()->reset();
     } else if (ev->key == KEY_9) {
         txnrecord()->init();
+    } else if(ev->key == KEY_0) {
+        QueryOperator op;
+        txnquery()->init(&op);
+        uint64_t dt = 3683180498412;
+        txnquery()->where(&op, TXN_DATETIME, SELECT_EQ, &dt);
+        txnrecord()->select(&op, txnHand);
     }
 }
 
