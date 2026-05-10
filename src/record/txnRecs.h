@@ -59,6 +59,4 @@ OOP_CLASS(TxnRecord) {
 
 TxnRecord *txnrecord(void);
 
-int doTest(void);
-
 #endif

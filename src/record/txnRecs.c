@@ -57,6 +57,10 @@ static int8_t txnReset() {
 }
 
 static int8_t queryInit(QueryOperator *qo) {
+    if (!qo) {
+        LOG_ERROR("Txn record: QueryOperator is NULL.");
+        return ERR_NOK;
+    }
     qo->it = (embedDBIterator*)GET_MEM(sizeof(embedDBIterator));
     if (!qo->it) {
         LOG_ERROR("Txn record: Failed to allocate iterator.");
@@ -67,6 +71,7 @@ static int8_t queryInit(QueryOperator *qo) {
     qo->op = createTableScanOperator(state, qo->it, schema);
     if (!(qo->op)) {
         LOG_ERROR("Failed to create table scan operator.");
+        embedDBCloseIterator(qo->it);
         EMDB_MEM_FREE(qo->it);
         return ERR_NOK;
     }
@@ -79,7 +84,14 @@ static void queryWhere(QueryOperator *qo,
                         void *value) {
     if (!qo || !value)
         return;
-    qo->op = createSelectionOperator(qo->op, column, comparison, value);
+    embedDBOperator *newOp =
+        createSelectionOperator(qo->op, column, comparison, value);
+
+    if (!newOp) {
+        LOG_ERROR("Txn query: creating selection operator failed.");
+        return;
+    }
+    qo->op = newOp;
 }
 
 static void txnSelect(QueryOperator *qo, TxnHandler handler) {
@@ -88,8 +100,10 @@ static void txnSelect(QueryOperator *qo, TxnHandler handler) {
     (qo->op)->init(qo->op);
     while (exec(qo->op)) {
         TxnData data;
-        memcpy(&data, (qo->op)->recordBuffer + state->keySize, sizeof(TxnData));
-        handler(&data, NULL);
+        uint8_t *buf = (uint8_t *)qo->op->recordBuffer;
+        memcpy(&data, buf + state->keySize, sizeof(TxnData));
+        if (!handler(&data, NULL))
+            break;
     }
     embedDBCloseIterator(qo->it);
     (qo->op)->close((qo->op));
@@ -104,27 +118,27 @@ static int8_t init(TxnRecord *self) {
         return -1;
     }
     int8_t colSizes[] = {
-        8, // key
-        1,  // id
-        7,  // processCode
-        17, // maskedPan
-        31, // purchaseId
-        13, // amount
-        13, // priceWithDiscount
-        7,  // stan
-        7,  // trace
-        8, // dateTime
-        13, // RRN
-        24, // billId
-        24, // paymentId
-        8,  // companyId
-        64, // companyName
-        12, // phoneNumber
-        1,  // chargeLevel
-        8,  // accountIndex
-        33, // accountCaption
-        3,  // responseCode
-        2   // Status
+        state->keySize,                                                 // key
+        sizeof(sizeof(((TxnData*)0)->id)),                              // id
+        sizeof(sizeof(((TxnData*)0)->processCode)),                     // processCode
+        sizeof(sizeof(((TxnData*)0)->maskedPan)),                       // maskedPan
+        sizeof(sizeof(((TxnData*)0)->purchaseId)),                      // purchaseId
+        sizeof(sizeof(((TxnData*)0)->amount)),                          // amount
+        sizeof(sizeof(((TxnData*)0)->priceWithDiscount)),               // priceWithDiscount
+        sizeof(sizeof(((TxnData*)0)->stan)),                            // stan
+        sizeof(sizeof(((TxnData*)0)->trace)),                           // trace
+        sizeof(sizeof(((TxnData*)0)->dateTime)),                        // dateTime
+        sizeof(sizeof(((TxnData*)0)->RRN)),                             // RRN
+        sizeof(sizeof(((TxnData*)0)->billId)),                          // billId
+        sizeof(sizeof(((TxnData*)0)->paymentId)),                       // paymentId
+        sizeof(sizeof(((TxnData*)0)->companyId)),                       // companyId
+        sizeof(sizeof(((TxnData*)0)->companyName)),                     // companyName
+        sizeof(sizeof(((TxnData*)0)->phoneNumber)),                     // phoneNumber
+        sizeof(sizeof(((TxnData*)0)->chargeLevel)),                     // chargeLevel
+        sizeof(sizeof(((TxnData*)0)->accountIndex)),                    // accountIndex
+        sizeof(sizeof(((TxnData*)0)->accountCaption)),                  // accountCaption
+        sizeof(sizeof(((TxnData*)0)->responseCode)),                    // responseCode
+        sizeof(sizeof(((TxnData*)0)->Status))                           // Status
     };
 
     int8_t colSignedness[] = {
@@ -190,6 +204,10 @@ static int8_t init(TxnRecord *self) {
     schema = embedDBCreateSchema(21, colSizes, colSignedness, colTypes);
     if (!schema) {
         LOG_ERROR("Txn query error: failed to create schema.");
+        embedDBClose(state);
+        embedDBtearDown(state);
+        EMDB_MEM_FREE(state);
+        state = NULL;
         return ERR_NOK;
     }
     return ERR_OK;
