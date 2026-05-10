@@ -69,13 +69,6 @@
         }                              \
     } while (0)
 
-// TODO: add log
-#define RETURN_IF_NULL(ptr) \
-    do { if ((ptr) == NULL) return; } while (0)
-
-#define RETURN_VAL_IF_NULL(ptr, ret) \
-    do { if ((ptr) == NULL) return (ret); } while (0)
-
 #define SECS(x) (x * 1000)
 
 #define ERR_OK      0

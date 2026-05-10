@@ -4,6 +4,9 @@
 #include "ui/ui.h"
 #include "iso8583.h"
 #include "receipt/receipt.h"
+#include "settings/settings.h"
+#include "txn.h"
+#include "utility/utility.h"
 
 static SubState *enterAmount;
 static SubState *enterPass;
@@ -49,25 +52,47 @@ STATE_DEF_ENTER(Result) {
 
 /******************************************************************/
 
-void makeReceipt()
-{
-    // Receipt *rec = getReceipt();
+int8_t makeReceipt(TxnData *txn) {
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
+    Receipt rec;
+    RETURN_VALUE_IF_NOT(createReceipt(&rec), true, 
+        RECEIPT_CREATE_ERROR(), ERR_NOK);
+    uint32_t date, time;
+    unpackDateTime(txn->dateTime, &date, &time);
+    // Add header
+    OOP_CALL(&rec, addHeader, date, time);
+    DEFINE_STRING(terminal, 64);
+    snprintf(terminal, sizeof(terminal), "%s:%s", settings()->terminal.terminalNo, "پایانه");
+    DEFINE_STRING(code, 64);
+    snprintf(code, sizeof(code), "%s:%s", settings()->terminal.terminalNo, "کد کارتخوان");
+    RecColumn_t row1[] = {
+        {terminal, LV_TEXT_ALIGN_LEFT, 1},
+        {code, LV_TEXT_ALIGN_RIGHT, 1}
+    };
+    OOP_CALL(&rec, addText, 2, row1);
 
-    // rec->addHeader()->addText(2, "param->terminal.uniqueId.data()",
-    //      LV_TEXT_ALIGN_LEFT, "کد کارتخوان", LV_TEXT_ALIGN_RIGHT);
-    // // const char * bankName = PosDatabase::BanksName::getInstance()->getBankNameFa(data.pan.substr(0, 6).data());?
-    // rec->addText(2," data.pan.data()", LV_TEXT_ALIGN_LEFT, "bankName", LV_TEXT_ALIGN_RIGHT);
-    // // std::string trackingId = data.referenceId.substr(data.referenceId.length() - 6, data.referenceId.length() - 1);
-    // // std::string refTrack;
-    // // refTrack.append(data.referenceId).append(" - ").append(trackingId);
-    // rec->addText(2, "refTrack.data()", LV_TEXT_ALIGN_LEFT, 2, "پیگیری / مرجع", LV_TEXT_ALIGN_RIGHT, 1);
-    // // std::string amountSep = amountSeparator(data.amount);
-    // // rec->insertAmount(amountSep);
-    // // rec->insertServiceFooter(getInfo().name.data());
-    // // if (!data.switchMsg.empty()) {
-    // //     rec->addText(1, data.switchMsg.data(), TEXT_ALIGN_CENTER);
-    // // }
-    // rec->addFooter();
+    // TODO: bank name
+    RecColumn_t row2[] = {
+        {"bank name", LV_TEXT_ALIGN_LEFT, 1},
+        {"بانک", LV_TEXT_ALIGN_RIGHT, 1}
+    };
+    OOP_CALL(&rec, addText, 2, row2);
+    
+    DEFINE_STRING(trace, 64);
+    snprintf(trace, sizeof(trace), "%s:%s", txn->trace, "پیگیری");
+    DEFINE_STRING(ref, 64);
+    snprintf(ref, sizeof(ref), "%s:%s", txn->stan, "مرجع");
+    RecColumn_t row3[] = {
+        {ref, LV_TEXT_ALIGN_LEFT, 1},
+        {trace, LV_TEXT_ALIGN_RIGHT, 1}
+    };
+    OOP_CALL(&rec, addText, 2, row3);
+
+    OOP_CALL(&rec, addFooter);
+    OOP_CALL(&rec, flush);
+    OOP_CALL(&rec, destroy);
+    return ERR_OK;
+
 }
 
 OOP_CTOR(Sale, State *parent, const char *name) {

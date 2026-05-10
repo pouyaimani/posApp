@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "logger.h"
 #include "hal/dev/dev.h"
+#include "common.h"
 
 Core __core;
 Device *dev;
@@ -11,7 +12,7 @@ Device *dev;
 static void init(State *initial)
 {
     LOG_TRACE("SM: initialization starts.");
-    RETURN_IF_NULL(initial);
+    RETURN_IF_NULL(initial, ;);
     __core.current = initial;
     __core.current->inner = STATE_ENTRY;
 }
@@ -19,7 +20,7 @@ static void init(State *initial)
 static void raiseEvent(Event *ev)
 {
     LOG_TRACE("SM: Event is going to raise.");
-    RETURN_IF_NULL(ev);
+    RETURN_IF_NULL(ev, ;);
     if (!ev->target) {
         LOG_TRACE("SM: Event target is null, setting it to current state.");
         ev->target = __core.current;
@@ -30,14 +31,14 @@ static void raiseEvent(Event *ev)
 
 static void goTo(State *next)
 {
-    RETURN_IF_NULL(next);
+    RETURN_IF_NULL(next, ;);
     __core.current->inner = STATE_EXIT;
     __core.next = next;
 }
 
 static void goToSub(State *next)
 {
-    RETURN_IF_NULL(next);
+    RETURN_IF_NULL(next, ;);
     __core.current->inner = STATE_SUBSTATE;
     __core.next = next;
 }

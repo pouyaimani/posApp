@@ -1,6 +1,8 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <stdio.h>
+
 typedef void (*CallBack_t)(void *arg);
 
 #define MERCHANT_PIN_LEN                                4
@@ -43,5 +45,44 @@ typedef enum {
 /**********************************************************/
 
 #define STR_MAX(field) (sizeof(field) - 1)
+
+#define DEFINE_STRING(name, size)    \
+    char name[size];                 \
+    memset(name, 0, sizeof(name));
+
+#define RETURN_VALUE_IF_NOT(expr, expected, on_error, retval)      \
+    do {                                                           \
+        __typeof__(expr) __val = (expr);                           \
+        __typeof__(expected) __exp = (expected);                   \
+                                                                   \
+        if (__val != __exp) {                                      \
+            LOG_ERROR("Error: %s returns %d (expected %d)",          \
+                    #expr,                                         \
+                    (int)__val,                                    \
+                    (int)__exp);                                   \
+                                                                   \
+            on_error;                                              \
+            return (retval);                                       \
+        }                                                          \
+    } while (0)
+
+
+#define RETURN_VALUE_IF_NULL(ptr, on_error, retval)                \
+    do {                                                           \
+        if ((ptr) == NULL) {                                       \
+            LOG_ERROR("Error: %s is NULL", #ptr);                    \
+            on_error;                                              \
+            return (retval);                                       \
+        }                                                          \
+    } while (0)
+
+#define RETURN_IF_NULL(ptr, on_error)                              \
+    do {                                                           \
+        if ((ptr) == NULL) {                                       \
+            LOG_ERROR("Error: %s is NULL", #ptr);                    \
+            on_error;                                              \
+            return;                                                \
+        }                                                          \
+    } while (0)
 
 #endif

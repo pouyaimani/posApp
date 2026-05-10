@@ -3,6 +3,7 @@
 
 #include "oop.h"
 #include "mylvgl.h"
+#include "logger.h"
 
 #define MAX_CULOMN_CNT      3
 
@@ -10,19 +11,19 @@ typedef struct {
     const char *src;
     int align;
     uint8_t weight;
-} Column;
+} RecColumn_t;
 
 OOP_DECLARE_CLASS(Receipt)
 OOP_VTABLE(Receipt) {
-    OOP_IMETHOD(uint8_t, Receipt, addText, int, const Column*);
-    OOP_IMETHOD(uint8_t, Receipt, addBoldText, int culCount, const Column*);
+    OOP_IMETHOD(uint8_t, Receipt, addText, int, const RecColumn_t*);
+    OOP_IMETHOD(uint8_t, Receipt, addBoldText, int culCount, const RecColumn_t*);
     OOP_IMETHOD(uint8_t, Receipt, addSpace, uint16_t height);
-    OOP_IMETHOD(uint8_t, Receipt, addTable, int culCount, const Column*);
-    OOP_IMETHOD(uint8_t, Receipt, addImage, int culCount, const Column*);
-    OOP_IMETHOD(uint8_t, Receipt, addHeader, const char *date, const char *time);
+    OOP_IMETHOD(uint8_t, Receipt, addTable, int culCount, const RecColumn_t*);
+    OOP_IMETHOD(uint8_t, Receipt, addImage, int culCount, const RecColumn_t*);
+    OOP_IMETHOD(uint8_t, Receipt, addHeader, uint32_t date, uint32_t time);
     OOP_IMETHOD(uint8_t, Receipt, addFooter);
     OOP_IMETHOD(uint8_t, Receipt, addAmount, const char *);
-    OOP_IMETHOD(void, Receipt, free);
+    OOP_IMETHOD(void, Receipt, destroy);
     OOP_IMETHOD(void, Receipt, flush);
 };
 
@@ -39,5 +40,7 @@ OOP_CLASS(Receipt) {
 };
 
 bool createReceipt(Receipt* receipt);
+
+#define RECEIPT_CREATE_ERROR() LOG_ERROR("Receipt: error in creating receipt.")
 
 #endif

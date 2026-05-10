@@ -93,18 +93,18 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 static void print() {
     Receipt rec;
     createReceipt(&rec);
-    Column row[] = {
+    RecColumn_t row[] = {
         {"سلام", LV_TEXT_ALIGN_LEFT, 1},
         {"بله", LV_TEXT_ALIGN_RIGHT, 1}
     };
-    Column row1[] = {
+    RecColumn_t row1[] = {
         {"لللللللللللللللللللللللللل", LV_TEXT_ALIGN_LEFT, 1},
         {"کد کارتخوان", LV_TEXT_ALIGN_RIGHT, 1}
     };
     OOP_CALL(&rec, addText, 2, row1);
     OOP_CALL(&rec, addFooter);
     OOP_CALL(&rec, flush);
-    OOP_CALL(&rec, free);
+    OOP_CALL(&rec, destroy);
 }
 
 void generateRandomShift(ShiftData *shift)

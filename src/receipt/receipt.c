@@ -7,6 +7,7 @@
 #include "printer/printer.h"
 #include "settings/settings.h"
 #include "assets.h"
+#include "utility/utility.h"
 
 #define PRINTER_WIDTH_PIX   384
 #define MAX_HEIGHT          100   // dynamic safe max
@@ -82,7 +83,7 @@ static uint16_t measure_text_height(const char *txt, int width, const lv_font_t 
     return size.y;
 }
 
-static uint8_t addText(Receipt *r, int count, const Column *cols) {
+static uint8_t addText(Receipt *r, int count, const RecColumn_t *cols) {
     if (!r || !r->buf || !r->canvas) {
         return ERR_NOK;
     }
@@ -139,7 +140,7 @@ static uint8_t addText(Receipt *r, int count, const Column *cols) {
     return ERR_OK;
 }
 
-static uint8_t addTable(Receipt *r,int count, const Column *cols) {
+static uint8_t addTable(Receipt *r,int count, const RecColumn_t *cols) {
     if (!r || !r->buf || !r->canvas) {
         return ERR_NOK;
     }
@@ -245,7 +246,7 @@ static uint8_t addTable(Receipt *r,int count, const Column *cols) {
 }
 
 /* -------- IMAGE -------- */
-static uint8_t addImage(Receipt *r, int count, const Column *cols) {
+static uint8_t addImage(Receipt *r, int count, const RecColumn_t *cols) {
     if (!r || !r->buf || !r->canvas) {
         return ERR_NOK;
     }
@@ -360,30 +361,31 @@ static uint8_t addAmount(Receipt *r,const char *amount) {
 }
 
 /* -------- HEADER -------- */
-static uint8_t addHeader(Receipt *r, const char *date, const char *time) {
+static uint8_t addHeader(Receipt *r, uint32_t date, uint32_t time) {
     if (!r || !r->buf || !r->canvas) {
         return ERR_NOK;
     }
     TerminalSettings *t = &settings()->terminal;
 
-    Column row1[] = {
-        {t->merchantNo, LV_TEXT_ALIGN_LEFT, 1},
-        {t->merchantName, LV_TEXT_ALIGN_RIGHT, 1}
+    RecColumn_t row1[] = {
+        {"TODO", LV_TEXT_ALIGN_LEFT, 1},
+        {"پرداخت سبز", LV_TEXT_ALIGN_RIGHT, 1}
     };
     if (addText(r, 2, row1) != ERR_OK) {
         return ERR_NOK;
     }
+    DEFINE_STRING(dt, 64);
+    dateTimeToStr(date, time,dt, sizeof(dt));
+    
+    DEFINE_STRING(buf, 64);
+    snprintf(buf, sizeof(buf), "%s - %s",
+             dt, "TODO");
 
-    char buf[64];
-    snprintf(buf, sizeof(buf), "%s - %s / %s",
-             date, time, t->terminalNo);
-
-    Column row2[] = {
-        {buf, LV_TEXT_ALIGN_LEFT, 2},
-        {" پایانه / زمان", LV_TEXT_ALIGN_RIGHT, 1}
+    RecColumn_t row2[] = {
+        {buf, LV_TEXT_ALIGN_LEFT, 1}
     };
 
-    return addText(r, 2, row2);
+    return addHighlightedText(r, 1, NULL, row2);
 }
 
 /* -------- FOOTER -------- */
@@ -391,14 +393,14 @@ static uint8_t addFooter(Receipt* r) {
     if (!r || !r->buf || !r->canvas) {
         return ERR_NOK;
     }
-    Column row1[] = {
+    RecColumn_t row1[] = {
         {ICON_BANK_REC, LV_ALIGN_LEFT_MID, 1},
         {ICON_SHAPARAK, LV_ALIGN_RIGHT_MID, 1}
     };
     return addImage(r, 2, row1);
 }
 
-static void freeReceipt(Receipt *r) {
+static void destroyReceipt(Receipt *r) {
     if (r->canvas) {
         LV_DELETE(r->canvas);
         r->canvas = NULL;
@@ -417,7 +419,7 @@ OOP_CTOR(Receipt) {
     self->vtable.addHeader = addHeader;
     self->vtable.addFooter = addFooter;
     // self->addBoldText = addBoldText;
-    self->vtable.free = freeReceipt;
+    self->vtable.destroy = destroyReceipt;
     self->vtable.flush = flushReceipt;
     self->vtable.addAmount = addAmount;
 
