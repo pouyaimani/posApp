@@ -3,6 +3,18 @@
 
 #include <stdio.h>
 
+
+/**********************************************************/
+//                         ERRORS
+/**********************************************************/
+
+#define ERR_OK                       0
+#define ERR_NOK                     -1
+#define ERR_NOT_SUPPORTED           -2
+#define ERR_BAD_PARAMETER           -3
+#define ERR_MEMORY_ALLOCATION       -4
+
+
 typedef void (*CallBack_t)(void *arg);
 
 #define MERCHANT_PIN_LEN                                4
@@ -84,5 +96,8 @@ typedef enum {
             return;                                                \
         }                                                          \
     } while (0)
+
+#define ARRAY_SIZE(x) \
+    (sizeof(x) / sizeof((x)[0]))
 
 #endif

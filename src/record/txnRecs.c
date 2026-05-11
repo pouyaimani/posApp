@@ -4,6 +4,7 @@
 #include "embedDB/embedDB_mem.h"
 #include "logger.h"
 #include "utility/utility.h"
+#include "common.h"
 
 typedef struct {
     TxnCore core;

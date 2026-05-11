@@ -27,6 +27,13 @@ typedef enum {
 } TransactionStatus;
 
 typedef enum {
+	TXN_SALE = 0,
+	TXN_BILL,
+	TXN_TOPUP,
+	TXN_BALANCE,
+} TxnType_t;
+
+typedef enum {
 	CL_NORMAL = 1,
 	CL_SPECIFIC = 2,
 } ChargeLevel;

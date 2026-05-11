@@ -71,9 +71,6 @@
 
 #define SECS(x) (x * 1000)
 
-#define ERR_OK      0
-#define ERR_NOK     -1
-
 OOP_CLASS(ByteArray) {
     uint8_t *data;
     uint32_t len;

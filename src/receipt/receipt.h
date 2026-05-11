@@ -39,7 +39,7 @@ OOP_CLASS(Receipt) {
     char shaped[MAX_CULOMN_CNT][128];
 };
 
-bool createReceipt(Receipt* receipt);
+int8_t createReceipt(Receipt* receipt);
 
 #define RECEIPT_CREATE_ERROR() LOG_ERROR("Receipt: error in creating receipt.")
 

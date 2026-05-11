@@ -457,7 +457,7 @@ OOP_CTOR(Receipt) {
     lv_obj_center(self->canvas);
 }
 
-bool createReceipt(Receipt* receipt) {
+int8_t createReceipt(Receipt* receipt) {
     OOP_CALL_CTOR(Receipt, receipt);
-    return receipt->buf ? true : false;
+    return receipt->buf ? ERR_OK : ERR_MEMORY_ALLOCATION;
 }

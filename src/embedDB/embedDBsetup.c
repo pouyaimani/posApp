@@ -1,6 +1,7 @@
 #include "embedDBsetup.h"
 #include "logger.h"
 #include <math.h>
+#include "common.h"
 
 #define safetyMargin 2
 

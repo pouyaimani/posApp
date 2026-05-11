@@ -6,6 +6,41 @@
 #include "ui/ui.h"
 #include "dev/dev.h"
 #include "storage/storage.h"
+#include "record/txnRecs.h"
+#include "utility/utility.h"
+
+typedef enum {
+    REP_FILTER_DATE_TIME = (1u << 0),
+    REP_FILTER_REF_NUM   = (1u << 1),
+    REP_FILTER_TRACE     = (1u << 2),
+    REP_FILTER_SERVICE   = (1u << 3),
+} ReportsFilter_t;
+
+typedef enum {
+    REP_RESULT_DETAIL      = 0,
+    REP_RESULT_AGGREGATED  = 1,
+    REP_RESULT_NORM
+} ReportResultMode_t;
+
+#define QUERY_FILTER_RESET(x)                         (x = 0)
+
+#define QUERY_IS_USING_DATE_TIME(x)             ((x & REP_FILTER_DATE_TIME)  > 0 ? 1 : 0)
+#define QUERY_IS_USING_REF_NUM(x)               ((x & REP_FILTER_REF_NUM)    > 0 ? 1 : 0)
+#define QUERY_IS_USING_TRACE(x)                 ((x & REP_FILTER_TRACE)  > 0 ? 1 : 0)
+#define QUERY_IS_USING_SERVICE_ID(x)            ((x & REP_FILTER_SERVICE) > 0 ? 1 : 0)
+
+#define QUERY_FILTER_DATE_TIME(x)               (x |= REP_FILTER_DATE_TIME)
+#define QUERY_FILTER_REF_NUM(x)                 (x |= REP_FILTER_REF_NUM)
+#define QUERY_FILTER_TRACE(x)                   (x |= REP_FILTER_TRACE)
+#define QUERY_FILTER_SERVICE_ID(x)              (x |= REP_FILTER_SERVICE)
+
+#define REPORT_RESULT_DETAIL(x)                 (x = REP_RESULT_DETAIL)
+#define REPORT_RESULT_AGGREGATED(x)             (x = REP_RESULT_DETAIL)
+#define REPORT_RESULT_NORM(x)                   (x = REP_RESULT_NORM)
+
+#define REPORT_RESULT_IS_DETAIL(x)              (x == REP_RESULT_DETAIL)
+#define REPORT_RESULT_IS_AGGREGATED(x)          (x == REP_RESULT_DETAIL)
+#define REPORT_RESULT_IS_NORM(x)                (x == REP_RESULT_NORM)
 
 static Device *dev;
 
@@ -29,12 +64,19 @@ static SubState *getEndTime;
 static State *prev;
 static State *mainMenu;
 
-static char startDate[MAX_DATE_IN_LEN + 1];
-static char endDate[MAX_DATE_IN_LEN + 1];
-static char startTime[MAX_TIME_IN_LEN + 1];
-static char endTime[MAX_TIME_IN_LEN + 1];
-static char refNum[MAX_REF_NUM_IN_LEN + 1];
-static char trace[MAX_TRACE_IN_LEN + 1];
+typedef struct {
+    ReportsFilter_t filter;
+    ReportResultMode_t resMode;
+    char startDate[16];
+    char endDate[16];
+    char startTime[16];
+    char endTime[16];
+    char refNum[16];
+    char trace[16];
+    uint8_t serviceId;
+} ReportQuery_t;
+
+ReportQuery_t rquery;
 
 static const char* reportsItemTxt[REP_ITEM_ALL] = {
     "چاپ مجدد",
@@ -61,21 +103,30 @@ void setReprintItem(void *arg) {
     pItem = (PrintItem_t)(uintptr_t)arg;
     switch (pItem) {
     case REPRINT_TRACE:
+        QUERY_FILTER_TRACE(rquery.filter);
         GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-                 "شماره پیگیری را وارد کنید", "", MAX_TRACE_IN_LEN, IN_MODE_NUMBERS, trace);
+                 "شماره پیگیری را وارد کنید", "", MAX_TRACE_IN_LEN, IN_MODE_NUMBERS, rquery.trace);
         break;
     case REPRINT_REF:
+        QUERY_FILTER_REF_NUM(rquery.filter);
         GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-                 "شماره مرجع را وارد کنید", "", MAX_REF_NUM_IN_LEN, IN_MODE_NUMBERS, refNum);
+                 "شماره مرجع را وارد کنید", "", MAX_REF_NUM_IN_LEN, IN_MODE_NUMBERS, rquery.refNum);
+        break;
+    case REPRINT_BILL:
+    case REPRINT_CHARGE:
+    case REPRINT_SALE:
+    case REPRINT_PIN:
+        QUERY_FILTER_SERVICE_ID(rquery.filter);
+        SM_GOTO(extractData);
         break;
     default:
-    if (rItem != REP_ITEM_DETAILS) {
-        SM_GOTO(extractData);
-    } else {
-        SM_GOTO(getStartDate);
-    }
+        if (rItem != REP_ITEM_DETAILS) {
+            SM_GOTO(extractData);
+        } else {
+            SM_GOTO(getStartDate);
+        }
         break;
-    }
+        }
 }
 
 static SubState *startReprint;
@@ -89,9 +140,11 @@ static const char* printItemTxt[REPRINT_END] = {
     "بر اساس پیگیری",
     "بر اساس مرجع"
 };
+
 static Menu printMenu;
 
 STATE_DEF_ENTER(RePrint) {
+    REPORT_RESULT_NORM(rquery.resMode);
     uiMenu(&printMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
         OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
@@ -109,6 +162,7 @@ static void RePrint(State *parent) {
 /******************** daily reports sub state **********************/
 
 STATE_DEF_ENTER(DailyReport) {
+    REPORT_RESULT_NORM(rquery.resMode);
     SM_GOTO(extractData);
 }
 
@@ -121,6 +175,7 @@ static void DailyReport(State *parent) {
 /******************** summary report sub state **********************/
 
 STATE_DEF_ENTER(SummaryReport) {
+    REPORT_RESULT_AGGREGATED(rquery.resMode);
     SM_GOTO(getStartDate);
 }
 
@@ -133,6 +188,7 @@ static void SummaryReport(State *parent) {
 /******************** detail report sub state **********************/
 
 STATE_DEF_ENTER(DetailsReport) {
+    REPORT_RESULT_DETAIL(rquery.resMode);
     uiMenu(&printMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE ; i++) {
         OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
@@ -158,35 +214,65 @@ static void DetailsReport(State *parent) {
 /******************** Get Start Date sub state **********************/
 
 STATE_DEF_ENTER(GetStartDate) {
-    GOTO_INPUT(mainMenu, getStartTime, "از تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, startDate);
+    GOTO_INPUT(mainMenu, getStartTime, "از تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.startDate);
 }
 
 /******************** Get End Date sub state **********************/
 
 STATE_DEF_ENTER(GetEndDate) {
-    GOTO_INPUT(mainMenu, getEndTime, "تا تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, endDate);
+    GOTO_INPUT(mainMenu, getEndTime, "تا تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.endDate);
 }
 
 /******************** Get Start Time sub state **********************/
 
 STATE_DEF_ENTER(GetStartTime) {
-    GOTO_INPUT(mainMenu, getEndDate, "از ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, startTime);
+    GOTO_INPUT(mainMenu, getEndDate, "از ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.startTime);
 }
 
 /******************** Get End Time sub state **********************/
 
 STATE_DEF_ENTER(GetEndTime) {
-    GOTO_INPUT(mainMenu, extractData, "تا ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, endTime);
+    GOTO_INPUT(mainMenu, extractData, "تا ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.endTime);
 }
 
 /******************** extract data sub state **********************/
 
+static bool handleExtractedData(const TxnData* rec, void* userData) {
+
+}
+
 STATE_DEF_ENTER(ExtractData) {
     SHOW_INFO("در حال استخراج اطلاعات"," لطفا منتظر بمانید");
-    LOG_DEBUG("start date = %s", startDate);
-    LOG_DEBUG("start time = %s", startTime);
-    LOG_DEBUG("end date = %s", endDate);
-    LOG_DEBUG("end time = %s", endTime);
+    LOG_DEBUG("start date = %s", rquery.startDate);
+    LOG_DEBUG("start time = %s", rquery.startTime);
+    LOG_DEBUG("end date = %s", rquery.endDate);
+    LOG_DEBUG("end time = %s", rquery.endTime);
+    QueryOperator op;
+    txnquery()->init(&op);
+
+    if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
+        uint32_t sdate = libAtoi(rquery.startDate);
+        uint32_t stime = libAtoi(rquery.startTime);
+        uint32_t edate = libAtoi(rquery.endDate);
+        uint32_t etime = libAtoi(rquery.endTime);
+        uint64_t sdt = packDateTime(sdate, stime);
+        uint64_t ldt = packDateTime(edate, etime);
+        txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_GTE, &sdt);
+        txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_LTE, &ldt);
+
+    }
+    if (QUERY_IS_USING_REF_NUM(rquery.filter)) {
+        txnquery()->where(&op, TXN_REC_FIELD_CORE_REF_NUM, SELECT_EQ, &rquery.refNum);
+    }
+    if (QUERY_IS_USING_SERVICE_ID(rquery.filter)) {
+        txnquery()->where(&op, TXN_REC_FIELD_CORE_ID, SELECT_EQ, &rquery.serviceId);
+    }
+    if (QUERY_IS_USING_TRACE(rquery.filter)) {
+        txnquery()->where(&op, TXN_REC_FIELD_CORE_TRACE, SELECT_EQ, &rquery.trace);
+    }
+
+    txnrecord()->select(&op, handleExtractedData);
+
 }
 
 STATE_DEF_EXIT(ExtractData) {
@@ -215,6 +301,7 @@ static void setReportItem(void *arg) {
 }
 
 STATE_DEF_ENTER(Reports) {
+    QUERY_FILTER_RESET(rquery.filter);
     uiMenu(&reportsMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
         OOP_CALL(&reportsMenu, addItem, reportsItemTxt[i], subReports[i], setReportItem, (void*)(uintptr_t)i);

@@ -245,7 +245,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         QueryOperator op;
         txnquery()->init(&op);
         uint64_t dt = 3683180498412;
-        txnquery()->where(&op, TXN_DATETIME, SELECT_EQ, &dt);
+        txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_EQ, &dt);
         txnrecord()->select(&op, txnHand);
     }
 }
