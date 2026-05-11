@@ -32,28 +32,40 @@ typedef enum {
 } ChargeLevel;
 
 typedef struct {
-	uint8_t id;
-	char processCode[6+1];
-	char maskedPan[16+1];
-	char purchaseId[31];
-	char amount[12+1];
-	char priceWithDiscount[12+1];
-	char stan[6+1];
-	char trace[6+1];
+	uint8_t serviceId;
+	uint16_t processCode;
+	char pan[16+1];
+	uint64_t amount;
+	uint32_t refNum;
+	uint32_t trace;
+	uint32_t RRN;
+	uint16_t respCode; 				// responce code
+} TxnCore;
+
+typedef union {
+    struct {
+        char billId[24];
+        char paymentId[24];
+		char purchaseId[31];
+    } bill;
+
+	struct {
+        char phoneNumber[12];
+        ChargeLevel level;
+    } charge;
+
+	struct {
+		char companyName[64]; // 116 kahroba
+		char phoneNumber[11+1]; // For Kahroba
+	};
+	
+
+} TxnExtention;
+
+typedef struct {
 	uint64_t dateTime;
-	char RRN[12+1];
-	char billId[24];
-	char paymentId[24];
-	unsigned long companyId;
-	char companyName[64]; // 116 kahroba
-	char phoneNumber[11+1]; // For Kahroba
-	ChargeLevel chargeLevel;
-	char accountIndex[8];
-	char accountCaption[32+1];
-	char responseCode[2+1];
-
-	TransactionStatus  Status;
+	TxnCore core;
+	TxnExtention extention;
 } TxnData;
-
 
 #endif

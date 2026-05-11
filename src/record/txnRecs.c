@@ -5,6 +5,12 @@
 #include "logger.h"
 #include "utility/utility.h"
 
+typedef struct {
+    TxnCore core;
+    TxnExtention extention;
+} TxnRec_t;
+
+
 static TxnRecord __txnrecord;
 static TxnQuery __txnquery;
 
@@ -23,12 +29,15 @@ static int txnInsert(TxnData *txn) {
     LOG_DEBUG("time stamp = %llu", txn->dateTime);
     uint32_t date, time;
     unpackDateTime(txn->dateTime, &date, &time);
-    if (embedDBPut(state, &txn->dateTime, txn) != 0) {
+    TxnRec_t rec;
+    rec.core = txn->core;
+    rec.extention = txn->extention;
+    if (embedDBPut(state, &txn->dateTime, &rec) != 0) {
         LOG_ERROR("Transaction record: error in inserting record.");
         return -1;
     }
-    LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, stan = %s, rrn = %s, amount = %s",
-                date, time, txn->trace, txn->stan, txn->RRN, txn->amount);
+    LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, refNum = %s, rrn = %s, amount = %s",
+                date, time, txn->core.trace, txn->core.refNum, txn->core.RRN, txn->core.amount);
     return 0;
 }
 
@@ -37,12 +46,12 @@ static int8_t iterateThrough() {
     embedDBIterator it;
     embedDBInitIterator(state, &it);
     uint64_t timeStamp;
-    TxnData data;
-    while (embedDBNext(state, &it, &timeStamp, &data)) {
+    TxnRec_t rec;
+    while (embedDBNext(state, &it, &timeStamp, &rec)) {
         uint32_t date, time;
-        unpackDateTime(data.dateTime, &date, &time);
-        LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, stan = %s, rrn = %s, amount = %s",
-                 date, time, data.trace, data.stan, data.RRN, data.amount);
+        unpackDateTime(timeStamp, &date, &time);
+        LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, refNum = %s, rrn = %s, amount = %s",
+                 date, time, rec.core.trace, rec.core.refNum, rec.core.RRN, rec.core.amount);
     }
     return ERR_OK;
 }
@@ -119,50 +128,28 @@ static int8_t init(TxnRecord *self) {
     }
     int8_t colSizes[] = {
         state->keySize,                                                 // key
-        sizeof(sizeof(((TxnData*)0)->id)),                              // id
-        sizeof(sizeof(((TxnData*)0)->processCode)),                     // processCode
-        sizeof(sizeof(((TxnData*)0)->maskedPan)),                       // maskedPan
-        sizeof(sizeof(((TxnData*)0)->purchaseId)),                      // purchaseId
-        sizeof(sizeof(((TxnData*)0)->amount)),                          // amount
-        sizeof(sizeof(((TxnData*)0)->priceWithDiscount)),               // priceWithDiscount
-        sizeof(sizeof(((TxnData*)0)->stan)),                            // stan
-        sizeof(sizeof(((TxnData*)0)->trace)),                           // trace
-        sizeof(sizeof(((TxnData*)0)->dateTime)),                        // dateTime
-        sizeof(sizeof(((TxnData*)0)->RRN)),                             // RRN
-        sizeof(sizeof(((TxnData*)0)->billId)),                          // billId
-        sizeof(sizeof(((TxnData*)0)->paymentId)),                       // paymentId
-        sizeof(sizeof(((TxnData*)0)->companyId)),                       // companyId
-        sizeof(sizeof(((TxnData*)0)->companyName)),                     // companyName
-        sizeof(sizeof(((TxnData*)0)->phoneNumber)),                     // phoneNumber
-        sizeof(sizeof(((TxnData*)0)->chargeLevel)),                     // chargeLevel
-        sizeof(sizeof(((TxnData*)0)->accountIndex)),                    // accountIndex
-        sizeof(sizeof(((TxnData*)0)->accountCaption)),                  // accountCaption
-        sizeof(sizeof(((TxnData*)0)->responseCode)),                    // responseCode
-        sizeof(sizeof(((TxnData*)0)->Status))                           // Status
+        sizeof(sizeof(((TxnData*)0)->core.serviceId)),                  // id
+        sizeof(sizeof(((TxnData*)0)->core.processCode)),                // processCode
+        sizeof(sizeof(((TxnData*)0)->core.pan)),                        // maskedPan
+        sizeof(sizeof(((TxnData*)0)->core.amount)),                     // amount
+        sizeof(sizeof(((TxnData*)0)->core.refNum)),                     // refNum
+        sizeof(sizeof(((TxnData*)0)->core.trace)),                      // trace
+        sizeof(sizeof(((TxnData*)0)->core.RRN)),                        // RRN
+        sizeof(sizeof(((TxnData*)0)->core.respCode)),                   // responseCode
+        sizeof(sizeof(((TxnData*)0)->extention))                        // extention
     };
 
     int8_t colSignedness[] = {
-        embedDB_COLUMN_UNSIGNED, // key
-        embedDB_COLUMN_UNSIGNED, // id
-        embedDB_COLUMN_UNSIGNED, // processCode
-        embedDB_COLUMN_UNSIGNED, // maskedPan
-        embedDB_COLUMN_UNSIGNED, // purchaseId
-        embedDB_COLUMN_UNSIGNED, // amount
-        embedDB_COLUMN_UNSIGNED, // priceWithDiscount
-        embedDB_COLUMN_UNSIGNED, // stan
-        embedDB_COLUMN_UNSIGNED, // trace
-        embedDB_COLUMN_UNSIGNED, // dateTime
-        embedDB_COLUMN_UNSIGNED, // RRN
-        embedDB_COLUMN_UNSIGNED, // billId
-        embedDB_COLUMN_UNSIGNED, // paymentId
-        embedDB_COLUMN_UNSIGNED, // companyId
-        embedDB_COLUMN_UNSIGNED, // companyName
-        embedDB_COLUMN_UNSIGNED, // phoneNumber
-        embedDB_COLUMN_UNSIGNED, // chargeLevel
-        embedDB_COLUMN_UNSIGNED, // accountIndex
-        embedDB_COLUMN_UNSIGNED, // accountCaption
-        embedDB_COLUMN_UNSIGNED, // responseCode
-        embedDB_COLUMN_SIGNED    // Status
+        embedDB_COLUMN_UNSIGNED,                                        // key
+        embedDB_COLUMN_UNSIGNED,                                        // id
+        embedDB_COLUMN_UNSIGNED,                                        // processCode
+        embedDB_COLUMN_UNSIGNED,                                        // maskedPan
+        embedDB_COLUMN_UNSIGNED,                                        // amount
+        embedDB_COLUMN_UNSIGNED,                                        // refNum
+        embedDB_COLUMN_UNSIGNED,                                        // trace
+        embedDB_COLUMN_UNSIGNED,                                        // RRN
+        embedDB_COLUMN_UNSIGNED,                                        // responseCode
+        embedDB_COLUMN_UNSIGNED                                         // extention
     };
     ColumnType colTypes[] = {
         embedDB_COLUMN_UINT64,
@@ -174,25 +161,14 @@ static int8_t init(TxnRecord *self) {
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
         embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT64,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_UINT32,
-        embedDB_COLUMN_INT32
+        embedDB_COLUMN_UINT32
     };
 
     uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY
                             | (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
-    LOG_ERROR("size of txnData = %u.", sizeof(TxnData));                  
+    LOG_ERROR("size of txnData = %u.", sizeof(TxnRec_t));                  
     if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(uint64_t),
-             sizeof(TxnData), PAGE_SIZE_512, PAGE_NUMBER, parameters) != 0) {
+             sizeof(TxnRec_t), PAGE_SIZE_512, PAGE_NUMBER, parameters) != 0) {
                 embedDBClose(state);
                 embedDBtearDown(state);
                 EMDB_MEM_FREE(state);

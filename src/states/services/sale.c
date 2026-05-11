@@ -69,26 +69,31 @@ int8_t makeReceipt(TxnData *txn) {
         {terminal, LV_TEXT_ALIGN_LEFT, 1},
         {code, LV_TEXT_ALIGN_RIGHT, 1}
     };
-    OOP_CALL(&rec, addText, 2, row1);
+    RETURN_VALUE_IF_NOT(OOP_CALL(&rec, addText, 2, row1), ERR_OK, 
+        OOP_CALL(&rec, destroy), ERR_NOK);
 
     // TODO: bank name
     RecColumn_t row2[] = {
         {"bank name", LV_TEXT_ALIGN_LEFT, 1},
         {"بانک", LV_TEXT_ALIGN_RIGHT, 1}
     };
-    OOP_CALL(&rec, addText, 2, row2);
+    RETURN_VALUE_IF_NOT(OOP_CALL(&rec, addText, 2, row2), ERR_OK, 
+        OOP_CALL(&rec, destroy), ERR_NOK);
     
     DEFINE_STRING(trace, 64);
-    snprintf(trace, sizeof(trace), "%s:%s", txn->trace, "پیگیری");
+    snprintf(trace, sizeof(trace), "%s:%d", txn->core.trace, "پیگیری");
     DEFINE_STRING(ref, 64);
-    snprintf(ref, sizeof(ref), "%s:%s", txn->stan, "مرجع");
+    snprintf(ref, sizeof(ref), "%s:%d", txn->core.refNum, "مرجع");
     RecColumn_t row3[] = {
         {ref, LV_TEXT_ALIGN_LEFT, 1},
         {trace, LV_TEXT_ALIGN_RIGHT, 1}
     };
-    OOP_CALL(&rec, addText, 2, row3);
+    RETURN_VALUE_IF_NOT(OOP_CALL(&rec, addText, 2, row3), ERR_OK, 
+        OOP_CALL(&rec, destroy), ERR_NOK);
 
     OOP_CALL(&rec, addFooter);
+    RETURN_VALUE_IF_NOT(OOP_CALL(&rec, addFooter), ERR_OK, 
+        OOP_CALL(&rec, destroy), ERR_NOK);
     OOP_CALL(&rec, flush);
     OOP_CALL(&rec, destroy);
     return ERR_OK;

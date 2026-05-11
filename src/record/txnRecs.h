@@ -16,7 +16,7 @@ enum TxnField {
     TXN_PURCHASE_ID,
     TXN_AMOUNT,
     TXN_PRICE_WITH_DISCOUNT,
-    TXN_STAN,
+    TXN_REF_NUM,
     TXN_TRACE,
     TXN_DATETIME,
     TXN_RRN,

@@ -190,34 +190,18 @@ static void rand_letters(char *buf, size_t len)
 
 void generate_random_txn(TxnData *t)
 {
-    t->id = my_rand_range(255);
+    t->core.serviceId = my_rand_range(255);
 
-    rand_digits(t->processCode, 6);
-    rand_digits(t->maskedPan, 16);
-    rand_alnum(t->purchaseId, 30);
-    rand_digits(t->amount, 12);
-    rand_digits(t->priceWithDiscount, 12);
-    rand_digits(t->stan, 6);
-    rand_digits(t->trace, 6);
+    rand_digits(t->core.processCode, 6);
+    rand_digits(t->core.amount, 12);
+    rand_digits(t->core.refNum, 6);
+    rand_digits(t->core.trace, 6);
     uint32_t date, time;
     getDateTimeUint(&date, &time);
     LOG_DEBUG("date = %u, time = %u", date, time);
     t->dateTime = packDateTime(date, time);
-    rand_digits(t->RRN, 12);
-    rand_alnum(t->billId, 23);
-    rand_alnum(t->paymentId, 23);
-
-    t->companyId = my_rand();
-
-    rand_letters(t->companyName, 20);
-    rand_digits(t->phoneNumber, 11);
-
-    t->chargeLevel = my_rand_range(4);   // adjust to enum size
-    rand_digits(t->accountIndex, 7);
-    rand_letters(t->accountCaption, 20);
-    rand_digits(t->responseCode, 2);
-
-    t->Status = my_rand_range(4);        // adjust to enum size
+    rand_digits(t->core.RRN, 12);
+    rand_digits(t->core.respCode, 2);
 }
 
 
@@ -230,8 +214,8 @@ static void insertTxn() {
 static bool txnHand(const TxnData* txn, void* userData) {
     uint32_t date, time;
     unpackDateTime(txn->dateTime, &date, &time);
-    LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, stan = %s, rrn = %s, amount = %s",
-                date, time, txn->trace, txn->stan, txn->RRN, txn->amount);
+    LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, refNum = %s, rrn = %s, amount = %s",
+                date, time, txn->core.trace, txn->core.refNum, txn->core.RRN, txn->core.amount);
 }
 
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
