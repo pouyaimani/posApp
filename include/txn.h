@@ -31,6 +31,8 @@ typedef enum {
 	TXN_BILL,
 	TXN_TOPUP,
 	TXN_BALANCE,
+	TXN_PAY,
+	TXN_SIM_CHARGE_CODE
 } TxnType_t;
 
 typedef enum {
@@ -59,14 +61,20 @@ typedef union {
 	struct {
         char phoneNumber[12];
         ChargeLevel level;
+		char chargePin[16];
+		char chargeSerial[16];
     } charge;
 
 	struct {
-		char companyName[64]; // 116 kahroba
-		char phoneNumber[11+1]; // For Kahroba
-	};
-	
+		char companyName[64];
+		char phoneNumber[11+1];
+	} kahroba;
 
+	struct {
+		uint64_t balance;
+		uint64_t ledger;
+	} balance;
+	
 } TxnExtention;
 
 typedef struct {

@@ -38,6 +38,6 @@ void *getImgAddr(const char *name);
 #define ICON_SHAPARAK               getImgAddr("img_shaprak")
 #define ICON_BANK_REC               getImgAddr("img_bankRecIcon")
 
-#define SWIPE_CARD_TEXT     "لطفا کارت خود را بکشید"
+#define SWIPE_CARD_TEXT             "لطفا کارت خود را بکشید"
 
 #endif

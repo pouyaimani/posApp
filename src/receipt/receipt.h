@@ -16,10 +16,13 @@ typedef struct {
 OOP_DECLARE_CLASS(Receipt)
 OOP_VTABLE(Receipt) {
     OOP_IMETHOD(uint8_t, Receipt, addText, int, const RecColumn_t*);
-    OOP_IMETHOD(uint8_t, Receipt, addBoldText, int culCount, const RecColumn_t*);
+    OOP_IMETHOD(uint8_t, Receipt, addHighlightedText, const char *text,
+                                   const lv_font_t *font,
+                                   lv_text_align_t align);
     OOP_IMETHOD(uint8_t, Receipt, addSpace, uint16_t height);
     OOP_IMETHOD(uint8_t, Receipt, addTable, int culCount, const RecColumn_t*);
     OOP_IMETHOD(uint8_t, Receipt, addImage, int culCount, const RecColumn_t*);
+    OOP_IMETHOD(uint8_t, Receipt, addTextWithBorder, int culCount, const RecColumn_t*);
     OOP_IMETHOD(uint8_t, Receipt, addHeader, uint32_t date, uint32_t time);
     OOP_IMETHOD(uint8_t, Receipt, addFooter);
     OOP_IMETHOD(uint8_t, Receipt, addAmount, const char *);

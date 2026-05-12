@@ -106,8 +106,12 @@ static uint8_t addText(Receipt *r, int count, const RecColumn_t *cols) {
     }
 
     uint16_t height = 0;
+    int remaining = PRINTER_WIDTH_PIX;
     for(int i = 0; i < count; i++) {
-        uint32_t w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
+        int w = (i == count - 1) ? remaining :
+             (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
+
+        remaining -= w;
         if (safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX) != ERR_OK) {
             return ERR_NOK;
         }
@@ -122,8 +126,12 @@ static uint8_t addText(Receipt *r, int count, const RecColumn_t *cols) {
 
     lv_layer_t layer;
     lv_canvas_init_layer(r->canvas, &layer);
+    remaining = PRINTER_WIDTH_PIX;
     for(int i = 0; i < count; i++) {
-        uint32_t w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
+        int w = (i == count - 1) ? remaining :
+             (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
+
+        remaining -= w;
         draw_text_line(&layer,
                        x,
                        r->height,
@@ -151,23 +159,17 @@ static uint8_t addTable(Receipt *r,int count, const RecColumn_t *cols) {
     if (count == 0) {
         return ERR_NOK;
     }
-    if (!cols) {
-        return ERR_NOK;
-    }
+    RETURN_VALUE_IF_NULL(cols, ; , ERR_NOK);
     int totalWeight = count;   // equal width columns
-    if (count > MAX_CULOMN_CNT) {
-        LOG_ERROR("Too many columns");
-        count = MAX_CULOMN_CNT;
-    }
-    if (count == 0) {
-        return ERR_NOK;
-    }
     int x = 0;
     uint16_t max_h = 0;
 
     // Calculate row height
     for(int i = 0; i < count; i++) {
         uint32_t w = PRINTER_WIDTH_PIX / totalWeight;
+        if (safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX) != ERR_OK) {
+            return ERR_NOK;
+        }
         uint16_t h = measure_text_height(cols[i].src, w - 4, &FONT_16);
         if(h > max_h) max_h = h;
     }
@@ -385,7 +387,132 @@ static uint8_t addHeader(Receipt *r, uint32_t date, uint32_t time) {
         {buf, LV_TEXT_ALIGN_LEFT, 1}
     };
 
-    return addHighlightedText(r, 1, NULL, row2);
+    return addHighlightedText(r, buf, &FONT_16, row2);
+}
+
+static uint8_t addTextWithBorder(Receipt *r,
+                                 int count,
+                                 const RecColumn_t *cols)
+{
+    if (!r || !r->buf || !r->canvas || !cols) {
+        return ERR_NOK;
+    }
+
+    if (count <= 0) {
+        return ERR_NOK;
+    }
+
+    if (count > MAX_CULOMN_CNT) {
+        LOG_ERROR("Too many columns");
+        count = MAX_CULOMN_CNT;
+    }
+
+    int totalWeight = 0;
+
+    for (int i = 0; i < count; i++) {
+        totalWeight += cols[i].weight;
+    }
+
+    if (totalWeight <= 0) {
+        return ERR_NOK;
+    }
+
+    uint16_t max_h = 0;
+
+    for (int i = 0; i < count; i++) {
+
+        uint32_t w =
+            (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
+
+        if (safe_shape(cols[i].src,
+                       r->shaped[i],
+                       SHAPED_MAX) != ERR_OK) {
+            return ERR_NOK;
+        }
+
+        uint16_t h =
+            measure_text_height(r->shaped[i],
+                                w - 6,
+                                &FONT_16);
+
+        if (h > max_h) {
+            max_h = h;
+        }
+    }
+
+    max_h += 6;
+
+    if (!flushIfNeeded(r, max_h)) {
+        return ERR_NOK;
+    }
+
+    lv_layer_t layer;
+    lv_canvas_init_layer(r->canvas, &layer);
+
+    lv_draw_line_dsc_t line;
+    lv_draw_line_dsc_init(&line);
+
+    line.color = lv_color_black();
+    line.width = 1;
+
+    int row_y1 = r->height;
+    int row_y2 = r->height + max_h;
+
+    // Top border
+    line.p1.x = 0;
+    line.p1.y = row_y1;
+    line.p2.x = PRINTER_WIDTH_PIX - 1;
+    line.p2.y = row_y1;
+    lv_draw_line(&layer, &line);
+
+    // Bottom border
+    line.p1.y = row_y2;
+    line.p2.y = row_y2;
+    lv_draw_line(&layer, &line);
+
+    int x = 0;
+    int remaining = PRINTER_WIDTH_PIX;
+
+    for (int i = 0; i < count; i++) {
+
+        int w = (i == count - 1)
+            ? remaining
+            : (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
+
+        remaining -= w;
+
+        // Vertical separator
+        line.p1.x = x;
+        line.p1.y = row_y1;
+        line.p2.x = x;
+        line.p2.y = row_y2;
+        lv_draw_line(&layer, &line);
+
+        // Text
+        draw_text_line(&layer,
+                       x + 3,
+                       r->height + 3,
+                       w - 6,
+                       max_h - 6,
+                       r->shaped[i],
+                       cols[i].align,
+                       &FONT_16);
+
+        x += w;
+    }
+
+    // Right border
+    line.p1.x = PRINTER_WIDTH_PIX - 1;
+    line.p1.y = row_y1;
+    line.p2.x = PRINTER_WIDTH_PIX - 1;
+    line.p2.y = row_y2;
+    lv_draw_line(&layer, &line);
+
+    lv_canvas_finish_layer(r->canvas, &layer);
+
+    r->height += max_h;
+
+    return ERR_OK;
 }
 
 /* -------- FOOTER -------- */
@@ -416,9 +543,10 @@ OOP_CTOR(Receipt) {
     self->vtable.addSpace = addSpace;
     self->vtable.addTable = addTable;
     self->vtable.addImage = addImage;
+    self->vtable.addTextWithBorder = addTextWithBorder;
     self->vtable.addHeader = addHeader;
     self->vtable.addFooter = addFooter;
-    // self->addBoldText = addBoldText;
+    self->vtable.addHighlightedText = addHighlightedText;
     self->vtable.destroy = destroyReceipt;
     self->vtable.flush = flushReceipt;
     self->vtable.addAmount = addAmount;
@@ -459,5 +587,11 @@ OOP_CTOR(Receipt) {
 
 int8_t createReceipt(Receipt* receipt) {
     OOP_CALL_CTOR(Receipt, receipt);
-    return receipt->buf ? ERR_OK : ERR_MEMORY_ALLOCATION;
+    RETURN_VALUE_IF_NULL(receipt->canvas,
+                         FREE_MEM(receipt->buf) , 
+                            ERR_MEMORY_ALLOCATION);
+    RETURN_VALUE_IF_NULL(receipt->buf,
+                         FREE_MEM(receipt->canvas) , 
+                            ERR_MEMORY_ALLOCATION);
+    return ERR_OK;
 }
