@@ -68,7 +68,7 @@ static int8_t receiptSectionBalance(Receipt *rec, const TxnData *txn) {
     return ERR_OK;
 }
 
-static int8_t receiptSectionHeader(Receipt *rec, const TxnData *txn) {
+static int8_t receiptSectionTxnHeader(Receipt *rec, const TxnData *txn) {
     uint32_t date, time;
     DEFINE_STRING(dtStr, 24);
     unpackDateTime(txn->dateTime, &date, &time);
@@ -133,7 +133,7 @@ static int8_t buildSaleReceipt(Receipt *rec, const TxnData *txn) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec, txn), ERR_OK, ; , ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionHeader(rec, txn), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionTxnHeader(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionRefTrace(rec, txn), ERR_OK, ; , ERR_NOK);
@@ -154,7 +154,7 @@ static int8_t buildTopupReceipt(Receipt *rec, const TxnData *txn) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec, txn), ERR_OK, ; , ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionHeader(rec, txn), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionTxnHeader(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionRefTrace(rec, txn), ERR_OK, ; , ERR_NOK);
@@ -168,7 +168,7 @@ static int8_t buildBalanceReceipt(Receipt *rec, const TxnData *txn) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec, txn), ERR_OK, ; , ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionHeader(rec, txn), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionTxnHeader(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionRefTrace(rec, txn), ERR_OK, ; , ERR_NOK);
@@ -188,7 +188,7 @@ static int8_t buildChargeCodeReceipt(Receipt *rec, const TxnData *txn) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec, txn), ERR_OK, ; , ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionHeader(rec, txn), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionTxnHeader(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, txn), ERR_OK, ; , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionRefTrace(rec, txn), ERR_OK, ; , ERR_NOK);
@@ -197,24 +197,89 @@ static int8_t buildChargeCodeReceipt(Receipt *rec, const TxnData *txn) {
     return ERR_OK;
 }
 
+static int8_t buildDailyRepHeaderReceipt(Receipt *rec, const TxnData *txn) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);    
+    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec, txn), ERR_OK, ; , ERR_NOK);
+    RecColumn_t row[] = {
+        {"گزارش روزانه همه تراکنش ها", LV_TEXT_ALIGN_CENTER, 1}
+    };
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ; , ERR_NOK);
+    // Date Time
+    RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec, txn), ERR_OK, ; , ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildDailyRepBodyReceipt(Receipt *rec, const TxnData *txn) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);
+    uint32_t date, time;
+    DEFINE_STRING(dtStr, 24);
+    unpackDateTime(txn->dateTime, &date, &time);
+    dateTimeToStr(date, time, dtStr, sizeof(dtStr));
+    // TODO" service name
+    DEFINE_STRING(title, 32);
+    snprintf(title, sizeof(title), "%s-%s", dtStr, "نام سرویس");
+    RecColumn_t row[] = {
+        {title, LV_TEXT_ALIGN_CENTER, 1}
+    };
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, txn), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionRefTrace(rec, txn), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, txn), ERR_OK, ; , ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildAggRepHeaderReceipt(Receipt *rec, const TxnData *txn) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);    
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ; , ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildAggRepBodyReceipt(Receipt *rec, const TxnData *txn) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);    
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ; , ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildDetailtRepHeaderReceipt(Receipt *rec, const TxnData *txn) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);    
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ; , ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildDetailRepBodyReceipt(Receipt *rec, const TxnData *txn) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);    
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ; , ERR_NOK);
+    return ERR_OK;
+}
+
 static const ReceiptTemplate templates[] = {
-    { TXN_SALE,                 buildSaleReceipt     },
-    { TXN_BILL,                 buildBillReceipt     },
-    { TXN_TOPUP,                buildTopupReceipt    },
-    { TXN_BALANCE,              buildBalanceReceipt  },
-    { TXN_PAY,                  buildPaymentReceipt  },
-    { TXN_SIM_CHARGE_CODE,      buildChargeCodeReceipt  }
+    { REC_SALE,                                 buildSaleReceipt                },
+    { REC_BILL,                                 buildBillReceipt                },
+    { REC_TOPUP,                                buildTopupReceipt               },
+    { REC_BALANCE,                              buildBalanceReceipt             },
+    { REC_PAY,                                  buildPaymentReceipt             },
+    { REC_SIM_CHARGE_CODE,                      buildChargeCodeReceipt          },
+    { REC_DAILY_REPORT_HEADER,                  buildDailyRepHeaderReceipt      },
+    { REC_DAILY_REPORT_BODY,                    buildDailyRepBodyReceipt        },
+    { REC_AGGREGATION_REPORT_HEADER,            buildAggRepHeaderReceipt        },
+    { REC_AGGREGATION_REPORT_BODY,              buildAggRepBodyReceipt          },
+    { REC_DETAIL_REPORT_HEADER,                 buildDetailtRepHeaderReceipt    },
+    { REC_DETAIL_REPORT_BODY,                   buildDetailRepBodyReceipt       }
 };
 
-int8_t buildReceipt(
-    Receipt *rec,
-    TxnType_t type,
-    const TxnData *txn)
-{
+int8_t buildReceipt(Receipt *rec,
+                        TxnType_t type,
+                            const TxnData *txn) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(createReceipt(&rec), true, 
-        RECEIPT_CREATE_ERROR(), ERR_MEMORY_ALLOCATION);
+    RECEIPT_CREATE_ERROR(), ERR_MEMORY_ALLOCATION);
     size_t i;
 
     for (i = 0; i < ARRAY_SIZE(templates); i++) {
