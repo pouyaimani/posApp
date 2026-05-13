@@ -21,18 +21,18 @@
 #define LOG_LEVEL LOG_LEV_DEBUG
 
 OOP_DECLARE_CLASS(DateTime);
-OOP_DECLARE_CLASS(Device);
+OOP_DECLARE_CLASS(System);
 
 /* Writer interface (device-specific) */
 typedef struct {
-    void (*write)(Device *dev, const char *data, size_t len, void *udata);
+    void (*write)(System *sys, const char *data, size_t len, void *udata);
     void *udata;
 } LogWriter_t;
 
 /* Logger configuration */
 typedef struct {
     LogWriter_t writer;
-    DateTime *(*getDateTime)(Device *dev);
+    DateTime *(*getDateTime)(System *sys);
 } LogConfig_t;
 
 OOP_CLASS(Logger) {

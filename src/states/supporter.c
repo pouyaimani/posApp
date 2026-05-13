@@ -5,7 +5,7 @@
 #include "assets.h"
 #include "services/services.h"
 #include "ui/ui.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "merchant/merchant.h"
 #include "supervisor/supervisor.h"
 
@@ -50,7 +50,7 @@ STATE_DEF_HANDLE(Supporter, TimeOutEvent) {
 
 STATE_DEF_ENTER(PowerOff) {
     GOTO_INFO(NULL, NULL, "در حال خاموش شدن ...", "");
-    OOP_CALL(getDevice(), powerOff);
+    OOP_CALL(sys(), powerOff);
 }
 
 OOP_CTOR(Supporter, State *parent, const char *name) {

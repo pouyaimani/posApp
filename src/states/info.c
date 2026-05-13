@@ -6,7 +6,7 @@
 #include "font/myFont.h"
 #include "myColor.h"
 #include "ui/ui.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 
 InfoPage page;
 
@@ -101,11 +101,10 @@ lv_obj_t *uiRowMenu(lv_obj_t * parent) {
 lv_obj_t *menu;
 
 STATE_DEF_ENTER(DevInfo) {
-    Device *dev = getDevice();
     menu = uiRowMenu(getDisplay()->screen);
-    rowMenuAdd(menu, "سریال", OOP_CALL(dev, getSN));
-    rowMenuAdd(menu, "کد کارتخوان", OOP_CALL(dev, getCode));
-    rowMenuAdd(menu, "ترمینال", OOP_CALL(dev, getName));
+    rowMenuAdd(menu, "سریال", OOP_CALL(sys(), getSN));
+    rowMenuAdd(menu, "کد کارتخوان", OOP_CALL(sys(), getCode));
+    rowMenuAdd(menu, "ترمینال", OOP_CALL(sys(), getName));
     rowMenuAdd(menu, "پذیرنده", "3331313");
     rowMenuAdd(menu, "IMEI", "");
     rowMenuAdd(menu, "اپراتور", "1313132kjn32n3kn2k3n2kn3k2n3");

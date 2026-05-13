@@ -3,7 +3,7 @@
 #include "picc_t3Rtos.h"
 #include "posplatform.h"
 #include "sdkPicc.h"
-#include "../../dev/dev.h"
+#include "sys/sys.h"
 
 static ApduSend apduSend;
 static ApduResp apduResp;

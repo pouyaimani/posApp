@@ -1,6 +1,6 @@
 #include "iso8583.h"
 #include "oscar/dl_iso8583.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 
 static Iso8583 *__iso8583;
 

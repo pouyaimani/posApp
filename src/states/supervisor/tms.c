@@ -1,5 +1,5 @@
 #include "tms.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "file/file.h"
 #include "version.h"
 #include "transmitter.h"
@@ -38,7 +38,7 @@ static void httpBuildContext(const char *ip, const char* path, void (*onBodyChun
 }
 
 static bool isBatteryOk() {
-    return OOP_CALL(getDevice(), getBatteryStatus)->level > 
+    return OOP_CALL(sys(), getBatteryStatus)->level > 
                 DEV_BAT_LEV_1 ? true : false;
 }
 

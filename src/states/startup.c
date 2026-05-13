@@ -1,7 +1,7 @@
 #include "states.h"
 #include "logger.h"
 #include "event.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "display.h"
 #include "keypad/keypad.h"
 #include "touchpad/touchpad.h"
@@ -16,7 +16,6 @@
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
-static Device *dev;
 
 STATE_DEF_ENTER(Startup) {
     KEYPAD_INIT();
@@ -38,8 +37,8 @@ STATE_DEF_ENTER(Startup) {
     shifts()->init();
 
     LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
-    OOP_CALL(dev, setVolume, settings()->terminal.devVolume);
-    OOP_CALL(dev, setBrightness, settings()->terminal.brightness);
+    OOP_CALL(sys(), setVolume, settings()->terminal.devVolume);
+    OOP_CALL(sys(), setBrightness, settings()->terminal.brightness);
     statusBar();
     GOTO_IDLE();
 }
@@ -58,5 +57,4 @@ OOP_CTOR(Startup, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(Startup);
     self->base.vtable.exit = STATE_EXIT(Startup);
     self->base.vtable.handleTimeout = STATE_HANDLE(Startup, TimeOutEvent);
-    dev = getDevice();
 }

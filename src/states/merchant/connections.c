@@ -4,7 +4,7 @@
 #include "display.h"
 #include "event.h"
 #include "ui/ui.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "wifi/wifi.h"
 #include "storage/storage.h"
 #include "network/network.h"
@@ -213,7 +213,7 @@ static void createUi() {
     uiMenu(&menu, getDisplay()->screen);
     menuCount = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
-    if (getDevice()->module.wifi) {
+    if (sys()->module.wifi) {
         OOP_CALL(&menu, addItem, itemTxt[CONNECTION_WIFI], wifiScan, NULL, NULL);
         menuMap[menuCount] = CONNECTION_WIFI;
         if (route == NET_ROUTE_WIFI) {
@@ -221,7 +221,7 @@ static void createUi() {
         }
         menuCount++;
     }
-    if (getDevice()->module.gprs) {
+    if (sys()->module.gprs) {
         OOP_CALL(&menu, addItem, itemTxt[CONNECTION_GPRS], cellularLogin, NULL, NULL);
         menuMap[menuCount] = CONNECTION_GPRS;
         if (route == NET_ROUTE_CELLUALR) {

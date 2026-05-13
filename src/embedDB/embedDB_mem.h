@@ -1,7 +1,7 @@
 #ifndef EMBEDDB_MEM_H_
 #define EMBEDDB_MEM_H_
 
-#include "dev/dev.h"
+#include "sys/sys.h"
 
 #define EMDB_MEM_ALLOC(size)            GET_MEM(size)
 #define EMDB_MEM_FREE(size)             FREE_MEM(size)

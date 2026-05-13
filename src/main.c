@@ -1,4 +1,4 @@
-#include "hal/dev/dev.h"
+#include "sys/sys.h"
 #include "core/stateMachine/core.h"
 #include "states/states.h"
 #include "logger.h"
@@ -6,15 +6,14 @@
 //RTOS entry point
 void appMain(void)
 {
-    Device *dev = getDevice();
-    OOP_CALL(dev, init);
+    OOP_CALL(sys(), init);
 #if USE_LOG
     logger()->init(&(LogConfig_t)  {
         .writer = {
-            .write = dev->vtable.logOut,
+            .write = sys()->vtable.logOut,
             .udata = NULL
         },
-        .getDateTime = dev->vtable.getDateTime
+        .getDateTime = sys()->vtable.getDateTime
     });
 #endif
     Core *core = getSmCore();

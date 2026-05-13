@@ -4,7 +4,7 @@
 #include "display.h"
 #include "event.h"
 #include "ui/ui.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "storage/storage.h"
 #include "record/txnRecs.h"
 #include "utility/utility.h"
@@ -44,8 +44,6 @@ typedef enum {
 #define REPORT_RESULT_IS_DETAIL(x)              (x == REP_RESULT_DETAIL)
 #define REPORT_RESULT_IS_AGGREGATED(x)          (x == REP_RESULT_DETAIL)
 #define REPORT_RESULT_IS_NORM(x)                (x == REP_RESULT_NORM)
-
-static Device *dev;
 
 typedef enum {
     REP_ITEM_REPRINT = 0,
@@ -260,8 +258,8 @@ STATE_DEF_ENTER(ExtractData) {
             receiptData.aggregateHeader.dateTo = libAtoi(rquery.endDate);
             receiptData.aggregateHeader.timeFrom = libAtoi(rquery.startTime);
             receiptData.aggregateHeader.timeTo = libAtoi(rquery.endDate);
-            receiptData.aggregateHeader.dateNow = OOP_CALL(getDevice(), getDate);
-            receiptData.aggregateHeader.timeNow = OOP_CALL(getDevice(), getTime);
+            receiptData.aggregateHeader.dateNow = OOP_CALL(sys(), getDate);
+            receiptData.aggregateHeader.timeNow = OOP_CALL(sys(), getTime);
             receiptData.aggregateHeader.txnType = 0;
         }
         break;
@@ -280,8 +278,8 @@ STATE_DEF_ENTER(ExtractData) {
             receiptData.detailedHeader.dateTo = libAtoi(rquery.endDate);
             receiptData.detailedHeader.timeFrom = libAtoi(rquery.startTime);
             receiptData.detailedHeader.timeTo = libAtoi(rquery.endDate);
-            receiptData.detailedHeader.dateNow = OOP_CALL(getDevice(), getDate);
-            receiptData.detailedHeader.timeNow = OOP_CALL(getDevice(), getTime);
+            receiptData.detailedHeader.dateNow = OOP_CALL(sys(), getDate);
+            receiptData.detailedHeader.timeNow = OOP_CALL(sys(), getTime);
             receiptData.detailedHeader.txnType = 0;
         }
         break;
@@ -354,7 +352,6 @@ OOP_CTOR(Reports, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     mainMenu = self;
     self->base.vtable.enter = STATE_ENTER(Reports);
-    dev = getDevice();
 
     RePrint(self);
     DailyReport(self);

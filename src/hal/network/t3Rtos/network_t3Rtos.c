@@ -3,7 +3,7 @@
 #include "network_t3Rtos.h"
 #include "posplatform.h"
 #include "sdkNet.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "logger.h"
 
 static NetError_t init(Network *self) {

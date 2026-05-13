@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "logger.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "common.h"
 
 int libAtoi(const char *str) {
@@ -610,7 +610,7 @@ int8_t getNameofDay(uint32_t date, char *out, size_t size) {
 }
 
 Date_t getJalaliDate() {
-    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+    DateTime *dt = OOP_CALL(sys(), getDateTime);
 
     int yy, mm, dd;
     sscanf(dt->date, "%2d%2d%2d", &yy, &mm, &dd);
@@ -627,7 +627,7 @@ Date_t getJalaliDate() {
 
 void formatDateTimeStr(char *out, size_t out_size)
 {
-    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+    DateTime *dt = OOP_CALL(sys(), getDateTime);
 
     int yy, mm, dd;
     sscanf(dt->date, "%2d%2d%2d", &yy, &mm, &dd);
@@ -647,7 +647,7 @@ void formatDateTimeStr(char *out, size_t out_size)
 
 void formatTimeStr(char *out, size_t out_size)
 {
-    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+    DateTime *dt = OOP_CALL(sys(), getDateTime);
 
     int hh, mm;
     sscanf(dt->time, "%2d%2d", &hh, &mm);
@@ -674,7 +674,7 @@ void toPersianDigits(char *out, size_t out_size, int value)
 }
 
 void getDateTimeUint(uint32_t *date, uint32_t *time) {
-    DateTime *dt = OOP_CALL(getDevice(), getDateTime);
+    DateTime *dt = OOP_CALL(sys(), getDateTime);
     Date_t jd = getJalaliDate();
     int hh, mm, ss;
     sscanf(dt->time, "%2d%2d%2d", &hh, &mm, &ss);

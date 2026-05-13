@@ -1,5 +1,5 @@
 #include "statusBar.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "timer.h"
 #include "logger.h"
 #include "display.h"
@@ -67,7 +67,7 @@ static void updateTime() {
 }
 
 static void updateBatteryIcon() {
-    BatteryStat *bat = OOP_CALL(getDevice(), getBatteryStatus);
+    BatteryStat *bat = OOP_CALL(sys(), getBatteryStatus);
     if (bat->isChanrging) {
         lv_img_set_src(batteryIcon, ICON_BAT_CHARGING);
     } else {

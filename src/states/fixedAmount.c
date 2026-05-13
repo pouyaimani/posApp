@@ -1,6 +1,6 @@
 #include "states/states.h"
 #include "display.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "ui/ui.h"
 #include "storage/storage.h"
 #include "states/merchant/merchant.h"

@@ -3,7 +3,7 @@
 #include "wifi_t3Rtos.h"
 #include "posplatform.h"
 #include "sdkWifi.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "logger.h"
 #include "utility/arith.h"
 

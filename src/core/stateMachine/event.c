@@ -2,13 +2,13 @@
 #include "state.h"
 #include "core.h"
 #include <stdlib.h>
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "keypad/keypad.h"
 #include "logger.h"
 
 #define CREATE_EVENT(type, event)                               \
     do {                                                        \
-        type## *ev = OOP_CALL(dev, getMemory, sizeof(type##));  \
+        type## *ev = OOP_CALL(sys(), getMemory, sizeof(type##));  \
         event = (Event*)ev;                                     \
         OOP_CALL_CTOR(Event, event);                            \
         OOP_CALL_CTOR(type##, ev);                              \
@@ -28,7 +28,6 @@ OOP_CTOR(Event) {
 Event *createEvent(SmEventType_t type) {
     Event *event;
     LOG_TRACE("Creating Event. type = %d", type);
-    Device *dev = getDevice();
     switch (type) {
     case SM_EVENT_TIME_OUT:
         CREATE_EVENT(TimeOutEvent, event);

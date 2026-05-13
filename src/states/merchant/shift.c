@@ -3,14 +3,12 @@
 #include "display.h"
 #include "event.h"
 #include "ui/ui.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
 #include "settings/settings.h"
 #include "record/shiftRecs.h"
 #include "logger.h"
-
-static Device *dev;
 
 static Menu shiftItemMenu;
 static lv_obj_t *shiftMenu;
@@ -313,7 +311,6 @@ STATE_DEF_ENTER(Shift) {
 OOP_CTOR(Shift, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Shift);
-    dev = getDevice();
     terminalStg = &settings()->terminal;
 
     subShift[SHIFT_ITEM_ENABLE] = (SubState *)GET_MEM(sizeof(SubState));

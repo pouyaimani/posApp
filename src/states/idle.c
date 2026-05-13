@@ -2,7 +2,7 @@
 #include "eventloop.h"
 #include "magReader/magReader.h"
 #include "logger.h"
-#include "dev.h"
+#include "sys/sys.h"
 #include "mylvgl.h"
 #include "display.h"
 #include "event.h"

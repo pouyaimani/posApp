@@ -1,6 +1,6 @@
 #include "receipt.h"
 #include "lvgl.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "logger.h"
 #include "font/myFont.h"
 #include "display/display.h"

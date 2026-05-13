@@ -1,6 +1,6 @@
 #include "alphabetic.h"
 #include <string.h>
-#include "dev/dev.h"
+#include "sys/sys.h"
 
 static uint16_t minElapsedTimeMs;
 static uint16_t count;

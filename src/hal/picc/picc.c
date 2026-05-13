@@ -1,5 +1,5 @@
 #include "picc.h"
-#include "../dev/dev.h"
+#include "sys/sys.h"
 
 Picc *__picc;
 

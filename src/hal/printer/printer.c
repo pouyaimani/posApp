@@ -1,7 +1,7 @@
 #include "printer.h"
 #include <stdbool.h>
 #include "logger.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 
 Printer *__printer;
 

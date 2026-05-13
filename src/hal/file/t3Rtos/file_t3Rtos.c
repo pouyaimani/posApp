@@ -5,7 +5,7 @@
 #include <sdkKey.h>
 #include "sdkemvapp.h"
 #include "sdkFile.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "logger.h"
 
 static bool exists(File* self, const char* path) {

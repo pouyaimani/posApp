@@ -4,11 +4,9 @@
 #include "display.h"
 #include "event.h"
 #include "ui/ui.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
-
-static Device *dev;
 
 typedef enum {
     SET_ITEM_SOUND = 0,
@@ -36,7 +34,7 @@ static const char* SettingsItemTxt[SET_ITEM_ALL] = {
 static Bar soundBar;
 
 STATE_DEF_ENTER(SoundSettings) {
-    uiBar(&soundBar, getDisplay()->screen, 0, dev->maxSound);
+    uiBar(&soundBar, getDisplay()->screen, 0, sys()->maxSound);
     OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
     OOP_CALL(&soundBar, setValue, settings()->terminal.devVolume);
     OOP_CALL(&soundBar, show);
@@ -59,7 +57,7 @@ STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
     } else if (ev->key == KEY_DOWN) {
         OOP_CALL(&soundBar, decrease);
     }
-    OOP_CALL(dev, setVolume, soundBar.value);
+    OOP_CALL(sys(), setVolume, soundBar.value);
 }
 
 static void SoundSettings(State *parent) {
@@ -266,7 +264,7 @@ static void ReceiptSettings(State *parent) {
 static Bar brightBar;
 
 STATE_DEF_ENTER(ScrLightSettings) {
-    uiBar(&brightBar, getDisplay()->screen, 1, dev->maxBright);
+    uiBar(&brightBar, getDisplay()->screen, 1, sys()->maxBright);
     OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
     OOP_CALL(&brightBar, setValue, settings()->terminal.brightness);
     OOP_CALL(&brightBar, show);
@@ -289,7 +287,7 @@ STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
     } else if (ev->key == KEY_DOWN) {
         OOP_CALL(&brightBar, decrease);
     }
-    OOP_CALL(dev, setBrightness, brightBar.value);
+    OOP_CALL(sys(), setBrightness, brightBar.value);
 }
 
 static void ScrLightSettings(State *parent) {
@@ -377,7 +375,6 @@ STATE_DEF_ENTER(Settings) {
 OOP_CTOR(Settings, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Settings);
-    dev = getDevice();
     SoundSettings(self);
     EnergySettings(self);
     ReceiptSettings(self);

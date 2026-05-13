@@ -1,6 +1,6 @@
 #ifdef DEVICE_TRENDITT3RTOS
 
-#include "dev_t3Rtos.h"
+#include "sys_t3Rtos.h"
 #include "posplatform.h"
 #include "sdkSys.h"
 #include "appVersion.h"
@@ -67,7 +67,7 @@ void platformSysInit(void)
 
 void platformSync(void) {}
 
-static void init(Device* dev) {
+static void init(System* dev) {
     platformSysInit();
     sdkSysInit();
     sdkLogSetLevel(4);
@@ -84,19 +84,19 @@ static void init(Device* dev) {
     sdkSysReadTerminalInfo(&tinfo);
 }
 
-static void getTick(Device* dev) {
+static void getTick(System* dev) {
     return sdkSysGetTicks();
 }
 
-static unsigned int getMemory(Device* dev, unsigned int size) {
+static unsigned int getMemory(System* dev, unsigned int size) {
     return sdkSysGetMem(size);
 }
 
-static void freeMemory(Device* dev, void *mem) {
+static void freeMemory(System* dev, void *mem) {
     sdkSysFreeMem(mem);
 }
 
-static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint8_t *cmap) {
+static unsigned int flushDisplay(System* dev, int32_t x0, int32_t x1, int32_t y0, int32_t y1, uint8_t *cmap) {
     strRect rect = {
         .m_x0 = x0,
         .m_x1 = x1,
@@ -111,7 +111,7 @@ static unsigned int flushDisplay(Device* dev, int32_t x0, int32_t x1, int32_t y0
     ddi_lcd_show_picture(&rect, &pic);
 }
 
-static void logOut(Device* dev, const char *data, size_t len, void *udata) {
+static void logOut(System* dev, const char *data, size_t len, void *udata) {
     sdkLogOut(data);
 }
 
@@ -136,7 +136,7 @@ static void parseRtcTime(const uint8_t *rtcTime,
     *second  = bcdToDec(rtcTime[5]);
 }
 
-static DateTime *getDateTime(Device* dev) {
+static DateTime *getDateTime(System* dev) {
     uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     char tmp[12 + 1] = {0};
@@ -147,7 +147,7 @@ static DateTime *getDateTime(Device* dev) {
     return &dateTime;
 }
 
-static uint32_t getDate(Device *dev) {
+static uint32_t getDate(System *dev) {
     uint8_t dt[12 + 1];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
@@ -158,7 +158,7 @@ static uint32_t getDate(Device *dev) {
     return date;
 }
 
-static uint32_t getTime(Device *dev) {
+static uint32_t getTime(System *dev) {
     uint8_t dt[12 + 1];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
@@ -169,7 +169,7 @@ static uint32_t getTime(Device *dev) {
     return time;
 }
 
-static uint64_t getPackedDateTime(Device *dev) {
+static uint64_t getPackedDateTime(System *dev) {
     uint8_t dt[12 + 1];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
@@ -183,7 +183,7 @@ static uint64_t getPackedDateTime(Device *dev) {
 }
 
 
-static BatteryStat* getBatteryStatus(Device *dev) {
+static BatteryStat* getBatteryStatus(System *dev) {
     BatteryStatus st;
     int ret = sdkSysGetBatteryStatus(&st);
     if (st.mBatteryLevel == SYS_BATTERY_LEVEL_NULL) {
@@ -200,53 +200,53 @@ static BatteryStat* getBatteryStatus(Device *dev) {
     return &batterySt;
 }
 
-static void sysSleep(Device *dev, uint32_t mili) {
+static void sysSleep(System *dev, uint32_t mili) {
     sdkSysSleep(mili);
 }
 
-static void reboot(Device *dev) {
+static void reboot(System *dev) {
     sdkSysDeviceReboot();
 }
 
-static void powerOff(Device *dev) {
+static void powerOff(System *dev) {
     sdkSysDevicePowerOff();
 }
 
-static const char *getSN(Device *dev) {
+static const char *getSN(System *dev) {
     return serialNumber;
 }
 
-static const char *getCode(Device *dev) {
+static const char *getCode(System *dev) {
     return tinfo.mTerminalCode;
 }
 
-static const char *getName(Device *dev) {
+static const char *getName(System *dev) {
     return tinfo.mTerminalName;
 }
 
-static void setVolume(Device *dev, int volume) {
+static void setVolume(System *dev, int volume) {
     sdkSysSetDeviceVolume(SYS_VOLUME_TYPE_AUDIO, volume);
 }
 
-static void setBrightness(Device *dev, int bright) {
+static void setBrightness(System *dev, int bright) {
     int br = bright > dev->maxBright ? dev->maxBright : bright;
     br = bright < 1 ? 1 : bright;
     ddi_lcd_ioctl(DDI_LCD_CTL_BRIGHT, br, 0);
 }
 
-static int getVolume(Device *dev) {
+static int getVolume(System *dev) {
     return sdkSysGetDeviceVolume(SYS_VOLUME_TYPE_AUDIO);
 }
 
-static int getBrightness(Device *dev) {
+static int getBrightness(System *dev) {
 
 }
 
-static void beepOnce(Device *dev) {
+static void beepOnce(System *dev) {
     sdkSysBeepOnce();
 }
 
-static void setDateTime(Device *dev, DateTime *dt) {
+static void setDateTime(System *dev, DateTime *dt) {
     sdkSysBeepOnce();
 }
 

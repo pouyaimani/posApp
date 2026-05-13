@@ -5,7 +5,7 @@
 #include "lvgl.h"
 #include "font/myFont.h"
 #include "state.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "common.h"
 
 OOP_CLASS(InputBox) {

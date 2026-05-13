@@ -3,11 +3,10 @@
 #include "event.h"
 #include <stdlib.h>
 #include "logger.h"
-#include "hal/dev/dev.h"
+#include "sys/sys.h"
 #include "common.h"
 
 Core __core;
-Device *dev;
 
 static void init(State *initial)
 {
@@ -47,7 +46,7 @@ static void freeQ() {
     for (size_t i = 0; i < __core.qsize; ) {
         Event *ev = __core.queue[i];
         if (ev->target == __core.current) {
-            OOP_CALL(dev, freeMemory, ev);
+            OOP_CALL(sys(), freeMemory, ev);
             __core.queue[i] = __core.queue[--__core.qsize];
         } else {
             i++;
@@ -72,7 +71,7 @@ static void runCycle()
             if (ev->target == s) {
                 LOG_TRACE("SM: Event came to %s %s", s->name, " state.");
                 OOP_CALL(ev, dispatchTo, s);
-                OOP_CALL(dev, freeMemory, ev);
+                OOP_CALL(sys(), freeMemory, ev);
                 __core.queue[i] = __core.queue[--__core.qsize];
                 LOG_TRACE("SM: Event dispatched to %s %s", s->name, " state.");
             } else {
@@ -134,7 +133,6 @@ OOP_CTOR(Core) {
     __core.next = NULL;
     __core.qsize = 0;
     __core.cbSize = 0;
-    dev = getDevice();
 }
 
 Core *getSmCore(void)

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "hal/dev/dev.h"
+#include "sys/sys.h"
 
 #if USE_LOG
 
@@ -27,7 +27,7 @@ static size_t format_log_line(char *buf, size_t buf_size,
     DateTime *dt = NULL;
 
     if (g_cfg.getDateTime) {
-        dt = g_cfg.getDateTime(getDevice());
+        dt = g_cfg.getDateTime(sys());
     }
 
     if (dt) {
@@ -73,7 +73,7 @@ static void log(const char *file, int logLevel,
     );
     va_end(ap);
 
-    g_cfg.writer.write(getDevice(), buf, len, g_cfg.writer.udata);
+    g_cfg.writer.write(sys(), buf, len, g_cfg.writer.udata);
 }
 
 OOP_CTOR(Logger) {

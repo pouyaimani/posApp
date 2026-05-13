@@ -2,7 +2,7 @@
 #include "common.h"
 #include "settings/settings.h"
 #include "utility/utility.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 
 static int8_t receiptSectionPsp(Receipt *rec) {
     // TODO: left side value?
@@ -259,7 +259,7 @@ static int8_t buildAggRepHeaderReceipt(Receipt *rec, const ReceiptData *data) {
     DATE_TIME_STR(dt);
     dateTimeToStr(header->dateNow, header->timeNow, dt, sizeof(dt));
     DEFINE_STRING(day, 24);
-    uint32_t date = OOP_CALL(getDevice(), getDate);
+    uint32_t date = OOP_CALL(sys(), getDate);
     getNameofDay(date, day, sizeof(day));
     RecColumn_t row1[] = {
         {day, LV_TEXT_ALIGN_RIGHT, 1},

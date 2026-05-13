@@ -1,6 +1,6 @@
 #include "config.h"
 #include "display.h"
-#include "dev/dev.h"
+#include "sys/sys.h"
 #include "touchpad/touchpad.h"
 #include "logger.h"
 #include "common.h"
@@ -9,7 +9,6 @@
 #define BYTES_PER_PIXEL     2
 
 static Display display;
-static Device *dev;
 static Touchpad *tp;
 // Display buffer
 static uint8_t *buffer;
@@ -32,7 +31,7 @@ static void initBuffer() {
 
 static void dispFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *cmap)
 {
-    OOP_CALL(dev, flushDisplay, area->x1, area->x2, area->y1, area->y2, cmap);
+    OOP_CALL(sys(), flushDisplay, area->x1, area->x2, area->y1, area->y2, cmap);
     // Inform the graphics library that you are ready with the flushing
     lv_display_flush_ready(disp);
 }
@@ -53,7 +52,7 @@ static void tpCb(lv_indev_t * indev_drv, lv_indev_data_t * data) {
 
 #if LV_USE_LOG
 void lvLogCb(lv_log_level_t level, const char * buf) {
-    OOP_CALL(dev, logOut, buf, 0, NULL);
+    OOP_CALL(sys(), logOut, buf, 0, NULL);
 }
 #endif
 
@@ -134,7 +133,6 @@ OOP_CTOR(Display) {
     LOG_TRACE("Display constructor ...");
     self->init = displayInit;
     self->update = displayUpdate;
-    dev = getDevice();
     tp = getTouchpad();
 }
 
