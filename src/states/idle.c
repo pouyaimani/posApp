@@ -190,7 +190,7 @@ static void rand_letters(char *buf, size_t len)
 
 void generate_random_txn(TxnData *t)
 {
-    t->core.serviceId = my_rand_range(255);
+    t->core.txnType = my_rand_range(255);
 
     rand_digits(t->core.processCode, 6);
     rand_digits(t->core.amount, 12);

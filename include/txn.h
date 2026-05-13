@@ -32,8 +32,9 @@ typedef enum {
 	TXN_TOPUP,
 	TXN_BALANCE,
 	TXN_PAY,
-	TXN_SIM_CHARGE_CODE
-} TxnType_t;
+	TXN_SIM_CHARGE_CODE,
+	TXN_ALL
+} TxnType;
 
 typedef enum {
 	CL_NORMAL = 1,
@@ -41,7 +42,7 @@ typedef enum {
 } ChargeLevel;
 
 typedef struct {
-	uint8_t serviceId;
+	TxnType txnType;
 	uint16_t processCode;
 	char pan[16+1];
 	uint64_t amount;
@@ -82,5 +83,14 @@ typedef struct {
 	TxnCore core;
 	TxnExtention extention;
 } TxnData;
+
+typedef enum {
+	SIM_OP_MCI = 0,
+	SIM_OP_IRANCELL,
+	SIM_OP_RIGHTEL,
+	SIM_OP_TALIA
+} SimCardOperators_t;
+
+int8_t getTxnName(TxnType type, char *name, size_t size);
 
 #endif

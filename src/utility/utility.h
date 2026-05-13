@@ -23,6 +23,8 @@ typedef struct {
     int secound;
 } Time_t;
 
+int8_t getNameofDay(uint32_t date, char *out, size_t size);
+
 unsigned char intToChar(int val);
 
 inline void InsertDotIP(const char *ip, char* ip_add);
@@ -53,6 +55,7 @@ void dateTimeToInt(uint32_t *date, uint32_t *time);
 void dateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size);
 
 void extractDatetimeStr(const char *buf, char *date, char *time);
+void shortDateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size);
 void extractDatetimeInt(const char *buf, uint32_t *date, uint32_t *time);
 
 /*
@@ -69,6 +72,6 @@ uint64_t packDateTime(uint32_t date, uint32_t time);
  * date: output pointer to uint32_t (YYYMMDD)
  * time: output pointer to uint32_t (HHMMSS)
  */
-void unpackDateTime(uint64_t dateTime, uint32_t *date, uint32_t *time);
+void unpackDateTime(const uint64_t *dateTime, uint32_t *date, uint32_t *time);
 
 #endif

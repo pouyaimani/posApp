@@ -8,6 +8,7 @@
 #include "sdkUtils.h"
 #include "sdkLog.h"
 #include "utility/arith.h"
+#include "utility/utility.h"
 
 static DateTime dateTime;
 extern BatteryStat batterySt;
@@ -114,6 +115,27 @@ static void logOut(Device* dev, const char *data, size_t len, void *udata) {
     sdkLogOut(data);
 }
 
+static inline uint8_t bcdToDec(uint8_t bcd)
+{
+    return ((bcd >> 4) * 10) + (bcd & 0x0F);
+}
+
+static void parseRtcTime(const uint8_t *rtcTime,
+                  int *year,
+                  int *month,
+                  int *day,
+                  int *hour,
+                  int *minute,
+                  int *second)
+{
+    *year  = 2000 + bcdToDec(rtcTime[0]);
+    *month  = bcdToDec(rtcTime[1]);
+    *day  = bcdToDec(rtcTime[2]);
+    *hour  = bcdToDec(rtcTime[3]);
+    *minute = bcdToDec(rtcTime[4]);
+    *second  = bcdToDec(rtcTime[5]);
+}
+
 static DateTime *getDateTime(Device* dev) {
     uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
@@ -124,6 +146,42 @@ static DateTime *getDateTime(Device* dev) {
     memcpy(dateTime.time, tmp + 6, 6);
     return &dateTime;
 }
+
+static uint32_t getDate(Device *dev) {
+    uint8_t dt[12 + 1];
+    memset(dt, 0, sizeof(dt));
+    sdkSysGetRtcTime(dt);
+    int year, month, day, hour, minutes, second;
+    parseRtcTime(dt, &year, &month, &day, &hour, &minutes, &second);
+
+    uint32_t date = (year * 10000) + (month) + day;
+    return date;
+}
+
+static uint32_t getTime(Device *dev) {
+    uint8_t dt[12 + 1];
+    memset(dt, 0, sizeof(dt));
+    sdkSysGetRtcTime(dt);
+    int year, month, day, hour, minutes, second;
+    parseRtcTime(dt, &year, &month, &day, &hour, &minutes, &second);
+
+    uint32_t time = (hour * 10000) + (minutes) + second;
+    return time;
+}
+
+static uint64_t getPackedDateTime(Device *dev) {
+    uint8_t dt[12 + 1];
+    memset(dt, 0, sizeof(dt));
+    sdkSysGetRtcTime(dt);
+    int year, month, day, hour, minutes, second;
+    parseRtcTime(dt, &year, &month, &day, &hour, &minutes, &second);
+
+    uint32_t date = (year * 10000) + (month) + day;
+    uint32_t time = (hour * 10000) + (minutes) + second;
+
+    return packDateTime(date, time);
+}
+
 
 static BatteryStat* getBatteryStatus(Device *dev) {
     BatteryStatus st;

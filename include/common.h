@@ -100,4 +100,10 @@ typedef enum {
 #define ARRAY_SIZE(x) \
     (sizeof(x) / sizeof((x)[0]))
 
+
+#define DATE_TIME_STR(x)        DEFINE_STRING(x, 19 + 1)
+
+#define AMOUNT_STR(x)        DEFINE_STRING(x, 12 + 1)
+
+
 #endif

@@ -5,6 +5,7 @@
 #include <string.h>
 #include "logger.h"
 #include "dev/dev.h"
+#include "common.h"
 
 int libAtoi(const char *str) {
     int s = 0;
@@ -590,6 +591,24 @@ const char *getDayName(int y, int m, int d)
     return day_names[h];
 }
 
+int8_t getNameofDay(uint32_t date, char *out, size_t size) {
+    RETURN_VALUE_IF_NULL(out, ;, ERR_BAD_PARAMETER);
+    uint32_t y  = date / 10000;
+    uint32_t m = (date % 10000) / 100;
+    uint32_t d   = date % 100;
+    if (m < 3) {
+        m += 12;
+        y -= 1;
+    }
+
+    int K = y % 100;
+    int J = y / 100;
+
+    int h = (d + (13 * (m + 1)) / 5 + K + (K / 4) + (J / 4) + 5 * J) % 7;
+    snprintf(out, size, "s", day_names[h]);
+    return ERR_OK;
+}
+
 Date_t getJalaliDate() {
     DateTime *dt = OOP_CALL(getDevice(), getDateTime);
 
@@ -679,6 +698,16 @@ void dateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size) {
     snprintf(str, size, "%02d:%02d:%02d-%02d/%02d/%04d", ss, min, hh, dd, mm, yy);
 }
 
+void shortDateTimeToStr(uint32_t date, uint32_t time, char *str, size_t size) {
+    int mm = (date % 10000) / 100;
+    int dd = date % 100;
+
+    int hh = time / 10000;
+    int min = (time % 10000) / 100;
+
+    snprintf(str, size, "%02d/%02d-%02d/%02d", mm, dd, hh, min);
+}
+
 void extractDatetimeStr(const char *buf, char *date, char *time) {
     // Basic length check (optional, for safety)
     if (strlen(buf) < 14) {
@@ -742,7 +771,7 @@ uint64_t packDateTime(uint32_t date, uint32_t time) {
  * date: output pointer to uint32_t (YYYMMDD)
  * time: output pointer to uint32_t (HHMMSS)
  */
-void unpackDateTime(uint64_t dt, uint32_t *date, uint32_t *time) {
-    *time = dt & ((1ULL << 18) - 1);
-    *date = dt >> 18;
+void unpackDateTime(const  uint64_t *dt, uint32_t *date, uint32_t *time) {
+    *time = (*dt) & ((1ULL << 18) - 1);
+    *date = (*dt) >> 18;
 }

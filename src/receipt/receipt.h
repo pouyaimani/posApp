@@ -26,6 +26,8 @@ OOP_VTABLE(Receipt) {
     OOP_IMETHOD(uint8_t, Receipt, addHeader, uint32_t date, uint32_t time);
     OOP_IMETHOD(uint8_t, Receipt, addFooter);
     OOP_IMETHOD(uint8_t, Receipt, addAmount, const char *);
+    OOP_IMETHOD(uint8_t, Receipt, addLineHorizontal, uint16_t thickness,
+                                    uint16_t paddingTop, uint16_t paddingBottom);
     OOP_IMETHOD(void, Receipt, destroy);
     OOP_IMETHOD(void, Receipt, flush);
 };

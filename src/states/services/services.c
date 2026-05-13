@@ -3,9 +3,27 @@
 #include "../states.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
+#include "txn.h"
+#include "logger.h"
 
 static Service *services[MAX_SERVICE_NUM];
 static Service *parent;
+
+static const char *TxnTypeStr[] = {
+    [TXN_SALE]            = "SALE",
+    [TXN_BILL]            = "BILL",
+    [TXN_TOPUP]           = "TOPUP",
+    [TXN_BALANCE]         = "BALANCE",
+    [TXN_PAY]             = "PAY",
+    [TXN_SIM_CHARGE_CODE] = "SIM_CHARGE_CODE",
+    [TXN_ALL]             = "ALL"
+};
+
+int8_t getTxnName(TxnType type, char *name, size_t size) {
+    RETURN_VALUE_IF_NOT((type > TXN_ALL), false, ; ,ERR_BAD_PARAMETER);
+    snprintf(name, size, "%s", TxnTypeStr[type]);
+    return ERR_OK;
+}
 
 static void createServices() {
     parent = (Service*)GET_MEM(sizeof(Service));

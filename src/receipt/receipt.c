@@ -515,6 +515,54 @@ static uint8_t addTextWithBorder(Receipt *r,
     return ERR_OK;
 }
 
+static uint8_t addLineHorizontal(Receipt *r,
+                                 uint16_t thickness,
+                                 uint16_t paddingTop,
+                                 uint16_t paddingBottom)
+{
+    if (!r || !r->buf || !r->canvas) {
+        return ERR_NOK;
+    }
+
+    if (thickness == 0) {
+        thickness = 1;
+    }
+
+    uint16_t total_h =
+        paddingTop +
+        thickness +
+        paddingBottom;
+
+    if (!flushIfNeeded(r, total_h)) {
+        return ERR_NOK;
+    }
+
+    lv_layer_t layer;
+    lv_canvas_init_layer(r->canvas, &layer);
+
+    lv_draw_line_dsc_t line;
+    lv_draw_line_dsc_init(&line);
+
+    line.color = lv_color_black();
+    line.width = thickness;
+
+    int y = r->height + paddingTop;
+
+    line.p1.x = 0;
+    line.p1.y = y;
+
+    line.p2.x = PRINTER_WIDTH_PIX - 1;
+    line.p2.y = y;
+
+    lv_draw_line(&layer, &line);
+
+    lv_canvas_finish_layer(r->canvas, &layer);
+
+    r->height += total_h;
+
+    return ERR_OK;
+}
+
 /* -------- FOOTER -------- */
 static uint8_t addFooter(Receipt* r) {
     if (!r || !r->buf || !r->canvas) {
@@ -550,6 +598,7 @@ OOP_CTOR(Receipt) {
     self->vtable.destroy = destroyReceipt;
     self->vtable.flush = flushReceipt;
     self->vtable.addAmount = addAmount;
+    self->vtable.addLineHorizontal = addLineHorizontal;
 
     self->maxHeight = MAX_HEIGHT;
     self->height = 0;

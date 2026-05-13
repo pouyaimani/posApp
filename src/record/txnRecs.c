@@ -129,7 +129,7 @@ static int8_t init(TxnRecord *self) {
     }
     int8_t colSizes[] = {
         state->keySize,                                                 // key
-        sizeof(sizeof(((TxnData*)0)->core.serviceId)),                  // id
+        sizeof(sizeof(((TxnData*)0)->core.txnType)),                    // type
         sizeof(sizeof(((TxnData*)0)->core.processCode)),                // processCode
         sizeof(sizeof(((TxnData*)0)->core.pan)),                        // maskedPan
         sizeof(sizeof(((TxnData*)0)->core.amount)),                     // amount
