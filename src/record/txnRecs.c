@@ -104,7 +104,7 @@ static void queryWhere(QueryOperator *qo,
     qo->op = newOp;
 }
 
-static void txnSelect(QueryOperator *qo, TxnHandler handler) {
+static void txnSelect(QueryOperator *qo, TxnHandler handler, void *userData) {
     if (!qo || !handler)
         return;
     (qo->op)->init(qo->op);
@@ -112,7 +112,7 @@ static void txnSelect(QueryOperator *qo, TxnHandler handler) {
         TxnData data;
         uint8_t *buf = (uint8_t *)qo->op->recordBuffer;
         memcpy(&data, buf + state->keySize, sizeof(TxnData));
-        if (!handler(&data, NULL))
+        if (!handler(&data, userData))
             break;
     }
     embedDBCloseIterator(qo->it);

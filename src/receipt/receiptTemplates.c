@@ -248,10 +248,10 @@ static int8_t buildDailyRepBodyReceipt(Receipt *rec, const ReceiptData *data) {
     return ERR_OK;
 }
 
-static int8_t buildAggRepHeaderReceipt(Receipt *rec, const ReceiptData *data) {
+static int8_t buildSumRepHeaderReceipt(Receipt *rec, const ReceiptData *data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);    
-    AggregateReportHeader *header = &data->aggregateHeader;
+    SummaryReportHeader *header = &data->summaryHeader;
     RecColumn_t row[] = {
         {"گزارش تجمیعی", LV_TEXT_ALIGN_CENTER, 1}
     };
@@ -288,10 +288,10 @@ static int8_t buildAggRepHeaderReceipt(Receipt *rec, const ReceiptData *data) {
     return ERR_OK;
 }
 
-static int8_t buildAggRepBodyReceipt(Receipt *rec, const ReceiptData *data) {
+static int8_t buildSumRepBodyReceipt(Receipt *rec, const ReceiptData *data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    AggregateReportBody *body = &data->aggregateBody;
+    SummaryReportBody *body = &data->summaryBody;
     DEFINE_STRING(countStr, 16);
     snprintf(countStr, sizeof(countStr), "%u", body->count);
     AMOUNT_STR(amntStr);
@@ -374,36 +374,40 @@ static int8_t buildDetailRepBodyReceipt(Receipt *rec, const ReceiptData *data) {
     return ERR_OK;
 }
 
-static const ReceiptTemplate templates[] = {
-    { REC_SALE,                                 buildSaleReceipt                },
-    { REC_BILL,                                 buildBillReceipt                },
-    { REC_TOPUP,                                buildTopupReceipt               },
-    { REC_BALANCE,                              buildBalanceReceipt             },
-    { REC_PAY,                                  buildPaymentReceipt             },
-    { REC_SIM_CHARGE_CODE,                      buildChargeCodeReceipt          },
-    { REC_DAILY_REPORT_HEADER,                  buildDailyRepHeaderReceipt      },
-    { REC_DAILY_REPORT_BODY,                    buildDailyRepBodyReceipt        },
-    { REC_AGGREGATION_REPORT_HEADER,            buildAggRepHeaderReceipt        },
-    { REC_AGGREGATION_REPORT_BODY,              buildAggRepBodyReceipt          },
-    { REC_DETAIL_REPORT_HEADER,                 buildDetailtRepHeaderReceipt    },
-    { REC_DETAIL_REPORT_BODY,                   buildDetailRepBodyReceipt       }
-};
+static int8_t buildDetailRepReceipt(Receipt *rec, const ReceiptData *data) {
+}
+
+static int8_t buildDailyRepReceipt(Receipt *rec, const ReceiptData *data) {
+}
+
+static int8_t buildSumRepReceipt(Receipt *rec, const ReceiptData *data) {
+}
 
 int8_t buildReceipt(Receipt *rec,
-                        TxnType type,
                             const ReceiptData *data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(createReceipt(&rec), true, 
     RECEIPT_CREATE_ERROR(), ERR_MEMORY_ALLOCATION);
-    size_t i;
-
-    for (i = 0; i < ARRAY_SIZE(templates); i++) {
-
-        if (templates[i].type == type) {
-            return templates[i].builder(rec, data);
+    ReceiptBuilder builder = NULL;
+    if (data->type == DOC_TXN) {
+        switch (data->txn->core.txnType) {
+            case TXN_SALE: builder = buildSaleReceipt; break;
+            case TXN_BILL: builder = buildBillReceipt; break;
+            case TXN_TOPUP: builder = buildTopupReceipt; break;
+            case TXN_BALANCE: builder = buildBalanceReceipt; break;
+            case TXN_PAY: builder = buildPaymentReceipt; break;
+            case TXN_SIM_CHARGE: builder = buildChargeCodeReceipt; break;
+            default:break;
+        }
+    } else {
+        switch (data->type) {
+        case DOC_DAILY_REPORT: builder = buildDailyRepReceipt; break;
+        case DOC_SUMMARY_REPORT: builder = buildSumRepReceipt; break;
+        case DOC_DETAILED_REPORT: builder = buildDetailRepReceipt; break;
+        default:break;
         }
     }
-
-    return ERR_NOT_SUPPORTED;
+    RETURN_VALUE_IF_NULL(builder, ; , ERR_NOT_SUPPORTED);
+    return builder(rec, data);
 }

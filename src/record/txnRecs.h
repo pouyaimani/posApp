@@ -40,7 +40,7 @@ OOP_CLASS(TxnRecord) {
 	OOP_METHOD(void, init);
     OOP_METHOD(void, insert, TxnData *);
 	OOP_METHOD(void, iterate);
-	OOP_METHOD(void, select, QueryOperator *, TxnHandler handler);
+	OOP_METHOD(void, select, QueryOperator *, TxnHandler handler, void *userData);
     OOP_METHOD(void, reset);
 };
 

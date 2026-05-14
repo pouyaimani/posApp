@@ -29,7 +29,7 @@ OOP_VTABLE(Receipt) {
     OOP_IMETHOD(uint8_t, Receipt, addLineHorizontal, uint16_t thickness,
                                     uint16_t paddingTop, uint16_t paddingBottom);
     OOP_IMETHOD(void, Receipt, destroy);
-    OOP_IMETHOD(void, Receipt, flush);
+    OOP_IMETHOD(int8_t, Receipt, flush);
 };
 
 OOP_CLASS(Receipt) {

@@ -30,16 +30,21 @@ static int safe_shape(const char *in, char *out, size_t max) {
     return ERR_OK;
 }
 
-static void flushReceipt(Receipt *rec) {
+static int8_t flushReceipt(Receipt *rec) {
     // Send current buffer to printer
-    getPrinter()->print(rec->bitmap,
+    PrinterErr_t err = getPrinter()->print(rec->bitmap,
         rec->width, rec->height);
+    // TODO: handle printer error
+    if (err != PRNT_ERR_OK) {
+        return ERR_NOK;
+    }
 
     // Clear canvas
     lv_canvas_fill_bg(rec->canvas, lv_color_white(), LV_OPA_COVER);
 
     // Reset cursor
     rec->height = 0;
+    return ERR_OK;
 }
 
 static bool flushIfNeeded(Receipt *r, uint16_t next_h) {

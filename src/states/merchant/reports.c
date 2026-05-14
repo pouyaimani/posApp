@@ -9,8 +9,9 @@
 #include "record/txnRecs.h"
 #include "utility/utility.h"
 #include "receipt/receiptTemplates.h"
+#include "printer/printer.h"
 
-static ReceiptData receiptData;
+static ReceiptDocType docType;
 
 typedef enum {
     REP_FILTER_DATE_TIME = (1u << 0),
@@ -163,7 +164,7 @@ static void RePrint(State *parent) {
 /******************** daily reports sub state **********************/
 
 STATE_DEF_ENTER(DailyReport) {
-    receiptData.type = DOC_DAILY_REPORT;
+    docType = DOC_DAILY_REPORT;
     SM_GOTO(extractData);
 }
 
@@ -176,7 +177,7 @@ static void DailyReport(State *parent) {
 /******************** summary report sub state **********************/
 
 STATE_DEF_ENTER(SummaryReport) {
-    receiptData.type = DOC_AGGREGATION_REPORT;
+    docType = DOC_SUMMARY_REPORT;
     SM_GOTO(getStartDate);
 }
 
@@ -189,7 +190,7 @@ static void SummaryReport(State *parent) {
 /******************** detail report sub state **********************/
 
 STATE_DEF_ENTER(DetailsReport) {
-    receiptData.type = DOC_DETAILED_REPORT;
+    docType = DOC_DETAILED_REPORT;
     uiMenu(&printMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE ; i++) {
         OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
@@ -238,8 +239,14 @@ STATE_DEF_ENTER(GetEndTime) {
 
 /******************** extract data sub state **********************/
 
-static bool handleExtractedData(const TxnData* rec, void* userData) {
-
+static bool handleExtractedData(const TxnData* txn, void* userData) {
+    ReceiptData *data = (ReceiptData *)userData;
+    data->txn = txn;
+    Receipt rec;
+    RETURN_VALUE_IF_NOT(buildReceipt(&rec, data), ERR_OK, ; , false);
+    RETURN_VALUE_IF_NOT(OOP_CALL(&rec, flush), ERR_OK, ; , false);
+    OOP_CALL(&rec, destroy);
+    return true;
 }
 
 STATE_DEF_ENTER(ExtractData) {
@@ -248,39 +255,42 @@ STATE_DEF_ENTER(ExtractData) {
     LOG_DEBUG("start time = %s", rquery.startTime);
     LOG_DEBUG("end date = %s", rquery.endDate);
     LOG_DEBUG("end time = %s", rquery.endTime);
-    switch (receiptData.type) {
+    ReceiptData recData;
+    recData.headerApplied = false;
+    recData.type = docType;
+    switch (docType) {
     case DOC_TXN:
         break;
-    case DOC_AGGREGATION_REPORT:
+    case DOC_SUMMARY_REPORT:
         if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
             // TODO
-            receiptData.aggregateHeader.dateFrom = libAtoi(rquery.startDate);
-            receiptData.aggregateHeader.dateTo = libAtoi(rquery.endDate);
-            receiptData.aggregateHeader.timeFrom = libAtoi(rquery.startTime);
-            receiptData.aggregateHeader.timeTo = libAtoi(rquery.endDate);
-            receiptData.aggregateHeader.dateNow = OOP_CALL(sys(), getDate);
-            receiptData.aggregateHeader.timeNow = OOP_CALL(sys(), getTime);
-            receiptData.aggregateHeader.txnType = 0;
+            recData.summaryHeader.dateFrom = libAtoi(rquery.startDate);
+            recData.summaryHeader.dateTo = libAtoi(rquery.endDate);
+            recData.summaryHeader.timeFrom = libAtoi(rquery.startTime);
+            recData.summaryHeader.timeTo = libAtoi(rquery.endDate);
+            recData.summaryHeader.dateNow = OOP_CALL(sys(), getDate);
+            recData.summaryHeader.timeNow = OOP_CALL(sys(), getTime);
+            recData.summaryHeader.txnType = 0;
         }
         break;
     case DOC_DAILY_REPORT:
         if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
             // TODO
-            receiptData.dailyHeader.date = 0;
-            receiptData.dailyHeader.time = 0;
-            receiptData.dailyHeader.txnType = 0;
+            recData.dailyHeader.date = 0;
+            recData.dailyHeader.time = 0;
+            recData.dailyHeader.txnType = 0;
         }
         break;
     case DOC_DETAILED_REPORT:
         if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
             // TODO
-            receiptData.detailedHeader.dateFrom = libAtoi(rquery.startDate);
-            receiptData.detailedHeader.dateTo = libAtoi(rquery.endDate);
-            receiptData.detailedHeader.timeFrom = libAtoi(rquery.startTime);
-            receiptData.detailedHeader.timeTo = libAtoi(rquery.endDate);
-            receiptData.detailedHeader.dateNow = OOP_CALL(sys(), getDate);
-            receiptData.detailedHeader.timeNow = OOP_CALL(sys(), getTime);
-            receiptData.detailedHeader.txnType = 0;
+            recData.detailedHeader.dateFrom = libAtoi(rquery.startDate);
+            recData.detailedHeader.dateTo = libAtoi(rquery.endDate);
+            recData.detailedHeader.timeFrom = libAtoi(rquery.startTime);
+            recData.detailedHeader.timeTo = libAtoi(rquery.endDate);
+            recData.detailedHeader.dateNow = OOP_CALL(sys(), getDate);
+            recData.detailedHeader.timeNow = OOP_CALL(sys(), getTime);
+            recData.detailedHeader.txnType = 0;
         }
         break;
     default:
@@ -310,7 +320,7 @@ STATE_DEF_ENTER(ExtractData) {
         txnquery()->where(&op, TXN_REC_FIELD_CORE_TRACE, SELECT_EQ, &rquery.trace);
     }
 
-    txnrecord()->select(&op, handleExtractedData);
+    txnrecord()->select(&op, handleExtractedData, (void *)&recData);
 
 }
 

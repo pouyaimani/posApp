@@ -32,7 +32,7 @@ typedef enum {
 	TXN_TOPUP,
 	TXN_BALANCE,
 	TXN_PAY,
-	TXN_SIM_CHARGE_CODE,
+	TXN_SIM_CHARGE,
 	TXN_ALL
 } TxnType;
 

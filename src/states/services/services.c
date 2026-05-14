@@ -15,7 +15,7 @@ static const char *TxnTypeStr[] = {
     [TXN_TOPUP]           = "TOPUP",
     [TXN_BALANCE]         = "BALANCE",
     [TXN_PAY]             = "PAY",
-    [TXN_SIM_CHARGE_CODE] = "SIM_CHARGE_CODE",
+    [TXN_SIM_CHARGE] = "SIM_CHARGE_CODE",
     [TXN_ALL]             = "ALL"
 };
 

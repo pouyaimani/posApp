@@ -55,7 +55,7 @@ STATE_DEF_ENTER(Result) {
 int8_t makeReceipt(TxnData *txn) {
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
     Receipt rec;
-    int8_t ret = buildReceipt(&rec, TXN_SALE, txn);
+    int8_t ret = buildReceipt(&rec, txn);
     RETURN_VALUE_IF_NOT(ret, ERR_OK, 
         {
             RECEIPT_CREATE_ERROR();

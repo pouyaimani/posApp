@@ -6,26 +6,10 @@
 #include "receipt.h"
 
 typedef enum {
-    REC_SALE = 0,
-	REC_BILL,
-	REC_TOPUP,
-	REC_BALANCE,
-	REC_PAY,
-	REC_SIM_CHARGE_CODE,
-    REC_DAILY_REPORT_HEADER,
-    REC_DAILY_REPORT_BODY,
-    REC_AGGREGATION_REPORT_HEADER,
-    REC_AGGREGATION_REPORT_BODY,
-    REC_DETAIL_REPORT_HEADER,
-    REC_DETAIL_REPORT_BODY
-} ReceiptType_t;
-
-typedef enum {
     DOC_TXN,
     DOC_DAILY_REPORT,
-    DOC_AGGREGATION_REPORT,
+    DOC_SUMMARY_REPORT,
     DOC_DETAILED_REPORT,
-    DOC_SETTLEMENT_REPORT,
 } ReceiptDocType;
 
 typedef struct {
@@ -52,23 +36,23 @@ typedef struct {
     uint32_t timeTo;
     uint32_t dateNow;
     uint32_t timeNow;
-} AggregateReportHeader;
+} SummaryReportHeader;
 
 typedef struct {
     TxnType txnType;
     uint32_t count;
     uint64_t amntSum;
-} AggregateReportBody;
+} SummaryReportBody;
 
 typedef struct {
     ReceiptDocType type;
-
+    TxnData *txn;
+    bool headerApplied;
     union {
-        TxnData txn;
         DailyReportHeader dailyHeader;
         DetailedReportHeader detailedHeader;
-        AggregateReportHeader aggregateHeader;
-        AggregateReportBody aggregateBody;
+        SummaryReportHeader summaryHeader;
+        SummaryReportBody summaryBody;
     };
 } ReceiptData;
 
@@ -76,14 +60,8 @@ typedef int8_t (*ReceiptBuilder)(
     Receipt *,
     const ReceiptData *);
 
-typedef struct {
-    TxnType type;
-    ReceiptBuilder builder;
-} ReceiptTemplate;
-
 int8_t buildReceipt(
     Receipt *rec,
-    TxnType type,
     const ReceiptData *data);
 
 #endif
