@@ -48,8 +48,8 @@ OOP_CLASS(Printer) {
 
 OOP_CTOR(Printer);
 
-Printer *getPrinter(void);
+Printer *printer(void);
 
-#define PRINTER_INIT() OOP_CALL(getPrinter(), init)
+#define PRINTER_INIT() OOP_CALL(printer(), init)
 
 #endif

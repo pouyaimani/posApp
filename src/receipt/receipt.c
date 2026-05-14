@@ -32,7 +32,7 @@ static int safe_shape(const char *in, char *out, size_t max) {
 
 static int8_t flushReceipt(Receipt *rec) {
     // Send current buffer to printer
-    PrinterErr_t err = getPrinter()->print(rec->bitmap,
+    PrinterErr_t err = printer()->print(rec->bitmap,
         rec->width, rec->height);
     // TODO: handle printer error
     if (err != PRNT_ERR_OK) {

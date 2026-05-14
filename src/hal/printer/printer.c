@@ -46,7 +46,7 @@ OOP_CTOR(Printer) {
     __printer->print = print;
 }
 
-Printer *getPrinter() {
+Printer *printer() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();
