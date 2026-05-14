@@ -1,0 +1,150 @@
+/**********************************************************************
+ *
+ *                  Macro Definitions Categorized
+ * 
+ *          This document categorizes the provided macro 
+ *          definitions for clarity and easier management.
+ * 
+ * 
+ **********************************************************************/
+
+/**********************************************************************
+ *
+ *                  General Terms and Phrases
+ *          These are common prompts, statuses, and generic
+ *          phrases used throughout the interface:
+ * 
+ **********************************************************************/
+
+X(PHRASE_PLEASE_WAIT            ,   "pleaseWait"            ,   ""  )                     
+X(PHRASE_NO_RESULT_FOUND        ,   "noResultFound"         ,   ""  )                      
+X(PHRASE_EXTRACTING_DATA        ,   "extractingData"        ,   ""  )                         
+X(PHRASE_ENTER_REF_NUM          ,   "enterRefNum"           ,   ""  )                        
+X(PHRASE_ENTER_TRACE            ,   "enterTrace"            ,   ""  )                     
+X(PHRASE_MERCHANT               ,   "merchant"              ,   ""  )                   
+X(PHRASE_SUPERVISOR             ,   "supervisor"            ,   ""  )                     
+X(PHRASE_CUSTOMER               ,   "customer"              ,   ""  )                   
+X(PHRASE_PLEASE                 ,   "please"                ,   ""  )                 
+X(PHRASE_ENTER_SERVER           ,   "enterServer"           ,   ""  )                        
+X(PHRASE_ENTER_PORT             ,   "enterPort"             ,   ""  )                  
+X(PHRASE_INVALID_IP             ,   "invalidIp"             ,   ""  )                  
+X(PHRASE_INVALID_PORT           ,   "invalidPort"           ,   ""  )                        
+X(PHRASE_WIFI                   ,   "wifi"                  ,   ""  )               
+X(PHRASE_GPRS                   ,   "gprs"                  ,   ""  )               
+X(PHRASE_SOUND_STTINGS          ,   "soundSettings"         ,   ""  )                      
+X(PHRASE_ENERGY_SETTINGS        ,   "energySettings"        ,   ""  )                         
+X(PHRASE_RECEIPT_SETTINGS       ,   "receiptSettings"       ,   ""  )                            
+X(PHRASE_BRIGHTNESS_SETTINGS    ,   "brightnessSettings"    ,   ""  )                             
+X(PHRASE_TOUCH_STATUS           ,   "touchStatus"           ,   ""  )                        
+X(PHRASE_UPDATE_DATE_TIME       ,   "updateDateTime"        ,   ""  )                         
+X(PHRASE_ENABLE                 ,   "enable"                ,   ""  )                 
+X(PHRASE_DISABLE                ,   "disable"               ,   ""  )                    
+X(PHRASE_POWER_OFF              ,   "powerOff"              ,   ""  )                   
+X(PHRASE_MENU                   ,   "menu"                  ,   ""  )               
+X(PHRASE_CANCEL                 ,   "cancel"                ,   ""  )                 
+X(PHRASE_CONFIRM                ,   "confirm"               ,   ""  )                    
+
+/**********************************************************************
+ *
+ *                  Financial & Transaction-Related
+ *          Terms linked to transaction types, reports, 
+ *          and financial info:
+ * 
+ **********************************************************************/
+
+X(PHRASE_AMOUNT                         ,   "amount"                        ,   ""  )
+X(PHRASE_AUTHENTICATION_TYPE            ,   "authenticationType"            ,   ""  )            
+X(PHRASE_SUCCESSFUL_OPERATION           ,   "successfulOperation"           ,   ""  )            
+X(PHRASE_UNSUCCESSFUL_OPERATION         ,   "unsuccessfulOperation"         ,   ""  )            
+X(PHRASE_INSUFFICIENT_FUND              ,   "insufficientFund"              ,   ""  )        
+X(PHRASE_INVALID_PIN                    ,   "invalidPin"                    ,   ""  )    
+X(PHRASE_INVALID_CARD                   ,   "invalidCard"                   ,   ""  )    
+X(PHRASE_INVALID_TRANSACTION            ,   "invalidTransaction"            ,   ""  )            
+X(PHRASE_PREPAID_PIN                    ,   "prepaidPin"                    ,   ""  )    
+X(PHRASE_BILL_ID                        ,   "billId"                        ,   ""  )
+X(PHRASE_PAYMENT_ID                     ,   "paymentId"                     ,   ""  )
+X(PHRASE_DEBIT_CARD                     ,   "debitCard"                     ,   ""  )
+X(PHRASE_CREDIT_CARD                    ,   "creditCard"                    ,   ""  )    
+X(PHRASE_PREPAID_CARD                   ,   "prepaidCard"                   ,   ""  )    
+X(PHRASE_CUSTOMERS_SECOND_STATEMENT     ,   "customersSecondStatement"      ,   ""  )                
+X(PHRASE_ANY_DEDUCTION_TO_YOUR_ACCOUNT  ,   "anyDeductionToYourAccount"     ,   ""  )                
+X(PHRASE_REFUND_AMOUNT                  ,   "refundAmount"                  ,   ""  )    
+X(PHRASE_LOCAL_DATE_REFUND_TRANSACTION  ,   "localDateRefundTransaction"    ,   ""  )                    
+X(PHRASE_LOCAL_TIME_REFUND_TRANSACTION  ,   "localTimeRefundTransaction"    ,   ""  )                    
+X(PHRASE_MONEY_REFUNDED_WITHIN_WORKDAY  ,   "moneyRefundedWithinWorkday"    ,   ""  )                    
+X(PHRASE_MERCHANTS_NAME                 ,   "merchantsName"                 ,   ""  )    
+X(PHRASE_PURCHASE                       ,   "purchase"                      ,   ""  )
+X(PHRASE_BILL_PAYMENT                   ,   "billPayment"                   ,   ""  )    
+X(PHRASE_PREPAID_RECHARGE               ,   "prepaidRecharge"               ,   ""  )        
+X(PHRASE_BALANCE_INQUIRY                ,   "balanceInquiry"                ,   ""  )        
+X(PHRASE_CUSTOMERS_RECEIPT              ,   "customersReceipt"              ,   ""  )        
+X(PHRASE_MERCHANTS_RECEIPT              ,   "merchantsReceipt"              ,   ""  )        
+X(PHRASE_TERMINAL_ID                    ,   "terminalId"                    ,   ""  )    
+X(PHRASE_TERMINAL_NUMBER                ,   "terminalNumber"                ,   ""  )        
+X(PHRASE_MERCHANT_ID                    ,   "merchantId"                    ,   ""  )    
+X(PHRASE_APPLICATION_NAME               ,   "applicationName"               ,   ""  )        
+X(PHRASE_DEVICE_TYPE                    ,   "deviceType"                    ,   ""  )    
+X(PHRASE_CARD_NUMBER                    ,   "cardNumber"                    ,   ""  )    
+X(PHRASE_ISSUING_BANK                   ,   "issuingBank"                   ,   ""  )    
+X(PHRASE_ACQUIRING_BANK                 ,   "acquiringBank"                 ,   ""  )    
+X(PHRASE_TRACE_NUMBER                   ,   "traceNumber"                   ,   ""  )    
+X(PHRASE_LOCAL_DATE_TRANSACTION         ,   "localDateTransaction"          ,   ""  )            
+X(PHRASE_LOCAL_TIME_TRANSACTION         ,   "localTimeTransaction"          ,   ""  )            
+X(PHRASE_RETRIEVAL_REFERENCE_NUMBER     ,   "retrievalReferenceNumber"      ,   ""  )                
+
+/**********************************************************************
+ *
+ *                  Report and Transaction Types
+ *          Specific report or transaction categories:
+ * 
+ **********************************************************************/
+
+X(PHRASE_DAILY_REPORT       ,   "dailyReport"           ,   ""  )
+X(PHRASE_AGGREGATED_REPORT  ,   "aggregatedReport"      ,   ""  )    
+X(PHRASE_TRANACTION_DETAILS ,   "transactionDetails"    ,   ""  )        
+X(PHRASE_TXN_SALE           ,   "txnSale"               ,   ""  )
+X(PHRASE_TXN_BALANCE        ,   "txnBalance"            ,   ""  )
+X(PHRASE_TXN_BILL_PAYMENT   ,   "txnBillPayment"        ,   ""  )    
+X(PHRASE_TXN_PAY            ,   "txnPay"                ,   ""  )
+X(PHRASE_TXN_VOUCHER        ,   "txnVoucher"            ,   ""  )
+X(PHRASE_TXN_TOP_UP         ,   "txnTopUp"              ,   ""  )
+X(PHRASE_ALL_TXNS           ,   "allTxns"               ,   ""  )
+
+/**********************************************************************
+ *
+ *                  Operational/Action Buttons & Interfaces
+ *                  Common interface actions
+ * 
+ **********************************************************************/
+
+X(PHRASE_REPRINT            ,   "reprint"           ,   ""  )
+X(PHRASE_UPDATE_APP         ,   "updateApp"         ,   ""  )
+X(PHRASE_RESET_MERCHAT_PIN  ,   "resetMerchatPin"   ,   ""  )        
+X(PHRASE_DEFAULT_SETTINGS   ,   "defaultSettings"   ,   ""  )        
+X(PHRASE_SERVER_SETTINGS    ,   "serverSettings"    ,   ""  )        
+X(PHRASE_TMS_SETTINGS       ,   "tmsSettings"       ,   ""  )    
+
+
+/**********************************************************************
+ *
+ *                   Miscellaneous/Other Settings & Labels
+ *              Less common or context-specific phrases:
+ * 
+ **********************************************************************/
+
+X(PHRASE_SPECIAL_PROJECTS   ,    "specialProjects"  ,   ""  )                      
+X(PHRASE_SSL                ,    "ssl"              ,   ""  )          
+X(PHRASE_KEY_INJECTION      ,    "keyInjection"     ,   ""  )                  
+X(PHRASE_CONFIGURATION      ,    "configuration"    ,   ""  )              
+X(PHRASE_NETWORK_SETTINGS   ,    "networkSettings"  ,   ""  )  
+
+
+/**********************************************************************
+ *
+ *                      Printer related phrases
+ * 
+ **********************************************************************/
+
+X(PHRASE_PRINTER_CHECK_PAPER    ,    "لطفا کاغذ پرینتر را بررسی نمایید"  ,   "Please check printer paper"  )
+X(PHRASE_PRINTER_OVERHEAT       ,    "دمای پرینتر بیش از حد افزایش یافته است"  ,   "Printer overheat"  )
+X(PHRASE_PRINTER_BUSY           ,    "پرینتر مشغول است"  ,   "Printer is busy"  )
