@@ -10,17 +10,18 @@ static Service *services[MAX_SERVICE_NUM];
 static Service *parent;
 
 static const char *TxnTypeStr[] = {
-    [TXN_SALE]            = "SALE",
-    [TXN_BILL]            = "BILL",
-    [TXN_TOPUP]           = "TOPUP",
-    [TXN_BALANCE]         = "BALANCE",
-    [TXN_PAY]             = "PAY",
-    [TXN_SIM_CHARGE] = "SIM_CHARGE_CODE",
-    [TXN_ALL]             = "ALL"
+    [TXN_SALE]            = "خرید",
+    [TXN_BILL]            = "پرداخت قبض",
+    [TXN_TOPUP]           = "شارژ مستقیم",
+    [TXN_BALANCE]         = "موجودی",
+    [TXN_PAY]             = "پرداخت",
+    [TXN_SIM_CHARGE]      = "کد شارژ",
+    [TXN_ALL]             = "همه تراکنش ها"
 };
 
 int8_t getTxnName(TxnType type, char *name, size_t size) {
-    RETURN_VALUE_IF_NOT((type > TXN_ALL), false, ; ,ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(name, ; ,ERR_BAD_PARAMETER);
+    if (type > TXN_ALL) return ERR_BAD_PARAMETER;
     snprintf(name, size, "%s", TxnTypeStr[type]);
     return ERR_OK;
 }

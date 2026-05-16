@@ -2,15 +2,10 @@
 #define PHRASES_H_
 
 #include "oop.h"
-
-typedef enum {
-    LANG_EN,
-    LANG_FA,
-    LANG_COUNT
-} Lang_t;
+#include "common.h"
 
 typedef struct {
-    const char *text[LANG_COUNT];
+    const char *text[LNG_COUNT];
 } PhraseEntry;
 
 typedef enum {
@@ -18,9 +13,12 @@ typedef enum {
 #include "phrases.def"
 #undef X
 
-    PHRASE_COUNT
+    PHRASE_T_COUNT
 } Phrases_t;
 
-const char *phraseGet(Phrases_t id, Lang_t);
+const char *phraseGet(Phrases_t id, Language_t);
+
+// Get phrase with device default language
+const char *phraseGetDef(Phrases_t id);
 
 #endif

@@ -18,6 +18,7 @@
 #include "record/txnRecs.h"
 #include "record/shiftRecs.h"
 #include "utility/utility.h"
+#include "receipt/receiptTemplates.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -89,67 +90,24 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {
 
 #include "receipt/receipt.h"
 #include "printer/printer.h"
-
+    TxnData txn;
+    ReceiptData data;
 static void print() {
+    data.txn = &txn;
+    data.type = DOC_TXN;
+    txn.core.amount = 1240000;
+    snprintf(txn.core.pan, sizeof(txn.core.pan), "%s", "60379916111111");
+    txn.core.processCode = 12;
+    txn.core.refNum = 1399;
+    txn.core.trace = 6419;
+    txn.core.RRN = 19000;
+    txn.core.txnType = TXN_SALE;
+    txn.dateTime = OOP_CALL(sys(), getPackedDateTime);
     Receipt rec;
-    createReceipt(&rec);
-    RecColumn_t row[] = {
-        {"سلام", LV_TEXT_ALIGN_LEFT, 1},
-        {"بله", LV_TEXT_ALIGN_RIGHT, 1}
-    };
-    RecColumn_t row1[] = {
-        {"لللللللللللللللللللللللللل", LV_TEXT_ALIGN_LEFT, 1},
-        {"کد کارتخوان", LV_TEXT_ALIGN_RIGHT, 1}
-    };
-    OOP_CALL(&rec, addText, 2, row1);
-    OOP_CALL(&rec, addFooter);
+    buildReceipt(&rec, &data);
     OOP_CALL(&rec, flush);
     OOP_CALL(&rec, destroy);
 }
-
-void generateRandomShift(ShiftData *shift)
-{
-    static int rd = 1;
-    shift->startDate = 20240101 + rd++;
-    shift->startTime = rd % 86400;
-
-    uint32_t duration = 3600 + rd % (8 * 3600);
-
-    shift->endDate = shift->startDate;
-    shift->endTime = shift->startTime + duration;
-
-    if (shift->endTime >= 86400) {
-        shift->endTime -= 86400;
-        shift->endDate++;
-    }
-}
-
-#define shifts_count 20
-
-void insertRandomShifts()
-{
-    ShiftData shift;
-
-    for (int i = 0; i < shifts_count; i++) {
-        generateRandomShift(&shift);
-        if (shifts()->insert(&shift) == 0) {
-        }
-    }
-}
-
-void readAllShifts()
-{
-    ShiftData shift;
-//     shifts()->get(0, &shift);
-// return;
-    for (int i = 0 ; i < 200 ; i++) {
-        if (shifts()->get(i, &shift) == 0) {
-        LOG_DEBUG("shift: idx = %d, startTime = %d, endTime = %d, startDate = %d, endDate = %d",
-            i, shift.startTime, shift.endTime, shift.startDate, shift.endDate);
-        }
-    }
-}
-
 
 static uint32_t seed = 123456789;
 
@@ -224,15 +182,11 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_CLEAR) {
         GOTO_DEV_INFO(state);
     } else if (ev->key == KEY_1) {
-        deleteShiftFiles();
+        print();
     } else if (ev->key == KEY_2) {
-        shifts()->init();
     } else if (ev->key == KEY_3) {
-        insertRandomShifts();
-    }  else if (ev->key == KEY_4) {
-        readAllShifts();
-    }  else if (ev->key == KEY_5) {
-        shifts()->reset();
+    } else if (ev->key == KEY_4) {
+    } else if (ev->key == KEY_5) {
     } else if (ev->key == KEY_6) {
         insertTxn();
     } else if (ev->key == KEY_7) {

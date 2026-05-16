@@ -5,6 +5,7 @@
 #include "sys/sys.h"
 #include "logger.h"
 #include "common.h"
+#include "settings/settings.h"
 
 // static bool findInJson(const char *phrase, char *out, size_t size, Language_t lang) {
 //     char *jsonData = GET_MEM(4096);
@@ -48,15 +49,20 @@
 
 static const PhraseEntry gPhrases[] = {
 #define X(id, en, fa) \
-    [id] = { .text = { [LANG_EN] = en, [LANG_FA] = fa } },
+    [id] = { .text = { [LNG_EN] = en, [LNG_FA] = fa } },
 
 #include "phrases.def"
 #undef X
 };
 
-const char *phraseGet(Phrases_t id, Lang_t lang) {
-    if (id >= PHRASE_COUNT || lang >= LANG_COUNT)
+const char *phraseGet(Phrases_t id, Language_t lang) {
+    if (id >= PHRASE_T_COUNT || lang >= LNG_COUNT)
         return "";
 
     return gPhrases[id].text[lang];
+}
+
+const char *phraseGetDef(Phrases_t id) {
+    Language_t lng = (Language_t)settings()->terminal.language;
+    return phraseGet(id, lng);
 }

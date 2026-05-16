@@ -26,10 +26,10 @@ static bool findInJson(const char *iin, char *out, size_t size, Language_t lang)
 
         if (strcmp(code->valuestring, iin) == 0) {
 
-            if (lang == EN) {
+            if (lang == LNG_EN) {
                 cJSON *name = cJSON_GetObjectItem(bank, "name_en");
                 snprintf(out, size, "s", name->valuestring);
-            } else if (lang == FA) {
+            } else if (lang == LNG_FA) {
                 cJSON *name = cJSON_GetObjectItem(bank, "name_fa");
                 snprintf(out, size, "s", name->valuestring);
             }
@@ -42,11 +42,11 @@ static bool findInJson(const char *iin, char *out, size_t size, Language_t lang)
 }
 
 void getNameFa(const char * iin, char *out, size_t size) {
-    findInJson(iin, out, size, FA);
+    findInJson(iin, out, size, LNG_FA);
 }
 
 void getNameEn(const char * iin, char *out, size_t size) {
-    findInJson(iin, out, size, EN);
+    findInJson(iin, out, size, LNG_EN);
 }
 
 OOP_CTOR(BankName) {

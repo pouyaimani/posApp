@@ -19,7 +19,7 @@
 
 static int safe_shape(const char *in, char *out, size_t max) {
     if (!in || !out) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     size_t len = strlen(in);
     if (len >= max) {
@@ -31,6 +31,7 @@ static int safe_shape(const char *in, char *out, size_t max) {
 }
 
 static int8_t flushReceipt(Receipt *rec) {
+    RETURN_VALUE_IF_NULL(rec, ; , ERR_BAD_PARAMETER);
     // Send current buffer to printer
     PrinterErr_t err = printer()->print(rec->bitmap,
         rec->width, rec->height);
@@ -48,6 +49,7 @@ static int8_t flushReceipt(Receipt *rec) {
 }
 
 static bool flushIfNeeded(Receipt *r, uint16_t next_h) {
+    RETURN_VALUE_IF_NULL(r, ; , ERR_BAD_PARAMETER);
     if (next_h > r->maxHeight) {
         LOG_ERROR("Receipt: height of object is greater than maximum.");
         return false;
@@ -89,33 +91,48 @@ static uint16_t measure_text_height(const char *txt, int width, const lv_font_t 
 }
 
 static uint8_t addText(Receipt *r, int count, const RecColumn_t *cols) {
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
+    LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     int totalWeight = 0;
     if (count > MAX_CULOMN_CNT) {
         LOG_ERROR("Too many columns");
         count = MAX_CULOMN_CNT;
     }
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     if (count == 0) {
         return ERR_NOK;
     }
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     if (!cols) {
         return ERR_NOK;
     }
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     for(int i = 0; i < count; i++) totalWeight += cols[i].weight;
-
+    LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     if (totalWeight == 0) {
         LOG_ERROR("Receipt addText: total weight = 0. choosing column size equal.");
         return ERR_NOK;
     }
-
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     uint16_t height = 0;
     int remaining = PRINTER_WIDTH_PIX;
     for(int i = 0; i < count; i++) {
         int w = (i == count - 1) ? remaining :
              (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
-
+    LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
         remaining -= w;
         if (safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX) != ERR_OK) {
             return ERR_NOK;
@@ -123,14 +140,20 @@ static uint8_t addText(Receipt *r, int count, const RecColumn_t *cols) {
         uint16_t h = measure_text_height(r->shaped[i], w, &FONT_16);
         if(h > height) height = h;
     }
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     if (!flushIfNeeded(r, height)) {
         return ERR_NOK;
     }
-
+    LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     int x = 0;
-
+    LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     lv_layer_t layer;
     lv_canvas_init_layer(r->canvas, &layer);
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     remaining = PRINTER_WIDTH_PIX;
     for(int i = 0; i < count; i++) {
         int w = (i == count - 1) ? remaining :
@@ -148,14 +171,18 @@ static uint8_t addText(Receipt *r, int count, const RecColumn_t *cols) {
 
         x += w;
     }
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     lv_canvas_finish_layer(r->canvas, &layer);
     r->height += height;
+        LOG_DEBUG("--------------");
+    LOG_DEBUG("--------------");
     return ERR_OK;
 }
 
 static uint8_t addTable(Receipt *r,int count, const RecColumn_t *cols) {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     if (count > MAX_CULOMN_CNT) {
         LOG_ERROR("Too many columns");
@@ -255,7 +282,7 @@ static uint8_t addTable(Receipt *r,int count, const RecColumn_t *cols) {
 /* -------- IMAGE -------- */
 static uint8_t addImage(Receipt *r, int count, const RecColumn_t *cols) {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     if (count > MAX_CULOMN_CNT) {
         LOG_ERROR("Too many columns");
@@ -273,7 +300,7 @@ static uint8_t addImage(Receipt *r, int count, const RecColumn_t *cols) {
 /* -------- SPACE -------- */
 static uint8_t addSpace(Receipt *r, uint16_t h) {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     if (!flushIfNeeded(r, h)) {
         return ERR_NOK;
@@ -287,7 +314,7 @@ static uint8_t addHighlightedText(Receipt *r, const char *text,
                                    lv_text_align_t align)
 {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     if (!font) font = &FONT_16;
 
@@ -356,10 +383,10 @@ static uint8_t addHighlightedText(Receipt *r, const char *text,
 
 static uint8_t addAmount(Receipt *r,const char *amount) {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     if (!amount) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     char buf[64];
     snprintf(buf, sizeof(buf), " مبلغ: %s ریال ", amount);
@@ -370,7 +397,7 @@ static uint8_t addAmount(Receipt *r,const char *amount) {
 /* -------- HEADER -------- */
 static uint8_t addHeader(Receipt *r, uint32_t date, uint32_t time) {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     TerminalSettings *t = &settings()->terminal;
 
@@ -400,11 +427,11 @@ static uint8_t addTextWithBorder(Receipt *r,
                                  const RecColumn_t *cols)
 {
     if (!r || !r->buf || !r->canvas || !cols) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
 
     if (count <= 0) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
 
     if (count > MAX_CULOMN_CNT) {
@@ -526,7 +553,7 @@ static uint8_t addLineHorizontal(Receipt *r,
                                  uint16_t paddingBottom)
 {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
 
     if (thickness == 0) {
@@ -571,7 +598,7 @@ static uint8_t addLineHorizontal(Receipt *r,
 /* -------- FOOTER -------- */
 static uint8_t addFooter(Receipt* r) {
     if (!r || !r->buf || !r->canvas) {
-        return ERR_NOK;
+        return ERR_BAD_PARAMETER;
     }
     RecColumn_t row1[] = {
         {ICON_BANK_REC, LV_ALIGN_LEFT_MID, 1},
@@ -581,6 +608,7 @@ static uint8_t addFooter(Receipt* r) {
 }
 
 static void destroyReceipt(Receipt *r) {
+    RETURN_VALUE_IF_NULL(r, ; , ERR_BAD_PARAMETER);
     if (r->canvas) {
         LV_DELETE(r->canvas);
         r->canvas = NULL;

@@ -271,7 +271,10 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.getBrightness = getBrightness;
     self->base.vtable.setDateTime = setDateTime;
     self->base.vtable.getCode = getCode;
-    self->base.vtable.getName = getName;    
+    self->base.vtable.getName = getName;
+    self->base.vtable.getDate = getDate;
+    self->base.vtable.getTime = getTime;
+    self->base.vtable.getPackedDateTime = getPackedDateTime;
 
     self->base.maxBright = 5;
     self->base.maxSound = 5;

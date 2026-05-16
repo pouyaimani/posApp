@@ -10,6 +10,7 @@
 #include "utility/utility.h"
 #include "receipt/receiptTemplates.h"
 #include "printer/printer.h"
+#include "phrases/phrases.h"
 
 static ReceiptDocType docType;
 
@@ -249,8 +250,23 @@ static bool handleExtractedData(const TxnData* txn, void* userData) {
     return true;
 }
 
+static int8_t checkPrinterStatus() {
+    PrinterStatus_t st = OOP_CALL(printer(), getStatus);
+    if (st == PRNT_STAT_READY) {
+        return ERR_OK;
+    }
+    if (st == PRNT_STAT_NO_PAPER) {
+
+    } else if (st == PRNT_STAT_OVER_HEAT) {
+
+    } else {
+
+    }
+}
+
 STATE_DEF_ENTER(ExtractData) {
-    SHOW_INFO("در حال استخراج اطلاعات"," لطفا منتظر بمانید");
+    SHOW_INFO(phraseGetDef(PHRASE_EXTRACTING_DATA), 
+                phraseGetDef(PHRASE_PLEASE_WAIT));
     LOG_DEBUG("start date = %s", rquery.startDate);
     LOG_DEBUG("start time = %s", rquery.startTime);
     LOG_DEBUG("end date = %s", rquery.endDate);
