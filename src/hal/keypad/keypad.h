@@ -21,8 +21,8 @@ OOP_CLASS(Keypad) {
 
 OOP_CTOR(Keypad);
 
-Keypad *getKeypad(void);
+Keypad *keypad(void);
 
-#define KEYPAD_INIT() OOP_CALL(getKeypad(), init)
+#define KEYPAD_INIT() OOP_CALL(keypad(), init)
 
 #endif

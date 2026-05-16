@@ -23,7 +23,7 @@ OOP_CTOR(Picc) {
     self->vtable.isDetected = isDetected;
 }
 
-Picc *getPicc() {
+Picc *picc() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

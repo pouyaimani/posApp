@@ -28,12 +28,12 @@ int8_t getTxnName(TxnType type, char *name, size_t size) {
 }
 
 static void createServices() {
-    parent = (Service*)GET_MEM(sizeof(Service));
-    services[SERVICE_ID_SALE] = (Sale*)GET_MEM(sizeof(Sale));
-    services[SERVICE_ID_BILL] = (Bill*)GET_MEM(sizeof(Bill));
-    services[SERVICE_ID_BALANCE] = (Balance*)GET_MEM(sizeof(Balance));
-    services[SERVICE_ID_PAY] = (Pay*)GET_MEM(sizeof(Pay));
-    services[SERVICE_ID_SIM_CHARGE] = (SimCharge*)GET_MEM(sizeof(SimCharge));
+    parent = (Service*)MEM_ALLOC(sizeof(Service));
+    services[SERVICE_ID_SALE] = (Sale*)MEM_ALLOC(sizeof(Sale));
+    services[SERVICE_ID_BILL] = (Bill*)MEM_ALLOC(sizeof(Bill));
+    services[SERVICE_ID_BALANCE] = (Balance*)MEM_ALLOC(sizeof(Balance));
+    services[SERVICE_ID_PAY] = (Pay*)MEM_ALLOC(sizeof(Pay));
+    services[SERVICE_ID_SIM_CHARGE] = (SimCharge*)MEM_ALLOC(sizeof(SimCharge));
 
     OOP_CALL_CTOR(Service, parent, getState(STATE_ID_CARD_HOLDER), "parent");
     OOP_CALL_CTOR(Sale, services[SERVICE_ID_SALE], parent, phraseGetDef(PHRASE_TXN_SALE));

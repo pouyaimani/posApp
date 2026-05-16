@@ -73,7 +73,7 @@ OOP_CTOR(Wifi) {
     self->disconnect = disconnect;
 }
 
-Wifi *getWifi() {
+Wifi *wifi() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

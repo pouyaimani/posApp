@@ -12,7 +12,6 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 
-static Wifi *wifi;
 static Cellular *cel;
 static Network *net;
 static SubState *wifiScan;
@@ -34,7 +33,7 @@ int connectState = WIFI_DISCONNECT_STATE;
 STATE_DEF_ENTER(WifiConnect) {
     SHOW_INFO(phraseGetDef(PHRASE_CONNECTING_2_WIFI), phraseGetDef(PHRASE_PLEASE_WAIT));
     connectState = WIFI_DISCONNECT_STATE;
-    wifi->disconnect();
+    wifi()->disconnect();
 }
 
 STATE_DEF_EXIT(WifiConnect) {
@@ -57,7 +56,7 @@ static void saveWifiInfo(WifiApInfo_t *ap, const char *pwd) {
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
     if (connectState == WIFI_DISCONNECT_STATE) {
         Input * in = (Input*)getState(STATE_ID_INPUT);
-        wifi->connect(selectedAp, in->input);
+        wifi()->connect(selectedAp, in->input);
         connectState = WIFI_CONNECT_STATE;
     } else {
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
@@ -71,7 +70,7 @@ STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
 }
 
 static void WifiConnect(State *parent) {
-    wifiConnect = (SubState *)GET_MEM(sizeof(SubState));
+    wifiConnect = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, wifiConnect, parent, "wifi connect");
     wifiConnect->vtable.enter = STATE_ENTER(WifiConnect);
     wifiConnect->vtable.exit = STATE_EXIT(WifiConnect);
@@ -96,7 +95,7 @@ STATE_DEF_EXIT(WifiEnterPass) {
 }
 
 static void WifiEnterPass(State *parent) {
-    wifiEnterPass = (SubState *)GET_MEM(sizeof(SubState));
+    wifiEnterPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, wifiEnterPass, parent, "wifi enter pass");
     wifiEnterPass->vtable.enter = STATE_ENTER(WifiEnterPass);
     wifiEnterPass->vtable.exit = STATE_EXIT(WifiEnterPass);
@@ -108,7 +107,7 @@ static Menu wifiMenu;
 
 STATE_DEF_ENTER(WifiScan) {
     SHOW_INFO(phraseGetDef(PHRASE_SEARCHING_4_WIFI), phraseGetDef(PHRASE_PLEASE_WAIT));
-    wifi->startScan();
+    wifi()->startScan();
 }
 
 STATE_DEF_EXIT(WifiScan) {
@@ -116,9 +115,9 @@ STATE_DEF_EXIT(WifiScan) {
 }
 
 STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
-    if (wifi->scanSt == WIFI_SCAN_UNDER_PROCESS) {
+    if (wifi()->scanSt == WIFI_SCAN_UNDER_PROCESS) {
         return;
-    } else if (wifi->scanSt == WIFI_SCAN_FAILED) {
+    } else if (wifi()->scanSt == WIFI_SCAN_FAILED) {
     } else {
         OOP_CALL(&wifiMenu, handleItem, ev->key);
         if (ev->key == KEY_ESC) {
@@ -127,16 +126,16 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
         } else if (ev->key == KEY_ENTER) {
             OOP_CALL(&wifiMenu, hide);
             SM_GOTO(wifiEnterPass);
-            selectedAp = &wifi->apList.list[wifiMenu.idx];
+            selectedAp = &wifi()->apList.list[wifiMenu.idx];
         }
     }
 }
 
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
-        uiMenu(&wifiMenu, getDisplay()->screen);
-        for (uint8_t i = 0; i < wifi->apList.size ; i++) {
-            OOP_CALL(&wifiMenu, addItem, wifi->apList.list[i].essid, wifiEnterPass, NULL, NULL);
+        uiMenu(&wifiMenu, disp()->screen);
+        for (uint8_t i = 0; i < wifi()->apList.size ; i++) {
+            OOP_CALL(&wifiMenu, addItem, wifi()->apList.list[i].essid, wifiEnterPass, NULL, NULL);
         }
         HIDE_INFO();
         OOP_CALL(&wifiMenu, show);
@@ -146,7 +145,7 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
 }
 
 static void WifiScan(State *parent) {
-    wifiScan = (SubState *)GET_MEM(sizeof(SubState));
+    wifiScan = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, wifiScan, parent, "wifi Scan");
     wifiScan->vtable.enter = STATE_ENTER(WifiScan);
     wifiScan->vtable.exit = STATE_EXIT(WifiScan);
@@ -187,7 +186,7 @@ STATE_DEF_HANDLE(CellularLogin, KeypadEvent) {
 }
 
 static void CellularLogin(State *parent) {
-    cellularLogin = (SubState *)GET_MEM(sizeof(SubState));
+    cellularLogin = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, cellularLogin, parent, "cellular login");
     cellularLogin->vtable.enter = STATE_ENTER(CellularLogin);
     cellularLogin->vtable.exit = STATE_EXIT(CellularLogin);
@@ -210,7 +209,7 @@ int menuCount = 0;
 static Menu menu;
 
 static void createUi() {
-    uiMenu(&menu, getDisplay()->screen);
+    uiMenu(&menu, disp()->screen);
     menuCount = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
     if (sys()->module.wifi) {
@@ -245,7 +244,6 @@ OOP_CTOR(Connections, State *parent, const char *name) {
     WifiEnterPass(self);
     CellularLogin(self);
 
-    wifi = getWifi();
-    cel = getCell();
+    cel = cellular();
     net = network();
 }

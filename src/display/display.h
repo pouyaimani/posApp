@@ -17,6 +17,6 @@ OOP_CLASS(Display) {
 
 OOP_CTOR(Display);
 
-Display *getDisplay(void);
+Display *disp(void);
 
 #endif

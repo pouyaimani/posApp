@@ -383,23 +383,23 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
 }
 
 static void createUi() {
-    title = lv_label_create(getDisplay()->screen);
+    title = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(title, FONT_20);
     LV_SET_TEXT_COLOR(title, 0xFF4E4E);
     LV_SET_SIZE(title, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_ALIGN(title, LV_ALIGN_CENTER, 0, -70);
 
-    info = lv_label_create(getDisplay()->screen);
+    info = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(info, FONT_16);
     LV_SET_TEXT_COLOR(info, 0x333333);
     LV_SET_SIZE(info, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_ALIGN(info, LV_ALIGN_CENTER, 0, -30);
     
-    inputBox = uiInputBox(getDisplay()->screen);
+    inputBox = uiInputBox(disp()->screen);
     LV_ALIGN(inputBox.main, LV_ALIGN_CENTER, 0, 10);
-    confirmBut = uiButton(getDisplay()->screen, 0x68DD40, phraseGetDef(PHRASE_CONFIRM));
+    confirmBut = uiButton(disp()->screen, 0x68DD40, phraseGetDef(PHRASE_CONFIRM));
     LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
-    cancelBut = uiButton(getDisplay()->screen, 0xFF4E4E, phraseGetDef(PHRASE_CANCEL));
+    cancelBut = uiButton(disp()->screen, 0xFF4E4E, phraseGetDef(PHRASE_CANCEL));
     LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(inputBox.textBox, "");
@@ -488,10 +488,10 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->setMax = setMax;
     self->reset = reset;
     self->setInput = setInput;
-    input = (char*)GET_MEM(INPUT_MAX_LEN);
-    password = (char*)GET_MEM(PASS_MAX_LEN + 1);
+    input = (char*)MEM_ALLOC(INPUT_MAX_LEN);
+    password = (char*)MEM_ALLOC(PASS_MAX_LEN + 1);
     self->input = input;
     self->password = password;
-    amountStr = (char*)GET_MEM(INPUT_MAX_LEN);
+    amountStr = (char*)MEM_ALLOC(INPUT_MAX_LEN);
     createUi();
 }

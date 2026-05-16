@@ -71,7 +71,7 @@ static int8_t queryInit(QueryOperator *qo) {
         LOG_ERROR("Txn record: QueryOperator is NULL.");
         return ERR_NOK;
     }
-    qo->it = (embedDBIterator*)GET_MEM(sizeof(embedDBIterator));
+    qo->it = (embedDBIterator*)MEM_ALLOC(sizeof(embedDBIterator));
     if (!qo->it) {
         LOG_ERROR("Txn record: Failed to allocate iterator.");
         return ERR_NOK;

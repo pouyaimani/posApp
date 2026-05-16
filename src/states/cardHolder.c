@@ -18,7 +18,7 @@ static ServiceId_t enableServicesId[SERVICE_ID_ALL];
 static int selected;
 
 static void createUi() {
-    uiMenu(&menu, getDisplay()->screen);
+    uiMenu(&menu, disp()->screen);
     int cnt = 0;
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
         if (getService(i)->enable) {
@@ -32,7 +32,7 @@ static void createUi() {
 STATE_DEF_ENTER(CardHolder) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     if (!ch->isMagSwiped) {
-        getEventloop()->registerChecker(getMagReader()->ioRead);
+        getEventloop()->registerChecker(magreader()->ioRead);
     }
     createUi();
     OOP_CALL(&menu, show);
@@ -57,7 +57,7 @@ STATE_DEF_HANDLE(CardHolder, MagEvent) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     if (!ch->isMagSwiped) {
         gotoService();
-        getEventloop()->unregisterChecker(getMagReader()->ioRead);
+        getEventloop()->unregisterChecker(magreader()->ioRead);
     }
 }
 

@@ -156,11 +156,11 @@ void uiMenu(Menu *menu, lv_obj_t * parent) {
     menu->idx = 0;
     menu->selected = 0;
     menu->checkEnable = false;
-    menu->item = GET_MEM(MENU_ITEM_MAX * sizeof(lv_obj_t *));
-    menu->state = GET_MEM(MENU_ITEM_MAX * sizeof(State *));
-    menu->cb = GET_MEM(MENU_ITEM_MAX * sizeof(CallBack_t *));
-    menu->toggle = GET_MEM(MENU_ITEM_MAX * sizeof(bool));
-    menu->userData = GET_MEM(MENU_ITEM_MAX * sizeof(void *));
+    menu->item = MEM_ALLOC(MENU_ITEM_MAX * sizeof(lv_obj_t *));
+    menu->state = MEM_ALLOC(MENU_ITEM_MAX * sizeof(State *));
+    menu->cb = MEM_ALLOC(MENU_ITEM_MAX * sizeof(CallBack_t *));
+    menu->toggle = MEM_ALLOC(MENU_ITEM_MAX * sizeof(bool));
+    menu->userData = MEM_ALLOC(MENU_ITEM_MAX * sizeof(void *));
     for (size_t i = 0; i < MENU_ITEM_MAX; i++) {
         menu->item[i] = NULL;
         menu->state[i] = NULL;

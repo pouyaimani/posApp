@@ -18,7 +18,7 @@
 static void dispatch(Event *self, State *state)
 {
     self->target = state;
-    getSmCore()->raiseEvent(self);
+    smCore()->raiseEvent(self);
 }
 
 OOP_CTOR(Event) {

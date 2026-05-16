@@ -27,10 +27,10 @@ static void httpBuildContext(const char *ip, const char* path, void (*onBodyChun
     snprintf(httpCtx->path, sizeof(httpCtx->path), "%s",
              path);
 
-    httpCtx->rxBuf = GET_MEM(1024);
+    httpCtx->rxBuf = MEM_ALLOC(1024);
     httpCtx->rxMax = 1024;
 
-    httpCtx->txBuf = GET_MEM(512);
+    httpCtx->txBuf = MEM_ALLOC(512);
 
     // HERE is answer
     httpCtx->rangeStart = 0;
@@ -69,11 +69,11 @@ static void fillVersionBuffer(uint8_t *data, uint32_t len) {
 
 STATE_DEF_ENTER(ExtractTmsNewVersion) {
 
-    FREE_MEM(versionBuf);
+    MEM_FREE(versionBuf);
 }
 
 static void ExtractTmsNewVersion(State *parent) {
-    extractTmsNewVersion = (SubState *)GET_MEM(sizeof(SubState));
+    extractTmsNewVersion = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, extractTmsNewVersion, parent, "");
     extractTmsNewVersion->vtable.enter = STATE_ENTER(ExtractTmsNewVersion);
 }
@@ -81,7 +81,7 @@ static void ExtractTmsNewVersion(State *parent) {
 /*************************** TMS state *******************************/
 
 static void createVersionReq() {
-    versionBuf = GET_MEM(512);
+    versionBuf = MEM_ALLOC(512);
     httpBuildContext(settings()->server.mainServerIp, API_CHECK_UPDATES, fillVersionBuffer);
 }
 

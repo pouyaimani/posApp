@@ -55,7 +55,7 @@ DL_ERR DL_MEM_callocWithInit ( DL_UINT32   numItems,
 	if ( numItems > 0 )
 	{
 		/* allocate array - with error check */
-		if ( (*out = (void*)GET_MEM(numItems*itemSize)) == NULL )
+		if ( (*out = (void*)MEM_ALLOC(numItems*itemSize)) == NULL )
 		{
 			err = kDL_ERR_MEM_ALLOC;
 		}

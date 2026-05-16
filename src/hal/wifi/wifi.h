@@ -67,9 +67,9 @@ OOP_CLASS(Wifi) {
 
 OOP_CTOR(Wifi);
 
-Wifi *getWifi(void);
+Wifi *wifi(void);
 
-#define WIFI_INIT()  OOP_CALL(getWifi(), init)
-#define WIFI_START_SCAN() getWifi()->startScan()
+#define WIFI_INIT()  OOP_CALL(wifi(), init)
+#define WIFI_START_SCAN() wifi()->startScan()
 
 #endif

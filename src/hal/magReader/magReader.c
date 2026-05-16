@@ -99,7 +99,7 @@ OOP_CTOR(MagReader) {
     self->getPan = getPan;
 }
 
-MagReader *getMagReader() {
+MagReader *magreader() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

@@ -102,7 +102,7 @@ lv_obj_t *uiRowMenu(lv_obj_t * parent) {
 lv_obj_t *menu;
 
 STATE_DEF_ENTER(DevInfo) {
-    menu = uiRowMenu(getDisplay()->screen);
+    menu = uiRowMenu(disp()->screen);
     rowMenuAdd(menu, phraseGetDef(PHRASE_SERIAL), OOP_CALL(sys(), getSN));
     rowMenuAdd(menu, phraseGetDef(PHRASE_DEVICE_CODE), OOP_CALL(sys(), getCode));
     rowMenuAdd(menu, phraseGetDef(PHRASE_TERMINAL), OOP_CALL(sys(), getName));

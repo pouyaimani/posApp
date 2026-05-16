@@ -60,7 +60,7 @@ OOP_CTOR(Cellular) {
     self->startPPPlogin = startPPPlogin;
 }
 
-Cellular *getCell() {
+Cellular *cellular() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

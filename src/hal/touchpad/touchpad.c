@@ -21,7 +21,7 @@ OOP_CTOR(Touchpad) {
     LOG_TRACE("Constructing touchpad ...");
 }
 
-Touchpad *getTouchpad() {
+Touchpad *touchpad() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

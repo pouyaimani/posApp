@@ -236,7 +236,7 @@ OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.getConnectStatus = getConnectStatus;
     self->base.vtable.getSignalStrength = getSignalStrength;
 
-    apinfo = GET_MEM(sizeof(WifiAPInfo) * WIFI_AP_LIST_SIZE);
+    apinfo = MEM_ALLOC(sizeof(WifiAPInfo) * WIFI_AP_LIST_SIZE);
 }
 
 #endif

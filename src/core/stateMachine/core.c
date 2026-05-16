@@ -135,7 +135,7 @@ OOP_CTOR(Core) {
     __core.cbSize = 0;
 }
 
-Core *getSmCore(void)
+Core *smCore(void)
 {
     CALL_ONCE(
         OOP_CALL_CTOR(Core, &__core);

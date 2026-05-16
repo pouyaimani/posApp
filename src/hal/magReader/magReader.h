@@ -38,8 +38,8 @@ OOP_CLASS(MagReader) {
 
 OOP_CTOR(MagReader);
 
-MagReader *getMagReader(void);
+MagReader *magreader(void);
 
-#define MAG_INIT() OOP_CALL(getMagReader(), init)
+#define MAG_INIT() OOP_CALL(magreader(), init)
 
 #endif

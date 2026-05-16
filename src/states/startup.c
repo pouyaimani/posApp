@@ -24,10 +24,9 @@ STATE_DEF_ENTER(Startup) {
     TOUCH_INIT();
     // settings()->reset();
     settings()->load();
-    Display *disp = getDisplay();
-    disp->init();
-    Core *core = getSmCore();
-    core->registerCallback(disp->update);
+    disp()->init();
+    Core *core = smCore();
+    core->registerCallback(disp()->update);
     core->registerCallback(getEventloop()->runCycle);
     core->registerCallback(getTimerHanlder()->runCycle);
 

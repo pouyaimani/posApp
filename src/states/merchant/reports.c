@@ -150,7 +150,7 @@ static Menu printMenu;
 
 STATE_DEF_ENTER(RePrint) {
     REPORT_RESULT_NORM(rquery.resMode);
-    uiMenu(&printMenu, getDisplay()->screen);
+    uiMenu(&printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
         OOP_CALL(&printMenu, addItem, phraseGetDef(printItemTxt[i]), NULL,
                     setReprintItem, (void*)(uintptr_t)i);
@@ -159,7 +159,7 @@ STATE_DEF_ENTER(RePrint) {
 }
 
 static void RePrint(State *parent) {
-    subReports[REP_ITEM_REPRINT] = (SubState *)GET_MEM(sizeof(SubState));
+    subReports[REP_ITEM_REPRINT] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReports[REP_ITEM_REPRINT], parent, "reprint");
     subReports[REP_ITEM_REPRINT]->vtable.enter = STATE_ENTER(RePrint);
 }
@@ -172,7 +172,7 @@ STATE_DEF_ENTER(DailyReport) {
 }
 
 static void DailyReport(State *parent) {
-    subReports[REP_ITEM_DAILY] = (SubState *)GET_MEM(sizeof(SubState));
+    subReports[REP_ITEM_DAILY] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReports[REP_ITEM_DAILY], parent, "daily reports");
     subReports[REP_ITEM_DAILY]->vtable.enter = STATE_ENTER(DailyReport);
 }
@@ -185,7 +185,7 @@ STATE_DEF_ENTER(SummaryReport) {
 }
 
 static void SummaryReport(State *parent) {
-    subReports[REP_ITEM_SUMMARY] = (SubState *)GET_MEM(sizeof(SubState));
+    subReports[REP_ITEM_SUMMARY] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReports[REP_ITEM_SUMMARY], parent, "summary report");
     subReports[REP_ITEM_SUMMARY]->vtable.enter = STATE_ENTER(SummaryReport);
 }
@@ -194,7 +194,7 @@ static void SummaryReport(State *parent) {
 
 STATE_DEF_ENTER(DetailsReport) {
     docType = DOC_DETAILED_REPORT;
-    uiMenu(&printMenu, getDisplay()->screen);
+    uiMenu(&printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE ; i++) {
         OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
                     setReprintItem, (void*)(uintptr_t)i);
@@ -209,7 +209,7 @@ STATE_DEF_HANDLE(DetailsReport, KeypadEvent) {
 }
 
 static void DetailsReport(State *parent) {
-    subReports[REP_ITEM_DETAILS] = (SubState *)GET_MEM(sizeof(SubState));
+    subReports[REP_ITEM_DETAILS] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReports[REP_ITEM_DETAILS], parent, "details reprt");
     subReports[REP_ITEM_DETAILS]->vtable.enter = STATE_ENTER(DetailsReport);
     subReports[REP_ITEM_DETAILS]->vtable.exit = STATE_EXIT(DetailsReport);
@@ -356,7 +356,7 @@ STATE_DEF_HANDLE(ExtractData, KeypadEvent) {
 }
 
 static void ExtractData(State *parent) {
-    extractData = (SubState *)GET_MEM(sizeof(SubState));
+    extractData = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, extractData, parent, "extract data");
     extractData->vtable.enter = STATE_ENTER(ExtractData);
     extractData->vtable.exit = STATE_EXIT(ExtractData);
@@ -373,7 +373,7 @@ static void setReportItem(void *arg) {
 
 STATE_DEF_ENTER(Reports) {
     QUERY_FILTER_RESET(rquery.filter);
-    uiMenu(&reportsMenu, getDisplay()->screen);
+    uiMenu(&reportsMenu, disp()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
         OOP_CALL(&reportsMenu, addItem, phraseGetDef(reportsItemTxt[i]), subReports[i], setReportItem, (void*)(uintptr_t)i);
     }
@@ -391,19 +391,19 @@ OOP_CTOR(Reports, State *parent, const char *name) {
     DetailsReport(self);
     ExtractData(self);
 
-    getStartDate = (SubState *)GET_MEM(sizeof(SubState));
+    getStartDate = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getStartDate, parent, "get Start Date");
     getStartDate->vtable.enter = STATE_ENTER(GetStartDate);
 
-    getStartTime = (SubState *)GET_MEM(sizeof(SubState));
+    getStartTime = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getStartTime, parent, "get Start Time");
     getStartTime->vtable.enter = STATE_ENTER(GetStartTime);
 
-    getEndDate = (SubState *)GET_MEM(sizeof(SubState));
+    getEndDate = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getEndDate, parent, "get End Date");
     getEndDate->vtable.enter = STATE_ENTER(GetEndDate);
 
-    getEndTime = (SubState *)GET_MEM(sizeof(SubState));
+    getEndTime = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getEndTime, parent, "get End Time");
     getEndTime->vtable.enter = STATE_ENTER(GetEndTime);
 }

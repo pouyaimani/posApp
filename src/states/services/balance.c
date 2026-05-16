@@ -40,15 +40,15 @@ OOP_CTOR(Balance, State *parent, const char *name) {
     OOP_CALL_CTOR(Service, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(Balance);
 
-    enterPass = (SubState *)GET_MEM(sizeof(SubState));
+    enterPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, &self->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
 
-    commu = (SubState *)GET_MEM(sizeof(SubState));
+    commu = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, commu, &self->base.state, "communication");
     commu->vtable.enter = STATE_ENTER(Communication);
 
-    result = (SubState *)GET_MEM(sizeof(SubState));
+    result = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, result, &self->base.state, "result");
     result->vtable.enter = STATE_ENTER(Result);
 }

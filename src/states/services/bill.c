@@ -26,7 +26,7 @@ STATE_DEF_EXIT(EnterBillId) {
 }
 
 static void EnterBillId(Sale *parent) {
-    enterBillId = (SubState *)GET_MEM(sizeof(SubState));
+    enterBillId = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterBillId, &parent->base.state, "enter bill id");
     enterBillId->vtable.enter = STATE_ENTER(EnterBillId);
     enterBillId->vtable.exit = STATE_EXIT(EnterBillId);
@@ -45,7 +45,7 @@ STATE_DEF_EXIT(EnterPayId) {
 }
 
 static void EnterPayId(Sale *parent) {
-    enterPayId = (SubState *)GET_MEM(sizeof(SubState));
+    enterPayId = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPayId, &parent->base.state, "enter pay id");
     enterPayId->vtable.enter = STATE_ENTER(EnterPayId);
     enterPayId->vtable.exit = STATE_EXIT(EnterPayId);
@@ -65,7 +65,7 @@ STATE_DEF_EXIT(EnterPassword) {
 }
 
 static void EnterPassword(Sale *parent) {
-    enterPass = (SubState *)GET_MEM(sizeof(SubState));
+    enterPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, &parent->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
     enterPass->vtable.exit = STATE_EXIT(EnterPassword);
@@ -84,7 +84,7 @@ STATE_DEF_EXIT(Result) {
 }
 
 static void Result(Sale *parent) {
-    result = (SubState *)GET_MEM(sizeof(SubState));
+    result = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, result, &parent->base.state, "Result");
     result->vtable.enter = STATE_ENTER(Result);
     result->vtable.exit = STATE_EXIT(Result);

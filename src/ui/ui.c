@@ -8,7 +8,7 @@
 
 InputBox uiInputBox(lv_obj_t *parent) {
     InputBox inBox;
-    inBox.main = lv_obj_create(getDisplay()->screen);
+    inBox.main = lv_obj_create(disp()->screen);
     LV_SET_SIZE(inBox.main, INPUT_BOX_WIDTH, INPUT_BOX_HEIGHT);
     LV_SET_BORDER_COLOR(inBox.main, MAIN_THEME_COLOR);
     LV_SET_BORDER_WIDTH(inBox.main, 3);
@@ -45,14 +45,14 @@ Button uiButton(lv_obj_t *parent, unsigned int color, const char * text) {
 }
 
 static void createInfoPage(InfoPage *pinfo) {
-    pinfo->title = lv_label_create(getDisplay()->screen);
+    pinfo->title = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(pinfo->title, FONT_20);
     LV_SET_TEXT_COLOR(pinfo->title, COLOR_BLACK);
     LV_SET_TEXT_ALIGN(pinfo->title, LV_TEXT_ALIGN_CENTER);
     LV_SET_SIZE(pinfo->title, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(pinfo->title, LV_ALIGN_CENTER, 0, -50);
     
-    pinfo->body = lv_label_create(getDisplay()->screen);
+    pinfo->body = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(pinfo->body, FONT_16);
     LV_SET_TEXT_COLOR(pinfo->body, COLOR_BLACK);
     LV_SET_TEXT_ALIGN(pinfo->body, LV_TEXT_ALIGN_CENTER);
@@ -61,7 +61,7 @@ static void createInfoPage(InfoPage *pinfo) {
     
     pinfo->img = NULL;
 
-    pinfo->line = lv_obj_create(getDisplay()->screen);
+    pinfo->line = lv_obj_create(disp()->screen);
     LV_SET_SIZE(pinfo->line, 190, 8);
     LV_ALIGN(pinfo->line, LV_ALIGN_TOP_MID, 0, 140);
     LV_SET_RADIUS(pinfo->line, 17);
@@ -101,7 +101,7 @@ static void infoShow(InfoPage *pinfo) {
 static void infoSetData(InfoPage *pinfo, InfoType_t type, const char *data, const char* body) {
     pinfo->type = type;
     if (type == INFO_T_IMG) {
-        pinfo->img = lv_img_create(getDisplay()->screen);
+        pinfo->img = lv_img_create(disp()->screen);
         LV_ALIGN(pinfo->img, LV_ALIGN_TOP_MID, 0, 36);
         LV_SCROLL_DISABLE(pinfo->img);
         LV_CLICK_DISABLE(pinfo->img);

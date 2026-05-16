@@ -617,7 +617,7 @@ static void destroyReceipt(Receipt *r) {
         r->canvas = NULL;
     }
     if(r->buf) {
-        FREE_MEM(r->buf);
+        MEM_FREE(r->buf);
         r->buf = NULL;
     }
 }
@@ -645,7 +645,7 @@ OOP_CTOR(Receipt) {
 
     uint32_t bufSize = stride * MAX_HEIGHT + LV_DRAW_BUF_ALIGN + 
         paletteSize;
-    self->buf = GET_MEM(bufSize);
+    self->buf = MEM_ALLOC(bufSize);
 
     if(!self->buf) {
         LOG_ERROR("Receipt: error in allocating memory for buffer.");
@@ -673,10 +673,10 @@ OOP_CTOR(Receipt) {
 int8_t createReceipt(Receipt* receipt) {
     OOP_CALL_CTOR(Receipt, receipt);
     RETURN_VALUE_IF_NULL(receipt->canvas,
-                         FREE_MEM(receipt->buf) , 
+                         MEM_FREE(receipt->buf) , 
                             ERR_MEMORY_ALLOCATION);
     RETURN_VALUE_IF_NULL(receipt->buf,
-                         FREE_MEM(receipt->canvas) , 
+                         MEM_FREE(receipt->canvas) , 
                             ERR_MEMORY_ALLOCATION);
     return ERR_OK;
 }

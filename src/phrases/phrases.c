@@ -8,7 +8,7 @@
 #include "settings/settings.h"
 
 // static bool findInJson(const char *phrase, char *out, size_t size, Language_t lang) {
-//     char *jsonData = GET_MEM(4096);
+//     char *jsonData = MEM_ALLOC(4096);
 //     FileErr_t ferr = OOP_CALL(file(), read, PHRASES_JSON_ADDR, jsonData, 0, 4096);
 //     if (ferr != FILE_ERR_OK) {
 //         LOG_ERROR("Error in reading file: %s", PHRASES_JSON_ADDR);
@@ -39,7 +39,7 @@
 //         }
 //     }
 //     cJSON_Delete(root);
-//     FREE_MEM(jsonData);
+//     MEM_FREE(jsonData);
 //     return true;
 // }
 

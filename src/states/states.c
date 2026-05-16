@@ -25,103 +25,103 @@ State *getState(StateId_t id) {
     switch (id) {
     case STATE_ID_START_UP:
         CALL_ONCE(
-            startup = GET_MEM(sizeof(Startup));
+            startup = MEM_ALLOC(sizeof(Startup));
             OOP_CALL_CTOR(Startup, startup, NULL, "startup");
         );
         return (State *)startup;
     case STATE_ID_IDLE:
         CALL_ONCE(
-            idle = GET_MEM(sizeof(Idle));
+            idle = MEM_ALLOC(sizeof(Idle));
             OOP_CALL_CTOR(Idle, idle, startup, "idle");
         );
         return (State *)idle;
     case STATE_ID_INPUT:
         CALL_ONCE(
-            input = GET_MEM(sizeof(Input));
+            input = MEM_ALLOC(sizeof(Input));
             OOP_CALL_CTOR(Input, input, idle, "input");
         );
         return (State *)input;
     case STATE_ID_CARD_HOLDER:
         CALL_ONCE(
-            cardHolder = GET_MEM(sizeof(CardHolder));
+            cardHolder = MEM_ALLOC(sizeof(CardHolder));
             OOP_CALL_CTOR(CardHolder, cardHolder, idle, "card holder");
         );
         return (State *)cardHolder;
     case STATE_ID_INFO:
         CALL_ONCE(
-            info = GET_MEM(sizeof(Info));
+            info = MEM_ALLOC(sizeof(Info));
             OOP_CALL_CTOR(Info, info, idle, "info");
         );
         return (State *)info;
     case STATE_ID_DIALOGUE:
         CALL_ONCE(
-            dialogue = GET_MEM(sizeof(Dialogue));
+            dialogue = MEM_ALLOC(sizeof(Dialogue));
             OOP_CALL_CTOR(Dialogue, dialogue, idle, "dialogue");
         );
         return (State *)dialogue;
     case STATE_ID_SUPPORTER:
         CALL_ONCE(
-            supporter = GET_MEM(sizeof(Supporter));
+            supporter = MEM_ALLOC(sizeof(Supporter));
             OOP_CALL_CTOR(Supporter, supporter, idle, "supporter");
         );
         return (State *)supporter;
     case STATE_ID_GINFO:
         CALL_ONCE(
-            ginfo = GET_MEM(sizeof(Ginfo));
+            ginfo = MEM_ALLOC(sizeof(Ginfo));
             OOP_CALL_CTOR(Ginfo, ginfo, idle, "ginfo");
         );
         return (State *)ginfo;
     case STATE_ID_DEV_INFO:
         CALL_ONCE(
-            devInfo = GET_MEM(sizeof(DevInfo));
+            devInfo = MEM_ALLOC(sizeof(DevInfo));
             OOP_CALL_CTOR(DevInfo, devInfo, idle, "dev info");
         );
         return (State *)devInfo;
     case STATE_ID_MENU:
         CALL_ONCE(
-            menu = GET_MEM(sizeof(StMenu));
+            menu = MEM_ALLOC(sizeof(StMenu));
             OOP_CALL_CTOR(StMenu, menu, idle, "menu");
         );
         return (State *)menu;
     case STATE_ID_FIXED_AMOUNT:
         CALL_ONCE(
-            fixedAmount = GET_MEM(sizeof(FixedAmount));
+            fixedAmount = MEM_ALLOC(sizeof(FixedAmount));
             OOP_CALL_CTOR(FixedAmount, fixedAmount, idle, "fixed Amount");
         );
         return (State *)fixedAmount;
     case STATE_ID_ISO_TRANSMITTER:
         CALL_ONCE(
-            isoTransmitter = GET_MEM(sizeof(IsoTransmitter));
+            isoTransmitter = MEM_ALLOC(sizeof(IsoTransmitter));
             OOP_CALL_CTOR(IsoTransmitter, isoTransmitter, idle, "iso transmitter");
         );
         return (State *)isoTransmitter;
     case STATE_ID_TXN_RES:
         CALL_ONCE(
-            txnRes = GET_MEM(sizeof(TxnResult));
+            txnRes = MEM_ALLOC(sizeof(TxnResult));
             OOP_CALL_CTOR(TxnResult, txnRes, idle, "txn result");
         );
         return (State *)txnRes;
     case STATE_ID_HTTP_TRANSMITTER:
         CALL_ONCE(
-            httpTransmitter = GET_MEM(sizeof(HttpTransmitter));
+            httpTransmitter = MEM_ALLOC(sizeof(HttpTransmitter));
             OOP_CALL_CTOR(HttpTransmitter, httpTransmitter, idle, "http transmitter");
         );
         return (State *)httpTransmitter;
     case STATE_ID_NET_CONNECT:
         CALL_ONCE(
-            netConnect = GET_MEM(sizeof(NetConnect));
+            netConnect = MEM_ALLOC(sizeof(NetConnect));
             OOP_CALL_CTOR(NetConnect, netConnect, idle, "net connect");
         );
         return (State *)netConnect;
     case STATE_ID_NET_SEND:
         CALL_ONCE(
-            netSend = GET_MEM(sizeof(NetSend));
+            netSend = MEM_ALLOC(sizeof(NetSend));
             OOP_CALL_CTOR(NetSend, netSend, idle, "net send");
         );
         return (State *)netSend;
     case STATE_ID_NET_RECEIVE:
         CALL_ONCE(
-            netReceive = GET_MEM(sizeof(NetReceive));
+            netReceive = MEM_ALLOC(sizeof(NetReceive));
             OOP_CALL_CTOR(NetReceive, netReceive, idle, "net receive");
         );
         return (State *)netReceive;

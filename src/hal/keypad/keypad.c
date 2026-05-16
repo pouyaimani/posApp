@@ -80,7 +80,7 @@ OOP_CTOR(Keypad) {
     getEventloop()->registerChecker(ioRead);
 }
 
-Keypad *getKeypad() {
+Keypad *keypad() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
     constructT3Rtos();

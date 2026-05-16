@@ -19,9 +19,9 @@
 #define STATE_DEF_HANDLE(type, event) \
     static void type##_handle_##event(State *state, event## *ev)
 
-#define SM_GOTO(state) getSmCore()->goTo(state)
+#define SM_GOTO(state) smCore()->goTo(state)
 
-#define SM_SUB(state) getSmCore()->goToSub(state)
+#define SM_SUB(state) smCore()->goToSub(state)
 
 /* Forward */
 OOP_DECLARE_CLASS(Event);

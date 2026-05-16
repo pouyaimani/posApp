@@ -19,7 +19,7 @@ static void default_exit(State *s)
 
 static void goTo(State *s, State *nextState)
 {
-    getSmCore()->goTo(nextState);
+    smCore()->goTo(nextState);
 }
 
 static void default_timeout(State *s, TimeOutEvent *ev)

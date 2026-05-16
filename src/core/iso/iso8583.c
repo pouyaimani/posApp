@@ -205,7 +205,7 @@ OOP_CTOR(Iso8583) {
 
 Iso8583 *iso8583() {
     CALL_ONCE(
-        __iso8583 = GET_MEM(sizeof(Iso8583));
+        __iso8583 = MEM_ALLOC(sizeof(Iso8583));
         OOP_CALL_CTOR(Iso8583, __iso8583);
     );
     return __iso8583;

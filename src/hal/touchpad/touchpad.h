@@ -29,8 +29,8 @@ OOP_CLASS(Touchpad) {
 
 OOP_CTOR(Touchpad);
 
-Touchpad *getTouchpad(void);
+Touchpad *touchpad(void);
 
-#define TOUCH_INIT() OOP_CALL(getTouchpad(), init)
+#define TOUCH_INIT() OOP_CALL(touchpad(), init)
 
 #endif

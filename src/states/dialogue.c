@@ -42,23 +42,23 @@ STATE_DEF_HANDLE(Dialogue, KeypadEvent) {
 }
 
 static void createUi() {
-    title = lv_label_create(getDisplay()->screen);
+    title = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(title, FONT_20);
     LV_SET_TEXT_COLOR(title, COLOR_BLACK);
     LV_SET_TEXT_ALIGN(title, LV_TEXT_ALIGN_CENTER);
     LV_SET_SIZE(title, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(title, LV_ALIGN_CENTER, 0, -50);
     
-    body = lv_label_create(getDisplay()->screen);
+    body = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(body, FONT_16);
     LV_SET_TEXT_COLOR(body, COLOR_BLACK);
     LV_SET_TEXT_ALIGN(body, LV_TEXT_ALIGN_CENTER);
     LV_SET_SIZE(body, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(body, LV_ALIGN_CENTER, 0, 0);
 
-    confirmBut = uiButton(getDisplay()->screen, 0x68DD40, "تایید");
+    confirmBut = uiButton(disp()->screen, 0x68DD40, "تایید");
     LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
-    cancelBut = uiButton(getDisplay()->screen, 0xFF4E4E, "لغو");
+    cancelBut = uiButton(disp()->screen, 0xFF4E4E, "لغو");
     LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(title, "");

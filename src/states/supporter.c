@@ -28,7 +28,7 @@ static void onExit() {
 }
 
 STATE_DEF_ENTER(Supporter) {
-    uiMenu(&menu, getDisplay()->screen);
+    uiMenu(&menu, disp()->screen);
     OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
     OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
     OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
@@ -52,13 +52,13 @@ OOP_CTOR(Supporter, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(Supporter);
     self->base.vtable.handleTimeout = STATE_HANDLE(Supporter, TimeOutEvent);
 
-    powerOff = (SubState *)GET_MEM(sizeof(SubState));
+    powerOff = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, powerOff, self, "power off");
     powerOff->vtable.enter = STATE_ENTER(PowerOff);
 
-    merchant = (Merchant*)GET_MEM(sizeof(Merchant));
+    merchant = (Merchant*)MEM_ALLOC(sizeof(Merchant));
     OOP_CALL_CTOR(Merchant, merchant, self, "merchant");
 
-    supervisor = (Supervisor*)GET_MEM(sizeof(Supervisor));
+    supervisor = (Supervisor*)MEM_ALLOC(sizeof(Supervisor));
     OOP_CALL_CTOR(Supervisor, supervisor, self, "supervisor");
 }

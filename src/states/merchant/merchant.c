@@ -66,17 +66,17 @@ STATE_DEF_ENTER(EnterPassword) {
 }
 
 static void EnterPassword(State *parent) {
-    enterPass = (SubState *)GET_MEM(sizeof(SubState));
+    enterPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, parent, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
 
-    checkPass = (SubState *)GET_MEM(sizeof(SubState));
+    checkPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, checkPass, parent, "check password");
     checkPass->vtable.enter = STATE_ENTER(CheckPassword);
 }
 
 static void D_EnterPassword() {
-    FREE_MEM(enterPass);
+    MEM_FREE(enterPass);
 }
 
 /******************** change merchant pin sub state **********************/
@@ -135,23 +135,23 @@ STATE_DEF_ENTER(ChangeMerPin) {
 }
 
 static void ChangeMerPin(State *parent) {
-    subStates[SUBS_CHANGE_MERCHANT_PIN] = (SubState *)GET_MEM(sizeof(SubState));
+    subStates[SUBS_CHANGE_MERCHANT_PIN] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subStates[SUBS_CHANGE_MERCHANT_PIN], parent, "change merchant pin");
     subStates[SUBS_CHANGE_MERCHANT_PIN]->vtable.enter = STATE_ENTER(ChangeMerPin);
 
-    checkPin = (SubState *)GET_MEM(sizeof(SubState));
+    checkPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, checkPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "change merchant pin");
     checkPin->vtable.enter = STATE_ENTER(CheckPin);
 
-    enterNewPin = (SubState *)GET_MEM(sizeof(SubState));
+    enterNewPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterNewPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "enter new merchant pin");
     enterNewPin->vtable.enter = STATE_ENTER(EnterNewPin);
 
-    reEnterNewPin = (SubState *)GET_MEM(sizeof(SubState));
+    reEnterNewPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, reEnterNewPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "re enter new merchant pin");
     reEnterNewPin->vtable.enter = STATE_ENTER(ReEnterNewPin);
 
-    checkNewPin = (SubState *)GET_MEM(sizeof(SubState));
+    checkNewPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, checkNewPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "check new merchant pin");
     checkNewPin->vtable.enter = STATE_ENTER(CheckNewPin);
 
@@ -183,7 +183,7 @@ static const Phrases_t dsc[SUBS_ALL] = {
 static Menu menu;
 
 static void createUi() {
-    uiMenu(&menu, getDisplay()->screen);
+    uiMenu(&menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
         OOP_CALL(&menu, addItem, phraseGetDef(dsc[i]), subStates[i], NULL, NULL);
     }
@@ -195,7 +195,7 @@ STATE_DEF_ENTER(MerchantMenu) {
 }
 
 static void MerchantMenu(State *parent) {
-    merchantMenu = (SubState *)GET_MEM(sizeof(SubState));
+    merchantMenu = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, merchantMenu, parent, "merchant menu");
     merchantMenu->vtable.enter = STATE_ENTER(MerchantMenu);
 }
@@ -209,17 +209,17 @@ OOP_CTOR(Merchant, State *parent, const char *name) {
     EnterPassword(self);
     MerchantMenu(self);
     ChangeMerPin(self);
-    subStates[SUBS_CONNECTIONS] = (Connections *)GET_MEM(sizeof(Connections));
+    subStates[SUBS_CONNECTIONS] = (Connections *)MEM_ALLOC(sizeof(Connections));
     OOP_CALL_CTOR(Connections, subStates[SUBS_CONNECTIONS], merchantMenu, "connections");
-    subStates[SUBS_SETTINGS] = (Settings *)GET_MEM(sizeof(Settings));
+    subStates[SUBS_SETTINGS] = (Settings *)MEM_ALLOC(sizeof(Settings));
     OOP_CALL_CTOR(Settings, subStates[SUBS_SETTINGS], merchantMenu, "settings");
-    subStates[SUBS_REPORTS] = (Reports *)GET_MEM(sizeof(Reports));
+    subStates[SUBS_REPORTS] = (Reports *)MEM_ALLOC(sizeof(Reports));
     OOP_CALL_CTOR(Reports, subStates[SUBS_REPORTS], merchantMenu, "reports");
-    subStates[SUBS_SHIFT] = (Shift *)GET_MEM(sizeof(Shift));
+    subStates[SUBS_SHIFT] = (Shift *)MEM_ALLOC(sizeof(Shift));
     OOP_CALL_CTOR(Shift, subStates[SUBS_SHIFT], merchantMenu, "shift");
-    subStates[SUBS_OTHER_PROJECTS] = (OtherProjects *)GET_MEM(sizeof(OtherProjects));
+    subStates[SUBS_OTHER_PROJECTS] = (OtherProjects *)MEM_ALLOC(sizeof(OtherProjects));
     OOP_CALL_CTOR(OtherProjects, subStates[SUBS_OTHER_PROJECTS], merchantMenu, "other projects");
-    subStates[SUBS_MERCHANT_DATA] = (MerchantData *)GET_MEM(sizeof(MerchantData));
+    subStates[SUBS_MERCHANT_DATA] = (MerchantData *)MEM_ALLOC(sizeof(MerchantData));
     OOP_CALL_CTOR(MerchantData, subStates[SUBS_MERCHANT_DATA], merchantMenu, "merchant data");
 
 }

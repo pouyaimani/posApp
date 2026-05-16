@@ -33,7 +33,7 @@ static void anim_y_cb(void * var, int32_t v)
 void dtScroll(lv_obj_t * label1, lv_obj_t * label2)
 {
     lv_anim_t a1, a2;
-    int32_t height = LV_GET_HEIGHT(getDisplay()->statusbar);
+    int32_t height = LV_GET_HEIGHT(disp()->statusbar);
 
     lv_anim_init(&a1);
     lv_anim_set_var(&a1, label1);
@@ -93,8 +93,8 @@ static void updateBatteryIcon() {
 static void updateConnectionIcon() {
     NetRoute_t route = OOP_CALL(network(), getRoute);
     if(1) {
-        if (OOP_CALL(getWifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
-            switch (OOP_CALL(getWifi(), getSignalStrength)) {
+        if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
+            switch (OOP_CALL(wifi(), getSignalStrength)) {
             case WIFI_SIGNAL_STRENGTH_0:
                 lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_0);
                 break;
@@ -114,15 +114,15 @@ static void updateConnectionIcon() {
             lv_img_set_src(connectionIcon, ICON_WIFI_DISCONNECT);
         }
     } else if (route == NET_ROUTE_CELLUALR) {
-        if (OOP_CALL(getCell(), getSimStatus) != CELL_ERR_OK) {
+        if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
             lv_img_set_src(connectionIcon, ICON_CELL_DISCONNECT);
             return;
         }
-        if (OOP_CALL(getCell(), getPPPstatus) != CELL_PPP_SUCESS) {
+        if (OOP_CALL(cellular(), getPPPstatus) != CELL_PPP_SUCESS) {
             lv_img_set_src(connectionIcon, ICON_CELL_DISCONNECT);
             return;
         }
-        switch (OOP_CALL(getCell(), getSignalStrength)) {
+        switch (OOP_CALL(cellular(), getSignalStrength)) {
         case CELL_SIGNAL_STRENGTH_0:
             lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_0);
             break;
@@ -205,9 +205,9 @@ static void setSoundVolume(int volume) {
 
 OOP_CTOR(StatusBar) {
     timer = TIMER_CREATE(update, SECS(2), false);
-    lv_obj_update_layout(getDisplay()->statusbar);
+    lv_obj_update_layout(disp()->statusbar);
 
-    infoBox = lv_obj_create(getDisplay()->statusbar);
+    infoBox = lv_obj_create(disp()->statusbar);
     LV_SET_SIZE(infoBox, lv_pct(60), lv_pct(90));
     LV_ALIGN(infoBox, LV_ALIGN_CENTER, 0, 10);
     LV_SET_BG_OPA(infoBox, LV_OPA_0);
@@ -216,7 +216,7 @@ OOP_CTOR(StatusBar) {
     LV_SET_PAD_ALL(infoBox, 0);
     lv_obj_set_style_clip_corner(infoBox, true, 0);
 
-    int32_t height = LV_GET_HEIGHT(getDisplay()->statusbar);
+    int32_t height = LV_GET_HEIGHT(disp()->statusbar);
     ltime = lv_label_create(infoBox);
     LV_SET_SIZE(ltime, lv_pct(100), lv_pct(100));
     LV_ALIGN(ltime, LV_ALIGN_TOP_MID, 0, 0);
@@ -245,13 +245,13 @@ OOP_CTOR(StatusBar) {
     LV_SET_TEXT_COLOR(info, COLOR_WHITE);
     LV_SET_TEXT_ALIGN(info, LV_TEXT_ALIGN_CENTER);
 
-    batteryIcon = lv_img_create(getDisplay()->statusbar);
+    batteryIcon = lv_img_create(disp()->statusbar);
     LV_ALIGN(batteryIcon, LV_ALIGN_RIGHT_MID, -15, 5);
 
-    soundIcon = lv_img_create(getDisplay()->statusbar);
+    soundIcon = lv_img_create(disp()->statusbar);
     LV_ALIGN(soundIcon, LV_ALIGN_LEFT_MID, 5, 5);
 
-    connectionIcon = lv_img_create(getDisplay()->statusbar);
+    connectionIcon = lv_img_create(disp()->statusbar);
     LV_ALIGN(connectionIcon, LV_ALIGN_LEFT_MID, 40, 5);
 
     __statusBar->setInfo = setInfo;
@@ -262,7 +262,7 @@ OOP_CTOR(StatusBar) {
 
 StatusBar *statusBar() {
     CALL_ONCE(
-        __statusBar = (StatusBar*)GET_MEM(sizeof(StatusBar));
+        __statusBar = (StatusBar*)MEM_ALLOC(sizeof(StatusBar));
         OOP_CALL_CTOR(StatusBar, __statusBar);
     );
     return __statusBar;

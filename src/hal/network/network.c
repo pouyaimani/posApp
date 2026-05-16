@@ -93,7 +93,7 @@ OOP_CTOR(Network) {
     self->connect = connect;
     self->send = send;
     self->disconnect = disconnect;
-    recBuffer = GET_MEM(REC_BUFF_LEN);
+    recBuffer = MEM_ALLOC(REC_BUFF_LEN);
 }
 
 Network *network() {

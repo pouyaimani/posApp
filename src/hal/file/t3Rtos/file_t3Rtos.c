@@ -21,7 +21,7 @@ static FileHandle* open(File *self, const char* path, const char* mode) {
             return NULL;
         }
     }
-    FileHandle *handle = GET_MEM(sizeof(FileHandle));
+    FileHandle *handle = MEM_ALLOC(sizeof(FileHandle));
     snprintf(handle->path, sizeof(handle->path), "%s", path);
     handle->pos = sdkFileGetSize(handle->path);
     return handle;
@@ -29,7 +29,7 @@ static FileHandle* open(File *self, const char* path, const char* mode) {
 
 static int close(File *self, FileHandle *handle) {
     if (handle) {
-        FREE_MEM(handle);
+        MEM_FREE(handle);
     }
     return 0;
 }

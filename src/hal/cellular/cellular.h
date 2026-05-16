@@ -59,6 +59,6 @@ OOP_CLASS(Cellular) {
 
 OOP_CTOR(Cellular);
 
-Cellular *getCell();
+Cellular *cellular();
 
 #endif

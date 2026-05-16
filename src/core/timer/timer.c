@@ -51,7 +51,7 @@ OOP_CTOR(Timer, timerChecker checker, uint32_t period, bool singleShot) {
 }
 
 Timer *createTimer(timerChecker checker, uint32_t period, bool singleShot) {
-    Timer *timer = (Timer*)GET_MEM(sizeof(Timer));
+    Timer *timer = (Timer*)MEM_ALLOC(sizeof(Timer));
     OOP_CALL_CTOR(Timer, timer, checker, period, singleShot);
     getTimerHanlder()->registerTimer(timer);
     return timer;
@@ -59,7 +59,7 @@ Timer *createTimer(timerChecker checker, uint32_t period, bool singleShot) {
 
 void removeTimer(Timer *timer) {
     getTimerHanlder()->unRegisterTimer(timer);
-    FREE_MEM(timer);
+    MEM_FREE(timer);
 }
 
 static void runCycle() {
@@ -82,7 +82,7 @@ OOP_CTOR(TimerHandler) {
 
 TimerHandler *getTimerHanlder(void) {
     CALL_ONCE(
-        __timerHandler = (TimerHandler*)GET_MEM(sizeof(TimerHandler));
+        __timerHandler = (TimerHandler*)MEM_ALLOC(sizeof(TimerHandler));
         OOP_CALL_CTOR(TimerHandler, __timerHandler);
     );
     return __timerHandler;

@@ -164,7 +164,7 @@ static int8_t saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
 
     writeBufLen += SETTINGS_FILE_HEADER_LEN;
 
-    fileWriteBuf = (uint8_t *) GET_MEM(SETTINGS_FILE_MAX_SIZE);
+    fileWriteBuf = (uint8_t *) MEM_ALLOC(SETTINGS_FILE_MAX_SIZE);
     if (fileWriteBuf == NULL)
     {
         return ERR_NOK;
@@ -217,7 +217,7 @@ static int8_t saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
         return ERR_NOK;
     }
     LOG_TRACE("Saving storage is successfully done.");
-    FREE_MEM(fileWriteBuf);
+    MEM_FREE(fileWriteBuf);
     return ERR_OK;
 }
 
@@ -242,7 +242,7 @@ static int8_t loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
         goto init_settings;
     }
 
-    fileCaches = (uint8_t *) GET_MEM(fileSize);
+    fileCaches = (uint8_t *) MEM_ALLOC(fileSize);
     if (fileCaches == NULL) {
         LOG_ERROR("Error in reading storage.");
         goto init_settings;
@@ -282,12 +282,12 @@ static int8_t loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
     }
 
     LOG_TRACE("parse settings tlv data success ... ");
-    FREE_MEM(fileCaches);
+    MEM_FREE(fileCaches);
     return ERR_OK;
 
     init_settings:
 
-    if (fileCaches != NULL) FREE_MEM(fileCaches);
+    if (fileCaches != NULL) MEM_FREE(fileCaches);
 
     init(dsc, itemsCount);
     return saveStorage(dsc, itemsCount, addr);

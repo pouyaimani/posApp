@@ -31,19 +31,19 @@ STATE_DEF_HANDLE(Ginfo, KeypadEvent) {
 }
 
 static void createUi() {
-    text = lv_label_create(getDisplay()->screen);
+    text = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(text, FONT_20);
     LV_SET_TEXT_COLOR(text, COLOR_BLACK);
     LV_SET_TEXT_ALIGN(text, LV_TEXT_ALIGN_CENTER);
     LV_SET_SIZE(text, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(text, LV_ALIGN_TOP_MID, 0, -161);
-    
-    img = lv_img_create(getDisplay()->screen);
+
+    img = lv_img_create(disp()->screen);
     LV_ALIGN(img, LV_ALIGN_TOP_MID, 0, -36);
     LV_SCROLL_DISABLE(img);
     LV_CLICK_DISABLE(img);
 
-    line = lv_obj_create(getDisplay()->screen);
+    line = lv_obj_create(disp()->screen);
     LV_SET_SIZE(line, 190, 8);
     LV_ALIGN(line, LV_ALIGN_TOP_MID, 0, -140);
     LV_SET_RADIUS(line, 17);

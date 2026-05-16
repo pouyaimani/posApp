@@ -71,17 +71,17 @@ STATE_DEF_ENTER(EnterPassword) {
 }
 
 static void EnterPassword(State *parent) {
-    enterPass = (SubState *)GET_MEM(sizeof(SubState));
+    enterPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, parent, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
 
-    checkPass = (SubState *)GET_MEM(sizeof(SubState));
+    checkPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, checkPass, parent, "check password");
     checkPass->vtable.enter = STATE_ENTER(CheckPassword);
 }
 
 static void D_EnterPassword() {
-    FREE_MEM(enterPass);
+    MEM_FREE(enterPass);
 }
 
 /******************** change merchant pin sub state **********************/
@@ -137,23 +137,23 @@ STATE_DEF_ENTER(ChangeMerPin) {
 }
 
 static void ChangeMerPin(State *parent) {
-    // subStates[SUBS_CHANGE_MERCHANT_PIN] = (SubState *)GET_MEM(sizeof(SubState));
+    // subStates[SUBS_CHANGE_MERCHANT_PIN] = (SubState *)MEM_ALLOC(sizeof(SubState));
     // OOP_CALL_CTOR(State, subStates[SUBS_CHANGE_MERCHANT_PIN], parent, "change merchant pin");
     // subStates[SUBS_CHANGE_MERCHANT_PIN]->vtable.enter = STATE_ENTER(ChangeMerPin);
 
-    // checkPin = (SubState *)GET_MEM(sizeof(SubState));
+    // checkPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     // OOP_CALL_CTOR(State, checkPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "change merchant pin");
     // checkPin->vtable.enter = STATE_ENTER(CheckPin);
 
-    // enterNewPin = (SubState *)GET_MEM(sizeof(SubState));
+    // enterNewPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     // OOP_CALL_CTOR(State, enterNewPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "enter new merchant pin");
     // enterNewPin->vtable.enter = STATE_ENTER(EnterNewPin);
 
-    // reEnterNewPin = (SubState *)GET_MEM(sizeof(SubState));
+    // reEnterNewPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     // OOP_CALL_CTOR(State, reEnterNewPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "re enter new merchant pin");
     // reEnterNewPin->vtable.enter = STATE_ENTER(ReEnterNewPin);
 
-    // checkNewPin = (SubState *)GET_MEM(sizeof(SubState));
+    // checkNewPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     // OOP_CALL_CTOR(State, checkNewPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "check new merchant pin");
     // checkNewPin->vtable.enter = STATE_ENTER(CheckNewPin);
 
@@ -242,7 +242,7 @@ static void disSSL() {
 }
 
 STATE_DEF_ENTER(EnableSsl) {
-    uiMenu(&sslMenu, getDisplay()->screen);
+    uiMenu(&sslMenu, disp()->screen);
     sslMenu.checkEnable = true;
     OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
     OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_DISABLE), success, disSSL, NULL);
@@ -275,7 +275,7 @@ static void setItemToTms() {
 }
 
 STATE_DEF_ENTER(NetworkSettings) {
-    uiMenu(&serverSetMenu, getDisplay()->screen);
+    uiMenu(&serverSetMenu, disp()->screen);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
@@ -286,27 +286,27 @@ OOP_CTOR(NetworkSettings, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(NetworkSettings);
 
-    enterIp = (SubState *)GET_MEM(sizeof(SubState));
+    enterIp = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterIp, self, "enter ip");
     enterIp->vtable.enter = STATE_ENTER(EnterIp);
 
-    enterPort = (SubState *)GET_MEM(sizeof(SubState));
+    enterPort = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPort, self, "enter port");
     enterPort->vtable.enter = STATE_ENTER(EnterPort);
 
-    enableSsl = (SubState *)GET_MEM(sizeof(SubState));
+    enableSsl = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enableSsl, self, "enable ssl");
     enableSsl->vtable.enter = STATE_ENTER(EnableSsl);
 
-    enterServerId = (SubState *)GET_MEM(sizeof(SubState));
+    enterServerId = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterServerId, self, "enter server id");
     enterServerId->vtable.enter = STATE_ENTER(EnterServerId);
 
-    success = (SubState *)GET_MEM(sizeof(SubState));
+    success = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, success, self, "sucess server settings");
     success->vtable.enter = STATE_ENTER(Success);
 
-    getServerId = (SubState *)GET_MEM(sizeof(SubState));
+    getServerId = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getServerId, self, "get server id");
     getServerId->vtable.enter = STATE_ENTER(GetServerId);
 }
@@ -375,7 +375,7 @@ OOP_CTOR(DefaultSettings, State *parent, const char *name) {
 static Menu menu;
 
 STATE_DEF_ENTER(SupervisorMenu) {
-    uiMenu(&menu, getDisplay()->screen);
+    uiMenu(&menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
         OOP_CALL(&menu, addItem, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
     }
@@ -383,7 +383,7 @@ STATE_DEF_ENTER(SupervisorMenu) {
 }
 
 static void SupervisorMenu(State *parent) {
-    supervisorMenu = (SubState *)GET_MEM(sizeof(SubState));
+    supervisorMenu = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, supervisorMenu, parent, "supervisor menu");
     supervisorMenu->vtable.enter = STATE_ENTER(SupervisorMenu);
 }
@@ -406,19 +406,19 @@ OOP_CTOR(Supervisor, State *parent, const char *name) {
     SupervisorMenu(self);
     ChangeMerPin(self);
 
-    subStates[SUBS_NET_SETTINGS] = (NetworkSettings *)GET_MEM(sizeof(NetworkSettings));
+    subStates[SUBS_NET_SETTINGS] = (NetworkSettings *)MEM_ALLOC(sizeof(NetworkSettings));
     OOP_CALL_CTOR(NetworkSettings, subStates[SUBS_NET_SETTINGS], supervisorMenu, "terminal settings");
-    subStates[SUBS_KEY_INJECTION] = (KeyInjection *)GET_MEM(sizeof(KeyInjection));
+    subStates[SUBS_KEY_INJECTION] = (KeyInjection *)MEM_ALLOC(sizeof(KeyInjection));
     OOP_CALL_CTOR(KeyInjection, subStates[SUBS_KEY_INJECTION], supervisorMenu, "key injection");
-    subStates[SUBS_CONFIGURATION] = (Configuration *)GET_MEM(sizeof(Configuration));
+    subStates[SUBS_CONFIGURATION] = (Configuration *)MEM_ALLOC(sizeof(Configuration));
     OOP_CALL_CTOR(Configuration, subStates[SUBS_CONFIGURATION], supervisorMenu, "configuration");
-    subStates[SUBS_FARA] = (FARA *)GET_MEM(sizeof(FARA));
+    subStates[SUBS_FARA] = (FARA *)MEM_ALLOC(sizeof(FARA));
     OOP_CALL_CTOR(FARA, subStates[SUBS_FARA], supervisorMenu, "FARA");
-    subStates[SUBS_MERCHANT_PASS_RESET] = (MerchantPassReset *)GET_MEM(sizeof(MerchantPassReset));
+    subStates[SUBS_MERCHANT_PASS_RESET] = (MerchantPassReset *)MEM_ALLOC(sizeof(MerchantPassReset));
     OOP_CALL_CTOR(MerchantPassReset, subStates[SUBS_MERCHANT_PASS_RESET], supervisorMenu, "merchant pass reset");
-    subStates[SUBS_UPDATE_APP] = (UpdateApp *)GET_MEM(sizeof(UpdateApp));
+    subStates[SUBS_UPDATE_APP] = (UpdateApp *)MEM_ALLOC(sizeof(UpdateApp));
     OOP_CALL_CTOR(UpdateApp, subStates[SUBS_UPDATE_APP], supervisorMenu, "update app");
-    subStates[SUBS_DEFAULT_SETTINGS] = (DefaultSettings *)GET_MEM(sizeof(DefaultSettings));
+    subStates[SUBS_DEFAULT_SETTINGS] = (DefaultSettings *)MEM_ALLOC(sizeof(DefaultSettings));
     OOP_CALL_CTOR(DefaultSettings, subStates[SUBS_DEFAULT_SETTINGS], supervisorMenu, "default settings");
 
 }

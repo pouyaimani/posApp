@@ -48,7 +48,7 @@ STATE_DEF_HANDLE(Connecting, SocketConnectEvent) {
 }
 
 static void Connecting(State *parent) {
-    connecting = (SubState *)GET_MEM(sizeof(SubState));
+    connecting = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, connecting, parent, "Connection");
     connecting->vtable.enter = STATE_ENTER(Connecting);
     connecting->vtable.exit = STATE_EXIT(Connecting);
@@ -62,7 +62,7 @@ static void Connecting(State *parent) {
 
 static void prepareMsg() {
     char pan[32] = {0};
-    getMagReader()->getPan(pan, sizeof(pan));
+    magreader()->getPan(pan, sizeof(pan));
     // OOP_CALL(packer(), setPan, pan);
     // OOP_CALL(packer(), setTrack2, "");
     // OOP_CALL(packer(), setDateTime, "");
@@ -88,7 +88,7 @@ STATE_DEF_HANDLE(SendData, SocketSentEvent) {
 }
 
 static void SendData(State *parent) {
-    sendData = (SubState *)GET_MEM(sizeof(SubState));
+    sendData = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, sendData, parent, "Send Data");
     sendData->vtable.enter = STATE_ENTER(SendData);
     sendData->vtable.exit = STATE_EXIT(SendData);
@@ -117,7 +117,7 @@ STATE_DEF_HANDLE(ReceiveData, SocketReadyReadEvent) {
 }
 
 static void ReceiveData(State *parent) {
-    receiveData = (SubState *)GET_MEM(sizeof(SubState));
+    receiveData = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, receiveData, parent, "ReceiveData");
     receiveData->vtable.enter = STATE_ENTER(ReceiveData);
     receiveData->vtable.exit = STATE_EXIT(ReceiveData);

@@ -31,6 +31,6 @@ OOP_CLASS(Core)
 OOP_CTOR(Core);
 
 /* singleton */
-Core *getSmCore(void);
+Core *smCore(void);
 
 #endif

@@ -16,7 +16,7 @@ void appMain(void)
         .getDateTime = sys()->vtable.getDateTime
     });
 #endif
-    Core *core = getSmCore();
+    Core *core = smCore();
     core->init(getState(STATE_ID_START_UP));
     core->exec();
 }

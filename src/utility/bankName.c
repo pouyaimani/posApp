@@ -10,7 +10,7 @@ static cJSON *nameEn;
 static cJSON *nameFa;
 
 static bool findInJson(const char *iin, char *out, size_t size, Language_t lang) {
-    char *jsonData = GET_MEM(4096);
+    char *jsonData = MEM_ALLOC(4096);
     OOP_CALL(file(), read, BANK_NAME_JSON_ADDR, jsonData, 0, 4096);
 
     cJSON *root = cJSON_Parse(jsonData);
@@ -37,7 +37,7 @@ static bool findInJson(const char *iin, char *out, size_t size, Language_t lang)
         }
     }
     cJSON_Delete(root);
-    FREE_MEM(jsonData);
+    MEM_FREE(jsonData);
     return true;
 }
 
@@ -56,7 +56,7 @@ OOP_CTOR(BankName) {
 
 BankName* bankName() {
     CALL_ONCE(
-        __bankName = GET_MEM(sizeof(__bankName));
+        __bankName = MEM_ALLOC(sizeof(__bankName));
         OOP_CALL_CTOR(BankName, __bankName);
     );
     return __bankName;

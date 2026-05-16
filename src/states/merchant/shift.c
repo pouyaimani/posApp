@@ -108,7 +108,7 @@ static void showShift(lv_obj_t *menu, int latest, const char *sdt,
 /******************** En/Dis shift sub state **********************/
 
 STATE_DEF_ENTER(ShiftEnable) {
-    uiOnOffMenu(&EnMenu, getDisplay()->screen);
+    uiOnOffMenu(&EnMenu, disp()->screen);
     OOP_CALL(&EnMenu, setChecked, !terminalStg->shiftEnable);
     OOP_CALL(&EnMenu, show);
 }
@@ -149,7 +149,7 @@ STATE_DEF_ENTER(ShowCurrentShift) {
         uint32_t sdate = data.startDate;
         uint32_t stime = data.startTime;
         char dt[24] = {0};
-        shiftMenu = createShiftMenu(getDisplay()->screen);
+        shiftMenu = createShiftMenu(disp()->screen);
         dateTimeToStr(sdate, stime, dt, sizeof(dt));
         showShift(shiftMenu, idx, dt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
@@ -184,7 +184,7 @@ STATE_DEF_ENTER(CreateShift) {
     }
     if (!terminalStg->shiftActive) {
         uint16_t idx = shifts()->getLatestIdx();
-        shiftMenu = createShiftMenu(getDisplay()->screen);
+        shiftMenu = createShiftMenu(disp()->screen);
         char sdt[24];
         getDateTimeUint(&sdate, &stime);
         dateTimeToStr(sdate, stime, sdt, sizeof(sdt));
@@ -229,7 +229,7 @@ STATE_DEF_ENTER(CloseShift) {
         getDateTimeUint(&edate, &etime);
         char sdt[24] = {0};
         char edt[24] = {0};
-        shiftMenu = createShiftMenu(getDisplay()->screen);
+        shiftMenu = createShiftMenu(disp()->screen);
         dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
         dateTimeToStr(edate, etime, edt, sizeof(edt));
         showShift(shiftMenu, idx, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
@@ -283,7 +283,7 @@ STATE_DEF_ENTER(HandleReports) {
     }
     char sdt[24] = {0};
     char edt[24] = {0};
-    shiftMenu = createShiftMenu(getDisplay()->screen);
+    shiftMenu = createShiftMenu(disp()->screen);
     dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
     dateTimeToStr(data.endDate, data.endTime, edt, sizeof(edt));
     showShift(shiftMenu, shiftNum - 1, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
@@ -313,7 +313,7 @@ STATE_DEF_ENTER(ShiftReports) {
 /******************** Shift settings state **********************/
 
 static void createUi() {
-    uiMenu(&shiftItemMenu, getDisplay()->screen);
+    uiMenu(&shiftItemMenu, disp()->screen);
     for (uint8_t i = 0; i < SHIFT_ITEM_ALL ; i++) {
         OOP_CALL(&shiftItemMenu, addItem, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
     }
@@ -329,35 +329,35 @@ OOP_CTOR(Shift, State *parent, const char *name) {
     self->base.vtable.enter = STATE_ENTER(Shift);
     terminalStg = &settings()->terminal;
 
-    subShift[SHIFT_ITEM_ENABLE] = (SubState *)GET_MEM(sizeof(SubState));
+    subShift[SHIFT_ITEM_ENABLE] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_ENABLE], self, "en/dis shift");
     subShift[SHIFT_ITEM_ENABLE]->vtable.enter = STATE_ENTER(ShiftEnable);
     subShift[SHIFT_ITEM_ENABLE]->vtable.exit = STATE_EXIT(ShiftEnable);
     subShift[SHIFT_ITEM_ENABLE]->vtable.handleKeypad = STATE_HANDLE(ShiftEnable, KeypadEvent);
 
-    subShift[SHIFT_ITEM_SHOW_CURRENT] = (SubState *)GET_MEM(sizeof(SubState));
+    subShift[SHIFT_ITEM_SHOW_CURRENT] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_SHOW_CURRENT], self, "show current shift");
     subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.enter = STATE_ENTER(ShowCurrentShift);
     subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.exit = STATE_EXIT(ShowCurrentShift);
     subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.handleKeypad = STATE_HANDLE(ShowCurrentShift, KeypadEvent);
 
-    subShift[SHIFT_ITEM_CREATE] = (SubState *)GET_MEM(sizeof(SubState));
+    subShift[SHIFT_ITEM_CREATE] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_CREATE], self, "create shift");
     subShift[SHIFT_ITEM_CREATE]->vtable.enter = STATE_ENTER(CreateShift);
     subShift[SHIFT_ITEM_CREATE]->vtable.exit = STATE_EXIT(CreateShift);
     subShift[SHIFT_ITEM_CREATE]->vtable.handleKeypad = STATE_HANDLE(CreateShift, KeypadEvent);
 
-    subShift[SHIFT_ITEM_CLOSE] = (SubState *)GET_MEM(sizeof(SubState));
+    subShift[SHIFT_ITEM_CLOSE] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_CLOSE], self, "close shift");
     subShift[SHIFT_ITEM_CLOSE]->vtable.enter = STATE_ENTER(CloseShift);
     subShift[SHIFT_ITEM_CLOSE]->vtable.exit = STATE_EXIT(CloseShift);
     subShift[SHIFT_ITEM_CLOSE]->vtable.handleKeypad = STATE_HANDLE(CloseShift, KeypadEvent);
 
-    subShift[SHIFT_ITEM_REPORT] = (SubState *)GET_MEM(sizeof(SubState));
+    subShift[SHIFT_ITEM_REPORT] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_REPORT], self, "Shift reports");
     subShift[SHIFT_ITEM_REPORT]->vtable.enter = STATE_ENTER(ShiftReports);
 
-    handleReports = (SubState *)GET_MEM(sizeof(SubState));
+    handleReports = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, handleReports, self, "Shift reports");
     handleReports->vtable.enter = STATE_ENTER(HandleReports);
     handleReports->vtable.exit = STATE_EXIT(HandleReports);

@@ -35,7 +35,7 @@ static const Phrases_t SettingsItemTxt[SET_ITEM_ALL] = {
 static Bar soundBar;
 
 STATE_DEF_ENTER(SoundSettings) {
-    uiBar(&soundBar, getDisplay()->screen, 0, sys()->maxSound);
+    uiBar(&soundBar, disp()->screen, 0, sys()->maxSound);
     OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
     OOP_CALL(&soundBar, setValue, settings()->terminal.devVolume);
     OOP_CALL(&soundBar, show);
@@ -62,7 +62,7 @@ STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
 }
 
 static void SoundSettings(State *parent) {
-    subSettings[SET_ITEM_SOUND] = (SubState *)GET_MEM(sizeof(SubState));
+    subSettings[SET_ITEM_SOUND] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_SOUND], parent, "sound settings");
     subSettings[SET_ITEM_SOUND]->vtable.enter = STATE_ENTER(SoundSettings);
     subSettings[SET_ITEM_SOUND]->vtable.exit = STATE_EXIT(SoundSettings);
@@ -80,7 +80,7 @@ static int idx;
 static SubState *getValue;
 
 STATE_DEF_ENTER(EnergySettings) {
-    uiMenu(&energyMenu, getDisplay()->screen);
+    uiMenu(&energyMenu, disp()->screen);
     for (uint8_t i = 0; i < 2 ; i++) {
         OOP_CALL(&energyMenu, addItem, &energyItemTxt[i], NULL, NULL, NULL);
     }
@@ -122,13 +122,13 @@ STATE_DEF_EXIT(GetValue) {
 }
 
 static void EnergySettings(State *parent) {
-    subSettings[SET_ITEM_ENERGY] = (SubState *)GET_MEM(sizeof(SubState));
+    subSettings[SET_ITEM_ENERGY] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_ENERGY], parent, "energy settings");
     subSettings[SET_ITEM_ENERGY]->vtable.enter = STATE_ENTER(EnergySettings);
     subSettings[SET_ITEM_ENERGY]->vtable.exit = STATE_EXIT(EnergySettings);
     subSettings[SET_ITEM_ENERGY]->vtable.handleKeypad = STATE_HANDLE(EnergySettings, KeypadEvent);
 
-    getValue = (SubState *)GET_MEM(sizeof(SubState));
+    getValue = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getValue, subSettings[SET_ITEM_ENERGY], "get value");
     getValue->vtable.enter = STATE_ENTER(GetValue);
     getValue->vtable.exit = STATE_EXIT(GetValue);
@@ -147,7 +147,7 @@ static SubState *subReceipt[4];
 static Menu receiptMenu;
 
 STATE_DEF_ENTER(ReceiptSettings) {
-    uiMenu(&receiptMenu, getDisplay()->screen);
+    uiMenu(&receiptMenu, disp()->screen);
     for (uint8_t i = 0; i < 4 ; i++) {
         OOP_CALL(&receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
     }
@@ -157,7 +157,7 @@ STATE_DEF_ENTER(ReceiptSettings) {
 static Menu autoRecMenu;
 
 STATE_DEF_ENTER(AutoPrint) {
-    uiOnOffMenu(&autoRecMenu, getDisplay()->screen);
+    uiOnOffMenu(&autoRecMenu, disp()->screen);
     OOP_CALL(&autoRecMenu, show);
 }
 
@@ -188,7 +188,7 @@ STATE_DEF_ENTER(SecPrintTimeSuc) {
 static Menu merchRecMenu;
 
 STATE_DEF_ENTER(PrnMerchRec) {
-    uiOnOffMenu(&merchRecMenu, getDisplay()->screen);
+    uiOnOffMenu(&merchRecMenu, disp()->screen);
     OOP_CALL(&merchRecMenu, show);
 }
 
@@ -209,7 +209,7 @@ STATE_DEF_HANDLE(PrnMerchRec, KeypadEvent) {
 static Menu prnModel;
 
 STATE_DEF_ENTER(PrnModel) {
-    uiMenu(&prnModel, getDisplay()->screen);
+    uiMenu(&prnModel, disp()->screen);
     OOP_CALL(&prnModel, addItem, "پس زمینه سفید", NULL, NULL, NULL);
     OOP_CALL(&prnModel, addItem, "پس زمینه مشکی", NULL, NULL, NULL);
     OOP_CALL(&prnModel, show);
@@ -230,31 +230,31 @@ STATE_DEF_HANDLE(PrnModel, KeypadEvent) {
 }
 
 static void ReceiptSettings(State *parent) {
-    subSettings[SET_ITEM_RECEIPT] = (SubState *)GET_MEM(sizeof(SubState));
+    subSettings[SET_ITEM_RECEIPT] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_RECEIPT], parent, "receipt settings");
     subSettings[SET_ITEM_RECEIPT]->vtable.enter = STATE_ENTER(ReceiptSettings);
 
-    subReceipt[0] = (SubState *)GET_MEM(sizeof(SubState));
+    subReceipt[0] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[0], subSettings[SET_ITEM_RECEIPT], "auto print");
     subReceipt[0]->vtable.enter = STATE_ENTER(AutoPrint);
     subReceipt[0]->vtable.exit = STATE_EXIT(AutoPrint);
     subReceipt[0]->vtable.handleKeypad = STATE_HANDLE(AutoPrint, KeypadEvent);
 
-    subReceipt[1] = (SubState *)GET_MEM(sizeof(SubState));
+    subReceipt[1] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[1], subSettings[SET_ITEM_RECEIPT], "sec print time");
     subReceipt[1]->vtable.enter = STATE_ENTER(SecPrintTime);
 
-    secPrintSuc = (SubState *)GET_MEM(sizeof(SubState));
+    secPrintSuc = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, secPrintSuc, subSettings[SET_ITEM_RECEIPT], "sec print time suc");
     secPrintSuc->vtable.enter = STATE_ENTER(SecPrintTimeSuc);
 
-    subReceipt[2] = (SubState *)GET_MEM(sizeof(SubState));
+    subReceipt[2] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[2], subSettings[SET_ITEM_RECEIPT], "print merchaant receipt");
     subReceipt[2]->vtable.enter = STATE_ENTER(PrnMerchRec);
     subReceipt[2]->vtable.exit = STATE_EXIT(PrnMerchRec);
     subReceipt[2]->vtable.handleKeypad = STATE_HANDLE(PrnMerchRec, KeypadEvent);
 
-    subReceipt[3] = (SubState *)GET_MEM(sizeof(SubState));
+    subReceipt[3] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[3], subSettings[SET_ITEM_RECEIPT], "print model");
     subReceipt[3]->vtable.enter = STATE_ENTER(PrnModel);
     subReceipt[3]->vtable.exit = STATE_EXIT(PrnModel);
@@ -265,7 +265,7 @@ static void ReceiptSettings(State *parent) {
 static Bar brightBar;
 
 STATE_DEF_ENTER(ScrLightSettings) {
-    uiBar(&brightBar, getDisplay()->screen, 1, sys()->maxBright);
+    uiBar(&brightBar, disp()->screen, 1, sys()->maxBright);
     OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
     OOP_CALL(&brightBar, setValue, settings()->terminal.brightness);
     OOP_CALL(&brightBar, show);
@@ -292,7 +292,7 @@ STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
 }
 
 static void ScrLightSettings(State *parent) {
-    subSettings[SET_ITEM_SCR_LIGHT] = (SubState *)GET_MEM(sizeof(SubState));
+    subSettings[SET_ITEM_SCR_LIGHT] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_SCR_LIGHT], parent, "receipt settings");
     subSettings[SET_ITEM_SCR_LIGHT]->vtable.enter = STATE_ENTER(ScrLightSettings);
     subSettings[SET_ITEM_SCR_LIGHT]->vtable.exit = STATE_EXIT(ScrLightSettings);
@@ -304,7 +304,7 @@ static void ScrLightSettings(State *parent) {
 static Menu touchMenu;
 
 STATE_DEF_ENTER(TouchSettings) {
-    uiOnOffMenu(&touchMenu, getDisplay()->screen);
+    uiOnOffMenu(&touchMenu, disp()->screen);
     int idx = settings()->terminal.touchEnable == true ? 0 : 1;
     OOP_CALL(&touchMenu, setChecked, idx);
     OOP_CALL(&touchMenu, show);
@@ -328,7 +328,7 @@ STATE_DEF_HANDLE(TouchSettings, KeypadEvent) {
 }
 
 static void TouchSettings(State *parent) {
-    subSettings[SET_ITEM_TOUCH] = (SubState *)GET_MEM(sizeof(SubState));
+    subSettings[SET_ITEM_TOUCH] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_TOUCH], parent, "touch settings");
     subSettings[SET_ITEM_TOUCH]->vtable.enter = STATE_ENTER(TouchSettings);
     subSettings[SET_ITEM_TOUCH]->vtable.exit = STATE_EXIT(TouchSettings);
@@ -351,7 +351,7 @@ STATE_DEF_HANDLE(DateTimeSettings, KeypadEvent) {
 }
 
 static void DateTimeSettings(State *parent) {
-    subSettings[SET_ITEM_DATE_TIME] = (SubState *)GET_MEM(sizeof(SubState));
+    subSettings[SET_ITEM_DATE_TIME] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subSettings[SET_ITEM_DATE_TIME], parent, "date time settings");
     subSettings[SET_ITEM_DATE_TIME]->vtable.enter = STATE_ENTER(DateTimeSettings);
     subSettings[SET_ITEM_DATE_TIME]->vtable.exit = STATE_EXIT(DateTimeSettings);
@@ -362,7 +362,7 @@ static void DateTimeSettings(State *parent) {
 static Menu settingsMenu;
 
 static void createUi() {
-    uiMenu(&settingsMenu, getDisplay()->screen);
+    uiMenu(&settingsMenu, disp()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL ; i++) {
         OOP_CALL(&settingsMenu, addItem, phraseGetDef(SettingsItemTxt[i]), subSettings[i], NULL, NULL);
     }

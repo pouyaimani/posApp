@@ -55,6 +55,6 @@ OOP_CLASS(Picc) {
 
 OOP_CTOR(Picc);
 
-Picc *getPicc(void);
+Picc *picc(void);
 
 #endif

@@ -24,7 +24,7 @@ static lv_display_t *lv_disp;
 static lv_indev_t * indevTp;
 
 static void initBuffer() {
-    buffer = GET_MEM(LV_BUFFER_SIZE);
+    buffer = MEM_ALLOC(LV_BUFFER_SIZE);
     LV_ASSERT_MALLOC(buffer);
     memset(buffer, 0, LV_BUFFER_SIZE);
 }
@@ -133,10 +133,10 @@ OOP_CTOR(Display) {
     LOG_TRACE("Display constructor ...");
     self->init = displayInit;
     self->update = displayUpdate;
-    tp = getTouchpad();
+    tp = touchpad();
 }
 
-Display *getDisplay(void) {
+Display *disp(void) {
     CALL_ONCE(
         OOP_CALL_CTOR(Display, &display);
     );

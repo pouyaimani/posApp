@@ -74,19 +74,19 @@ OOP_CTOR(Sale, State *parent, const char *name) {
     self->base.state.vtable.enter = STATE_ENTER(Sale);
     self->base.vtable.makeReceipt = makeReceipt;
 
-    enterAmount = (SubState *)GET_MEM(sizeof(SubState));
+    enterAmount = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, &self->base.state, "enter Amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterAmount);
 
-    enterPass = (SubState *)GET_MEM(sizeof(SubState));
+    enterPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, &self->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
 
-    commu = (SubState *)GET_MEM(sizeof(SubState));
+    commu = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, commu, &self->base.state, "communication");
     commu->vtable.enter = STATE_ENTER(Communication);
 
-    result = (SubState *)GET_MEM(sizeof(SubState));
+    result = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, result, &self->base.state, "result");
     result->vtable.enter = STATE_ENTER(Result);
 }

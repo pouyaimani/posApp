@@ -31,15 +31,13 @@ static lv_obj_t *menuButton;
 static lv_obj_t *menuIcon;
 static lv_obj_t *menuText;
 
-static Wifi *wifi;
-
 static Timer *timer;
 
 static void wifiAutoConnect() {
     if (OOP_CALL(network(), getRoute) != NET_ROUTE_WIFI) {
         return;
     }
-    WifiConnectSt_t conSt = OOP_CALL(getWifi(), getConnectStatus);
+    WifiConnectSt_t conSt = OOP_CALL(wifi(), getConnectStatus);
     if(conSt == WIFI_CONNECT_SUCCEED  || conSt == WIFI_CONNECT_UNDER_PROCESS) {
         return;
     }
@@ -50,7 +48,7 @@ static void wifiAutoConnect() {
     apInfo.secMode = settings()->terminal.wifiEnc;
     snprintf(pwd, sizeof(pwd), "%s", settings()->terminal.wifiPwd);
     if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 && apInfo.secMode != 0) {
-        OOP_CALL(wifi, hconnect, &apInfo, pwd);
+        OOP_CALL(wifi(), hconnect, &apInfo, pwd);
     }
 }
 
@@ -70,7 +68,7 @@ static void menuEventCb(lv_event_t * e)
 STATE_DEF_ENTER(Idle) {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
-    getEventloop()->registerChecker(getMagReader()->ioRead);
+    getEventloop()->registerChecker(magreader()->ioRead);
     LV_SHOW(menuBar);
     // LV_SHOW(swipCardCont);
     LV_SHOW(mainIcon);
@@ -79,7 +77,7 @@ STATE_DEF_ENTER(Idle) {
 }
 
 STATE_DEF_EXIT(Idle) {
-    getEventloop()->unregisterChecker(getMagReader()->ioRead);
+    getEventloop()->unregisterChecker(magreader()->ioRead);
     LV_HIDE(menuBar);
     // LV_HIDE(swipCardCont);
     LV_HIDE(mainIcon);
@@ -228,7 +226,7 @@ STATE_DEF_HANDLE(Idle, MagEvent) {
 }
 
 static void createUi() {
-    menuBar = lv_obj_create(getDisplay()->screen);
+    menuBar = lv_obj_create(disp()->screen);
     LV_SET_SIZE(menuBar, DISP_HOR_RES + 20, MENU_BAR_HEIGHT + 20);
     LV_SET_BG_COLOR(menuBar, MAIN_THEME_COLOR);
     LV_ALIGN(menuBar, LV_ALIGN_BOTTOM_MID, 10, 20);
@@ -237,7 +235,7 @@ static void createUi() {
     lv_obj_set_scroll_dir(menuBar, LV_DIR_NONE);
     LV_CLICK_DISABLE(menuBar);
 
-    // swipCardCont = lv_obj_create(getDisplay()->screen);
+    // swipCardCont = lv_obj_create(disp()->screen);
     // LV_SET_SIZE(swipCardText, lv_pct(100), lv_pct(100));
     // LV_SET_BG_OPA(swipCardCont, LV_OPA_0);
     // LV_SET_BORDER_OPA(swipCardCont, LV_OPA_0);
@@ -258,7 +256,7 @@ static void createUi() {
     // lv_obj_set_style_transform_pivot_x(swipCardText, 90, 0);
     // lv_obj_set_style_transform_pivot_y(swipCardText, 10 , 0);
 
-    mainIcon = lv_img_create(getDisplay()->screen);
+    mainIcon = lv_img_create(disp()->screen);
     lv_img_set_src(mainIcon, ICON_IDLE_MAIN);
     LV_ALIGN(mainIcon, LV_ALIGN_CENTER, 20, -30);
     LV_SCROLL_DISABLE(mainIcon);
@@ -294,7 +292,6 @@ OOP_CTOR(Idle, State *parent, const char *name) {
     self->base.vtable.onSocketConnect = STATE_HANDLE(Idle, SocketConnectEvent);
 
     createUi();
-    wifi = getWifi();
 
     timer = TIMER_CREATE(timerCb, SECS(10), false);
 }

@@ -147,7 +147,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
 }
 
 STATE_DEF_ENTER(FixedAmount) {
-    uiMenu(&fixedAmntMenu, getDisplay()->screen);
+    uiMenu(&fixedAmntMenu, disp()->screen);
     fixedAmntMenu.checkEnable = true;
     OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, disableFixedAmnt, NULL);
     OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_PRICE_LIST), enterAmount, setFixedItemToList, NULL);
@@ -184,7 +184,7 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
 }
 
 STATE_DEF_ENTER(MaxAmount) {
-    uiMenu(&maxAmntMenu, getDisplay()->screen);
+    uiMenu(&maxAmntMenu, disp()->screen);
     maxAmntMenu.checkEnable = true;
     OOP_CALL(&maxAmntMenu, addItem, phraseGetDef(PHRASE_ENABLE), 
                 enterMaxAmnt, NULL, NULL);
@@ -210,7 +210,7 @@ static void disDirectSale() {
 }
 
 STATE_DEF_ENTER(DirectSale) {
-    uiMenu(&dirSaleMenu, getDisplay()->screen);
+    uiMenu(&dirSaleMenu, disp()->screen);
     dirSaleMenu.checkEnable = true;
     OOP_CALL(&dirSaleMenu, addItem, 
                 phraseGetDef(PHRASE_ENABLE), NULL, enDirectSale, NULL);
@@ -234,7 +234,7 @@ STATE_DEF_ENTER(SaveServiceStatus) {
 }
 
 STATE_DEF_ENTER(EnableServices) {
-    uiToggleMenu(&servMenu, getDisplay()->screen);
+    uiToggleMenu(&servMenu, disp()->screen);
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
         OOP_CALL(&servMenu, addOnOffItem, getService(i)->state.name,
             getService(i)->enable, NULL, NULL, NULL);
@@ -252,7 +252,7 @@ static void saveSettings() {
 }
 
 STATE_DEF_ENTER(OtherProjects) {
-    uiMenu(&otherMenu, getDisplay()->screen);
+    uiMenu(&otherMenu, disp()->screen);
     for (uint8_t i = 0; i < OTH_PROJ_ALL ; i++) {
         OOP_CALL(&otherMenu, addItem, phraseGetDef(dsc[i]), subState[i], NULL, NULL);
     }
@@ -263,35 +263,35 @@ OOP_CTOR(OtherProjects, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, "Other Projects");
     self->base.vtable.enter = STATE_ENTER(OtherProjects);
 
-    subState[OTH_PROJ_FIXED_AMONT] = (SubState *)GET_MEM(sizeof(SubState));
+    subState[OTH_PROJ_FIXED_AMONT] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subState[OTH_PROJ_FIXED_AMONT], self, "fixed amount");
     subState[OTH_PROJ_FIXED_AMONT]->vtable.enter = STATE_ENTER(FixedAmount);
 
-    subState[OTH_PROJ_MAX_AMNT] = (SubState *)GET_MEM(sizeof(SubState));
+    subState[OTH_PROJ_MAX_AMNT] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subState[OTH_PROJ_MAX_AMNT], self, "max amount");
     subState[OTH_PROJ_MAX_AMNT]->vtable.enter = STATE_ENTER(MaxAmount);
 
-    subState[OTH_PROJ_DIRECT_SALE] = (SubState *)GET_MEM(sizeof(SubState));
+    subState[OTH_PROJ_DIRECT_SALE] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subState[OTH_PROJ_DIRECT_SALE], self, "direct sale");
     subState[OTH_PROJ_DIRECT_SALE]->vtable.enter = STATE_ENTER(DirectSale);
 
-    subState[OTH_PROJ_EN_SERVICES] = (SubState *)GET_MEM(sizeof(SubState));
+    subState[OTH_PROJ_EN_SERVICES] = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subState[OTH_PROJ_EN_SERVICES], self, "enable services");
     subState[OTH_PROJ_EN_SERVICES]->vtable.enter = STATE_ENTER(EnableServices);
 
-    enterMaxAmnt = (SubState *)GET_MEM(sizeof(SubState));
+    enterMaxAmnt = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterMaxAmnt, self, "enter max amount");
     enterMaxAmnt->vtable.enter = STATE_ENTER(EnterMaxAmnt);
 
-    getMaxAmnt = (SubState *)GET_MEM(sizeof(SubState));
+    getMaxAmnt = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getMaxAmnt, self, "get max amount");
     getMaxAmnt->vtable.enter = STATE_ENTER(GetMaxAmnt);
 
-    saveServiceStatus = (SubState *)GET_MEM(sizeof(SubState));
+    saveServiceStatus = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, saveServiceStatus, self, "save service status");
     saveServiceStatus->vtable.enter = STATE_ENTER(SaveServiceStatus);
 
-    enterAmount = (SubState *)GET_MEM(sizeof(SubState));
+    enterAmount = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, subState[OTH_PROJ_FIXED_AMONT], "enter fixed amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterFixedAmount);
     termStorage = &settings()->terminal;

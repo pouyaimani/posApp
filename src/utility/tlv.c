@@ -138,7 +138,7 @@ OOP_CTOR(TLV) {
 
 TLV *tlv() {
     CALL_ONCE(
-        __tlv = GET_MEM(sizeof(__tlv));
+        __tlv = MEM_ALLOC(sizeof(__tlv));
         OOP_CALL_CTOR(TLV, __tlv);
     );
     return __tlv;

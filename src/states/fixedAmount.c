@@ -18,7 +18,7 @@ static SubState *variantAmount;
 static Menu amountListMenu;
 
 STATE_DEF_ENTER(AmountList) {
-    uiMenu(&amountListMenu, getDisplay()->screen);
+    uiMenu(&amountListMenu, disp()->screen);
     for (uint8_t i = 0; i < termStorage->amountListCnt ; i++) {
         char str[32] = {0};
         char amount[AMOUNT_MAX_CNT] = {0};
@@ -55,15 +55,15 @@ OOP_CTOR(FixedAmount, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(FixedAmount);
 
-    amountList = (SubState *)GET_MEM(sizeof(SubState));
+    amountList = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, amountList, parent, "amount list");
     amountList->vtable.enter = STATE_ENTER(AmountList);
 
-    singleAmount = (SubState *)GET_MEM(sizeof(SubState));
+    singleAmount = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, singleAmount, parent, "single amount");
     singleAmount->vtable.enter = STATE_ENTER(SingleAmount);
 
-    variantAmount = (SubState *)GET_MEM(sizeof(SubState));
+    variantAmount = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, variantAmount, parent, "variant amount");
     variantAmount->vtable.enter = STATE_ENTER(VariantAmount);
 
