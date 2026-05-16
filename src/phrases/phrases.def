@@ -16,35 +16,235 @@
  * 
  **********************************************************************/
 
-X(PHRASE_PLEASE_WAIT            ,   "لطفا منتظر بمانید"            ,   "Please wait"  )                     
-X(PHRASE_NO_RESULT_FOUND        ,   "noResultFound"         ,   ""  )                      
-X(PHRASE_EXTRACTING_DATA        ,   "در حال استخراج اطلاعات"        ,   "Extracting data"  )                         
-X(PHRASE_ENTER_REF_NUM          ,   "enterRefNum"           ,   ""  )                        
-X(PHRASE_ENTER_TRACE            ,   "enterTrace"            ,   ""  )                     
-X(PHRASE_MERCHANT               ,   "merchant"              ,   ""  )                   
-X(PHRASE_SUPERVISOR             ,   "supervisor"            ,   ""  )                     
-X(PHRASE_CUSTOMER               ,   "customer"              ,   ""  )                   
-X(PHRASE_PLEASE                 ,   "please"                ,   ""  )                 
-X(PHRASE_ENTER_SERVER           ,   "enterServer"           ,   ""  )                        
-X(PHRASE_ENTER_PORT             ,   "enterPort"             ,   ""  )                  
-X(PHRASE_INVALID_IP             ,   "invalidIp"             ,   ""  )                  
-X(PHRASE_INVALID_PORT           ,   "invalidPort"           ,   ""  )                        
-X(PHRASE_WIFI                   ,   "wifi"                  ,   ""  )               
-X(PHRASE_GPRS                   ,   "gprs"                  ,   ""  )               
-X(PHRASE_SOUND_STTINGS          ,   "soundSettings"         ,   ""  )                      
-X(PHRASE_ENERGY_SETTINGS        ,   "energySettings"        ,   ""  )                         
-X(PHRASE_RECEIPT_SETTINGS       ,   "receiptSettings"       ,   ""  )                            
-X(PHRASE_BRIGHTNESS_SETTINGS    ,   "brightnessSettings"    ,   ""  )                             
-X(PHRASE_TOUCH_STATUS           ,   "touchStatus"           ,   ""  )                        
-X(PHRASE_UPDATE_DATE_TIME       ,   "updateDateTime"        ,   ""  )                         
-X(PHRASE_ENABLE                 ,   "enable"                ,   ""  )                 
-X(PHRASE_DISABLE                ,   "disable"               ,   ""  )                    
-X(PHRASE_POWER_OFF              ,   "powerOff"              ,   ""  )                   
-X(PHRASE_MENU                   ,   "menu"                  ,   ""  )               
-X(PHRASE_CANCEL                 ,   "cancel"                ,   ""  )                 
-X(PHRASE_CONFIRM                ,   "confirm"               ,   ""  )
-X(PHRASE_DATE                   ,   "تاریخ"                 ,   "Date"  )                       
-X(PHRASE_TIME                   ,   "زمان"                  ,   "Time"  )   
+X(PHRASE_PLEASE_WAIT            ,   "لطفا منتظر بمانید"            ,   "please wait"
+)                     
+X(PHRASE_NO_RESULT_FOUND        ,   "noResultFound"                 ,   ""
+)
+X(PHRASE_EXTRACTING_DATA        ,   "در حال استخراج اطلاعات"        ,   "extracting data"
+)                         
+X(PHRASE_ENTER_REF_NUM          ,   "شماره مرجع را وارد کنید"      ,   "enter reference number" 
+)
+X(PHRASE_ENTER_TRACE            ,   "شماره پیگیری را وارد کنید"    ,   "enter trace"
+)
+X(PHRASE_CUSTOMER               ,   "مشتری"                          ,   "customer"
+)
+X(PHRASE_SUPERVISOR             ,   "سرپرست"                         ,   "supervisor"
+)
+X(PHRASE_PLEASE                 ,   "please"                         ,   ""
+)
+X(PHRASE_INVALID_PORT           ,   "invalidPort"                    ,   ""
+)   
+X(PHRASE_WIFI                   ,   "وایفای"                         ,   "wifi" 
+)
+X(PHRASE_GPRS                   ,   "جی پی آر اس"                    ,   "gprs"
+)         
+X(PHRASE_ENABLE                 ,   "فعال"                           ,   "enable"
+)  
+X(PHRASE_DISABLE                ,   "غیر فعال"                      ,   "disable"
+)     
+X(PHRASE_POWER_OFF              ,   "powerOff"                       ,   ""
+)    
+X(PHRASE_MENU                   ,   "منو"                            ,   "menu" 
+)   
+X(PHRASE_CANCEL                 ,   "لغو"                            ,   "cancel" 
+)        
+X(PHRASE_CONFIRM                ,   "تایید"                          ,   "confirm"
+)
+X(PHRASE_DATE                   ,   "تاریخ"                          ,   "date" 
+)        
+X(PHRASE_TIME                   ,   "زمان"                           ,   "time" 
+)
+X(PHRASE_NO_RESULT              ,   "نتیجه ای یافت نشد"             ,   "no Result"
+)
+X(PHRASE_SWIPRE_CARD            ,   "لطفا کارت خود را بکشید"        ,   "please swipe your card"
+)
+X(PHRASE_ERROR                  ,   "خطا"                            ,   "error"
+)
+X(PHRASE_CONNECTION_ERR         ,   "خطا در اتصال"                   ,  "connection error"
+)
+X(PHRASE_CONNECTIING            ,   "در حال اتصال"                   ,  "connecting"
+)
+X(PHRASE_CONNECTIING_2_NET      ,   "در حال اتصال به شبکه"           ,  "connecting to network"
+)
+X(PHRASE_CONNECTION_SUCCEED     ,   "با موفقیت متصل شد"              ,  "connection succeed"
+)
+X(PHRASE_RECEIVING_DATA         ,   "دریافت اطلاعات"                  ,  "receiving data"
+)
+X(PHRASE_RECEIVING_DATA_ERR     ,   "خطا در دریافت اطلاعات"           ,  "receiving data error"
+)
+X(PHRASE_SENDING_DATA           ,   "ارسال اطلاعات"                   ,  "sending data"
+)
+X(PHRASE_SENDING_DATA_ERR       ,   "خطا درارسال اطلاعات"             ,  "sending data error"
+)
+X(PHRASE_SERIAL                 ,   "سریال"                          ,   "serial"
+)
+X(PHRASE_EXCEED                 ,   "بیش از حد مجاز"                 ,   "exceed"
+)
+X(PHRASE_INPUT                  ,   "ورودی"                          ,   "input"
+)
+X(PHRASE_AMOUNT_EXCEED          ,   "مبلغ بیش از حد مجاز"           ,   "amount exceed"
+)
+X(PHRASE_INPUT_EXCEED           ,   "ورودی بیش از حد مجاز"          ,   "input exceed"
+)
+X(PHRASE_INVALID_IP             ,   "IP نامعتبر است"                 ,   "invalid IP"
+)
+X(PHRASE_INVALID_DATE           ,   "IP تاریخ است"                   ,   "invalid date"
+)
+X(PHRASE_INVALID_TIME           ,   "IP زمان است"                    ,   "invalid time"
+)
+X(PHRASE_WANNA_EXIT             ,   "قصد خروج دارید؟"                ,   "would you like to exit?"
+)
+X(PHRASE_POWERING_OFF           ,   "در حال خاموش شدن ..."           ,   "powering off ..."
+)
+X(PHRASE_CONNECTING_2_WIFI      ,   "wifi در حال اتصال به"           ,   "connecting to wifi"
+)
+X(PHRASE_SEARCHING_4_WIFI       ,   "wifi در حال جستجوی"             ,   "searching for wifi"
+)
+X(PHRASE_SEARCHING_WIFI_ERR     ,   "wifi خطا در جستجوی"             ,   "error in searching for wifi"
+)
+X(PHRASE_CHECK_SIM_STAT         ,   "وضعیت سیم کارت را بررسی کنید"  ,   "check simcard status"
+)
+X(PHRASE_WIFI_PIN               ,   "wifi رمز"                        ,   "wifi password"
+)
+X(PHRASE_INCORRECT_PASSWORD     ,   "رمز نادرست است"                 ,   "incorrect password"
+)
+X(PHRASE_CARD_PIN               ,   "رمز کارت"                        ,   "card pin"
+)
+X(PHRASE_PASS_ENTRY             ,   "ورود رمز"                        ,   "passwrod entry"
+)
+X(PHRASE_NEW_PIN                ,   "رمز جدید"                        ,   "new pin"
+)
+X(PHRASE_REPEAT_NEW_PIN         ,   "تکرار رمز جدید"                  ,   "repeat new pin"
+)
+X(PHRASE_ENTER_PIN              ,   "ورود رمز"                        ,   "enter pin"
+)
+X(PHRASE_PIN_CHANGED_SUC        ,   "رمز با موفقیت تغییر کرد"         ,   "pin is changed Successfuly"
+)
+X(PHRASE_PIN_CONFIRM_ERR        ,   "تاییدیه رمز نادرست است"          ,   "pin confirmation is not correct"
+)
+X(PHRASE_CURRENT_PIN            ,   "رمز فعلی"                         ,   "current pin"
+)
+X(PHRASE_ACTIVATE_SUC           ,   "با موفقیت فعال شد"               ,   "activated successfuly"
+)
+X(PHRASE_ENTER_SERV_IP          ,   "لطفا آدرس سرور را وارد کنید"     ,   "please enter server IP"
+)
+X(PHRASE_ENTER_SERV_PORT        ,   "لطفا درگاه سرور را وارد کنید"     ,   "please enter server port"
+)
+X(PHRASE_ENTER_SERV_ID          ,   "لطفا شناسه سرور را وارد کنید"     ,   "please enter server id"
+)
+X(PHRASE_SUC_DONME              ,   "با موفقیت انجام شد"                ,   "successfuly done"
+)
+X(PHRASE_ONE                    ,   "یک"                                  ,   "one"
+)
+X(PHRASE_TWO                    ,   "دو"                                  ,   "two"
+)
+X(PHRASE_THREE                  ,   "سه"                                  ,   "three"
+)
+X(PHRASE_FOUR                   ,   "چهار"                                ,   "four"
+)
+X(PHRASE_FIVE                   ,   "پنج"                                  ,   "five"
+)
+X(PHRASE_SIX                    ,   "شش"                                   ,   "six"
+)
+X(PHRASE_SEVEN                  ,   "هفت"                                  ,   "seven"
+)
+X(PHRASE_EIGHT                  ,   "هشت"                                  ,   "eight"
+)
+X(PHRASE_NINE                   ,   "نه"                                   ,   "nine"
+)
+X(PHRASE_AMNT_CEIL              ,   "سقف مبلغ"                             ,   "amount ceil"
+)
+X(PHRASE_FIRST_AMNT             ,   "مبلغ اول"                             ,   "first amount"
+)
+X(PHRASE_SEC_AMNT               ,   "مبلغ دوم"                             ,   "second amount"
+)
+X(PHRASE_THIRD_AMNT             ,   "مبلغ سوم"                             ,   "third amount"
+)
+X(PHRASE_FOURTH_AMNT            ,   "مبلغ چهارم"                           ,   "fourth amount"
+)
+X(PHRASE_FIFTH_AMNT             ,   "مبلغ پنجم"                            ,   "fifth amount"
+)
+X(PHRASE_SIXTH_AMNT             ,   "مبلغ ششم"                             ,   "sixth amount"
+)
+X(PHRASE_SEVENTH_AMNT           ,   "مبلغ هفتم"                            ,   "seventh amount"
+)
+X(PHRASE_EIGHTH_AMNT            ,   "مبلغ هشتم"                            ,   "eighth amount"
+)
+X(PHRASE_NINTH_AMNT             ,   "مبلغ نهم"                             ,   "ninth amount"
+)
+X(PHRASE_TENTH_AMNT             ,   "مبلغ دهم"                             ,   "tenth amount"
+)
+X(PHRASE_ENTER_COUNT            ,   "تعداد را وارد کنید"                  ,   "enter count"
+)
+X(PHRASE_TURN_OFF               ,   "خاموش کردن"                           ,   "power off"
+)
+X(PHRASE_MERCHANT_INFO          ,   "اطلاعات پذیرنده"                       ,   "merchant info"
+)
+X(PHRASE_SPECEFIC_PROJECT       ,   "پروژه های خاص"                        ,   "specefic projects"
+)
+X(PHRASE_SETTINGS               ,   "تنظیمات"                               ,   "settings"
+)
+X(PHRASE_CONNECTION             ,   "بستر ارتباطی"                          ,  "connection"
+)
+X(PHRASE_MERCHANT_PIN_CHANGE    ,   "تغییر رمز پذیرنده"                     ,  "change merchant pin"
+)
+X(PHRASE_FIXED_AMNT             ,   "مبلغ ثابت"                              ,  "fixed amount"
+)
+X(PHRASE_DIRECT_SALE            ,   "خرید مستقیم"                            ,  "direct purchase"
+)
+X(PHRASE_EN_SERVICES            ,   "فعالسازی سرویس ها"                      ,  "enable services"
+)
+X(PHRASE_PRICE_LIST             ,   "لیست قیمت"                               ,  "price list"
+)
+X(PHRASE_FIXED_WITH_COEF        ,   "ثابت با ضریب"                            ,  "fixed with coefficient"
+)
+
+/**********************************************************************
+ *
+ *                              Shift
+ * 
+ **********************************************************************/
+
+X(PHRASE_ASHIFT_NUM             ,   "شماره شیفت"                       ,   "shift number"
+)
+X(PHRASE_BEG_DT                 ,   "زمان شروع"                        ,   "begining time"
+)
+X(PHRASE_FIN_DT                 ,   "زمان پایان"                       ,   "finishing time"
+)
+X(PHRASE_SHIFT                  ,   "شیفت"                              ,   "shift"
+)
+X(PHRASE_SHIFT_IS_ACTIVE        ,   "شیفت فعال می باشد"                ,   "shift is active"
+)
+X(PHRASE_SHIFT_IS_DEACTIVE      ,   "شیفت غیر فعال می باشد"            ,   "shift is deactive"
+)
+X(PHRASE_SHIFT_CLOSE_FIRST      ,   "ابتدا شیفت فعال را ببندید"        ,   "close the active shift first"
+)
+X(PHRASE_SHIFT_EN_FIRST         ,   "ابتدا شیفت را فعال کنید"          ,   "enable shift first"
+)
+X(PHRASE_SHIFT_NO_ACTIVE        ,   "شیفت فعالی یافت نشد"              ,   "no active shift"
+)
+X(PHRASE_SHIFT_IS_RUNNING       ,   "شیفت در حال اجرا می باشد"         ,   "shift is runnung"
+)
+X(PHRASE_SHIFT_IS_ACTIVATED     ,   "شیفت با موفقیت فعال شد"           ,   "shift is activated"
+)
+X(PHRASE_SHIFT_IS_CLOSED        ,   "شیفت با موفقیت بسته شد"           ,   "shift is closed"
+)
+X(PHRASE_SHIFT_CLOSE_ERR        ,   "خطا در بستن شیفت"                 ,   "error during closing shift"
+)
+X(PHRASE_SHIFT_TARGET_NOT_FND   ,   "شیفت مورد نظر یافت نشد"           ,   "shift not found"
+)
+X(PHRASE_SHIFT_SELECT           ,   "انتخاب شیفت"                       ,   "select shift"
+)
+X(PHRASE_SHIFT_ENABLING         ,   "فعالسازی شیفت"                     ,  "enable shift"
+)
+X(PHRASE_SHIFT_SHOW_CUR         ,   "نمایش شیفت جاری"                   ,  "show current shift"
+)
+X(PHRASE_SHIFT_CREATE           ,   "ایجاد شیفت"                        ,  "create shift"
+)
+X(PHRASE_SHIFT_CLOSE            ,   "بستن شیفت"                         ,  "close shift"
+)
+X(PHRASE_SHIFT_REPORT           ,   "گزارش شیفت"                        ,  "shift report"
+)
 
 /**********************************************************************
  *
@@ -54,65 +254,129 @@ X(PHRASE_TIME                   ,   "زمان"                  ,   "Time"  )
  * 
  **********************************************************************/
 
-X(PHRASE_AMOUNT                         ,   "amount"                        ,   ""  )
-X(PHRASE_AUTHENTICATION_TYPE            ,   "authenticationType"            ,   ""  )            
-X(PHRASE_SUCCESSFUL_OPERATION           ,   "عملیات موفق"                  ,   "Successfull Operation"  )            
-X(PHRASE_UNSUCCESSFUL_OPERATION         ,   "unsuccessfulOperation"         ,   ""  )            
-X(PHRASE_INSUFFICIENT_FUND              ,   "insufficientFund"              ,   ""  )        
-X(PHRASE_INVALID_PIN                    ,   "invalidPin"                    ,   ""  )    
-X(PHRASE_INVALID_CARD                   ,   "invalidCard"                   ,   ""  )    
-X(PHRASE_INVALID_TRANSACTION            ,   "invalidTransaction"            ,   ""  )            
-X(PHRASE_PREPAID_PIN                    ,   "prepaidPin"                    ,   ""  )    
-X(PHRASE_BILL_ID                        ,   "billId"                        ,   ""  )
-X(PHRASE_PAYMENT_ID                     ,   "paymentId"                     ,   ""  )
-X(PHRASE_DEBIT_CARD                     ,   "debitCard"                     ,   ""  )
-X(PHRASE_CREDIT_CARD                    ,   "creditCard"                    ,   ""  )    
-X(PHRASE_PREPAID_CARD                   ,   "prepaidCard"                   ,   ""  )    
-X(PHRASE_CUSTOMERS_SECOND_STATEMENT     ,   "customersSecondStatement"      ,   ""  )                
-X(PHRASE_ANY_DEDUCTION_TO_YOUR_ACCOUNT  ,   "anyDeductionToYourAccount"     ,   ""  )                
-X(PHRASE_REFUND_AMOUNT                  ,   "refundAmount"                  ,   ""  )    
-X(PHRASE_LOCAL_DATE_REFUND_TRANSACTION  ,   "localDateRefundTransaction"    ,   ""  )                    
-X(PHRASE_LOCAL_TIME_REFUND_TRANSACTION  ,   "localTimeRefundTransaction"    ,   ""  )                    
-X(PHRASE_MONEY_REFUNDED_WITHIN_WORKDAY  ,   "moneyRefundedWithinWorkday"    ,   ""  )                    
-X(PHRASE_MERCHANTS_NAME                 ,   "merchantsName"                 ,   ""  )    
-X(PHRASE_PURCHASE                       ,   "purchase"                      ,   ""  )
-X(PHRASE_BILL_PAYMENT                   ,   "billPayment"                   ,   ""  )    
-X(PHRASE_PREPAID_RECHARGE               ,   "prepaidRecharge"               ,   ""  )        
-X(PHRASE_BALANCE_INQUIRY                ,   "balanceInquiry"                ,   ""  )        
-X(PHRASE_CUSTOMERS_RECEIPT              ,   "customersReceipt"              ,   ""  )        
-X(PHRASE_MERCHANTS_RECEIPT              ,   "merchantsReceipt"              ,   ""  )        
-X(PHRASE_TERMINAL_ID                    ,   "کد پایانه"                    ,   "Terminal Id"  ) 
-X(PHRASE_TERMINAL                       ,   "پایانه"                      ,   "Terminal"  )    
-X(PHRASE_DEVICE_CODE                    ,   "کد کارتخوان"                  ,   "Device code"  )        
-X(PHRASE_MERCHANT_ID                    ,   "merchantId"                    ,   ""  )    
-X(PHRASE_APPLICATION_NAME               ,   "applicationName"               ,   ""  )        
-X(PHRASE_DEVICE_TYPE                    ,   "deviceType"                    ,   ""  )    
-X(PHRASE_CARD_NUMBER                    ,   "cardNumber"                    ,   ""  )    
-X(PHRASE_ISSUING_BANK                   ,   "issuingBank"                   ,   ""  )    
-X(PHRASE_ACQUIRING_BANK                 ,   "acquiringBank"                 ,   ""  )    
-X(PHRASE_TRACE_NUMBER                   ,   "traceNumber"                   ,   ""  )    
-X(PHRASE_LOCAL_DATE_TRANSACTION         ,   "localDateTransaction"          ,   ""  )            
-X(PHRASE_LOCAL_TIME_TRANSACTION         ,   "localTimeTransaction"          ,   ""  )            
-X(PHRASE_RETRIEVAL_REFERENCE_NUMBER     ,   "retrievalReferenceNumber"      ,   ""  ) 
-X(PHRASE_BANK                           ,   "بانک"                          ,   "Bank"  )  
-X(PHRASE_TRACE                          ,   "پیگیری"                        ,   "Trace"  )
-X(PHRASE_REFERENCE                      ,   "مرجع"                          ,   "Reference"  )
-X(PHRASE_RIAL                           ,   "ریال"                          ,   "Rial"  )
-X(PHRASE_SERVICE_NAME                   ,   "نام سرویس"                     ,   "Service Name"  )
-X(PHRASE_CUSTOMER_RECEIPT               ,   "رسید مشتری"                    ,   "Customer receipt"  )
-X(PHRASE_SIM_CHARGE_SERIAL              ,   "سریال شارژ"                    ,   "Charge serial"  )
-X(PHRASE_SIM_CHARGE_PIN                 ,   "رمز شارژ"                      ,   "Charge pin"  )
-X(PHRASE_FROM_DATE                      ,   "از تاریخ"                      ,   "From date"  )    
-X(PHRASE_FROM_TIME                      ,   "از زمان"                       ,   "From time"  )
-X(PHRASE_TO_DATE                        ,   "تا تاریخ"                      ,   "To date"  )    
-X(PHRASE_TO_TIME                        ,   "تا زمان"                       ,   "To time"  )
-X(PHRASE_TXN                            ,   "تراکنش"                        ,   "Tranaction"  )
-X(PHRASE_COUNT                          ,   "تعداد"                         ,   "Count"  )    
-X(PHRASE_TO_RIAL                        ,   "مبغ به ریال"                   ,   "to Rial"  )
-X(PHRASE_DETAILED_TXN                   ,   "ریزتراکنش"                     ,   ""  )
-X(PHRASE_SUMMARY_REPORT                 ,   "گزارش تجمیعی"                  ,   ""  )
-X(PHRASE_AVAILABLE                      ,   "مانده قابل برداشت"             ,   ""  )
-X(PHRASE_LEDGER                         ,   "مانده واقعی"                   ,   ""  )
+X(PHRASE_AMOUNT                         ,   "مبلغ"                          ,   "Amount"
+)
+X(PHRASE_AUTHENTICATION_TYPE            ,   "authenticationType"            ,   "" 
+)
+X(PHRASE_SUCCESSFUL_OPERATION           ,   "عملیات موفق"                  ,   "Successfull Operation"
+)
+X(PHRASE_UNSUCCESSFUL_OPERATION         ,   "عملیات ناموفق"                ,   "unsuccessfull operation"
+)
+X(PHRASE_INSUFFICIENT_FUND              ,   "insufficientFund"              ,   ""
+)
+X(PHRASE_INVALID_PIN                    ,   "invalidPin"                    ,   ""
+)
+X(PHRASE_INVALID_CARD                   ,   "invalidCard"                   ,   ""
+)
+X(PHRASE_INVALID_TRANSACTION            ,   "invalidTransaction"            ,   ""
+)
+X(PHRASE_PREPAID_PIN                    ,   "prepaidPin"                    ,   ""
+)
+X(PHRASE_BILL_ID                        ,   "billId"                        ,   ""
+)
+X(PHRASE_PAYMENT_ID                     ,   "paymentId"                     ,   ""
+)
+X(PHRASE_DEBIT_CARD                     ,   "debitCard"                     ,   ""
+)
+X(PHRASE_CREDIT_CARD                    ,   "creditCard"                    ,   ""
+)
+X(PHRASE_PREPAID_CARD                   ,   "prepaidCard"                   ,   ""
+)
+X(PHRASE_CUSTOMERS_SECOND_STATEMENT     ,   "customersSecondStatement"      ,   ""
+)            
+X(PHRASE_ANY_DEDUCTION_TO_YOUR_ACCOUNT  ,   "anyDeductionToYourAccount"     ,   ""
+)            
+X(PHRASE_REFUND_AMOUNT                  ,   "refundAmount"                  ,   ""
+)
+X(PHRASE_LOCAL_DATE_REFUND_TRANSACTION  ,   "localDateRefundTransaction"    ,   ""
+)                
+X(PHRASE_LOCAL_TIME_REFUND_TRANSACTION  ,   "localTimeRefundTransaction"    ,   ""
+)                
+X(PHRASE_MONEY_REFUNDED_WITHIN_WORKDAY  ,   "moneyRefundedWithinWorkday"    ,   ""
+)                
+X(PHRASE_MERCHANTS_NAME                 ,   "merchantsName"                 ,   ""
+)
+X(PHRASE_PURCHASE                       ,   "purchase"                      ,   ""
+)
+X(PHRASE_BILL_PAYMENT                   ,   "billPayment"                   ,   ""
+)
+X(PHRASE_PREPAID_RECHARGE               ,   "prepaidRecharge"               ,   ""
+)
+X(PHRASE_BALANCE_INQUIRY                ,   "balanceInquiry"                ,   ""
+)
+X(PHRASE_CUSTOMERS_RECEIPT              ,   "customersReceipt"              ,   ""
+)
+X(PHRASE_MERCHANTS_RECEIPT              ,   "merchantsReceipt"              ,   ""
+)
+X(PHRASE_TERMINAL_ID                    ,   "کد پایانه"                    ,   "Terminal Id"
+) 
+X(PHRASE_TERMINAL                       ,   "پایانه"                        ,   "Terminal"
+)
+X(PHRASE_DEVICE_CODE                    ,   "کد کارتخوان"                   ,   "Device code"
+)
+X(PHRASE_MERCHANT                       ,   "پذیرنده"                       ,  "merchant"
+)
+X(PHRASE_MERCHANT_ID                    ,   "merchantId"                    ,   ""
+)
+X(PHRASE_APPLICATION_NAME               ,   "applicationName"               ,   ""
+)    
+X(PHRASE_DEVICE_TYPE                    ,   "deviceType"                    ,   ""
+)
+X(PHRASE_CARD_NUMBER                    ,   "cardNumber"                    ,   ""
+)
+X(PHRASE_ISSUING_BANK                   ,   "issuingBank"                   ,   ""
+)
+X(PHRASE_ACQUIRING_BANK                 ,   "acquiringBank"                 ,   ""
+)
+X(PHRASE_LOCAL_DATE_TRANSACTION         ,   "localDateTransaction"          ,   ""
+)        
+X(PHRASE_LOCAL_TIME_TRANSACTION         ,   "localTimeTransaction"          ,   ""
+)        
+X(PHRASE_RETRIEVAL_REFERENCE_NUMBER     ,   "retrievalReferenceNumber"      ,   ""
+)
+X(PHRASE_BANK                           ,   "بانک"                          ,   "Bank"
+)
+X(PHRASE_TRACE                          ,   "پیگیری"                        ,   "Trace"
+)
+X(PHRASE_REFERENCE                      ,   "مرجع"                          ,   "Reference"
+)
+X(PHRASE_RIAL                           ,   "ریال"                          ,   "Rial"
+)
+X(PHRASE_SERVICE_NAME                   ,   "نام سرویس"                     ,   "Service Name"
+)
+X(PHRASE_CUSTOMER_RECEIPT               ,   "رسید مشتری"                    ,   "Customer receipt"
+)
+X(PHRASE_SIM_CHARGE_SERIAL              ,   "سریال شارژ"                    ,   "Charge serial"
+)
+X(PHRASE_SIM_CHARGE_PIN                 ,   "رمز شارژ"                      ,   "Charge pin"
+)
+X(PHRASE_FROM_DATE                      ,   "از تاریخ"                      ,   "From date"
+)
+X(PHRASE_FROM_TIME                      ,   "از زمان"                       ,   "From time"
+)
+X(PHRASE_TO_DATE                        ,   "تا تاریخ"                      ,   "To date"
+)
+X(PHRASE_TO_TIME                        ,   "تا زمان"                       ,   "To time"
+)
+X(PHRASE_TXN                            ,   "تراکنش"                        ,   "Tranaction"
+)
+X(PHRASE_COUNT                          ,   "تعداد"                         ,   "Count"
+)
+X(PHRASE_TO_RIAL                        ,   "مبغ به ریال"                   ,   "to Rial"
+)
+X(PHRASE_DETAILED_TXN                   ,   "ریزتراکنش"                     ,   ""
+)
+X(PHRASE_AVAILABLE                      ,   "مانده قابل برداشت"             ,   ""
+)
+X(PHRASE_LEDGER                         ,   "مانده واقعی"                   ,   ""
+)
+X(PHRASE_IMEI                           ,   "IMEI"                          ,   "IMEI"
+)
+X(PHRASE_OPERATOR                       ,   "اپراتور"                       ,   "operator"
+)
+X(PHRASE_REPORT                         ,   "گزارش"                         ,   "report"
+)
+
 
 /**********************************************************************
  *
@@ -121,16 +385,36 @@ X(PHRASE_LEDGER                         ,   "مانده واقعی"             
  * 
  **********************************************************************/
 
-X(PHRASE_DAILY_REPORT       ,   "dailyReport"           ,   ""  )
-X(PHRASE_AGGREGATED_REPORT  ,   "aggregatedReport"      ,   ""  )    
-X(PHRASE_TRANACTION_DETAILS ,   "transactionDetails"    ,   ""  )        
-X(PHRASE_TXN_SALE           ,   "txnSale"               ,   ""  )
-X(PHRASE_TXN_BALANCE        ,   "txnBalance"            ,   ""  )
-X(PHRASE_TXN_BILL_PAYMENT   ,   "txnBillPayment"        ,   ""  )    
-X(PHRASE_TXN_PAY            ,   "txnPay"                ,   ""  )
-X(PHRASE_TXN_VOUCHER        ,   "txnVoucher"            ,   ""  )
-X(PHRASE_TXN_TOP_UP         ,   "txnTopUp"              ,   ""  )
-X(PHRASE_ALL_TXNS           ,   "allTxns"               ,   ""  )
+X(PHRASE_DAILY_REPORT                   ,   "گزارش روزانه"                   ,   "daily report"
+)
+X(PHRASE_SUMMARY_REPORT                 ,   "گزارش تجمیعی"                   ,   "summary report"
+)
+X(PHRASE_TRANACTION_DETAILS             ,   "ریز تراکنش ها"                  ,   "transaction with details"
+)
+X(PHRASE_TXN_SALE                       ,   "خرید"                           ,   "Sale"
+)
+X(PHRASE_TXN_BALANCE                    ,   "موجودی"                         ,   "Balance"
+)
+X(PHRASE_TXN_BILL                       ,   "پرداخت قبض"                     ,   "Bill Payment"
+)
+X(PHRASE_TXN_PAY                        ,   "پرداخت"                         ,   "Paymeny"
+)
+X(PHRASE_TXN_TOPUP                      ,   "شارژ مستقیم"                    ,   "Top up"
+)
+X(PHRASE_TXN_CHARGE_CODE                ,   "کد شارژ"                         ,   "Charge code"
+)
+X(PHRASE_TXN_ALL                        ,   "همه تراکنش ها"                   ,   "َall transactions"
+)
+X(PHRASE_TXN_SIM_CHARGE                 ,   "خرید شارز"                       ,   "simcard charge"
+)
+X(PHRASE_DETAILED_REPORT                ,   "ریز تراکنش"                      ,   "detailed reports"
+)
+X(PHRASE_BASED_ON_REF_NUM               ,   "بر اساس مرجع"                     ,   "based on reference number"
+)
+X(PHRASE_BASED_ON_TRACE                 ,   "بر اساس پیگیری"                  ,   "based on trace"
+)
+X(PHRASE_REPRINT            ,   "چاپ مجدد"                      ,  "reprint"
+)
 
 /**********************************************************************
  *
@@ -139,13 +423,28 @@ X(PHRASE_ALL_TXNS           ,   "allTxns"               ,   ""  )
  * 
  **********************************************************************/
 
-X(PHRASE_REPRINT            ,   "reprint"           ,   ""  )
-X(PHRASE_UPDATE_APP         ,   "updateApp"         ,   ""  )
-X(PHRASE_RESET_MERCHAT_PIN  ,   "resetMerchatPin"   ,   ""  )        
-X(PHRASE_DEFAULT_SETTINGS   ,   "defaultSettings"   ,   ""  )        
-X(PHRASE_SERVER_SETTINGS    ,   "serverSettings"    ,   ""  )        
-X(PHRASE_TMS_SETTINGS       ,   "tmsSettings"       ,   ""  )    
-
+X(PHRASE_UPDATE_APP         ,   "به روز رسانی اپلیکیشن"       ,   "update app"
+)
+X(PHRASE_RESET_MERCHAT_PIN  ,   "بازنشانی رمز پذیرنده"        ,   "reset merchant pin"
+)
+X(PHRASE_DEFAULT_SETTINGS   ,   "تنظیمات پیش فرض"              ,   "default settings"
+)
+X(PHRASE_SERVER_SETTINGS    ,   "serverSettings"                ,   ""
+)
+X(PHRASE_TMS_SETTINGS       ,   "tmsSettings"                   ,   ""
+)
+X(PHRASE_SOUND_SETTINGS     ,   "تنظیمات صدا"                   ,  "sound settings"
+)
+X(PHRASE_ENERGY_SAVING      ,   "ذخیره انرژی"                   ,  "energy saving"
+)
+X(PHRASE_RECEIPT_SETTINGS   ,   "تنظیمات رسید"                  ,  "receipts settings"
+)
+X(PHRASE_SCR_BRIGHTNESS     ,   "نور صفحه"                      ,  "screen brightness"
+)           
+X(PHRASE_TOUCH_STATUS       ,   "وضعیت صفحه لمسی"               ,  "touchpad status"
+)
+X(PHRASE_DT_UPDATING        ,   "به روز رسانی زمان و تاریخ"     ,  "sync date time"
+)
 
 /**********************************************************************
  *
@@ -154,12 +453,18 @@ X(PHRASE_TMS_SETTINGS       ,   "tmsSettings"       ,   ""  )
  * 
  **********************************************************************/
 
-X(PHRASE_SPECIAL_PROJECTS   ,    "specialProjects"  ,   ""  )                      
-X(PHRASE_SSL                ,    "ssl"              ,   ""  )          
-X(PHRASE_KEY_INJECTION      ,    "keyInjection"     ,   ""  )                  
-X(PHRASE_CONFIGURATION      ,    "configuration"    ,   ""  )              
-X(PHRASE_NETWORK_SETTINGS   ,    "networkSettings"  ,   ""  )  
-
+X(PHRASE_SPECIAL_PROJECTS   ,    "specialProjects"  ,   ""
+)
+X(PHRASE_SSL                ,    "ssl"              ,   ""
+)
+X(PHRASE_KEY_INJECTION      ,    "کلیدگذاری"        ,   "key injection"
+)
+X(PHRASE_CONFIGURATION      ,    "پیکربندی"         ,   "configuration"
+)
+X(PHRASE_NETWORK_SETTINGS   ,    "تنظیمات شبکه"     ,   "network settings"
+)
+X(PHRASE_FARA               ,    "فارا"              ,   "FARA"
+)
 
 /**********************************************************************
  *
@@ -167,6 +472,19 @@ X(PHRASE_NETWORK_SETTINGS   ,    "networkSettings"  ,   ""  )
  * 
  **********************************************************************/
 
-X(PHRASE_PRINTER_CHECK_PAPER    ,    "لطفا کاغذ پرینتر را بررسی نمایید"  ,   "Please check printer paper"  )
-X(PHRASE_PRINTER_OVERHEAT       ,    "دمای پرینتر بیش از حد افزایش یافته است"  ,   "Printer overheat"  )
-X(PHRASE_PRINTER_BUSY           ,    "پرینتر مشغول است"  ,   "Printer is busy"  )
+X(PHRASE_PRINTER_CHECK_PAPER    ,    "لطفا کاغذ پرینتر را بررسی نمایید"  ,   "Please check printer paper"
+)
+X(PHRASE_PRINTER_OVERHEAT       ,    "دمای پرینتر بیش از حد افزایش یافته است"  ,   "Printer overheat"
+)
+X(PHRASE_PRINTER_BUSY           ,    "پرینتر مشغول است"  ,   "Printer is busy" 
+)
+
+
+/**********************************************************************
+ *
+ *                              PSPs
+ * 
+ **********************************************************************/
+
+ X(PHRASE_PSP_GREEN_PAYMENT      ,    "پرداخت سبز"  ,   "green payment"  
+ )

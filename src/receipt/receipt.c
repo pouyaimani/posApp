@@ -8,6 +8,7 @@
 #include "settings/settings.h"
 #include "assets.h"
 #include "utility/utility.h"
+#include "phrases/phrases.h"
 
 #define PRINTER_WIDTH_PIX   384
 #define MAX_HEIGHT          100   // dynamic safe max
@@ -389,7 +390,9 @@ static uint8_t addAmount(Receipt *r,const char *amount) {
         return ERR_BAD_PARAMETER;
     }
     char buf[64];
-    snprintf(buf, sizeof(buf), " مبلغ: %s ریال ", amount);
+    snprintf(buf, sizeof(buf), " %s: %s %s ", 
+                phraseGetDef(PHRASE_AMOUNT), amount,
+                    phraseGetDef(PHRASE_RIAL));
 
     return addHighlightedText(r, buf, &FONT_16, LV_TEXT_ALIGN_CENTER);
 }
@@ -403,7 +406,7 @@ static uint8_t addHeader(Receipt *r, uint32_t date, uint32_t time) {
 
     RecColumn_t row1[] = {
         {"TODO", LV_TEXT_ALIGN_LEFT, 1},
-        {"پرداخت سبز", LV_TEXT_ALIGN_RIGHT, 1}
+        {phraseGetDef(PHRASE_PSP_GREEN_PAYMENT), LV_TEXT_ALIGN_RIGHT, 1}
     };
     if (addText(r, 2, row1) != ERR_OK) {
         return ERR_NOK;

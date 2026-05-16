@@ -2,15 +2,16 @@
 #include "event.h"
 #include "network/network.h"
 #include "ui/ui.h"
+#include "phrases/phrases.h"
 
 /*************************** Network connect ***********************/
 
 STATE_DEF_ENTER(NetConnect) {
-    SHOW_INFO("در حال اتصال", "");
+    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
     network()->connect();
     if (network()->id < 0) {
         GOTO_INFO(((NetConnect*)(STATE_NET_CONNECT))->onFailure, 
-            ((NetConnect*)(STATE_NET_CONNECT))->onFailure, "خطا در اتصال", "");
+            ((NetConnect*)(STATE_NET_CONNECT))->onFailure, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
 }
@@ -22,7 +23,7 @@ STATE_DEF_HANDLE(NetConnect, KeypadEvent) {
 STATE_DEF_HANDLE(NetConnect, SocketConnectEvent) {
     if(ev->isConnected) {
         GOTO_INFO(((NetConnect*)state)->onFailure, 
-            ((NetConnect*)state)->onFailure, "خطا در اتصال", "");
+            ((NetConnect*)state)->onFailure, phraseGetDef(PHRASE_CONNECTION_ERR), "");
     } else {
         SM_GOTO(((NetConnect*)state)->onSucess);
         HIDE_INFO();
@@ -36,12 +37,12 @@ OOP_CTOR(NetConnect, State *parent, const char *name) {
 
 /*************************** Network send ***********************/
 STATE_DEF_ENTER(NetSend) {
-    NetSend* st = (NetSend*)(STATE_NET_SEND);
-    SHOW_INFO("ارسال اطلاعات", "");
+    NetSend* st = (NetSend*)(PHRASE_SENDING_DATA);
+    SHOW_INFO(phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
     int ret = network()->send(st->ba->data, st->ba->len);
     if (ret != st->ba->len) {
         GOTO_INFO(st->onFailure, 
-            st->onFailure, "خطا در ارسال اطلاعات", "");
+            st->onFailure, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
             return;
     }
     // HIDE_INFO();
@@ -65,7 +66,7 @@ OOP_CTOR(NetSend, State *parent, const char *name) {
 /*************************** Network receive ***********************/
 
 STATE_DEF_ENTER(NetReceive) {
-    SHOW_INFO("دریافت اطلاعات", "");
+    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
 }
 
 STATE_DEF_EXIT(NetReceive) {
@@ -80,7 +81,7 @@ STATE_DEF_HANDLE(NetReceive, SocketReadyReadEvent) {
     NetReceive* st = (NetSend*)(STATE_NET_RECEIVE);
     if (ev->ba.len > 0) {
         GOTO_INFO(st->onFailure, 
-            st->onFailure, "خطا در دریافت اطلاعات", "");
+            st->onFailure, phraseGetDef(PHRASE_RECEIVING_DATA_ERR), "");
             return;
     }
     SM_GOTO(st->onSucess);

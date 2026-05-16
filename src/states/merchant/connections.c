@@ -10,6 +10,7 @@
 #include "network/network.h"
 #include "cellular/cellular.h"
 #include "settings/settings.h"
+#include "phrases/phrases.h"
 
 static Wifi *wifi;
 static Cellular *cel;
@@ -31,7 +32,7 @@ int connectState = WIFI_DISCONNECT_STATE;
 /******************** Wifi connect sub state **********************/
 
 STATE_DEF_ENTER(WifiConnect) {
-    SHOW_INFO("wifi در حال اتصال به", "لطفا منتظر بمانید");
+    SHOW_INFO(phraseGetDef(PHRASE_CONNECTING_2_WIFI), phraseGetDef(PHRASE_PLEASE_WAIT));
     connectState = WIFI_DISCONNECT_STATE;
     wifi->disconnect();
 }
@@ -60,11 +61,11 @@ STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
         connectState = WIFI_CONNECT_STATE;
     } else {
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
-            GOTO_INFO(state->parent, state->parent, "اتصال برقرار شد", "");
+            GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_CONNECTION_ERR), "");
             Input * in = (Input*)getState(STATE_ID_INPUT);
             saveWifiInfo(selectedAp, in->input);
         } else {
-            GOTO_INFO(state->parent, state->parent, "اتصال برقرار نشد", "");
+            GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         }
     }
 }
@@ -85,7 +86,7 @@ STATE_DEF_ENTER(WifiEnterPass) {
     OOP_CALL(getState(STATE_ID_INPUT), setNext, wifiConnect);
     in->reset();
     in->setMode(IN_MODE_ALPHAB);
-    in->setData("wifi رمز", "");
+    in->setData(phraseGetDef(PHRASE_WIFI_PIN), "");
     in->setMax(32);
     SM_GOTO(getState(STATE_ID_INPUT));
 }
@@ -106,7 +107,7 @@ static void WifiEnterPass(State *parent) {
 static Menu wifiMenu;
 
 STATE_DEF_ENTER(WifiScan) {
-    SHOW_INFO("wifi جستجوی", "لطفا منتظر بمانید");
+    SHOW_INFO(phraseGetDef(PHRASE_SEARCHING_4_WIFI), phraseGetDef(PHRASE_PLEASE_WAIT));
     wifi->startScan();
 }
 
@@ -140,7 +141,7 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
         HIDE_INFO();
         OOP_CALL(&wifiMenu, show);
     } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
-        GOTO_INFO(state->parent, state->parent, "wifi خطا در جستجوی", "");
+        GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
     }
 }
 
@@ -156,9 +157,11 @@ static void WifiScan(State *parent) {
 /******************** Cellular connect sub state **********************/
 
 STATE_DEF_ENTER(CellularLogin) {
-    SHOW_INFO("در حال اتصال به شبکه", "لطفا منتظر بمانید");
+    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING_2_NET), phraseGetDef(PHRASE_PLEASE_WAIT));
     if (OOP_CALL(cel, getSimStatus) != CELL_ERR_OK) {
-        GOTO_INFO(state->parent, state->parent, "خطا در اتصال", "وضعیت سیم کارت را بررسی کنید");
+        GOTO_INFO(state->parent, state->parent, 
+                phraseGetDef(PHRASE_CONNECTION_ERR), 
+                    phraseGetDef(PHRASE_CHECK_SIM_STAT));
         return;
     }
     cel->startPPPlogin(NULL, NULL, NULL, NULL);
@@ -169,11 +172,14 @@ STATE_DEF_EXIT(CellularLogin) {
 
 STATE_DEF_HANDLE(CellularLogin, CellEvent) {
     if (ev->pppSt == CELL_PPP_SUCESS) {
-        GOTO_INFO(state->parent, state->parent, "با موفقیت متصل شد", "");
+        GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
     } else if (ev->pppSt == CELL_PPP_FAILURE) {
-        GOTO_INFO(state->parent, state->parent, "خطا در اتصال", "");
+        GOTO_INFO(state->parent, state->parent,
+                    phraseGetDef(PHRASE_CONNECTION_ERR), "");
     } else if (ev->pppSt == CELL_PPP_INVALID) {
-        GOTO_INFO(state->parent, state->parent, "خطا در اتصال", "");
+        GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_CONNECTION_ERR), "");
     }
 }
 
@@ -201,12 +207,6 @@ typedef enum {
 ConnectionTypes_t menuMap[3];
 int menuCount = 0;
 
-static const char* itemTxt[CONNECTION_ALL] = {
-    "وایفای",
-    "gprs",
-    "dial up",
-};
-
 static Menu menu;
 
 static void createUi() {
@@ -214,7 +214,7 @@ static void createUi() {
     menuCount = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
     if (sys()->module.wifi) {
-        OOP_CALL(&menu, addItem, itemTxt[CONNECTION_WIFI], wifiScan, NULL, NULL);
+        OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_WIFI), wifiScan, NULL, NULL);
         menuMap[menuCount] = CONNECTION_WIFI;
         if (route == NET_ROUTE_WIFI) {
             OOP_CALL(&menu, setChecked, menuCount);
@@ -222,7 +222,7 @@ static void createUi() {
         menuCount++;
     }
     if (sys()->module.gprs) {
-        OOP_CALL(&menu, addItem, itemTxt[CONNECTION_GPRS], cellularLogin, NULL, NULL);
+        OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_GPRS), cellularLogin, NULL, NULL);
         menuMap[menuCount] = CONNECTION_GPRS;
         if (route == NET_ROUTE_CELLUALR) {
             OOP_CALL(&menu, setChecked, menuCount);

@@ -9,14 +9,15 @@
 #include "utility/utility.h"
 #include "states/services/services.h"
 #include "settings/settings.h"
+#include "phrases/phrases.h"
 
 static TerminalSettings *termStorage;
 
-static const char* otherItemTxt[4] = {
-    "مبلغ ثابت",
-    "سقف مبلغ",
-    "خرید مستقیم",
-    "فعالسازی سرویس ها"
+static const Phrases_t dsc[4] = {
+    PHRASE_FIXED_AMNT,
+    PHRASE_AMNT_CEIL,
+    PHRASE_DIRECT_SALE,
+    PHRASE_EN_SERVICES
 };
 
 typedef enum {
@@ -30,13 +31,6 @@ typedef enum {
 static SubState *subState[OTH_PROJ_ALL];
 
 /******************** fixed amount sub state **********************/
-
-static const char* fixecAmntItemTxt[4] = {
-    "غیر فعال",
-    "لیست قیمت",
-    "مبلغ ثابت",
-    "ثابت با ضریب"
-};
 
 static Menu fixedAmntMenu;
 static SubState *enterAmount;
@@ -69,43 +63,53 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         }
         switch (listCnt) {
         case 0: {
-            GOTO_INPUT(state->parent, state, "مبلغ اول", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FIRST_AMNT),
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 1: {
-            GOTO_INPUT(state->parent, state, "مبلغ دوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SEC_AMNT), 
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 2: {
-            GOTO_INPUT(state->parent, state, "مبلغ سوم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_THIRD_AMNT), 
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 3: {
-            GOTO_INPUT(state->parent, state, "مبلغ چهارم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FOURTH_AMNT),
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 4: {
-            GOTO_INPUT(state->parent, state, "مبلغ پنجم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FIFTH_AMNT), 
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 5: {
-            GOTO_INPUT(state->parent, state, "مبلغ ششم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SIXTH_AMNT), 
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 6: {
-            GOTO_INPUT(state->parent, state, "مبلغ هفتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SEVENTH_AMNT), 
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 7: {
-            GOTO_INPUT(state->parent, state, "مبلغ هشتم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_EIGHTH_AMNT), 
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 8: {
-            GOTO_INPUT(state->parent, state, "مبلغ نهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_NINTH_AMNT), 
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 9: {
-            GOTO_INPUT(state->parent, state, "مبلغ دهم", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_TENTH_AMNT),
+                        phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[listCnt]);
             break; }
         case 10: {
@@ -117,7 +121,8 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         listCnt++;
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_SINGLE) {
         if (listCnt == 0) {
-            GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
+                         phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[10]);
             listCnt++;
         } else {
@@ -128,7 +133,8 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         }
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_VARIANT) {
         if (listCnt == 0) {
-            GOTO_INPUT(state->parent, state, "مبلغ", "ریال", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
+                         phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
             in->setInput(termStorage->amountList[11]);
             listCnt++;
         } else {
@@ -143,10 +149,10 @@ STATE_DEF_ENTER(EnterFixedAmount) {
 STATE_DEF_ENTER(FixedAmount) {
     uiMenu(&fixedAmntMenu, getDisplay()->screen);
     fixedAmntMenu.checkEnable = true;
-    OOP_CALL(&fixedAmntMenu, addItem, fixecAmntItemTxt[FIXED_AMNT_DIS], NULL, disableFixedAmnt, NULL);
-    OOP_CALL(&fixedAmntMenu, addItem, fixecAmntItemTxt[FIXED_AMNT_LISTS], enterAmount, setFixedItemToList, NULL);
-    OOP_CALL(&fixedAmntMenu, addItem, fixecAmntItemTxt[FIXED_AMNT_SINGLE], enterAmount, setFixedItemToSingle, NULL);
-    OOP_CALL(&fixedAmntMenu, addItem, fixecAmntItemTxt[FIXED_AMNT_VARIANT], enterAmount, setFixedItemToVariant, NULL);
+    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, disableFixedAmnt, NULL);
+    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_PRICE_LIST), enterAmount, setFixedItemToList, NULL);
+    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_AMNT), enterAmount, setFixedItemToSingle, NULL);
+    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_WITH_COEF), enterAmount, setFixedItemToVariant, NULL);
     OOP_CALL(&fixedAmntMenu, setChecked, termStorage->fixedAmountItem);
     listCnt = 0;
     GOTO_MENU(state->parent, &fixedAmntMenu, NULL, NULL);
@@ -163,14 +169,16 @@ static void disMaxAmnt() {
 
 STATE_DEF_ENTER(GetMaxAmnt) {
     Input *in = getState(STATE_ID_INPUT);
-    GOTO_INFO(state->parent, state->parent, "با موفقیت فعال شد", "");
+    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_ACTIVATE_SUC), "");
     termStorage->maxAmntEnable = true;
     snprintf(termStorage->maxAmnt,
         13, "%s", in->input);
 }
 
 STATE_DEF_ENTER(EnterMaxAmnt) {
-    GOTO_INPUT(state->parent, getMaxAmnt, "سقف مبلغ", "(ریال)", 12, IN_MODE_AMOUNT, NULL);
+    DEFINE_STRING(rial, 16);
+    snprintf(rial, sizeof(rial), "(%s)", phraseGetDef(PHRASE_RIAL));
+    GOTO_INPUT(state->parent, getMaxAmnt, phraseGetDef(PHRASE_AMNT_CEIL), rial, 12, IN_MODE_AMOUNT, NULL);
     Input *in = STATE_INPUT;
     in->setInput(termStorage->maxAmnt);
 }
@@ -178,8 +186,10 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
 STATE_DEF_ENTER(MaxAmount) {
     uiMenu(&maxAmntMenu, getDisplay()->screen);
     maxAmntMenu.checkEnable = true;
-    OOP_CALL(&maxAmntMenu, addItem, "فعال", enterMaxAmnt, NULL, NULL);
-    OOP_CALL(&maxAmntMenu, addItem, "غیر فعال", NULL, disMaxAmnt, NULL);
+    OOP_CALL(&maxAmntMenu, addItem, phraseGetDef(PHRASE_ENABLE), 
+                enterMaxAmnt, NULL, NULL);
+    OOP_CALL(&maxAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), 
+                NULL, disMaxAmnt, NULL);
     if(termStorage->maxAmntEnable) {
         OOP_CALL(&maxAmntMenu, setChecked, 0);
     } else {
@@ -202,8 +212,10 @@ static void disDirectSale() {
 STATE_DEF_ENTER(DirectSale) {
     uiMenu(&dirSaleMenu, getDisplay()->screen);
     dirSaleMenu.checkEnable = true;
-    OOP_CALL(&dirSaleMenu, addItem, "فعال", NULL, enDirectSale, NULL);
-    OOP_CALL(&dirSaleMenu, addItem, "غیر فعال", NULL, disDirectSale, NULL);
+    OOP_CALL(&dirSaleMenu, addItem, 
+                phraseGetDef(PHRASE_ENABLE), NULL, enDirectSale, NULL);
+    OOP_CALL(&dirSaleMenu, addItem, 
+                phraseGetDef(PHRASE_DISABLE), NULL, disDirectSale, NULL);
 
     GOTO_MENU(state->parent, &dirSaleMenu, NULL, NULL);
 }
@@ -242,7 +254,7 @@ static void saveSettings() {
 STATE_DEF_ENTER(OtherProjects) {
     uiMenu(&otherMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < OTH_PROJ_ALL ; i++) {
-        OOP_CALL(&otherMenu, addItem, otherItemTxt[i], subState[i], NULL, NULL);
+        OOP_CALL(&otherMenu, addItem, phraseGetDef(dsc[i]), subState[i], NULL, NULL);
     }
     GOTO_MENU(state->parent, &otherMenu, saveSettings, NULL);
 }

@@ -10,6 +10,7 @@
 #include "iso8583.h"
 #include "magReader/magReader.h"
 #include "transmitter.h"
+#include "phrases/phrases.h"
 
 static Network *net;
 
@@ -24,10 +25,10 @@ static int socketId;
 STATE_DEF_ENTER(Connecting) {
     // connect();
     if (socketId < 0) {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, "خطا در اتصال", "");
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
-    SHOW_INFO("در حال اتصال", "");
+    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
 }
 
 STATE_DEF_EXIT(Connecting) {
@@ -40,7 +41,7 @@ STATE_DEF_HANDLE(Connecting, KeypadEvent) {
 
 STATE_DEF_HANDLE(Connecting, SocketConnectEvent) {
     if(ev->isConnected) {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, "خطا در اتصال", "");
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, phraseGetDef(PHRASE_CONNECTION_ERR), "");
     } else {
         SM_GOTO(sendData);
     }
@@ -71,7 +72,7 @@ static void prepareMsg() {
 }
 
 STATE_DEF_ENTER(SendData) {
-    SHOW_INFO("ارسال اطلاعات", "");
+    SHOW_INFO(phraseGetDef(PHRASE_SENDING_DATA), "");
 }
 
 STATE_DEF_EXIT(SendData) {
@@ -100,7 +101,7 @@ static void SendData(State *parent) {
 /******************** Receive data sub state **********************/
 
 STATE_DEF_ENTER(ReceiveData) {
-    SHOW_INFO("دریافت اطلاعات", "");
+    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
 }
 
 STATE_DEF_EXIT(ReceiveData) {

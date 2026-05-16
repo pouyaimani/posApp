@@ -10,6 +10,7 @@
 #include "utility/utility.h"
 #include "common.h"
 #include "settings/settings.h"
+#include "phrases/phrases.h"
 
 #define PASSWORD_MAX_LEN 4
 #define IP_MAX_LEN 12
@@ -26,13 +27,13 @@ typedef enum {
 } SubStates_t;
 
 static const char* itemTxt[SUBS_ALL] = {
-    "تنظیمات شبکه",
-    "کلیدگذاری",
-    "پیکربندی",
-    "فارا",
-    "بازنشانی رمز پذیرنده",
-    "به روز رسانی اپلیکیشن",
-    "تنظیمات پیش فرض"
+    PHRASE_NETWORK_SETTINGS,
+    PHRASE_KEY_INJECTION,
+    PHRASE_CONFIGURATION,
+    PHRASE_FARA,
+    PHRASE_RESET_MERCHAT_PIN,
+    PHRASE_UPDATE_APP,
+    PHRASE_DEFAULT_SETTINGS
 };
 
 static SubState *subStates[SUBS_ALL];
@@ -59,13 +60,14 @@ STATE_DEF_ENTER(CheckPassword) {
     if (isPassVlaid) {
         SM_GOTO(supervisorMenu);
     } else {
-        GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER), "رمز عبور نادرست است", "");
+        GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER),
+                 phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
 STATE_DEF_ENTER(EnterPassword) {
     GOTO_INPUT(STATE_IDLE, checkPass,
-        "ورود رمز", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+        phraseGetDef(PHRASE_ENTER_PIN), "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 static void EnterPassword(State *parent) {
@@ -97,12 +99,13 @@ STATE_DEF_ENTER(CheckPin) {
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
     } else {
-        GOTO_INFO(supervisorMenu, supervisorMenu, "رمز نادرست است", "");
+        GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
 STATE_DEF_ENTER(EnterNewPin) {
-    GOTO_INPUT(state->parent, reEnterNewPin, "رمز جدید", "", 4, IN_MODE_PASSWORD, NULL);
+    GOTO_INPUT(state->parent, reEnterNewPin, 
+            phraseGetDef(PHRASE_NEW_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(ReEnterNewPin) {
@@ -110,7 +113,8 @@ STATE_DEF_ENTER(ReEnterNewPin) {
     for (size_t i = 0; i < 4; i++) {
         newPin[i] = inp->password[i];
     }
-    GOTO_INPUT(supervisorMenu, checkNewPin, "تکرار رمز جدید", "", 4, IN_MODE_PASSWORD, NULL);
+    GOTO_INPUT(supervisorMenu, checkNewPin, 
+            phraseGetDef(PHRASE_REPEAT_NEW_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(CheckNewPin) {
@@ -122,14 +126,14 @@ STATE_DEF_ENTER(CheckNewPin) {
             settings()->terminal.merchantPin[i] = newPin[i];
         }
         settings()->save();
-        GOTO_INFO(supervisorMenu, supervisorMenu, "رمز با موفقیت تغییر کرد", "");
+        GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
     } else {
-        GOTO_INFO(supervisorMenu, supervisorMenu, "تاییدیه رمز نادرست است", "");
+        GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
     }
 }
 
 STATE_DEF_ENTER(ChangeMerPin) {
-    GOTO_INPUT(state->parent, checkPin, "رمز فعلی", "", 4, IN_MODE_PASSWORD, NULL);
+    GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 static void ChangeMerPin(State *parent) {
@@ -185,7 +189,7 @@ static const char* serverSetTxt[SUBS_ALL] = {
 };
 
 STATE_DEF_ENTER(EnterIp) {
-    GOTO_INPUT(state->parent, enterPort, "لطفا آدرس سرور را وارد کنید",
+    GOTO_INPUT(state->parent, enterPort, phraseGetDef(PHRASE_ENTER_SERV_IP),
         "", IP_MAX_LEN, IN_MODE_IP, NULL);
     Input * in = STATE_INPUT;
     if (serverItem == SERV_SET_MAIN) {
@@ -198,7 +202,7 @@ STATE_DEF_ENTER(EnterIp) {
 STATE_DEF_ENTER(EnterPort) {
     Input * in = STATE_INPUT;
     snprintf(ip, sizeof(ip), "%s", in->input);
-    GOTO_INPUT(state->parent, enterServerId, "لظفا درگاه سرور را وارد کنید",
+    GOTO_INPUT(state->parent, enterServerId, phraseGetDef(PHRASE_ENTER_SERV_PORT),
         "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
@@ -212,7 +216,7 @@ STATE_DEF_ENTER(EnterPort) {
 STATE_DEF_ENTER(EnterServerId) {
     Input * in = STATE_INPUT;
     port = toInt(in->input);
-    GOTO_INPUT(state->parent, getServerId, "لظفا شناسه شبکه را وارد کنید",
+    GOTO_INPUT(state->parent, getServerId, phraseGetDef(PHRASE_ENTER_SERV_ID),
         "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
@@ -240,8 +244,8 @@ static void disSSL() {
 STATE_DEF_ENTER(EnableSsl) {
     uiMenu(&sslMenu, getDisplay()->screen);
     sslMenu.checkEnable = true;
-    OOP_CALL(&sslMenu, addItem, "فعال", success, enSSL, NULL);
-    OOP_CALL(&sslMenu, addItem, "غیر فعال", success, disSSL, NULL);
+    OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
+    OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_DISABLE), success, disSSL, NULL);
     GOTO_MENU(state->parent, &sslMenu, NULL, NULL);
     OOP_CALL(&sslMenu, setChecked, !settings()->server.sslEn);
 }
@@ -259,7 +263,7 @@ STATE_DEF_ENTER(Success) {
         settings()->server.tmsId = serverId;
     }
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
+    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 static void setItemToMainServer() {
@@ -324,7 +328,7 @@ STATE_DEF_ENTER(MerchantPassReset) {
     snprintf(settings()->terminal.merchantPin,
                 MERCHANT_PIN_LEN + 1, "%s", MERCHANT_DEFAULT_PIN);
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, "رمز با موفقیت تغییر کرد", "");
+    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 OOP_CTOR(MerchantPassReset, State *parent, const char *name) {
@@ -358,7 +362,7 @@ OOP_CTOR(UpdateApp, State *parent, const char *name) {
 
 STATE_DEF_ENTER(DefaultSettings) {
     settings()->reset();
-    GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
+    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 OOP_CTOR(DefaultSettings, State *parent, const char *name) {
@@ -373,7 +377,7 @@ static Menu menu;
 STATE_DEF_ENTER(SupervisorMenu) {
     uiMenu(&menu, getDisplay()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
-        OOP_CALL(&menu, addItem, itemTxt[i], subStates[i], NULL, NULL);
+        OOP_CALL(&menu, addItem, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
     }
     GOTO_MENU(getState(STATE_ID_SUPPORTER), &menu, NULL, NULL);
 }

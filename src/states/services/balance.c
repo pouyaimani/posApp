@@ -2,6 +2,7 @@
 #include "states/states.h"
 #include "sys/sys.h"
 #include "ui/ui.h"
+#include "phrases/phrases.h"
 
 static SubState *enterPass;
 static SubState *commu;
@@ -16,7 +17,7 @@ STATE_DEF_ENTER(Balance) {
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
-    GOTO_INPUT(STATE_IDLE, commu, "رمز کارت",
+    GOTO_INPUT(STATE_IDLE, commu, phraseGetDef(PHRASE_CARD_PIN),
         INFO_WAGE, PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 

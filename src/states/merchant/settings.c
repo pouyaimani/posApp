@@ -7,6 +7,7 @@
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
+#include "phrases/phrases.h"
 
 typedef enum {
     SET_ITEM_SOUND = 0,
@@ -20,13 +21,13 @@ typedef enum {
 
 static SubState *subSettings[SET_ITEM_ALL];
 
-static const char* SettingsItemTxt[SET_ITEM_ALL] = {
-    "تنظیمات صدا",
-    "ذخیره انرژی",
-    "تنظیمات رسید",
-    "نور صفحه",
-    "وضعیت صفحه لمسی",
-    "به روز رسانی زمان و تاریخ",
+static const Phrases_t SettingsItemTxt[SET_ITEM_ALL] = {
+    PHRASE_SOUND_SETTINGS,
+    PHRASE_ENERGY_SAVING,
+    PHRASE_RECEIPT_SETTINGS,
+    PHRASE_SCR_BRIGHTNESS,
+    PHRASE_TOUCH_STATUS,
+    PHRASE_DT_UPDATING,
 };
 
 /******************** sound sub state **********************/
@@ -363,7 +364,7 @@ static Menu settingsMenu;
 static void createUi() {
     uiMenu(&settingsMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL ; i++) {
-        OOP_CALL(&settingsMenu, addItem, SettingsItemTxt[i], subSettings[i], NULL, NULL);
+        OOP_CALL(&settingsMenu, addItem, phraseGetDef(SettingsItemTxt[i]), subSettings[i], NULL, NULL);
     }
 }
 

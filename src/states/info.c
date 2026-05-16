@@ -7,6 +7,7 @@
 #include "myColor.h"
 #include "ui/ui.h"
 #include "sys/sys.h"
+#include "phrases/phrases.h"
 
 InfoPage page;
 
@@ -102,12 +103,12 @@ lv_obj_t *menu;
 
 STATE_DEF_ENTER(DevInfo) {
     menu = uiRowMenu(getDisplay()->screen);
-    rowMenuAdd(menu, "سریال", OOP_CALL(sys(), getSN));
-    rowMenuAdd(menu, "کد کارتخوان", OOP_CALL(sys(), getCode));
-    rowMenuAdd(menu, "ترمینال", OOP_CALL(sys(), getName));
-    rowMenuAdd(menu, "پذیرنده", "3331313");
-    rowMenuAdd(menu, "IMEI", "");
-    rowMenuAdd(menu, "اپراتور", "1313132kjn32n3kn2k3n2kn3k2n3");
+    rowMenuAdd(menu, phraseGetDef(PHRASE_SERIAL), OOP_CALL(sys(), getSN));
+    rowMenuAdd(menu, phraseGetDef(PHRASE_DEVICE_CODE), OOP_CALL(sys(), getCode));
+    rowMenuAdd(menu, phraseGetDef(PHRASE_TERMINAL), OOP_CALL(sys(), getName));
+    rowMenuAdd(menu, phraseGetDef(PHRASE_MERCHANT), "3331313");
+    rowMenuAdd(menu, phraseGetDef(PHRASE_IMEI), "");
+    rowMenuAdd(menu, phraseGetDef(PHRASE_OPERATOR), "1313132kjn32n3kn2k3n2kn3k2n3");
     LV_SHOW(menu);
 }
 

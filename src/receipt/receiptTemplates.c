@@ -10,7 +10,7 @@ static int8_t receiptSectionPsp(Receipt *rec) {
     // TODO: left side value?
     RecColumn_t row[] = {
         {"910990057", LV_TEXT_ALIGN_LEFT, 1},
-        {"پرداخت سبز", LV_TEXT_ALIGN_RIGHT, 1}
+        {phraseGetDef(PHRASE_PSP_GREEN_PAYMENT), LV_TEXT_ALIGN_RIGHT, 1}
     };
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ; , ERR_NOK);
     return ERR_OK;
@@ -231,6 +231,9 @@ static int8_t buildDailyRepHeaderReceipt(Receipt *rec, const ReceiptData *data) 
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     DailyReportHeader *header = &data->dailyHeader;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ; , ERR_NOK);
+    DEFINE_STRING(txt, 36);
+    snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_DAILY_REPORT), 
+                    phraseGetDef(PHRASE_TXN_ALL));
     RecColumn_t row[] = {
         {"گزارش روزانه همه تراکنش ها", LV_TEXT_ALIGN_CENTER, 1}
     };
@@ -328,8 +331,11 @@ static int8_t buildDetailtRepHeaderReceipt(Receipt *rec, const ReceiptData *data
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ; , ERR_NOK);
     DetailedReportHeader *header = &data->detailedHeader;
+    DEFINE_STRING(txt, 36);
+    snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_DETAILED_REPORT), 
+                    phraseGetDef(PHRASE_TXN_ALL));
     RecColumn_t row[] = {
-        {"ریزتراکنش همه تراکنش ها", LV_TEXT_ALIGN_CENTER, 1}
+        {txt, LV_TEXT_ALIGN_CENTER, 1}
     };
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ; , ERR_NOK);
     DATE_TIME_STR(dt);

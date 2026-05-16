@@ -9,6 +9,7 @@
 #include "settings/settings.h"
 #include "record/shiftRecs.h"
 #include "logger.h"
+#include "phrases/phrases.h"
 
 static Menu shiftItemMenu;
 static lv_obj_t *shiftMenu;
@@ -26,13 +27,14 @@ typedef enum {
 
 static SubState *subShift[SHIFT_ITEM_ALL];
 
-static const char* shiftItemTxt[SHIFT_ITEM_ALL] = {
-    "فعالسازی شیفت",
-    "نمایش شیفت جاری",
-    "ایجاد شیفت",
-    "بستن شیفت",
-    "گزارش شیفت"
+static const Phrases_t shiftItemTxt[SHIFT_ITEM_ALL] = {
+    PHRASE_SHIFT_ENABLING,
+    PHRASE_SHIFT_SHOW_CUR,
+    PHRASE_SHIFT_CREATE,
+    PHRASE_SHIFT_CLOSE,
+    PHRASE_SHIFT_REPORT
 };
+
 
 static Menu EnMenu;
 
@@ -94,9 +96,13 @@ static void showShift(lv_obj_t *menu, int latest, const char *sdt,
     const char *edt, lv_text_align_t sAlign, lv_text_align_t eAlign) {
     char strNum[6];
     intToStr(latest + 1, strNum, 6);
-    ShiftMenuAdd(menu, "شماره شیفت  ", strNum, LV_TEXT_ALIGN_CENTER);
-    ShiftMenuAdd(menu, "زمان شروع  ", sdt, sAlign);
-    ShiftMenuAdd(menu, "زمان پایان  ", edt, eAlign);
+    ShiftMenuAdd(menu, phraseGetDef(PHRASE_ASHIFT_NUM), strNum, LV_TEXT_ALIGN_CENTER);
+    DEFINE_STRING(dsc, 36);
+    snprintf(dsc, sizeof(dsc), "%s  ", phraseGetDef(PHRASE_BEG_DT));
+    ShiftMenuAdd(menu, dsc, sdt, sAlign);
+    memset(dsc, 0 , sizeof(dsc));
+    snprintf(dsc, sizeof(dsc), "%s  ", phraseGetDef(PHRASE_FIN_DT));
+    ShiftMenuAdd(menu, dsc, edt, eAlign);
 }
 
 /******************** En/Dis shift sub state **********************/
@@ -120,7 +126,8 @@ STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         if (EnMenu.idx) {
             if (terminalStg->shiftActive) {
-                GOTO_INFO(state->parent, state->parent, "شیفت فعال می باشد", "ابتدا شیفت فعال را ببندید");
+                GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_SHIFT_IS_ACTIVE), phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
                 return;
             }
         }
@@ -147,7 +154,7 @@ STATE_DEF_ENTER(ShowCurrentShift) {
         showShift(shiftMenu, idx, dt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, "شیفت فعالی یافت نشد", "");
+        GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
 
@@ -170,7 +177,9 @@ static uint32_t sdate, stime;
 
 STATE_DEF_ENTER(CreateShift) {
     if (!terminalStg->shiftEnable) {
-        GOTO_INFO(state->parent, state->parent, "شیفت غیر فعال می باشد", "ابتدا شیفت را فعال کنید");
+        GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_SHIFT_IS_DEACTIVE), 
+                        phraseGetDef(PHRASE_SHIFT_EN_FIRST));
         return;
     }
     if (!terminalStg->shiftActive) {
@@ -182,7 +191,8 @@ STATE_DEF_ENTER(CreateShift) {
         showShift(shiftMenu, idx, sdt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, "شیفت در حال اجرا می باشد", "");
+        GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_SHIFT_IS_RUNNING), "");
     }
 }
 
@@ -197,7 +207,8 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else {
-        GOTO_INFO(state->parent, state->parent, "شیفت با موفقیت فعال شد", "");
+        GOTO_INFO(state->parent, state->parent, 
+                phraseGetDef(PHRASE_SHIFT_IS_ACTIVATED), "");
         terminalStg->shiftActive = true;
         ShiftData data;
         data.startDate = sdate;
@@ -224,7 +235,8 @@ STATE_DEF_ENTER(CloseShift) {
         showShift(shiftMenu, idx, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, "شیفت فعالی یافت نشد", "");
+        GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
 
@@ -245,9 +257,11 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
         data.endTime = etime;
         terminalStg->shiftActive = false;
         if (shifts()->insert(&data) == 0) {
-            GOTO_INFO(state->parent, state->parent, "شیفت با موفقیت بسته شد", "");
+            GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_SHIFT_IS_CLOSED), "");
         } else {
-            GOTO_INFO(state->parent, state->parent, "خطا در بستن شیفت", "");
+            GOTO_INFO(state->parent, state->parent, 
+                    phraseGetDef(PHRASE_SHIFT_CLOSE_ERR), "");
         }
     }
 }
@@ -263,7 +277,8 @@ STATE_DEF_ENTER(HandleReports) {
     LOG_DEBUG("shiftNum = %d", shiftNum);
     ShiftData data;
     if (shifts()->get(shiftNum, &data) != 0) {
-        GOTO_INFO(state->parent, state->parent, "شیفت مورد نظر یافت نشد", "");
+        GOTO_INFO(state->parent, state->parent, 
+                phraseGetDef(PHRASE_SHIFT_TARGET_NOT_FND), "");
         return;
     }
     char sdt[24] = {0};
@@ -291,7 +306,8 @@ STATE_DEF_HANDLE(HandleReports, KeypadEvent) {
 }
 
 STATE_DEF_ENTER(ShiftReports) {
-    GOTO_INPUT(state->parent, handleReports, "انتخاب شیفت", "", 3, IN_MODE_NUMBERS, NULL);
+    GOTO_INPUT(state->parent, handleReports, 
+            phraseGetDef(PHRASE_SHIFT_SELECT), "", 3, IN_MODE_NUMBERS, NULL);
 }
 
 /******************** Shift settings state **********************/
@@ -299,7 +315,7 @@ STATE_DEF_ENTER(ShiftReports) {
 static void createUi() {
     uiMenu(&shiftItemMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < SHIFT_ITEM_ALL ; i++) {
-        OOP_CALL(&shiftItemMenu, addItem, shiftItemTxt[i], subShift[i], NULL, NULL);
+        OOP_CALL(&shiftItemMenu, addItem, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
     }
 }
 

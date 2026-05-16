@@ -81,11 +81,11 @@ typedef struct {
 
 ReportQuery_t rquery;
 
-static const char* reportsItemTxt[REP_ITEM_ALL] = {
-    "چاپ مجدد",
-    "گزارش روزانه",
-    "گزارش تجمیعی",
-    "ریز تراکنش ها"
+static const Phrases_t reportsItemTxt[REP_ITEM_ALL] = {
+    PHRASE_REPRINT,
+    PHRASE_DAILY_REPORT,
+    PHRASE_SUMMARY_REPORT,
+    PHRASE_TRANACTION_DETAILS
 };
 
 /******************** re print sub state **********************/
@@ -108,12 +108,14 @@ void setReprintItem(void *arg) {
     case REPRINT_TRACE:
         QUERY_FILTER_TRACE(rquery.filter);
         GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-                 "شماره پیگیری را وارد کنید", "", MAX_TRACE_IN_LEN, IN_MODE_NUMBERS, rquery.trace);
+                 phraseGetDef(PHRASE_ENTER_TRACE), "", 
+                    MAX_TRACE_IN_LEN, IN_MODE_NUMBERS, rquery.trace);
         break;
     case REPRINT_REF:
         QUERY_FILTER_REF_NUM(rquery.filter);
         GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-                 "شماره مرجع را وارد کنید", "", MAX_REF_NUM_IN_LEN, IN_MODE_NUMBERS, rquery.refNum);
+                 phraseGetDef(PHRASE_ENTER_REF_NUM), "", 
+                    MAX_REF_NUM_IN_LEN, IN_MODE_NUMBERS, rquery.refNum);
         break;
     case REPRINT_BILL:
     case REPRINT_CHARGE:
@@ -134,14 +136,14 @@ void setReprintItem(void *arg) {
 
 static SubState *startReprint;
 
-static const char* printItemTxt[REPRINT_END] = {
-    "همه تراکنش ها",
-    "خرید",
-    "پرداخت قبض",
-    "شارژ مستقیم",
-    "کد شارژ",
-    "بر اساس پیگیری",
-    "بر اساس مرجع"
+static const Phrases_t printItemTxt[REPRINT_END] = {
+    PHRASE_TXN_ALL,
+    PHRASE_TXN_SALE,
+    PHRASE_TXN_BILL,
+    PHRASE_TXN_TOPUP,
+    PHRASE_TXN_CHARGE_CODE,
+    PHRASE_BASED_ON_TRACE,
+    PHRASE_BASED_ON_REF_NUM
 };
 
 static Menu printMenu;
@@ -150,7 +152,7 @@ STATE_DEF_ENTER(RePrint) {
     REPORT_RESULT_NORM(rquery.resMode);
     uiMenu(&printMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
-        OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
+        OOP_CALL(&printMenu, addItem, phraseGetDef(printItemTxt[i]), NULL,
                     setReprintItem, (void*)(uintptr_t)i);
     }
     GOTO_MENU(state->parent, &printMenu, NULL, NULL);
@@ -217,25 +219,29 @@ static void DetailsReport(State *parent) {
 /******************** Get Start Date sub state **********************/
 
 STATE_DEF_ENTER(GetStartDate) {
-    GOTO_INPUT(mainMenu, getStartTime, "از تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.startDate);
+    GOTO_INPUT(mainMenu, getStartTime, phraseGetDef(PHRASE_FROM_DATE),
+                 "", MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.startDate);
 }
 
 /******************** Get End Date sub state **********************/
 
 STATE_DEF_ENTER(GetEndDate) {
-    GOTO_INPUT(mainMenu, getEndTime, "تا تاریخ", "", MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.endDate);
+    GOTO_INPUT(mainMenu, getEndTime, phraseGetDef(PHRASE_TO_DATE),
+                    "", MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.endDate);
 }
 
 /******************** Get Start Time sub state **********************/
 
 STATE_DEF_ENTER(GetStartTime) {
-    GOTO_INPUT(mainMenu, getEndDate, "از ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.startTime);
+    GOTO_INPUT(mainMenu, getEndDate, phraseGetDef(PHRASE_FROM_TIME),
+                 "", MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.startTime);
 }
 
 /******************** Get End Time sub state **********************/
 
 STATE_DEF_ENTER(GetEndTime) {
-    GOTO_INPUT(mainMenu, extractData, "تا ساعت", "", MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.endTime);
+    GOTO_INPUT(mainMenu, extractData, phraseGetDef(PHRASE_TO_TIME),
+                    "", MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.endTime);
 }
 
 /******************** extract data sub state **********************/
@@ -345,7 +351,7 @@ STATE_DEF_EXIT(ExtractData) {
 
 STATE_DEF_HANDLE(ExtractData, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        GOTO_INFO(prev, prev, "نتیجه ای یافت نشد", "");
+        GOTO_INFO(prev, prev, phraseGetDef(PHRASE_NO_RESULT), "");
     }
 }
 
@@ -369,7 +375,7 @@ STATE_DEF_ENTER(Reports) {
     QUERY_FILTER_RESET(rquery.filter);
     uiMenu(&reportsMenu, getDisplay()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
-        OOP_CALL(&reportsMenu, addItem, reportsItemTxt[i], subReports[i], setReportItem, (void*)(uintptr_t)i);
+        OOP_CALL(&reportsMenu, addItem, phraseGetDef(reportsItemTxt[i]), subReports[i], setReportItem, (void*)(uintptr_t)i);
     }
     GOTO_MENU(state->parent, &reportsMenu, NULL, NULL);
 }

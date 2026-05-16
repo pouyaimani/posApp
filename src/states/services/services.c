@@ -5,6 +5,7 @@
 #include "settings/settings.h"
 #include "txn.h"
 #include "logger.h"
+#include "phrases/phrases.h"
 
 static Service *services[MAX_SERVICE_NUM];
 static Service *parent;
@@ -35,11 +36,11 @@ static void createServices() {
     services[SERVICE_ID_SIM_CHARGE] = (SimCharge*)GET_MEM(sizeof(SimCharge));
 
     OOP_CALL_CTOR(Service, parent, getState(STATE_ID_CARD_HOLDER), "parent");
-    OOP_CALL_CTOR(Sale, services[SERVICE_ID_SALE], parent, "خرید");
-    OOP_CALL_CTOR(Bill, services[SERVICE_ID_BILL], parent, "پرداخت قبض");
-    OOP_CALL_CTOR(Balance, services[SERVICE_ID_BALANCE],parent, "موجودی");
-    OOP_CALL_CTOR(Pay, services[SERVICE_ID_PAY],parent, "پرداخت");
-    OOP_CALL_CTOR(SimCharge, services[SERVICE_ID_SIM_CHARGE], parent, "خرید شارژ");
+    OOP_CALL_CTOR(Sale, services[SERVICE_ID_SALE], parent, phraseGetDef(PHRASE_TXN_SALE));
+    OOP_CALL_CTOR(Bill, services[SERVICE_ID_BILL], parent, phraseGetDef(PHRASE_TXN_BILL));
+    OOP_CALL_CTOR(Balance, services[SERVICE_ID_BALANCE],parent, phraseGetDef(PHRASE_TXN_BALANCE));
+    OOP_CALL_CTOR(Pay, services[SERVICE_ID_PAY],parent, phraseGetDef(PHRASE_TXN_PAY));
+    OOP_CALL_CTOR(SimCharge, services[SERVICE_ID_SIM_CHARGE], parent, phraseGetDef(PHRASE_TXN_SIM_CHARGE));
 
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
         services[i]->enable = settings()->terminal.serviceEn[i];

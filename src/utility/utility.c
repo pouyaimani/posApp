@@ -6,6 +6,7 @@
 #include "logger.h"
 #include "sys/sys.h"
 #include "common.h"
+#include "phrases/phrases.h"
 
 int libAtoi(const char *str) {
     int s = 0;
@@ -68,15 +69,15 @@ void removeDots(const char *src, char *dst, size_t dst_size)
 const char *numToLiteral(int x)
 {
     switch (x) {
-    case 1: return "یک";
-    case 2: return "دو";
-    case 3: return "سه";
-    case 4: return "چهار";
-    case 5: return "پنج";
-    case 6: return "شش";
-    case 7: return "هفت";
-    case 8: return "هشت";
-    case 9: return "نه";
+    case 1: return phraseGetDef(PHRASE_ONE);
+    case 2: return phraseGetDef(PHRASE_TWO);
+    case 3: return phraseGetDef(PHRASE_THREE);
+    case 4: return phraseGetDef(PHRASE_FOUR);
+    case 5: return phraseGetDef(PHRASE_FIVE);
+    case 6: return phraseGetDef(PHRASE_SIX);
+    case 7: return phraseGetDef(PHRASE_SEVEN);
+    case 8: return phraseGetDef(PHRASE_EIGHT);
+    case 9: return phraseGetDef(PHRASE_NINE);
     default:
         return "";
     }

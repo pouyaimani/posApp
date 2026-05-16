@@ -7,6 +7,7 @@
 #include "settings/settings.h"
 #include "txn.h"
 #include "utility/utility.h"
+#include "phrases/phrases.h"
 
 static SubState *enterAmount;
 static SubState *enterPass;
@@ -24,7 +25,7 @@ static char *amount;
 
 STATE_DEF_ENTER(EnterAmount) {
     GOTO_INPUT(STATE_IDLE, enterPass,
-        "مبلغ", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+        phraseGetDef(PHRASE_AMOUNT), "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
 }
 
 /******************** Enter pass sub state **********************/
@@ -33,7 +34,7 @@ STATE_DEF_ENTER(EnterPassword) {
     Input *in = getState(STATE_ID_INPUT);
     // OOP_CALL(packer(), setAmount, in->input);
     GOTO_INPUT(STATE_IDLE, commu,
-        "رمز کارت", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+        phraseGetDef(PHRASE_CARD_PIN), "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 /******************** Connection sub state **********************/

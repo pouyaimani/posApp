@@ -8,6 +8,7 @@
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
+#include "phrases/phrases.h"
 
 static bool validatePass(char *pass0, char *pass1, uint8_t len) {
     for (size_t i = 0; i < len ; i++) {
@@ -54,13 +55,14 @@ STATE_DEF_ENTER(CheckPassword) {
     if (isPassVlaid) {
         SM_GOTO(merchantMenu);
     } else {
-        GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER), "رمز عبور نادرست است", "");
+        GOTO_INFO(getState(STATE_ID_SUPPORTER), 
+            getState(STATE_ID_SUPPORTER), phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
 STATE_DEF_ENTER(EnterPassword) {
     GOTO_INPUT(STATE_IDLE, checkPass,
-        "ورود رمز", "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+        phraseGetDef(PHRASE_PASS_ENTRY), "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 static void EnterPassword(State *parent) {
@@ -92,12 +94,15 @@ STATE_DEF_ENTER(CheckPin) {
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
     } else {
-        GOTO_INFO(merchantMenu, merchantMenu, "رمز نادرست است", "");
+        GOTO_INFO(merchantMenu, merchantMenu, 
+                    phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
 STATE_DEF_ENTER(EnterNewPin) {
-    GOTO_INPUT(state->parent, reEnterNewPin, "رمز جدید", "", 4, IN_MODE_PASSWORD, NULL);
+    GOTO_INPUT(state->parent, reEnterNewPin, 
+                phraseGetDef(PHRASE_NEW_PIN), "", 
+                    4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(ReEnterNewPin) {
@@ -105,7 +110,8 @@ STATE_DEF_ENTER(ReEnterNewPin) {
     for (size_t i = 0; i < 4; i++) {
         newPin[i] = inp->password[i];
     }
-    GOTO_INPUT(merchantMenu, checkNewPin, "تکرار رمز جدید", "", 4, IN_MODE_PASSWORD, NULL);
+    GOTO_INPUT(merchantMenu, checkNewPin, 
+                phraseGetDef(PHRASE_REPEAT_NEW_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(CheckNewPin) {
@@ -115,14 +121,17 @@ STATE_DEF_ENTER(CheckNewPin) {
     if(isPassVlaid) {
         snprintf(settings()->terminal.merchantPin, MERCHANT_PIN_LEN + 1, "%s", newPin);
         settings()->save();
-        GOTO_INFO(merchantMenu, merchantMenu, "رمز با موفقیت تغییر کرد", "");
+        GOTO_INFO(merchantMenu, merchantMenu,
+                 phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
     } else {
-        GOTO_INFO(merchantMenu, merchantMenu, "تاییدیه رمز نادرست است", "");
+        GOTO_INFO(merchantMenu, merchantMenu, 
+                phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
     }
 }
 
 STATE_DEF_ENTER(ChangeMerPin) {
-    GOTO_INPUT(state->parent, checkPin, "رمز فعلی", "", 4, IN_MODE_PASSWORD, NULL);
+    GOTO_INPUT(state->parent, checkPin, 
+                phraseGetDef(PHRASE_CURRENT_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 static void ChangeMerPin(State *parent) {
@@ -161,14 +170,14 @@ OOP_CTOR(MerchantData, State *parent, const char *name) {
 
 /******************** Merchant menu sub state **********************/
 
-static const char* itemTxt[SUBS_ALL] = {
-    "گزارش",
-    "شیفت کاری",
-    "اطلاعات پذیرنده",
-    "پروژه های خاص",
-    "تنظیمات",
-    "بستر ارتباطی",
-    "تغییر رمز پذیرنده"
+static const Phrases_t dsc[SUBS_ALL] = {
+    PHRASE_REPORT,
+    PHRASE_SHIFT,
+    PHRASE_MERCHANT_INFO,
+    PHRASE_SPECEFIC_PROJECT,
+    PHRASE_SETTINGS,
+    PHRASE_CONNECTION,
+    PHRASE_MERCHANT_PIN_CHANGE
 };
 
 static Menu menu;
@@ -176,7 +185,7 @@ static Menu menu;
 static void createUi() {
     uiMenu(&menu, getDisplay()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
-        OOP_CALL(&menu, addItem, itemTxt[i], subStates[i], NULL, NULL);
+        OOP_CALL(&menu, addItem, phraseGetDef(dsc[i]), subStates[i], NULL, NULL);
     }
 }
 

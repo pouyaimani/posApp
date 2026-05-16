@@ -8,6 +8,7 @@
 #include "sys/sys.h"
 #include "merchant/merchant.h"
 #include "supervisor/supervisor.h"
+#include "phrases/phrases.h"
 
 static Menu menu;
 static SubState *powerOff;
@@ -16,13 +17,6 @@ static Merchant *supervisor;
 
 #define ITEM_CNT_MAX    4
 
-static const char* itemTxt[ITEM_CNT_MAX] = {
-    "مشتری",
-    "پذیرنده",
-    "سرپرست",
-    "خاموش کردن",
-};
-
 static void onCustomer() {
     CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
@@ -30,15 +24,15 @@ static void onCustomer() {
 }
 
 static void onExit() {
-    GOTO_DIAL(STATE_SUPPORTER, powerOff, "قصد خروج دارید؟", "");
+    GOTO_DIAL(STATE_SUPPORTER, powerOff, phraseGetDef(PHRASE_WANNA_EXIT), "");
 }
 
 STATE_DEF_ENTER(Supporter) {
     uiMenu(&menu, getDisplay()->screen);
-    OOP_CALL(&menu, addItem, itemTxt[0], NULL, onCustomer, NULL);
-    OOP_CALL(&menu, addItem, itemTxt[1], merchant, NULL, NULL);
-    OOP_CALL(&menu, addItem, itemTxt[2], supervisor, NULL, NULL);
-    OOP_CALL(&menu, addItem, itemTxt[3], NULL, onExit, NULL);
+    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
+    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
+    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
+    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
     GOTO_MENU(STATE_IDLE, &menu, NULL, NULL);
 }
 
@@ -49,7 +43,7 @@ STATE_DEF_HANDLE(Supporter, TimeOutEvent) {
 /******************** Power off sub state **********************/
 
 STATE_DEF_ENTER(PowerOff) {
-    GOTO_INFO(NULL, NULL, "در حال خاموش شدن ...", "");
+    GOTO_INFO(NULL, NULL, phraseGetDef(PHRASE_POWERING_OFF), "");
     OOP_CALL(sys(), powerOff);
 }
 

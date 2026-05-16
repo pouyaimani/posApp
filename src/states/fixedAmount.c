@@ -6,6 +6,7 @@
 #include "states/merchant/merchant.h"
 #include "utility/utility.h"
 #include "settings/settings.h"
+#include "phrases/phrases.h"
 
 static int *fixedAmountItem;
 static TerminalSettings *termStorage;
@@ -36,8 +37,8 @@ STATE_DEF_ENTER(VariantAmount) {
     char str[32] = {0};
     char amount[AMOUNT_MAX_CNT] = {0};
     amountSeparator(termStorage->amountList[11], amount, AMOUNT_MAX_CNT);
-    snprintf(str, sizeof(str), "%s %s", "(ریال)", amount);
-    GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, "تعداد را وارد کنید", 4, IN_MODE_NUMBERS, NULL);
+    snprintf(str, sizeof(str), "(%s) %s", phraseGetDef(PHRASE_RIAL), amount);
+    GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, phraseGetDef(PHRASE_ENTER_COUNT), 4, IN_MODE_NUMBERS, NULL);
 }
 
 STATE_DEF_ENTER(FixedAmount) {

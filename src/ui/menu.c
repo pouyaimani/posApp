@@ -4,6 +4,7 @@
 #include "event.h"
 #include "state.h"
 #include "logger.h"
+#include "phrases/phrases.h"
 
 static void addItem(Menu *menu, const char * text, State *state,
                 CallBack_t cb, void * user_data) {
@@ -215,8 +216,8 @@ void uiDeleteMenu(Menu *menu) {
 
 void uiOnOffMenu(Menu *menu, lv_obj_t * parent) {
     uiMenu(menu, parent);
-    OOP_CALL(menu, addItem, "فعال", NULL, NULL, NULL);
-    OOP_CALL(menu, addItem, "غیر فعال", NULL, NULL, NULL);
+    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_ENABLE), NULL, NULL, NULL);
+    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, NULL, NULL);
 }
 
 void uiToggleMenu(Menu *menu, lv_obj_t * parent) {

@@ -9,6 +9,7 @@
 #include "storage/storage.h"
 #include "network/network.h"
 #include "transmitter.h"
+#include "phrases/phrases.h"
 
 static Network *net;
 
@@ -156,10 +157,10 @@ static void httpProcessChunked(uint8_t *data, uint32_t len)
 STATE_DEF_ENTER(Connecting) {
     // connect();
     if (socketId < 0) {
-        GOTO_INFO(onFailure, onFailure, "خطا در اتصال", "");
+        GOTO_INFO(onFailure, onFailure, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
-    SHOW_INFO("در حال اتصال", "");
+    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
 }
 
 STATE_DEF_EXIT(Connecting) {
@@ -172,7 +173,7 @@ STATE_DEF_HANDLE(Connecting, KeypadEvent) {
 
 STATE_DEF_HANDLE(Connecting, SocketConnectEvent) {
     if(ev->isConnected) {
-        GOTO_INFO(onFailure, onFailure, "خطا در اتصال", "");
+        GOTO_INFO(onFailure, onFailure, PHRASE_CONNECTIING, "");
     } else {
         SM_GOTO(sendData);
     }
@@ -240,7 +241,7 @@ static void SendData(State *parent) {
 /******************** Receive data sub state **********************/
 
 STATE_DEF_ENTER(ReceiveData) {
-    SHOW_INFO("دریافت اطلاعات", "");
+    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
 }
 
 STATE_DEF_EXIT(ReceiveData) {

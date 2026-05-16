@@ -8,6 +8,7 @@
 #include "ui/ui.h"
 #include "utility/utility.h"
 #include "utility/alphabetic.h"
+#include "phrases/phrases.h"
 
 #define PASS_MAX_LEN        4
 #define AMOUNT_MAX_LEN      10
@@ -264,12 +265,14 @@ static bool dateValidate(const char *in)
 static void showMaxError(State *state) {
     switch (inMode) {
     case IN_MODE_AMOUNT:
-        GOTO_INFO(state, state, "خطا", "مبلغ بیش از حد مجاز");
+        GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                    phraseGetDef(PHRASE_AMOUNT_EXCEED));
         break;
     case IN_MODE_PASSWORD:
         break;
     case IN_MODE_NUMBERS:
-        GOTO_INFO(state, state, "خطا", "ورودی بیش از حد مجاز");
+        GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                    phraseGetDef(PHRASE_INPUT_EXCEED));
         break;
     default:
         break;
@@ -347,17 +350,20 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
                 }
             } else if (inMode == IN_MODE_IP) {
                 if (!ipValidateDigits(input)) {
-                    GOTO_INFO(state, state, "خطا", "IP نامعتبر است");
+                    GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                                phraseGetDef(PHRASE_INVALID_IP));
                     return;
                 }
             } else if (inMode == IN_MODE_DATE) {
                 if (!dateValidate(input)) {
-                    GOTO_INFO(state, state, "خطا", "تاریخ نامعتبر است");
+                    GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                                phraseGetDef(PHRASE_INVALID_DATE));
                     return;
                 }
             } else if (inMode == IN_MODE_TIME) {
                 if (!timeValidate(input)) {
-                    GOTO_INFO(state, state, "خطا", "زمان نامعتبر است");
+                    GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                                phraseGetDef(PHRASE_INVALID_TIME));
                     return;
                 }
             }
@@ -391,9 +397,9 @@ static void createUi() {
     
     inputBox = uiInputBox(getDisplay()->screen);
     LV_ALIGN(inputBox.main, LV_ALIGN_CENTER, 0, 10);
-    confirmBut = uiButton(getDisplay()->screen, 0x68DD40, "تایید");
+    confirmBut = uiButton(getDisplay()->screen, 0x68DD40, phraseGetDef(PHRASE_CONFIRM));
     LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
-    cancelBut = uiButton(getDisplay()->screen, 0xFF4E4E, "لغو");
+    cancelBut = uiButton(getDisplay()->screen, 0xFF4E4E, phraseGetDef(PHRASE_CANCEL));
     LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(inputBox.textBox, "");

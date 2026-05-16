@@ -19,6 +19,7 @@
 #include "record/shiftRecs.h"
 #include "utility/utility.h"
 #include "receipt/receiptTemplates.h"
+#include "phrases/phrases.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -279,7 +280,7 @@ static void createUi() {
     menuText = lv_label_create(menuButton);
     LV_SET_TEXT_FONT(menuText, FONT_16);
     LV_SET_TEXT_COLOR(menuText, COLOR_WHITE);
-    LV_SET_TEXT(menuText, "منو");
+    LV_SET_TEXT(menuText, phraseGetDef(PHRASE_MENU));
     LV_ALIGN_TO(menuText, menuIcon, LV_ALIGN_OUT_BOTTOM_MID, 0, -5);
 }
 

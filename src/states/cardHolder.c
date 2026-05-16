@@ -10,6 +10,7 @@
 #include "eventloop.h"
 #include "magReader/magReader.h"
 #include "statusBar/statusBar.h"
+#include "phrases/phrases.h"
 
 static Menu menu;
 static InfoPage infop;
@@ -66,7 +67,8 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     if (ev->key <= KEY_9) {
         selected = (ServiceId_t)((int)ev->key - 1);
         if (!ch->isMagSwiped) {
-            OOP_CALL(&infop, setData, INFO_T_IMG, ICON_SWIPE_CARD, SWIPE_CARD_TEXT);
+            OOP_CALL(&infop, setData, INFO_T_IMG, 
+                        ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
             OOP_CALL(&menu, hide);
             OOP_CALL(&infop, show);
             return;
@@ -77,7 +79,8 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         selected = (ServiceId_t)menu.idx;
         if (!ch->isMagSwiped) {
-            OOP_CALL(&infop, setData, INFO_T_IMG, ICON_SWIPE_CARD, SWIPE_CARD_TEXT);
+            OOP_CALL(&infop, setData, INFO_T_IMG,
+                        ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
             OOP_CALL(&menu, hide);
             OOP_CALL(&infop, show);
             return;
