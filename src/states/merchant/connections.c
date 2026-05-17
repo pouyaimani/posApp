@@ -3,7 +3,7 @@
 #include "logger.h"
 #include "display.h"
 #include "event.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "sys/sys.h"
 #include "wifi/wifi.h"
 #include "storage/storage.h"
@@ -111,7 +111,7 @@ STATE_DEF_ENTER(WifiScan) {
 }
 
 STATE_DEF_EXIT(WifiScan) {
-    uiDeleteMenu(&wifiMenu);
+    ui_menu_destroy(&wifiMenu);
 }
 
 STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
@@ -133,7 +133,7 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
 
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
-        uiMenu(&wifiMenu, disp()->screen);
+        ui_menu_create(&wifiMenu, disp()->screen);
         for (uint8_t i = 0; i < wifi()->apList.size ; i++) {
             OOP_CALL(&wifiMenu, addItem, wifi()->apList.list[i].essid, wifiEnterPass, NULL, NULL);
         }
@@ -209,7 +209,7 @@ int menuCount = 0;
 static Menu menu;
 
 static void createUi() {
-    uiMenu(&menu, disp()->screen);
+    ui_menu_create(&menu, disp()->screen);
     menuCount = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
     if (sys()->module.wifi) {

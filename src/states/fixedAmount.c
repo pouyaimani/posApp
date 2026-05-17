@@ -1,7 +1,7 @@
 #include "states/states.h"
 #include "display.h"
 #include "sys/sys.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "storage/storage.h"
 #include "states/merchant/merchant.h"
 #include "utility/utility.h"
@@ -18,7 +18,7 @@ static SubState *variantAmount;
 static Menu amountListMenu;
 
 STATE_DEF_ENTER(AmountList) {
-    uiMenu(&amountListMenu, disp()->screen);
+    ui_menu_create(&amountListMenu, disp()->screen);
     for (uint8_t i = 0; i < termStorage->amountListCnt ; i++) {
         char str[32] = {0};
         char amount[AMOUNT_MAX_CNT] = {0};

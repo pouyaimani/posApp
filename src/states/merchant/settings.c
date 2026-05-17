@@ -3,7 +3,8 @@
 #include "logger.h"
 #include "display.h"
 #include "event.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
+#include "ui/bar.h"
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
@@ -80,7 +81,7 @@ static int idx;
 static SubState *getValue;
 
 STATE_DEF_ENTER(EnergySettings) {
-    uiMenu(&energyMenu, disp()->screen);
+    ui_menu_create(&energyMenu, disp()->screen);
     for (uint8_t i = 0; i < 2 ; i++) {
         OOP_CALL(&energyMenu, addItem, &energyItemTxt[i], NULL, NULL, NULL);
     }
@@ -89,7 +90,7 @@ STATE_DEF_ENTER(EnergySettings) {
 
 STATE_DEF_EXIT(EnergySettings) {
     OOP_CALL(&energyMenu, hide);
-    uiDeleteMenu(&energyMenu);
+    ui_menu_destroy(&energyMenu);
 }
 
 STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
@@ -147,7 +148,7 @@ static SubState *subReceipt[4];
 static Menu receiptMenu;
 
 STATE_DEF_ENTER(ReceiptSettings) {
-    uiMenu(&receiptMenu, disp()->screen);
+    ui_menu_create(&receiptMenu, disp()->screen);
     for (uint8_t i = 0; i < 4 ; i++) {
         OOP_CALL(&receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
     }
@@ -163,7 +164,7 @@ STATE_DEF_ENTER(AutoPrint) {
 
 STATE_DEF_EXIT(AutoPrint) {
     OOP_CALL(&autoRecMenu, hide);
-    uiDeleteMenu(&autoRecMenu);
+    ui_menu_destroy(&autoRecMenu);
 }
 
 STATE_DEF_HANDLE(AutoPrint, KeypadEvent) {
@@ -194,7 +195,7 @@ STATE_DEF_ENTER(PrnMerchRec) {
 
 STATE_DEF_EXIT(PrnMerchRec) {
     OOP_CALL(&merchRecMenu, hide);
-    uiDeleteMenu(&merchRecMenu);
+    ui_menu_destroy(&merchRecMenu);
 }
 
 STATE_DEF_HANDLE(PrnMerchRec, KeypadEvent) {
@@ -209,7 +210,7 @@ STATE_DEF_HANDLE(PrnMerchRec, KeypadEvent) {
 static Menu prnModel;
 
 STATE_DEF_ENTER(PrnModel) {
-    uiMenu(&prnModel, disp()->screen);
+    ui_menu_create(&prnModel, disp()->screen);
     OOP_CALL(&prnModel, addItem, "پس زمینه سفید", NULL, NULL, NULL);
     OOP_CALL(&prnModel, addItem, "پس زمینه مشکی", NULL, NULL, NULL);
     OOP_CALL(&prnModel, show);
@@ -217,7 +218,7 @@ STATE_DEF_ENTER(PrnModel) {
 
 STATE_DEF_EXIT(PrnModel) {
     OOP_CALL(&prnModel, hide);
-    uiDeleteMenu(&prnModel);
+    ui_menu_destroy(&prnModel);
 }
 
 STATE_DEF_HANDLE(PrnModel, KeypadEvent) {
@@ -312,7 +313,7 @@ STATE_DEF_ENTER(TouchSettings) {
 
 STATE_DEF_EXIT(TouchSettings) {
     OOP_CALL(&touchMenu, hide);
-    uiDeleteMenu(&touchMenu);
+    ui_menu_destroy(&touchMenu);
 }
 
 STATE_DEF_HANDLE(TouchSettings, KeypadEvent) {
@@ -362,7 +363,7 @@ static void DateTimeSettings(State *parent) {
 static Menu settingsMenu;
 
 static void createUi() {
-    uiMenu(&settingsMenu, disp()->screen);
+    ui_menu_create(&settingsMenu, disp()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL ; i++) {
         OOP_CALL(&settingsMenu, addItem, phraseGetDef(SettingsItemTxt[i]), subSettings[i], NULL, NULL);
     }

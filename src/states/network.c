@@ -1,7 +1,6 @@
 #include "states.h"
 #include "event.h"
 #include "network/network.h"
-#include "ui/ui.h"
 #include "phrases/phrases.h"
 
 /*************************** Network connect ***********************/

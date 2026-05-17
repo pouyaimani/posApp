@@ -1,7 +1,7 @@
 #include "services.h"
 #include "states/states.h"
 #include "sys/sys.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "phrases/phrases.h"
 
 static SubState *enterPass;

@@ -6,11 +6,12 @@
 #include "event.h"
 #include "assets.h"
 #include "services/services.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "eventloop.h"
 #include "magReader/magReader.h"
 #include "statusBar/statusBar.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static Menu menu;
 static InfoPage infop;
@@ -18,7 +19,7 @@ static ServiceId_t enableServicesId[SERVICE_ID_ALL];
 static int selected;
 
 static void createUi() {
-    uiMenu(&menu, disp()->screen);
+    ui_menu_create(&menu, disp()->screen);
     int cnt = 0;
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
         if (getService(i)->enable) {
@@ -41,7 +42,7 @@ STATE_DEF_ENTER(CardHolder) {
 STATE_DEF_EXIT(CardHolder) {
     OOP_CALL(&menu, hide);
     OOP_CALL(&infop, hide);
-    uiDeleteMenu(&menu);
+    ui_menu_destroy(&menu);
 }
 
 STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {

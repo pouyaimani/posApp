@@ -1,6 +1,5 @@
 #include "states.h"
 #include "sys/sys.h"
-#include "ui/ui.h"
 #include "transmitter.h"
 
 static Startup *startup;

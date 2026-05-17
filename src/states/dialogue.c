@@ -5,7 +5,7 @@
 #include "display.h"
 #include "font/myFont.h"
 #include "myColor.h"
-#include "ui/ui.h"
+#include "ui/button.h"
 
 static lv_obj_t *title;
 static lv_obj_t *body;

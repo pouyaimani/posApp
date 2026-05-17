@@ -4,7 +4,6 @@
 #include "display.h"
 #include "event.h"
 #include "assets.h"
-#include "ui/ui.h"
 #include "eventloop.h"
 #include "storage/storage.h"
 #include "network/network.h"

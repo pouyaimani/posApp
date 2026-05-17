@@ -3,7 +3,6 @@
 #include "sys/sys.h"
 #include "display.h"
 #include "event.h"
-#include "ui/ui.h"
 #include "eventloop.h"
 
 /******************** txn result state **********************/

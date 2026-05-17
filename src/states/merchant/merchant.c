@@ -4,7 +4,7 @@
 #include "display.h"
 #include "event.h"
 #include "assets.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
@@ -183,7 +183,7 @@ static const Phrases_t dsc[SUBS_ALL] = {
 static Menu menu;
 
 static void createUi() {
-    uiMenu(&menu, disp()->screen);
+    ui_menu_create(&menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
         OOP_CALL(&menu, addItem, phraseGetDef(dsc[i]), subStates[i], NULL, NULL);
     }

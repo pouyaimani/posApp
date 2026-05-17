@@ -2,7 +2,7 @@
 #include "states/states.h"
 #include "display.h"
 #include "event.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
@@ -115,7 +115,7 @@ STATE_DEF_ENTER(ShiftEnable) {
 
 STATE_DEF_EXIT(ShiftEnable) {
     OOP_CALL(&EnMenu, hide);
-    uiDeleteMenu(&EnMenu);
+    ui_menu_destroy(&EnMenu);
     settings()->save();
 }
 
@@ -313,7 +313,7 @@ STATE_DEF_ENTER(ShiftReports) {
 /******************** Shift settings state **********************/
 
 static void createUi() {
-    uiMenu(&shiftItemMenu, disp()->screen);
+    ui_menu_create(&shiftItemMenu, disp()->screen);
     for (uint8_t i = 0; i < SHIFT_ITEM_ALL ; i++) {
         OOP_CALL(&shiftItemMenu, addItem, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
     }

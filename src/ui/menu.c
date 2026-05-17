@@ -1,4 +1,4 @@
-#include "ui.h"
+#include "menu.h"
 #include "display.h"
 #include "utility/utility.h"
 #include "event.h"
@@ -152,7 +152,7 @@ static void toggle(Menu *menu, int idx) {
     LV_SET_TEXT_COLOR(obj, menu->toggle[idx] ? 0x00ff00 : 0xcc0000);
 }
 
-void uiMenu(Menu *menu, lv_obj_t * parent) {
+void ui_menu_create(Menu *menu, lv_obj_t * parent) {
     menu->vtable.addItem = addItem;
     menu->vtable.addOnOffItem = addOnOffItem;
     menu->vtable.handleItem = handleItem;
@@ -165,11 +165,6 @@ void uiMenu(Menu *menu, lv_obj_t * parent) {
     menu->idx = 0;
     menu->selected = 0;
     menu->checkEnable = false;
-    menu->item = MEM_ALLOC(MENU_ITEM_MAX * sizeof(lv_obj_t *));
-    menu->state = MEM_ALLOC(MENU_ITEM_MAX * sizeof(State *));
-    menu->cb = MEM_ALLOC(MENU_ITEM_MAX * sizeof(CallBack_t *));
-    menu->toggle = MEM_ALLOC(MENU_ITEM_MAX * sizeof(bool));
-    menu->userData = MEM_ALLOC(MENU_ITEM_MAX * sizeof(void *));
     for (size_t i = 0; i < MENU_ITEM_MAX; i++) {
         menu->item[i] = NULL;
         menu->state[i] = NULL;
@@ -214,7 +209,7 @@ void uiMenu(Menu *menu, lv_obj_t * parent) {
     menuHide(menu);
 }
 
-void uiDeleteMenu(Menu *menu) {
+void ui_menu_destroy(Menu *menu) {
     if (!menu) return;
 
     if(menu->main && lv_obj_is_valid(menu->main)) {
@@ -231,12 +226,12 @@ void uiDeleteMenu(Menu *menu) {
 }
 
 void uiOnOffMenu(Menu *menu, lv_obj_t * parent) {
-    uiMenu(menu, parent);
+    ui_menu_create(menu, parent);
     OOP_CALL(menu, addItem, phraseGetDef(PHRASE_ENABLE), NULL, NULL, NULL);
     OOP_CALL(menu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, NULL, NULL);
 }
 
 void uiToggleMenu(Menu *menu, lv_obj_t * parent) {
-    uiMenu(menu, parent);
+    ui_menu_create(menu, parent);
     menu->togglable = true;
 }

@@ -4,7 +4,7 @@
 #include "display.h"
 #include "event.h"
 #include "assets.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
@@ -242,7 +242,7 @@ static void disSSL() {
 }
 
 STATE_DEF_ENTER(EnableSsl) {
-    uiMenu(&sslMenu, disp()->screen);
+    ui_menu_create(&sslMenu, disp()->screen);
     sslMenu.checkEnable = true;
     OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
     OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_DISABLE), success, disSSL, NULL);
@@ -275,7 +275,7 @@ static void setItemToTms() {
 }
 
 STATE_DEF_ENTER(NetworkSettings) {
-    uiMenu(&serverSetMenu, disp()->screen);
+    ui_menu_create(&serverSetMenu, disp()->screen);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
     OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
@@ -375,7 +375,7 @@ OOP_CTOR(DefaultSettings, State *parent, const char *name) {
 static Menu menu;
 
 STATE_DEF_ENTER(SupervisorMenu) {
-    uiMenu(&menu, disp()->screen);
+    ui_menu_create(&menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
         OOP_CALL(&menu, addItem, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
     }

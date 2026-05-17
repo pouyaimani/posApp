@@ -4,7 +4,7 @@
 #include "display.h"
 #include "font/myFont.h"
 #include "myColor.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "event.h"
 
 static StMenu *menu;
@@ -15,7 +15,7 @@ STATE_DEF_ENTER(StMenu) {
 
 STATE_DEF_EXIT(StMenu) {
     OOP_CALL(menu->menu, hide);
-    uiDeleteMenu(menu->menu);
+    ui_menu_destroy(menu->menu);
 }
 
 STATE_DEF_HANDLE(StMenu, TimeOutEvent) {

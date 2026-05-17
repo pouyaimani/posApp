@@ -1,9 +1,10 @@
-#include "ui.h"
+#include "bar.h"
 #include "display.h"
 #include "utility/utility.h"
 #include "event.h"
 #include "logger.h"
 #include "common.h"
+#include "font/myFont.h"
 
 static void barSetValue(Bar *bar, int value) {
     RETURN_IF_NOT(bar->max > 0, true, ; );
@@ -40,12 +41,12 @@ static void barHide(Bar *bar) {
     LV_HIDE(bar->title);
 }
 
-void uiBarDelete(Bar *bar) {
+void ui_bar_destroy(Bar *bar) {
     lv_obj_delete(bar->bar);
     lv_obj_delete(bar->title);
 }
 
-void uiBar(Bar *bar, lv_obj_t * parent, int min, int max)
+void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max)
 {
     bar->vtable.decrease = barDec;
     bar->vtable.increase = barInc;

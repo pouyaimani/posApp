@@ -4,7 +4,7 @@
 #include "event.h"
 #include "assets.h"
 #include "services/services.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "sys/sys.h"
 #include "merchant/merchant.h"
 #include "supervisor/supervisor.h"
@@ -28,7 +28,7 @@ static void onExit() {
 }
 
 STATE_DEF_ENTER(Supporter) {
-    uiMenu(&menu, disp()->screen);
+    ui_menu_create(&menu, disp()->screen);
     OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
     OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
     OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);

@@ -3,7 +3,7 @@
 #include "logger.h"
 #include "display.h"
 #include "event.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
@@ -147,7 +147,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
 }
 
 STATE_DEF_ENTER(FixedAmount) {
-    uiMenu(&fixedAmntMenu, disp()->screen);
+    ui_menu_create(&fixedAmntMenu, disp()->screen);
     fixedAmntMenu.checkEnable = true;
     OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, disableFixedAmnt, NULL);
     OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_PRICE_LIST), enterAmount, setFixedItemToList, NULL);
@@ -184,7 +184,7 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
 }
 
 STATE_DEF_ENTER(MaxAmount) {
-    uiMenu(&maxAmntMenu, disp()->screen);
+    ui_menu_create(&maxAmntMenu, disp()->screen);
     maxAmntMenu.checkEnable = true;
     OOP_CALL(&maxAmntMenu, addItem, phraseGetDef(PHRASE_ENABLE), 
                 enterMaxAmnt, NULL, NULL);
@@ -210,7 +210,7 @@ static void disDirectSale() {
 }
 
 STATE_DEF_ENTER(DirectSale) {
-    uiMenu(&dirSaleMenu, disp()->screen);
+    ui_menu_create(&dirSaleMenu, disp()->screen);
     dirSaleMenu.checkEnable = true;
     OOP_CALL(&dirSaleMenu, addItem, 
                 phraseGetDef(PHRASE_ENABLE), NULL, enDirectSale, NULL);
@@ -252,7 +252,7 @@ static void saveSettings() {
 }
 
 STATE_DEF_ENTER(OtherProjects) {
-    uiMenu(&otherMenu, disp()->screen);
+    ui_menu_create(&otherMenu, disp()->screen);
     for (uint8_t i = 0; i < OTH_PROJ_ALL ; i++) {
         OOP_CALL(&otherMenu, addItem, phraseGetDef(dsc[i]), subState[i], NULL, NULL);
     }

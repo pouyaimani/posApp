@@ -3,7 +3,7 @@
 #include "logger.h"
 #include "display.h"
 #include "event.h"
-#include "ui/ui.h"
+#include "ui/menu.h"
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "record/txnRecs.h"
@@ -150,7 +150,7 @@ static Menu printMenu;
 
 STATE_DEF_ENTER(RePrint) {
     REPORT_RESULT_NORM(rquery.resMode);
-    uiMenu(&printMenu, disp()->screen);
+    ui_menu_create(&printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
         OOP_CALL(&printMenu, addItem, phraseGetDef(printItemTxt[i]), NULL,
                     setReprintItem, (void*)(uintptr_t)i);
@@ -194,7 +194,7 @@ static void SummaryReport(State *parent) {
 
 STATE_DEF_ENTER(DetailsReport) {
     docType = DOC_DETAILED_REPORT;
-    uiMenu(&printMenu, disp()->screen);
+    ui_menu_create(&printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE ; i++) {
         OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
                     setReprintItem, (void*)(uintptr_t)i);
@@ -373,7 +373,7 @@ static void setReportItem(void *arg) {
 
 STATE_DEF_ENTER(Reports) {
     QUERY_FILTER_RESET(rquery.filter);
-    uiMenu(&reportsMenu, disp()->screen);
+    ui_menu_create(&reportsMenu, disp()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
         OOP_CALL(&reportsMenu, addItem, phraseGetDef(reportsItemTxt[i]), subReports[i], setReportItem, (void*)(uintptr_t)i);
     }

@@ -5,10 +5,12 @@
 #include "sys/sys.h"
 #include "mylvgl.h"
 #include "display.h"
-#include "ui/ui.h"
+#include "ui/inbox.h"
+#include "ui/button.h"
 #include "utility/utility.h"
 #include "utility/alphabetic.h"
 #include "phrases/phrases.h"
+#include "font/myFont.h"
 
 #define PASS_MAX_LEN        4
 #define AMOUNT_MAX_LEN      10

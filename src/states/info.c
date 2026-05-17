@@ -5,7 +5,7 @@
 #include "utility/utility.h"
 #include "font/myFont.h"
 #include "myColor.h"
-#include "ui/ui.h"
+#include "ui/infoPage.h"
 #include "sys/sys.h"
 #include "phrases/phrases.h"
 
