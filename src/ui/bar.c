@@ -6,7 +6,7 @@
 #include "common.h"
 #include "font/myFont.h"
 
-static void barSetValue(Bar *bar, int value) {
+void ui_bar_set_value(Bar *bar, int value) {
     RETURN_IF_NULL(bar, ;);
     RETURN_IF_NOT(bar->max > 0, true, ; );
     bar->value = value > bar->max ? bar->max : value;
@@ -14,33 +14,33 @@ static void barSetValue(Bar *bar, int value) {
     lv_bar_set_value(bar->bar, pval, LV_ANIM_ON);
 }
 
-static void barSetTitle(Bar *bar, const char *txt) {
+void ui_bar_set_title(Bar *bar, const char *txt) {
     LV_SET_TEXT(bar->title, txt);
 }
 
-static void barInc(Bar *bar) {
+void ui_bar_inc(Bar *bar) {
     RETURN_IF_NULL(bar, ;);
     if (bar->value < bar->max) {
         bar->value++;
     }
-    barSetValue(bar, bar->value);
+    ui_bar_set_value(bar, bar->value);
 }
 
-static void barDec(Bar *bar) {
+void ui_bar_dec(Bar *bar) {
     RETURN_IF_NULL(bar, ;);
     if (bar->value > bar->min) {
         bar->value--;
     }
-    barSetValue(bar, bar->value);
+    ui_bar_set_value(bar, bar->value);
 }
 
-static void barShow(Bar *bar) {
+void ui_bar_show(Bar *bar) {
     RETURN_IF_NULL(bar, ;);
     LV_SHOW(bar->bar);
     LV_SHOW(bar->title);
 }
 
-static void barHide(Bar *bar) {
+void ui_bar_hide(Bar *bar) {
     RETURN_IF_NULL(bar, ;);
     LV_HIDE(bar->bar);
     LV_HIDE(bar->title);
@@ -54,12 +54,6 @@ void ui_bar_destroy(Bar *bar) {
 
 void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max) {
     RETURN_IF_NULL(bar, ;);
-    bar->vtable.decrease = barDec;
-    bar->vtable.increase = barInc;
-    bar->vtable.setValue = barSetValue;
-    bar->vtable.show = barShow;
-    bar->vtable.hide = barHide;
-    bar->vtable.setTitle= barSetTitle;
     bar->max = max;
     bar->min = min;
     bar->value = min;
@@ -94,5 +88,5 @@ void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max) {
     LV_SET_SIZE(bar->title, lv_pct(80), LV_SIZE_CONTENT);
     LV_ALIGN(bar->title, LV_ALIGN_TOP_MID, 0, 20);
 
-    barSetValue(bar, bar->min);
+    ui_bar_set_value(bar, bar->min);
 }

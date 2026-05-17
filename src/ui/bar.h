@@ -6,19 +6,7 @@
 
 /***************************** Bar *****************************/
 
-OOP_DECLARE_CLASS(Bar);
-
-OOP_VTABLE(Bar) {
-    OOP_IMETHOD(void, Bar, setValue, int);
-    OOP_IMETHOD(void, Bar, increase);
-    OOP_IMETHOD(void, Bar, decrease);
-    OOP_IMETHOD(void, Bar, hide);
-    OOP_IMETHOD(void, Bar, show);
-    OOP_IMETHOD(void, Bar, setTitle, const char *);
-};
- 
 OOP_CLASS(Bar) {
-    OOP_IMPLEMENTS(Bar);
     lv_obj_t *bar;
     lv_obj_t *title;
     int value;
@@ -29,5 +17,17 @@ OOP_CLASS(Bar) {
 void ui_bar_destroy(Bar *bar);
 
 void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max);
+
+void ui_bar_set_value(Bar *bar, int value);
+
+void ui_bar_set_title(Bar *bar, const char *txt);
+
+void ui_bar_inc(Bar *bar);
+
+void ui_bar_dec(Bar *bar);
+
+void ui_bar_show(Bar *bar);
+
+void ui_bar_hide(Bar *bar);
 
 #endif

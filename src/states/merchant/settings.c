@@ -38,15 +38,15 @@ static Bar soundBar;
 
 STATE_DEF_ENTER(SoundSettings) {
     ui_bar_create(&soundBar, disp()->screen, 0, sys()->maxSound);
-    OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
-    OOP_CALL(&soundBar, setValue, settings()->terminal.devVolume);
-    OOP_CALL(&soundBar, show);
+    ui_bar_set_title(&soundBar, "تنظیم صدا");
+    ui_bar_set_value(&soundBar, settings()->terminal.devVolume);
+    ui_bar_show(&soundBar);
 }
 
 STATE_DEF_EXIT(SoundSettings) {
     settings()->terminal.devVolume = soundBar.value;
     settings()->save();
-    OOP_CALL(&soundBar, hide);
+    ui_bar_hide(&soundBar);
     ui_bar_destroy(&soundBar);
 }
 
@@ -56,9 +56,9 @@ STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
 
     } else if (ev->key == KEY_UP) {
-        OOP_CALL(&soundBar, increase);
+        ui_bar_inc(&soundBar);
     } else if (ev->key == KEY_DOWN) {
-        OOP_CALL(&soundBar, decrease);
+        ui_bar_dec(&soundBar);
     }
     OOP_CALL(sys(), setVolume, soundBar.value);
 }
@@ -268,15 +268,15 @@ static Bar brightBar;
 
 STATE_DEF_ENTER(ScrLightSettings) {
     ui_bar_create(&brightBar, disp()->screen, 1, sys()->maxBright);
-    OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
-    OOP_CALL(&brightBar, setValue, settings()->terminal.brightness);
-    OOP_CALL(&brightBar, show);
+    ui_bar_set_title(&brightBar, "تنظیم نور صفحه");
+    ui_bar_set_value(&brightBar, settings()->terminal.brightness);
+    ui_bar_show(&brightBar);
 }
 
 STATE_DEF_EXIT(ScrLightSettings) {
     settings()->terminal.brightness = brightBar.value;
     settings()->save();
-    OOP_CALL(&brightBar, hide);
+    ui_bar_hide(&brightBar);
     ui_bar_destroy(&brightBar);
 }
 
@@ -286,9 +286,9 @@ STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
 
     } else if (ev->key == KEY_UP) {
-        OOP_CALL(&brightBar, increase);
+        ui_bar_inc(&brightBar);
     } else if (ev->key == KEY_DOWN) {
-        OOP_CALL(&brightBar, decrease);
+        ui_bar_dec(&brightBar);
     }
     OOP_CALL(sys(), setBrightness, brightBar.value);
 }
