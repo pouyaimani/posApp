@@ -59,4 +59,6 @@ int ui_menu_get_idx(Menu *menu);
 
 void ui_menu_toggle(Menu *menu, int idx);
 
+bool ui_menu_validate(const Menu *menu);
+
 #endif

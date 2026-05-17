@@ -212,7 +212,7 @@ void ui_menu_create(Menu *menu, lv_obj_t * parent) {
 void ui_menu_destroy(Menu *menu) {
     RETURN_IF_NULL(menu, ;);
 
-    if(menu->main && lv_obj_is_valid(menu->main)) {
+    if(ui_menu_validate(menu)) {
         LV_DELETE(menu->main);
     }
 }
@@ -228,4 +228,8 @@ void uiToggleMenu(Menu *menu, lv_obj_t * parent) {
     RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
     menu->togglable = true;
+}
+
+bool ui_menu_validate(const Menu *menu) {
+    return (menu && menu->main && lv_obj_is_valid(menu->main));
 }
