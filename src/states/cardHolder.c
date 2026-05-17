@@ -96,5 +96,5 @@ OOP_CTOR(CardHolder, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(CardHolder, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(CardHolder, TimeOutEvent);
     self->base.vtable.handleMag = STATE_HANDLE(CardHolder, MagEvent);
-    infop = infoPage();
+    infoPage(&infop);
 }

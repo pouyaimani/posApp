@@ -5,9 +5,15 @@
 #include "state.h"
 #include "logger.h"
 #include "phrases/phrases.h"
+#include "common.h"
 
 static void addItem(Menu *menu, const char * text, State *state,
                 CallBack_t cb, void * user_data) {
+    RETURN_IF_NULL(menu, ; );
+    if (menu->cnt >= MENU_ITEM_MAX) {
+        LOG_ERROR("Menu full");
+        return;
+    }
     lv_obj_t *btn = lv_btn_create(menu->main);
     
     LV_SET_SIZE(btn, lv_pct(100), LV_SIZE_CONTENT);
@@ -22,10 +28,8 @@ static void addItem(Menu *menu, const char * text, State *state,
     LV_SET_TEXT_FONT(label, FONT_20);
     LV_ALIGN(label, LV_ALIGN_CENTER, 0, 0);
     LV_SET_TEXT_ALIGN(label, LV_TEXT_ALIGN_RIGHT);
-    char str[64];
-    char num[4];
-    memset(str, 0, sizeof(str));
-    memset(num, 0, sizeof(num));
+    DEFINE_STRING(str, 64);
+    DEFINE_STRING(num, 4);
     snprintf(num, sizeof(num), "%d", menu->cnt + 1);
     snprintf(str, sizeof(str), "%s.%s", num, text);
     lv_obj_set_style_base_dir(label, LV_BASE_DIR_RTL, 0);
@@ -41,6 +45,11 @@ static void addItem(Menu *menu, const char * text, State *state,
 
 static void addOnOffItem(Menu *menu, const char * text, bool toggle, State *state,
                 CallBack_t cb, void * user_data) {
+    RETURN_IF_NULL(menu, ; );
+    if (menu->cnt >= MENU_ITEM_MAX) {
+        LOG_ERROR("Menu full");
+        return;
+    }
     lv_obj_t *btn = lv_btn_create(menu->main);
     
     LV_SET_SIZE(btn, lv_pct(100), LV_SIZE_CONTENT);
@@ -120,7 +129,7 @@ static void menuHide(Menu *menu) {
     LV_HIDE(menu->main);
 }
 
-static void menuGetIdx(Menu *menu) {
+static int menuGetIdx(Menu *menu) {
     return menu->idx;
 }
 
@@ -206,12 +215,19 @@ void uiMenu(Menu *menu, lv_obj_t * parent) {
 }
 
 void uiDeleteMenu(Menu *menu) {
+    if (!menu) return;
+
     if(menu->main && lv_obj_is_valid(menu->main)) {
         LV_DELETE(menu->main);
-        menu->main = NULL;
-        menu->cnt = 0;
-        menu->idx = 0;
     }
+
+    MEM_FREE(menu->item);
+    MEM_FREE(menu->state);
+    MEM_FREE(menu->cb);
+    MEM_FREE(menu->toggle);
+    MEM_FREE(menu->userData);
+
+    memset(menu, 0, sizeof(*menu));
 }
 
 void uiOnOffMenu(Menu *menu, lv_obj_t * parent) {

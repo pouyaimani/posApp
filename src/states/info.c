@@ -38,7 +38,7 @@ OOP_CTOR(Info, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(Info, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Info, TimeOutEvent);
     self->setText = setText;
-    page = infoPage();
+    infoPage(&page);
 }
 
 /*******************************************************************/

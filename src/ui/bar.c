@@ -2,8 +2,11 @@
 #include "display.h"
 #include "utility/utility.h"
 #include "event.h"
+#include "logger.h"
+#include "common.h"
 
 static void barSetValue(Bar *bar, int value) {
+    RETURN_IF_NOT(bar->max > 0, true, ; );
     bar->value = value > bar->max ? bar->max : value;
     int pval = (bar->value * 100) / bar->max;
     lv_bar_set_value(bar->bar, pval, LV_ANIM_ON);

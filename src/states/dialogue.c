@@ -56,9 +56,9 @@ static void createUi() {
     LV_SET_SIZE(body, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(body, LV_ALIGN_CENTER, 0, 0);
 
-    confirmBut = uiButton(disp()->screen, 0x68DD40, "تایید");
+    uiButton(&confirmBut, disp()->screen, 0x68DD40, "تایید");
     LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
-    cancelBut = uiButton(disp()->screen, 0xFF4E4E, "لغو");
+    uiButton(&cancelBut, disp()->screen, 0xFF4E4E, "لغو");
     LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(title, "");

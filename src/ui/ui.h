@@ -84,15 +84,6 @@ OOP_CLASS(Bar) {
     int min;
 };
 
-InputBox uiInputBox(lv_obj_t *parent);
-Button uiButton(lv_obj_t *parent, unsigned int color, const char * text);
-void uiMenu(Menu *, lv_obj_t * parent);
-void uiDeleteMenu(Menu *menu);
-void uiOnOffMenu(Menu *menu, lv_obj_t * parent);
-void uiToggleMenu(Menu *menu, lv_obj_t * parent);
-void uiBar(Bar *bar, lv_obj_t * parent, int min, int max);
-void uiBarDelete(Bar *bar);
-
 typedef enum {
     INFO_T_TEXT,
     INFO_T_IMG
@@ -114,16 +105,42 @@ OOP_CLASS(InfoPage) {
     lv_obj_t *line;
 };
 
-InfoPage infoPage();
+/**********************************************************************
+ *
+ *                              Functions
+ * 
+ **********************************************************************/
 
-#define SHOW_INFO(title, body)              \
-    InfoPage info = infoPage();             \
-    OOP_CALL(&info, show);                  \
-    OOP_CALL(&info, setData, INFO_T_TEXT,   \
-         title, body);
+void uiInputBox(InputBox *inBox, lv_obj_t *parent);
+
+void uiButton(Button *btn, lv_obj_t *parent, unsigned int color, const char * text);
+
+void uiMenu(Menu *, lv_obj_t * parent);
+
+void uiDeleteMenu(Menu *menu);
+
+void uiOnOffMenu(Menu *menu, lv_obj_t * parent);
+
+void uiToggleMenu(Menu *menu, lv_obj_t * parent);
+
+void uiBar(Bar *bar, lv_obj_t * parent, int min, int max);
+
+void uiBarDelete(Bar *bar);
+
+InfoPage *infoPage();
+
+#define SHOW_INFO(title, body)                  \
+    do {                                        \
+        InfoPage *info = infoPage();            \
+        OOP_CALL(info, show);                   \
+        OOP_CALL(info, setData, INFO_T_TEXT,    \
+             title, body);                      \
+    } while (0)
 
 #define HIDE_INFO()                         \
-    InfoPage info = infoPage();             \
-    OOP_CALL(&info, show);                  \
+    do {                                    \
+        InfoPage *info = infoPage();         \
+        OOP_CALL(info, hide);               \
+    } while(0)
 
 #endif
