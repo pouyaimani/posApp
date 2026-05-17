@@ -36,7 +36,7 @@ static const Phrases_t shiftItemTxt[SHIFT_ITEM_ALL] = {
 };
 
 
-static Menu EnMenu;
+static Menu *EnMenu;
 
 static void ShiftMenuAdd(lv_obj_t *menu, 
     const char *description, const char *val, lv_text_align_t txtAlign) {
@@ -108,31 +108,31 @@ static void showShift(lv_obj_t *menu, int latest, const char *sdt,
 /******************** En/Dis shift sub state **********************/
 
 STATE_DEF_ENTER(ShiftEnable) {
-    uiOnOffMenu(&EnMenu, disp()->screen);
-    OOP_CALL(&EnMenu, setChecked, !terminalStg->shiftEnable);
-    OOP_CALL(&EnMenu, show);
+    uiOnOffMenu(EnMenu, disp()->screen);
+    ui_menu_set_checked(EnMenu, !terminalStg->shiftEnable);
+    ui_menu_show(EnMenu);
 }
 
 STATE_DEF_EXIT(ShiftEnable) {
-    OOP_CALL(&EnMenu, hide);
-    ui_menu_destroy(&EnMenu);
+    ui_menu_hide(EnMenu);
+    ui_menu_destroy(EnMenu);
     settings()->save();
 }
 
 STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
-    OOP_CALL(&EnMenu, handleItem, ev->key);
+    ui_menu_handleItem(EnMenu, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        if (EnMenu.idx) {
+        if (EnMenu->idx) {
             if (terminalStg->shiftActive) {
                 GOTO_INFO(state->parent, state->parent, 
                     phraseGetDef(PHRASE_SHIFT_IS_ACTIVE), phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
                 return;
             }
         }
-        OOP_CALL(&EnMenu, setChecked, EnMenu.idx);
-        terminalStg->shiftEnable = !EnMenu.idx;
+        ui_menu_set_checked(EnMenu, EnMenu->idx);
+        terminalStg->shiftEnable = !EnMenu->idx;
     }
 }
 
@@ -315,7 +315,7 @@ STATE_DEF_ENTER(ShiftReports) {
 static void createUi() {
     ui_menu_create(shiftItemMenu, disp()->screen);
     for (uint8_t i = 0; i < SHIFT_ITEM_ALL ; i++) {
-        OOP_CALL(shiftItemMenu, addItem, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
+        ui_menu_addItem(shiftItemMenu, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
     }
 }
 

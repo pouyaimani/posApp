@@ -149,11 +149,11 @@ STATE_DEF_ENTER(EnterFixedAmount) {
 STATE_DEF_ENTER(FixedAmount) {
     ui_menu_create(fixedAmntMenu, disp()->screen);
     fixedAmntMenu->checkEnable = true;
-    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, disableFixedAmnt, NULL);
-    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_PRICE_LIST), enterAmount, setFixedItemToList, NULL);
-    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_AMNT), enterAmount, setFixedItemToSingle, NULL);
-    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_WITH_COEF), enterAmount, setFixedItemToVariant, NULL);
-    OOP_CALL(fixedAmntMenu, setChecked, termStorage->fixedAmountItem);
+    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_DISABLE), NULL, disableFixedAmnt, NULL);
+    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_PRICE_LIST), enterAmount, setFixedItemToList, NULL);
+    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_FIXED_AMNT), enterAmount, setFixedItemToSingle, NULL);
+    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_FIXED_WITH_COEF), enterAmount, setFixedItemToVariant, NULL);
+    ui_menu_set_checked(fixedAmntMenu, termStorage->fixedAmountItem);
     listCnt = 0;
     GOTO_MENU(state->parent, fixedAmntMenu, NULL, NULL);
 }
@@ -186,14 +186,14 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
 STATE_DEF_ENTER(MaxAmount) {
     ui_menu_create(maxAmntMenu, disp()->screen);
     maxAmntMenu->checkEnable = true;
-    OOP_CALL(maxAmntMenu, addItem, phraseGetDef(PHRASE_ENABLE), 
+    ui_menu_addItem(maxAmntMenu, phraseGetDef(PHRASE_ENABLE), 
                 enterMaxAmnt, NULL, NULL);
-    OOP_CALL(maxAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), 
+    ui_menu_addItem(maxAmntMenu, phraseGetDef(PHRASE_DISABLE), 
                 NULL, disMaxAmnt, NULL);
     if(termStorage->maxAmntEnable) {
-        OOP_CALL(maxAmntMenu, setChecked, 0);
+        ui_menu_set_checked(maxAmntMenu, 0);
     } else {
-        OOP_CALL(maxAmntMenu, setChecked, 1);
+        ui_menu_set_checked(maxAmntMenu, 1);
     }
     GOTO_MENU(state->parent, maxAmntMenu, NULL, NULL);
 }
@@ -212,9 +212,9 @@ static void disDirectSale() {
 STATE_DEF_ENTER(DirectSale) {
     ui_menu_create(dirSaleMenu, disp()->screen);
     dirSaleMenu->checkEnable = true;
-    OOP_CALL(dirSaleMenu, addItem, 
+    ui_menu_addItem(dirSaleMenu, 
                 phraseGetDef(PHRASE_ENABLE), NULL, enDirectSale, NULL);
-    OOP_CALL(dirSaleMenu, addItem, 
+    ui_menu_addItem(dirSaleMenu, 
                 phraseGetDef(PHRASE_DISABLE), NULL, disDirectSale, NULL);
 
     GOTO_MENU(state->parent, dirSaleMenu, NULL, NULL);
@@ -222,25 +222,25 @@ STATE_DEF_ENTER(DirectSale) {
 
 /******************** enable services sub state **********************/
 
-static Menu servMenu;
+static Menu *servMenu;
 static SubState *saveServiceStatus;
 
 STATE_DEF_ENTER(SaveServiceStatus) {
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        getService(i)->enable = servMenu.toggle[i];
-        termStorage->serviceEn[i] = servMenu.toggle[i];
+        getService(i)->enable = servMenu->toggle[i];
+        termStorage->serviceEn[i] = servMenu->toggle[i];
     }
     SM_GOTO(state->parent);
 }
 
 STATE_DEF_ENTER(EnableServices) {
-    uiToggleMenu(&servMenu, disp()->screen);
+    uiToggleMenu(servMenu, disp()->screen);
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
-        OOP_CALL(&servMenu, addOnOffItem, getService(i)->state.name,
+        ui_menu_add_on_off_item(servMenu, getService(i)->state.name,
             getService(i)->enable, NULL, NULL, NULL);
     }
 
-    GOTO_MENU(saveServiceStatus, &servMenu, NULL, NULL);
+    GOTO_MENU(saveServiceStatus, servMenu, NULL, NULL);
 }
 
 /*********************** other project state **************************/
@@ -254,7 +254,7 @@ static void saveSettings() {
 STATE_DEF_ENTER(OtherProjects) {
     ui_menu_create(otherMenu, disp()->screen);
     for (uint8_t i = 0; i < OTH_PROJ_ALL ; i++) {
-        OOP_CALL(otherMenu, addItem, phraseGetDef(dsc[i]), subState[i], NULL, NULL);
+        ui_menu_addItem(otherMenu, phraseGetDef(dsc[i]), subState[i], NULL, NULL);
     }
     GOTO_MENU(state->parent, otherMenu, saveSettings, NULL);
 }
@@ -300,4 +300,6 @@ OOP_CTOR(OtherProjects, State *parent, const char *name) {
     maxAmntMenu = MEM_ALLOC(sizeof(*maxAmntMenu));
     dirSaleMenu = MEM_ALLOC(sizeof(*dirSaleMenu));
     otherMenu = MEM_ALLOC(sizeof(*otherMenu));
+
+    servMenu = MEM_ALLOC(sizeof(*servMenu));
 }

@@ -185,7 +185,7 @@ static Menu *menu;
 static void createUi() {
     ui_menu_create(menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
-        OOP_CALL(menu, addItem, phraseGetDef(dsc[i]), subStates[i], NULL, NULL);
+        ui_menu_addItem(menu, phraseGetDef(dsc[i]), subStates[i], NULL, NULL);
     }
 }
 

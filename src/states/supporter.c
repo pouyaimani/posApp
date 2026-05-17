@@ -29,10 +29,10 @@ static void onExit() {
 
 STATE_DEF_ENTER(Supporter) {
     ui_menu_create(menu, disp()->screen);
-    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
-    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
-    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
-    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
     GOTO_MENU(STATE_IDLE, &menu, NULL, NULL);
 }
 

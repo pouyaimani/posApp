@@ -153,7 +153,7 @@ STATE_DEF_ENTER(RePrint) {
     REPORT_RESULT_NORM(rquery.resMode);
     ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
-        OOP_CALL(printMenu, addItem, phraseGetDef(printItemTxt[i]), NULL,
+        ui_menu_addItem(printMenu, phraseGetDef(printItemTxt[i]), NULL,
                     setReprintItem, (void*)(uintptr_t)i);
     }
     GOTO_MENU(state->parent, printMenu, NULL, NULL);
@@ -197,7 +197,7 @@ STATE_DEF_ENTER(DetailsReport) {
     docType = DOC_DETAILED_REPORT;
     ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE ; i++) {
-        OOP_CALL(printMenu, addItem, printItemTxt[i], NULL,
+        ui_menu_addItem(printMenu, printItemTxt[i], NULL,
                     setReprintItem, (void*)(uintptr_t)i);
     }
     GOTO_MENU(state->parent, printMenu, NULL, NULL);
@@ -376,7 +376,7 @@ STATE_DEF_ENTER(Reports) {
     QUERY_FILTER_RESET(rquery.filter);
     ui_menu_create(reportsMenu, disp()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
-        OOP_CALL(reportsMenu, addItem, phraseGetDef(reportsItemTxt[i]), subReports[i], setReportItem, (void*)(uintptr_t)i);
+        ui_menu_addItem(reportsMenu, phraseGetDef(reportsItemTxt[i]), subReports[i], setReportItem, (void*)(uintptr_t)i);
     }
     GOTO_MENU(state->parent, reportsMenu, NULL, NULL);
 }

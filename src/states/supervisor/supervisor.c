@@ -244,10 +244,10 @@ static void disSSL() {
 STATE_DEF_ENTER(EnableSsl) {
     ui_menu_create(sslMenu, disp()->screen);
     sslMenu->checkEnable = true;
-    OOP_CALL(sslMenu, addItem, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
-    OOP_CALL(sslMenu, addItem, phraseGetDef(PHRASE_DISABLE), success, disSSL, NULL);
+    ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
+    ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_DISABLE), success, disSSL, NULL);
     GOTO_MENU(state->parent, sslMenu, NULL, NULL);
-    OOP_CALL(sslMenu, setChecked, !settings()->server.sslEn);
+    ui_menu_set_checked(sslMenu, !settings()->server.sslEn);
 }
 
 STATE_DEF_ENTER(Success) {
@@ -276,9 +276,9 @@ static void setItemToTms() {
 
 STATE_DEF_ENTER(NetworkSettings) {
     ui_menu_create(serverSetMenu, disp()->screen);
-    OOP_CALL(serverSetMenu, addItem, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
-    OOP_CALL(serverSetMenu, addItem, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
-    OOP_CALL(serverSetMenu, addItem, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
+    ui_menu_addItem(serverSetMenu, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
+    ui_menu_addItem(serverSetMenu, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
+    ui_menu_addItem(serverSetMenu, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
     GOTO_MENU(state->parent, serverSetMenu, NULL, NULL);
 }
 
@@ -377,7 +377,7 @@ static Menu *menu;
 STATE_DEF_ENTER(SupervisorMenu) {
     ui_menu_create(menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
-        OOP_CALL(menu, addItem, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
+        ui_menu_addItem(menu, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
     }
     GOTO_MENU(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
 }

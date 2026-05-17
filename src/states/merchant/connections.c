@@ -121,12 +121,12 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
         return;
     } else if (wifi()->scanSt == WIFI_SCAN_FAILED) {
     } else {
-        OOP_CALL(wifiMenu, handleItem, ev->key);
+        ui_menu_handleItem(wifiMenu, ev->key);
         if (ev->key == KEY_ESC) {
-            OOP_CALL(wifiMenu, hide);
+            ui_menu_hide(wifiMenu);
             SM_GOTO(state->parent);
         } else if (ev->key == KEY_ENTER) {
-            OOP_CALL(wifiMenu, hide);
+            ui_menu_hide(wifiMenu);
             SM_GOTO(wifiEnterPass);
             selectedAp = &wifi()->apList.list[wifiMenu->idx];
         }
@@ -138,10 +138,10 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
         wifiMenu = MEM_ALLOC(sizeof(*wifiMenu));
         ui_menu_create(wifiMenu, disp()->screen);
         for (uint8_t i = 0; i < wifi()->apList.size ; i++) {
-            OOP_CALL(wifiMenu, addItem, wifi()->apList.list[i].essid, wifiEnterPass, NULL, NULL);
+            ui_menu_addItem(wifiMenu, wifi()->apList.list[i].essid, wifiEnterPass, NULL, NULL);
         }
         HIDE_INFO();
-        OOP_CALL(wifiMenu, show);
+        ui_menu_show(wifiMenu);
     } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
         GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
     }
@@ -216,18 +216,18 @@ static void createUi() {
     menuCount = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
     if (sys()->module.wifi) {
-        OOP_CALL(menu, addItem, phraseGetDef(PHRASE_WIFI), wifiScan, NULL, NULL);
+        ui_menu_addItem(menu, phraseGetDef(PHRASE_WIFI), wifiScan, NULL, NULL);
         menuMap[menuCount] = CONNECTION_WIFI;
         if (route == NET_ROUTE_WIFI) {
-            OOP_CALL(menu, setChecked, menuCount);
+            ui_menu_set_checked(menu, menuCount);
         }
         menuCount++;
     }
     if (sys()->module.gprs) {
-        OOP_CALL(menu, addItem, phraseGetDef(PHRASE_GPRS), cellularLogin, NULL, NULL);
+        ui_menu_addItem(menu, phraseGetDef(PHRASE_GPRS), cellularLogin, NULL, NULL);
         menuMap[menuCount] = CONNECTION_GPRS;
         if (route == NET_ROUTE_CELLUALR) {
-            OOP_CALL(menu, setChecked, menuCount);
+            ui_menu_set_checked(menu, menuCount);
         }
         menuCount++;
     }

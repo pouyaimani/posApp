@@ -7,7 +7,7 @@
 #include "phrases/phrases.h"
 #include "common.h"
 
-static void addItem(Menu *menu, const char * text, State *state,
+void ui_menu_addItem(Menu *menu, const char * text, State *state,
                 CallBack_t cb, void * user_data) {
     RETURN_IF_NULL(menu, ; );
     if (menu->cnt >= MENU_ITEM_MAX) {
@@ -43,7 +43,7 @@ static void addItem(Menu *menu, const char * text, State *state,
 
 }
 
-static void addOnOffItem(Menu *menu, const char * text, bool toggle, State *state,
+void ui_menu_add_on_off_item(Menu *menu, const char * text, bool toggle, State *state,
                 CallBack_t cb, void * user_data) {
     RETURN_IF_NULL(menu, ; );
     if (menu->cnt >= MENU_ITEM_MAX) {
@@ -100,7 +100,7 @@ static void showSelector(Menu *menu) {
                 0, 0);
 }
 
-static void handleItem(Menu *menu, Key_t key) {
+void ui_menu_handleItem(Menu *menu, Key_t key) {
     RETURN_IF_NULL(menu, ;);
     MenuUpDown_t updown;
     if (key == KEY_UP) {
@@ -119,7 +119,7 @@ static void handleItem(Menu *menu, Key_t key) {
     lv_obj_scroll_to_view(menu->item[menu->idx], LV_ANIM_ON);
 }
 
-static void menuShow(Menu *menu) {
+void ui_menu_show(Menu *menu) {
     RETURN_IF_NULL(menu, ;);
     menu->idx = 0;
     LV_SHOW(menu->main);
@@ -128,17 +128,17 @@ static void menuShow(Menu *menu) {
     }
 }
 
-static void menuHide(Menu *menu) {
+void ui_menu_hide(Menu *menu) {
     RETURN_IF_NULL(menu, ;);
     LV_HIDE(menu->main);
 }
 
-static int menuGetIdx(Menu *menu) {
+int ui_menu_get_idx(Menu *menu) {
     RETURN_IF_NULL(menu, ;);
     return menu->idx;
 }
 
-static void menuSetChecked(Menu *menu, int newIdx) {
+void ui_menu_set_checked(Menu *menu, int newIdx) {
     RETURN_IF_NULL(menu, ;);
     if(newIdx < 0 || newIdx >= menu->cnt) return;
     lv_obj_update_layout(menu->main);
@@ -151,7 +151,7 @@ static void menuSetChecked(Menu *menu, int newIdx) {
     LV_SHOW(menu->checker);
 }
 
-static void toggle(Menu *menu, int idx) {
+void ui_menu_toggle(Menu *menu, int idx) {
     RETURN_IF_NULL(menu, ;);
     lv_obj_t *obj = lv_obj_get_child(menu->item[idx], 0);
     menu->toggle[idx] = !menu->toggle[idx];
@@ -161,14 +161,6 @@ static void toggle(Menu *menu, int idx) {
 
 void ui_menu_create(Menu *menu, lv_obj_t * parent) {
     RETURN_IF_NULL(menu, ;);
-    menu->vtable.addItem = addItem;
-    menu->vtable.addOnOffItem = addOnOffItem;
-    menu->vtable.handleItem = handleItem;
-    menu->vtable.show = menuShow;
-    menu->vtable.hide = menuHide;
-    menu->vtable.getIdx = menuGetIdx;
-    menu->vtable.setChecked = menuSetChecked;
-    menu->vtable.toggle = toggle;
     menu->cnt = 0;
     menu->idx = 0;
     menu->selected = 0;
@@ -214,7 +206,7 @@ void ui_menu_create(Menu *menu, lv_obj_t * parent) {
     lv_obj_add_flag(menu->checker, LV_OBJ_FLAG_IGNORE_LAYOUT);
 
     menu->togglable = false;
-    menuHide(menu);
+    ui_menu_hide(menu);
 }
 
 void ui_menu_destroy(Menu *menu) {
@@ -228,8 +220,8 @@ void ui_menu_destroy(Menu *menu) {
 void uiOnOffMenu(Menu *menu, lv_obj_t * parent) {
     RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
-    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_ENABLE), NULL, NULL, NULL);
-    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_ENABLE), NULL, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_DISABLE), NULL, NULL, NULL);
 }
 
 void uiToggleMenu(Menu *menu, lv_obj_t * parent) {

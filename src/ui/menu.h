@@ -18,24 +18,8 @@ typedef struct State State;
 #define MENU_ITEM_MAX   20
 
 typedef enum Key_t Key_t;
-
-OOP_DECLARE_CLASS(Menu);
-
-OOP_VTABLE(Menu) {
-    OOP_IMETHOD(void, Menu, addItem, const char * text, State *state,
-                CallBack_t cb, void * user_data);
-    OOP_IMETHOD(void, Menu, addOnOffItem, const char * text, bool onOff, State *state,
-                CallBack_t cb, void * user_data);               
-    OOP_IMETHOD(void, Menu, handleItem, Key_t);
-    OOP_IMETHOD(void, Menu, show);
-    OOP_IMETHOD(void, Menu, hide);
-    OOP_IMETHOD(int, Menu, getIdx);
-    OOP_IMETHOD(void, Menu, setChecked, int);
-    OOP_IMETHOD(void, Menu, toggle, int);
-};
  
 OOP_CLASS(Menu) {
-    OOP_IMPLEMENTS(Menu);
     lv_obj_t *main;
     lv_obj_t *selector;
     lv_obj_t *checker;
@@ -57,6 +41,22 @@ void ui_menu_destroy(Menu *menu);
 
 void ui_menu_on_off(Menu *menu, lv_obj_t * parent);
 
-void ui_menu_toggle(Menu *menu, lv_obj_t * parent);
+void ui_menu_addItem(Menu *menu, const char * text, State *state,
+                CallBack_t cb, void * user_data);
+
+void ui_menu_handleItem(Menu *menu, Key_t key);
+
+void ui_menu_add_on_off_item(Menu *menu, const char * text, bool toggle, State *state,
+                CallBack_t cb, void * user_data);
+
+void ui_menu_show(Menu *menu);
+
+void ui_menu_set_checked(Menu *menu, int newIdx);
+
+void ui_menu_hide(Menu *menu);
+
+int ui_menu_get_idx(Menu *menu);
+
+void ui_menu_toggle(Menu *menu, int idx);
 
 #endif

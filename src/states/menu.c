@@ -10,11 +10,11 @@
 static StMenu *menu;
 
 STATE_DEF_ENTER(StMenu) {
-    OOP_CALL(menu->menu, show);
+    ui_menu_show(menu->menu);
 }
 
 STATE_DEF_EXIT(StMenu) {
-    OOP_CALL(menu->menu, hide);
+    ui_menu_hide(menu->menu);
     ui_menu_destroy(menu->menu);
 }
 
@@ -23,13 +23,13 @@ STATE_DEF_HANDLE(StMenu, TimeOutEvent) {
 }
 
 STATE_DEF_HANDLE(StMenu, KeypadEvent) {
-    OOP_CALL(menu->menu, handleItem, ev->key);
+    ui_menu_handleItem(menu->menu, ev->key);
     if (ev->key == KEY_ENTER) {
         if (menu->menu->checkEnable) {
-            OOP_CALL(menu->menu, setChecked, menu->menu->idx);
+            ui_menu_set_checked(menu->menu, menu->menu->idx);
         }
         if (menu->menu->togglable) {
-            OOP_CALL(menu->menu, toggle, menu->menu->idx);
+            ui_menu_toggle(menu->menu, menu->menu->idx);
         }
         if (menu->menu->cb[menu->menu->idx]) {
             menu->menu->cb[menu->menu->idx](menu->menu->userData[menu->menu->idx]);
@@ -38,10 +38,10 @@ STATE_DEF_HANDLE(StMenu, KeypadEvent) {
             SM_GOTO(menu->menu->state[menu->menu->idx]);
     } else if(ev->key <= KEY_9) {
         if (menu->menu->checkEnable) {
-            OOP_CALL(menu->menu, setChecked, ev->key - 1);
+            ui_menu_set_checked(menu->menu, ev->key - 1);
         }
         if (menu->menu->togglable) {
-            OOP_CALL(menu->menu, toggle, menu->menu->idx);
+            ui_menu_toggle(menu->menu, menu->menu->idx);
         }
         if (menu->menu->cb[ev->key - 1]) {
             menu->menu->cb[ev->key - 1](menu->menu->userData[menu->menu->idx]);

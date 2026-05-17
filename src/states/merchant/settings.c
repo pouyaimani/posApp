@@ -84,18 +84,18 @@ static SubState *getValue;
 STATE_DEF_ENTER(EnergySettings) {
     ui_menu_create(energyMenu, disp()->screen);
     for (uint8_t i = 0; i < 2 ; i++) {
-        OOP_CALL(energyMenu, addItem, &energyItemTxt[i], NULL, NULL, NULL);
+        ui_menu_addItem(energyMenu, &energyItemTxt[i], NULL, NULL, NULL);
     }
-    OOP_CALL(energyMenu, show);
+    ui_menu_show(energyMenu);
 }
 
 STATE_DEF_EXIT(EnergySettings) {
-    OOP_CALL(energyMenu, hide);
+    ui_menu_hide(energyMenu);
     ui_menu_destroy(energyMenu);
 }
 
 STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
-    OOP_CALL(energyMenu, handleItem, ev->key);
+    ui_menu_handleItem(energyMenu, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
@@ -151,29 +151,29 @@ static Menu *receiptMenu;
 STATE_DEF_ENTER(ReceiptSettings) {
     ui_menu_create(receiptMenu, disp()->screen);
     for (uint8_t i = 0; i < 4 ; i++) {
-        OOP_CALL(receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
+        ui_menu_addItem(receiptMenu, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
     }
     GOTO_MENU(state->parent, receiptMenu, NULL, NULL);
 }
 
-static Menu autoRecMenu;
+static Menu *autoRecMenu;
 
 STATE_DEF_ENTER(AutoPrint) {
-    uiOnOffMenu(&autoRecMenu, disp()->screen);
-    OOP_CALL(&autoRecMenu, show);
+    uiOnOffMenu(autoRecMenu, disp()->screen);
+    ui_menu_show(autoRecMenu);
 }
 
 STATE_DEF_EXIT(AutoPrint) {
-    OOP_CALL(&autoRecMenu, hide);
-    ui_menu_destroy(&autoRecMenu);
+    ui_menu_hide(autoRecMenu);
+    ui_menu_destroy(autoRecMenu);
 }
 
 STATE_DEF_HANDLE(AutoPrint, KeypadEvent) {
-    OOP_CALL(&autoRecMenu, handleItem, ev->key);
+    ui_menu_handleItem(autoRecMenu, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        OOP_CALL(&autoRecMenu, setChecked, autoRecMenu.idx);
+        ui_menu_set_checked(autoRecMenu, autoRecMenu->idx);
     }
 }
 
@@ -191,20 +191,20 @@ static Menu merchRecMenu;
 
 STATE_DEF_ENTER(PrnMerchRec) {
     uiOnOffMenu(&merchRecMenu, disp()->screen);
-    OOP_CALL(&merchRecMenu, show);
+    ui_menu_show(&merchRecMenu);
 }
 
 STATE_DEF_EXIT(PrnMerchRec) {
-    OOP_CALL(&merchRecMenu, hide);
+    ui_menu_hide(&merchRecMenu);
     ui_menu_destroy(&merchRecMenu);
 }
 
 STATE_DEF_HANDLE(PrnMerchRec, KeypadEvent) {
-    OOP_CALL(&merchRecMenu, handleItem, ev->key);
+    ui_menu_handleItem(&merchRecMenu, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        OOP_CALL(&merchRecMenu, setChecked, merchRecMenu.idx);
+        ui_menu_set_checked(&merchRecMenu, merchRecMenu.idx);
     }
 }
 
@@ -212,22 +212,22 @@ static Menu *prnModel;
 
 STATE_DEF_ENTER(PrnModel) {
     ui_menu_create(prnModel, disp()->screen);
-    OOP_CALL(prnModel, addItem, "پس زمینه سفید", NULL, NULL, NULL);
-    OOP_CALL(prnModel, addItem, "پس زمینه مشکی", NULL, NULL, NULL);
-    OOP_CALL(prnModel, show);
+    ui_menu_addItem(prnModel, "پس زمینه سفید", NULL, NULL, NULL);
+    ui_menu_addItem(prnModel, "پس زمینه مشکی", NULL, NULL, NULL);
+    ui_menu_show(prnModel);
 }
 
 STATE_DEF_EXIT(PrnModel) {
-    OOP_CALL(prnModel, hide);
+    ui_menu_hide(prnModel);
     ui_menu_destroy(prnModel);
 }
 
 STATE_DEF_HANDLE(PrnModel, KeypadEvent) {
-    OOP_CALL(prnModel, handleItem, ev->key);
+    ui_menu_handleItem(prnModel, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        OOP_CALL(prnModel, setChecked, prnModel->idx);
+        ui_menu_set_checked(prnModel, prnModel->idx);
     }
 }
 
@@ -303,29 +303,29 @@ static void ScrLightSettings(State *parent) {
 
 /******************** touch sub state **********************/
 
-static Menu touchMenu;
+static Menu *touchMenu;
 
 STATE_DEF_ENTER(TouchSettings) {
-    uiOnOffMenu(&touchMenu, disp()->screen);
+    uiOnOffMenu(touchMenu, disp()->screen);
     int idx = settings()->terminal.touchEnable == true ? 0 : 1;
-    OOP_CALL(&touchMenu, setChecked, idx);
-    OOP_CALL(&touchMenu, show);
+    ui_menu_set_checked(touchMenu, idx);
+    ui_menu_show(touchMenu);
 }
 
 STATE_DEF_EXIT(TouchSettings) {
-    OOP_CALL(&touchMenu, hide);
-    ui_menu_destroy(&touchMenu);
+    ui_menu_hide(touchMenu);
+    ui_menu_destroy(touchMenu);
 }
 
 STATE_DEF_HANDLE(TouchSettings, KeypadEvent) {
-    OOP_CALL(&touchMenu, handleItem, ev->key);
+    ui_menu_handleItem(touchMenu, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        bool en = touchMenu.idx == 0;
+        bool en = touchMenu->idx == 0;
         //TODO: enable/ disable touch
         settings()->terminal.touchEnable = en;
-        OOP_CALL(&touchMenu, setChecked, touchMenu.idx);
+        ui_menu_set_checked(touchMenu, touchMenu->idx);
     }
 }
 
@@ -366,7 +366,7 @@ static Menu *settingsMenu;
 static void createUi() {
     ui_menu_create(settingsMenu, disp()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL ; i++) {
-        OOP_CALL(settingsMenu, addItem, phraseGetDef(SettingsItemTxt[i]), subSettings[i], NULL, NULL);
+        ui_menu_addItem(settingsMenu, phraseGetDef(SettingsItemTxt[i]), subSettings[i], NULL, NULL);
     }
 }
 
@@ -388,5 +388,9 @@ OOP_CTOR(Settings, State *parent, const char *name) {
     energyMenu = MEM_ALLOC(sizeof(*energyMenu));
     receiptMenu = MEM_ALLOC(sizeof(*receiptMenu));
     prnModel = MEM_ALLOC(sizeof(*prnModel));
-    settingsMenu = MEM_ALLOC(sizeof(*settingsMenu));
+
+    touchMenu = MEM_ALLOC(sizeof(*touchMenu));
+
+    autoRecMenu = MEM_ALLOC(sizeof(*autoRecMenu));
+    
 }
