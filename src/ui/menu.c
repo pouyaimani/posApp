@@ -89,6 +89,7 @@ static void addOnOffItem(Menu *menu, const char * text, bool toggle, State *stat
 }
 
 static void showSelector(Menu *menu) {
+    RETURN_IF_NULL(menu, ;);
     LV_SHOW(menu->selector);
     lv_obj_update_layout(menu->main);
     lv_obj_set_size(menu->selector, lv_pct(105), 
@@ -100,6 +101,7 @@ static void showSelector(Menu *menu) {
 }
 
 static void handleItem(Menu *menu, Key_t key) {
+    RETURN_IF_NULL(menu, ;);
     MenuUpDown_t updown;
     if (key == KEY_UP) {
         updown = MENU_UP;
@@ -118,6 +120,7 @@ static void handleItem(Menu *menu, Key_t key) {
 }
 
 static void menuShow(Menu *menu) {
+    RETURN_IF_NULL(menu, ;);
     menu->idx = 0;
     LV_SHOW(menu->main);
     if (menu->cnt > 0) {
@@ -126,14 +129,17 @@ static void menuShow(Menu *menu) {
 }
 
 static void menuHide(Menu *menu) {
+    RETURN_IF_NULL(menu, ;);
     LV_HIDE(menu->main);
 }
 
 static int menuGetIdx(Menu *menu) {
+    RETURN_IF_NULL(menu, ;);
     return menu->idx;
 }
 
 static void menuSetChecked(Menu *menu, int newIdx) {
+    RETURN_IF_NULL(menu, ;);
     if(newIdx < 0 || newIdx >= menu->cnt) return;
     lv_obj_update_layout(menu->main);
     LV_SET_SIZE(menu->checker, lv_pct(95), LV_SIZE_CONTENT);
@@ -146,6 +152,7 @@ static void menuSetChecked(Menu *menu, int newIdx) {
 }
 
 static void toggle(Menu *menu, int idx) {
+    RETURN_IF_NULL(menu, ;);
     lv_obj_t *obj = lv_obj_get_child(menu->item[idx], 0);
     menu->toggle[idx] = !menu->toggle[idx];
     LV_SET_TEXT(obj, menu->toggle[idx] ? LV_SYMBOL_OK : LV_SYMBOL_CLOSE);
@@ -153,6 +160,7 @@ static void toggle(Menu *menu, int idx) {
 }
 
 void ui_menu_create(Menu *menu, lv_obj_t * parent) {
+    RETURN_IF_NULL(menu, ;);
     menu->vtable.addItem = addItem;
     menu->vtable.addOnOffItem = addOnOffItem;
     menu->vtable.handleItem = handleItem;
@@ -210,28 +218,22 @@ void ui_menu_create(Menu *menu, lv_obj_t * parent) {
 }
 
 void ui_menu_destroy(Menu *menu) {
-    if (!menu) return;
+    RETURN_IF_NULL(menu, ;);
 
     if(menu->main && lv_obj_is_valid(menu->main)) {
         LV_DELETE(menu->main);
     }
-
-    MEM_FREE(menu->item);
-    MEM_FREE(menu->state);
-    MEM_FREE(menu->cb);
-    MEM_FREE(menu->toggle);
-    MEM_FREE(menu->userData);
-
-    memset(menu, 0, sizeof(*menu));
 }
 
 void uiOnOffMenu(Menu *menu, lv_obj_t * parent) {
+    RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
     OOP_CALL(menu, addItem, phraseGetDef(PHRASE_ENABLE), NULL, NULL, NULL);
     OOP_CALL(menu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, NULL, NULL);
 }
 
 void uiToggleMenu(Menu *menu, lv_obj_t * parent) {
+    RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
     menu->togglable = true;
 }

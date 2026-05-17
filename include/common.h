@@ -106,7 +106,7 @@ typedef enum {
 #define RETURN_IF_NULL(ptr, on_error)                              \
     do {                                                           \
         if ((ptr) == NULL) {                                       \
-            LOG_ERROR("Error: %s is NULL", #ptr);                    \
+            LOG_ERROR("Error: %s is NULL", #ptr);                  \
             on_error;                                              \
             return;                                                \
         }                                                          \

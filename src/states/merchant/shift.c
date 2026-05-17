@@ -11,7 +11,7 @@
 #include "logger.h"
 #include "phrases/phrases.h"
 
-static Menu shiftItemMenu;
+static Menu *shiftItemMenu;
 static lv_obj_t *shiftMenu;
 
 static TerminalSettings *terminalStg;
@@ -313,15 +313,15 @@ STATE_DEF_ENTER(ShiftReports) {
 /******************** Shift settings state **********************/
 
 static void createUi() {
-    ui_menu_create(&shiftItemMenu, disp()->screen);
+    ui_menu_create(shiftItemMenu, disp()->screen);
     for (uint8_t i = 0; i < SHIFT_ITEM_ALL ; i++) {
-        OOP_CALL(&shiftItemMenu, addItem, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
+        OOP_CALL(shiftItemMenu, addItem, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
     }
 }
 
 STATE_DEF_ENTER(Shift) {
     createUi();
-    GOTO_MENU(state->parent, &shiftItemMenu, NULL, NULL);
+    GOTO_MENU(state->parent, shiftItemMenu, NULL, NULL);
 }
 
 OOP_CTOR(Shift, State *parent, const char *name) {
@@ -362,4 +362,5 @@ OOP_CTOR(Shift, State *parent, const char *name) {
     handleReports->vtable.enter = STATE_ENTER(HandleReports);
     handleReports->vtable.exit = STATE_EXIT(HandleReports);
     handleReports->vtable.handleKeypad = STATE_HANDLE(HandleReports, KeypadEvent);
+    shiftItemMenu = MEM_ALLOC(sizeof(*shiftItemMenu));
 }

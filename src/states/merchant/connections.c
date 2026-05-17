@@ -11,6 +11,7 @@
 #include "cellular/cellular.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static Cellular *cel;
 static Network *net;
@@ -103,7 +104,7 @@ static void WifiEnterPass(State *parent) {
 
 /******************** Wifi scan sub state **********************/
 
-static Menu wifiMenu;
+static Menu *wifiMenu;
 
 STATE_DEF_ENTER(WifiScan) {
     SHOW_INFO(phraseGetDef(PHRASE_SEARCHING_4_WIFI), phraseGetDef(PHRASE_PLEASE_WAIT));
@@ -111,7 +112,8 @@ STATE_DEF_ENTER(WifiScan) {
 }
 
 STATE_DEF_EXIT(WifiScan) {
-    ui_menu_destroy(&wifiMenu);
+    ui_menu_destroy(wifiMenu);
+    MEM_FREE(wifiMenu);
 }
 
 STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
@@ -119,26 +121,27 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
         return;
     } else if (wifi()->scanSt == WIFI_SCAN_FAILED) {
     } else {
-        OOP_CALL(&wifiMenu, handleItem, ev->key);
+        OOP_CALL(wifiMenu, handleItem, ev->key);
         if (ev->key == KEY_ESC) {
-            OOP_CALL(&wifiMenu, hide);
+            OOP_CALL(wifiMenu, hide);
             SM_GOTO(state->parent);
         } else if (ev->key == KEY_ENTER) {
-            OOP_CALL(&wifiMenu, hide);
+            OOP_CALL(wifiMenu, hide);
             SM_GOTO(wifiEnterPass);
-            selectedAp = &wifi()->apList.list[wifiMenu.idx];
+            selectedAp = &wifi()->apList.list[wifiMenu->idx];
         }
     }
 }
 
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
-        ui_menu_create(&wifiMenu, disp()->screen);
+        wifiMenu = MEM_ALLOC(sizeof(*wifiMenu));
+        ui_menu_create(wifiMenu, disp()->screen);
         for (uint8_t i = 0; i < wifi()->apList.size ; i++) {
-            OOP_CALL(&wifiMenu, addItem, wifi()->apList.list[i].essid, wifiEnterPass, NULL, NULL);
+            OOP_CALL(wifiMenu, addItem, wifi()->apList.list[i].essid, wifiEnterPass, NULL, NULL);
         }
         HIDE_INFO();
-        OOP_CALL(&wifiMenu, show);
+        OOP_CALL(wifiMenu, show);
     } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
         GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
     }
@@ -206,25 +209,25 @@ typedef enum {
 ConnectionTypes_t menuMap[3];
 int menuCount = 0;
 
-static Menu menu;
+static Menu *menu;
 
 static void createUi() {
-    ui_menu_create(&menu, disp()->screen);
+    ui_menu_create(menu, disp()->screen);
     menuCount = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
     if (sys()->module.wifi) {
-        OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_WIFI), wifiScan, NULL, NULL);
+        OOP_CALL(menu, addItem, phraseGetDef(PHRASE_WIFI), wifiScan, NULL, NULL);
         menuMap[menuCount] = CONNECTION_WIFI;
         if (route == NET_ROUTE_WIFI) {
-            OOP_CALL(&menu, setChecked, menuCount);
+            OOP_CALL(menu, setChecked, menuCount);
         }
         menuCount++;
     }
     if (sys()->module.gprs) {
-        OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_GPRS), cellularLogin, NULL, NULL);
+        OOP_CALL(menu, addItem, phraseGetDef(PHRASE_GPRS), cellularLogin, NULL, NULL);
         menuMap[menuCount] = CONNECTION_GPRS;
         if (route == NET_ROUTE_CELLUALR) {
-            OOP_CALL(&menu, setChecked, menuCount);
+            OOP_CALL(menu, setChecked, menuCount);
         }
         menuCount++;
     }
@@ -232,7 +235,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Connectios) {
     createUi();
-    GOTO_MENU(state->parent, &menu, NULL, NULL);
+    GOTO_MENU(state->parent, menu, NULL, NULL);
 }
 
 OOP_CTOR(Connections, State *parent, const char *name) {
@@ -246,4 +249,6 @@ OOP_CTOR(Connections, State *parent, const char *name) {
 
     cel = cellular();
     net = network();
+
+    menu = MEM_ALLOC(sizeof(*menu));
 }

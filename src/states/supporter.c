@@ -10,7 +10,7 @@
 #include "supervisor/supervisor.h"
 #include "phrases/phrases.h"
 
-static Menu menu;
+static Menu *menu;
 static SubState *powerOff;
 static Merchant *merchant;
 static Merchant *supervisor;
@@ -28,11 +28,11 @@ static void onExit() {
 }
 
 STATE_DEF_ENTER(Supporter) {
-    ui_menu_create(&menu, disp()->screen);
-    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
-    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
-    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
-    OOP_CALL(&menu, addItem, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
+    ui_menu_create(menu, disp()->screen);
+    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
+    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
+    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
+    OOP_CALL(menu, addItem, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
     GOTO_MENU(STATE_IDLE, &menu, NULL, NULL);
 }
 
@@ -61,4 +61,6 @@ OOP_CTOR(Supporter, State *parent, const char *name) {
 
     supervisor = (Supervisor*)MEM_ALLOC(sizeof(Supervisor));
     OOP_CALL_CTOR(Supervisor, supervisor, self, "supervisor");
+
+    menu = MEM_ALLOC(sizeof(*menu));
 }

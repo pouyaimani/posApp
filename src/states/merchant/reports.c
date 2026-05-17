@@ -11,6 +11,7 @@
 #include "receipt/receiptTemplates.h"
 #include "printer/printer.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static ReceiptDocType docType;
 
@@ -146,16 +147,16 @@ static const Phrases_t printItemTxt[REPRINT_END] = {
     PHRASE_BASED_ON_REF_NUM
 };
 
-static Menu printMenu;
+static Menu *printMenu;
 
 STATE_DEF_ENTER(RePrint) {
     REPORT_RESULT_NORM(rquery.resMode);
-    ui_menu_create(&printMenu, disp()->screen);
+    ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_END ; i++) {
-        OOP_CALL(&printMenu, addItem, phraseGetDef(printItemTxt[i]), NULL,
+        OOP_CALL(printMenu, addItem, phraseGetDef(printItemTxt[i]), NULL,
                     setReprintItem, (void*)(uintptr_t)i);
     }
-    GOTO_MENU(state->parent, &printMenu, NULL, NULL);
+    GOTO_MENU(state->parent, printMenu, NULL, NULL);
 }
 
 static void RePrint(State *parent) {
@@ -194,12 +195,12 @@ static void SummaryReport(State *parent) {
 
 STATE_DEF_ENTER(DetailsReport) {
     docType = DOC_DETAILED_REPORT;
-    ui_menu_create(&printMenu, disp()->screen);
+    ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE ; i++) {
-        OOP_CALL(&printMenu, addItem, printItemTxt[i], NULL,
+        OOP_CALL(printMenu, addItem, printItemTxt[i], NULL,
                     setReprintItem, (void*)(uintptr_t)i);
     }
-    GOTO_MENU(state->parent, &printMenu, NULL, NULL);
+    GOTO_MENU(state->parent, printMenu, NULL, NULL);
 }
 
 STATE_DEF_EXIT(DetailsReport) {
@@ -364,7 +365,7 @@ static void ExtractData(State *parent) {
 }
 
 /******************** Settings sub state **********************/
-static Menu reportsMenu;
+static Menu *reportsMenu;
 
 static void setReportItem(void *arg) {
     rItem = (PrintItem_t)(uintptr_t)arg;
@@ -373,11 +374,11 @@ static void setReportItem(void *arg) {
 
 STATE_DEF_ENTER(Reports) {
     QUERY_FILTER_RESET(rquery.filter);
-    ui_menu_create(&reportsMenu, disp()->screen);
+    ui_menu_create(reportsMenu, disp()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL ; i++) {
-        OOP_CALL(&reportsMenu, addItem, phraseGetDef(reportsItemTxt[i]), subReports[i], setReportItem, (void*)(uintptr_t)i);
+        OOP_CALL(reportsMenu, addItem, phraseGetDef(reportsItemTxt[i]), subReports[i], setReportItem, (void*)(uintptr_t)i);
     }
-    GOTO_MENU(state->parent, &reportsMenu, NULL, NULL);
+    GOTO_MENU(state->parent, reportsMenu, NULL, NULL);
 }
 
 OOP_CTOR(Reports, State *parent, const char *name) {
@@ -406,4 +407,7 @@ OOP_CTOR(Reports, State *parent, const char *name) {
     getEndTime = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getEndTime, parent, "get End Time");
     getEndTime->vtable.enter = STATE_ENTER(GetEndTime);
+
+    printMenu = MEM_ALLOC(sizeof(*printMenu));
+    reportsMenu  = MEM_ALLOC(sizeof(*reportsMenu));
 }

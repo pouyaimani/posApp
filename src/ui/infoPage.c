@@ -1,8 +1,11 @@
 #include "infoPage.h"
 #include "display/display.h"
 #include "font/myFont.h"
+#include "common.h"
+#include "logger.h"
 
 static void createInfoPage(InfoPage *pinfo) {
+    RETURN_IF_NULL(pinfo, ;);
     pinfo->title = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(pinfo->title, FONT_20);
     LV_SET_TEXT_COLOR(pinfo->title, COLOR_BLACK);
@@ -31,6 +34,7 @@ static void createInfoPage(InfoPage *pinfo) {
 }
 
 static void infoHide(InfoPage *pinfo) {
+    RETURN_IF_NULL(pinfo, ;);
     LV_HIDE(pinfo->body);
     LV_HIDE(pinfo->title);
     if(pinfo->img) {
@@ -42,6 +46,7 @@ static void infoHide(InfoPage *pinfo) {
 }
 
 static void infoShow(InfoPage *pinfo) {
+    RETURN_IF_NULL(pinfo, ;);
     if (pinfo->type == INFO_T_IMG) {
         LV_SHOW(pinfo->body);
         if (pinfo->img) {
@@ -57,6 +62,7 @@ static void infoShow(InfoPage *pinfo) {
 }
 
 static void infoSetData(InfoPage *pinfo, InfoType_t type, const char *data, const char* body) {
+    RETURN_IF_NULL(pinfo, ;);
     pinfo->type = type;
     if (type == INFO_T_IMG) {
         pinfo->img = lv_img_create(disp()->screen);

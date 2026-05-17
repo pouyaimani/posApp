@@ -13,21 +13,21 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 
-static Menu menu;
+static Menu *menu;
 static InfoPage infop;
 static ServiceId_t enableServicesId[SERVICE_ID_ALL];
 static int selected;
 
 static void createUi() {
-    ui_menu_create(&menu, disp()->screen);
+    ui_menu_create(menu, disp()->screen);
     int cnt = 0;
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
         if (getService(i)->enable) {
-            OOP_CALL(&menu, addItem, getService(i)->state.name, NULL, NULL, NULL);
+            OOP_CALL(menu, addItem, getService(i)->state.name, NULL, NULL, NULL);
             enableServicesId[cnt++] = i;
         }
     }
-    OOP_CALL(&menu, hide);
+    OOP_CALL(menu, hide);
 }
 
 STATE_DEF_ENTER(CardHolder) {
@@ -36,13 +36,13 @@ STATE_DEF_ENTER(CardHolder) {
         getEventloop()->registerChecker(magreader()->ioRead);
     }
     createUi();
-    OOP_CALL(&menu, show);
+    OOP_CALL(menu, show);
 }
 
 STATE_DEF_EXIT(CardHolder) {
-    OOP_CALL(&menu, hide);
+    OOP_CALL(menu, hide);
     OOP_CALL(&infop, hide);
-    ui_menu_destroy(&menu);
+    ui_menu_destroy(menu);
 }
 
 STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {
@@ -63,14 +63,14 @@ STATE_DEF_HANDLE(CardHolder, MagEvent) {
 }
 
 STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
-    OOP_CALL(&menu, handleItem, ev->key);
+    OOP_CALL(menu, handleItem, ev->key);
     CardHolder *ch = (CardHolder*)state;
     if (ev->key <= KEY_9) {
         selected = (ServiceId_t)((int)ev->key - 1);
         if (!ch->isMagSwiped) {
             OOP_CALL(&infop, setData, INFO_T_IMG, 
                         ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
-            OOP_CALL(&menu, hide);
+            OOP_CALL(menu, hide);
             OOP_CALL(&infop, show);
             return;
         }
@@ -78,11 +78,11 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     }  else if (ev->key == KEY_ESC) {
         GOTO_IDLE();
     } else if (ev->key == KEY_ENTER) {
-        selected = (ServiceId_t)menu.idx;
+        selected = (ServiceId_t)menu->idx;
         if (!ch->isMagSwiped) {
             OOP_CALL(&infop, setData, INFO_T_IMG,
                         ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
-            OOP_CALL(&menu, hide);
+            OOP_CALL(menu, hide);
             OOP_CALL(&infop, show);
             return;
         }
@@ -97,5 +97,8 @@ OOP_CTOR(CardHolder, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(CardHolder, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(CardHolder, TimeOutEvent);
     self->base.vtable.handleMag = STATE_HANDLE(CardHolder, MagEvent);
+
+    menu = MEM_ALLOC(sizeof(*menu));
+
     infoPage(&infop);
 }

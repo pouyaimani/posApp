@@ -15,18 +15,19 @@ static SubState *amountList;
 static SubState *singleAmount;
 static SubState *variantAmount;
 
-static Menu amountListMenu;
+static Menu *amountListMenu;
 
 STATE_DEF_ENTER(AmountList) {
-    ui_menu_create(&amountListMenu, disp()->screen);
+    amountListMenu = MEM_ALLOC(sizeof(*amountListMenu));
+    ui_menu_create(amountListMenu, disp()->screen);
     for (uint8_t i = 0; i < termStorage->amountListCnt ; i++) {
         char str[32] = {0};
         char amount[AMOUNT_MAX_CNT] = {0};
         amountSeparator(termStorage->amountList[i], amount, AMOUNT_MAX_CNT);
         snprintf(str, sizeof(str), "[ %s ] [ %s ]", amount, "ریال");
-        OOP_CALL(&amountListMenu, addItem, str, NULL, NULL, NULL);
+        OOP_CALL(amountListMenu, addItem, str, NULL, NULL, NULL);
     }
-    GOTO_MENU(STATE_IDLE, &amountListMenu, NULL, NULL);
+    GOTO_MENU(STATE_IDLE, amountListMenu, NULL, NULL);
 }
 
 STATE_DEF_ENTER(SingleAmount) {

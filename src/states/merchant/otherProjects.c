@@ -32,7 +32,7 @@ static SubState *subState[OTH_PROJ_ALL];
 
 /******************** fixed amount sub state **********************/
 
-static Menu fixedAmntMenu;
+static Menu *fixedAmntMenu;
 static SubState *enterAmount;
 static int listCnt = 0;
 
@@ -147,19 +147,19 @@ STATE_DEF_ENTER(EnterFixedAmount) {
 }
 
 STATE_DEF_ENTER(FixedAmount) {
-    ui_menu_create(&fixedAmntMenu, disp()->screen);
-    fixedAmntMenu.checkEnable = true;
-    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, disableFixedAmnt, NULL);
-    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_PRICE_LIST), enterAmount, setFixedItemToList, NULL);
-    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_AMNT), enterAmount, setFixedItemToSingle, NULL);
-    OOP_CALL(&fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_WITH_COEF), enterAmount, setFixedItemToVariant, NULL);
-    OOP_CALL(&fixedAmntMenu, setChecked, termStorage->fixedAmountItem);
+    ui_menu_create(fixedAmntMenu, disp()->screen);
+    fixedAmntMenu->checkEnable = true;
+    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), NULL, disableFixedAmnt, NULL);
+    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_PRICE_LIST), enterAmount, setFixedItemToList, NULL);
+    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_AMNT), enterAmount, setFixedItemToSingle, NULL);
+    OOP_CALL(fixedAmntMenu, addItem, phraseGetDef(PHRASE_FIXED_WITH_COEF), enterAmount, setFixedItemToVariant, NULL);
+    OOP_CALL(fixedAmntMenu, setChecked, termStorage->fixedAmountItem);
     listCnt = 0;
-    GOTO_MENU(state->parent, &fixedAmntMenu, NULL, NULL);
+    GOTO_MENU(state->parent, fixedAmntMenu, NULL, NULL);
 }
 
 /******************** max amount sub state **********************/
-static Menu maxAmntMenu;
+static Menu *maxAmntMenu;
 static SubState *enterMaxAmnt;
 static SubState *getMaxAmnt;
 
@@ -184,22 +184,22 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
 }
 
 STATE_DEF_ENTER(MaxAmount) {
-    ui_menu_create(&maxAmntMenu, disp()->screen);
-    maxAmntMenu.checkEnable = true;
-    OOP_CALL(&maxAmntMenu, addItem, phraseGetDef(PHRASE_ENABLE), 
+    ui_menu_create(maxAmntMenu, disp()->screen);
+    maxAmntMenu->checkEnable = true;
+    OOP_CALL(maxAmntMenu, addItem, phraseGetDef(PHRASE_ENABLE), 
                 enterMaxAmnt, NULL, NULL);
-    OOP_CALL(&maxAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), 
+    OOP_CALL(maxAmntMenu, addItem, phraseGetDef(PHRASE_DISABLE), 
                 NULL, disMaxAmnt, NULL);
     if(termStorage->maxAmntEnable) {
-        OOP_CALL(&maxAmntMenu, setChecked, 0);
+        OOP_CALL(maxAmntMenu, setChecked, 0);
     } else {
-        OOP_CALL(&maxAmntMenu, setChecked, 1);
+        OOP_CALL(maxAmntMenu, setChecked, 1);
     }
-    GOTO_MENU(state->parent, &maxAmntMenu, NULL, NULL);
+    GOTO_MENU(state->parent, maxAmntMenu, NULL, NULL);
 }
 
 /******************** direct sale sub state **********************/
-static Menu dirSaleMenu;
+static Menu *dirSaleMenu;
 
 static void enDirectSale() {
     termStorage->maxAmntEnable = false;
@@ -210,14 +210,14 @@ static void disDirectSale() {
 }
 
 STATE_DEF_ENTER(DirectSale) {
-    ui_menu_create(&dirSaleMenu, disp()->screen);
-    dirSaleMenu.checkEnable = true;
-    OOP_CALL(&dirSaleMenu, addItem, 
+    ui_menu_create(dirSaleMenu, disp()->screen);
+    dirSaleMenu->checkEnable = true;
+    OOP_CALL(dirSaleMenu, addItem, 
                 phraseGetDef(PHRASE_ENABLE), NULL, enDirectSale, NULL);
-    OOP_CALL(&dirSaleMenu, addItem, 
+    OOP_CALL(dirSaleMenu, addItem, 
                 phraseGetDef(PHRASE_DISABLE), NULL, disDirectSale, NULL);
 
-    GOTO_MENU(state->parent, &dirSaleMenu, NULL, NULL);
+    GOTO_MENU(state->parent, dirSaleMenu, NULL, NULL);
 }
 
 /******************** enable services sub state **********************/
@@ -245,18 +245,18 @@ STATE_DEF_ENTER(EnableServices) {
 
 /*********************** other project state **************************/
 
-static Menu otherMenu;
+static Menu *otherMenu;
 
 static void saveSettings() {
     settings()->save();
 }
 
 STATE_DEF_ENTER(OtherProjects) {
-    ui_menu_create(&otherMenu, disp()->screen);
+    ui_menu_create(otherMenu, disp()->screen);
     for (uint8_t i = 0; i < OTH_PROJ_ALL ; i++) {
-        OOP_CALL(&otherMenu, addItem, phraseGetDef(dsc[i]), subState[i], NULL, NULL);
+        OOP_CALL(otherMenu, addItem, phraseGetDef(dsc[i]), subState[i], NULL, NULL);
     }
-    GOTO_MENU(state->parent, &otherMenu, saveSettings, NULL);
+    GOTO_MENU(state->parent, otherMenu, saveSettings, NULL);
 }
 
 OOP_CTOR(OtherProjects, State *parent, const char *name) {
@@ -295,4 +295,9 @@ OOP_CTOR(OtherProjects, State *parent, const char *name) {
     OOP_CALL_CTOR(State, enterAmount, subState[OTH_PROJ_FIXED_AMONT], "enter fixed amount");
     enterAmount->vtable.enter = STATE_ENTER(EnterFixedAmount);
     termStorage = &settings()->terminal;
+
+    fixedAmntMenu = MEM_ALLOC(sizeof(*fixedAmntMenu));
+    maxAmntMenu = MEM_ALLOC(sizeof(*maxAmntMenu));
+    dirSaleMenu = MEM_ALLOC(sizeof(*dirSaleMenu));
+    otherMenu = MEM_ALLOC(sizeof(*otherMenu));
 }

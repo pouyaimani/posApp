@@ -397,11 +397,11 @@ static void createUi() {
     LV_SET_SIZE(info, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_ALIGN(info, LV_ALIGN_CENTER, 0, -30);
     
-    uiInputBox(&inputBox, disp()->screen);
+    ui_inBox_create(&inputBox, disp()->screen);
     LV_ALIGN(inputBox.main, LV_ALIGN_CENTER, 0, 10);
-    uiButton(&confirmBut, disp()->screen, 0x68DD40, phraseGetDef(PHRASE_CONFIRM));
+    ui_button_create(&confirmBut, disp()->screen, 0x68DD40, phraseGetDef(PHRASE_CONFIRM));
     LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
-    uiButton(&confirmBut, disp()->screen, 0xFF4E4E, phraseGetDef(PHRASE_CANCEL));
+    ui_button_create(&confirmBut, disp()->screen, 0xFF4E4E, phraseGetDef(PHRASE_CANCEL));
     LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(inputBox.textBox, "");

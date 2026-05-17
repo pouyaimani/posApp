@@ -9,6 +9,7 @@
 #include "network/network.h"
 #include "transmitter.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static Network *net;
 

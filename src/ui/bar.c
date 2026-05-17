@@ -7,6 +7,7 @@
 #include "font/myFont.h"
 
 static void barSetValue(Bar *bar, int value) {
+    RETURN_IF_NULL(bar, ;);
     RETURN_IF_NOT(bar->max > 0, true, ; );
     bar->value = value > bar->max ? bar->max : value;
     int pval = (bar->value * 100) / bar->max;
@@ -18,6 +19,7 @@ static void barSetTitle(Bar *bar, const char *txt) {
 }
 
 static void barInc(Bar *bar) {
+    RETURN_IF_NULL(bar, ;);
     if (bar->value < bar->max) {
         bar->value++;
     }
@@ -25,6 +27,7 @@ static void barInc(Bar *bar) {
 }
 
 static void barDec(Bar *bar) {
+    RETURN_IF_NULL(bar, ;);
     if (bar->value > bar->min) {
         bar->value--;
     }
@@ -32,22 +35,25 @@ static void barDec(Bar *bar) {
 }
 
 static void barShow(Bar *bar) {
+    RETURN_IF_NULL(bar, ;);
     LV_SHOW(bar->bar);
     LV_SHOW(bar->title);
 }
 
 static void barHide(Bar *bar) {
+    RETURN_IF_NULL(bar, ;);
     LV_HIDE(bar->bar);
     LV_HIDE(bar->title);
 }
 
 void ui_bar_destroy(Bar *bar) {
+    RETURN_IF_NULL(bar, ;);
     lv_obj_delete(bar->bar);
     lv_obj_delete(bar->title);
 }
 
-void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max)
-{
+void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max) {
+    RETURN_IF_NULL(bar, ;);
     bar->vtable.decrease = barDec;
     bar->vtable.increase = barInc;
     bar->vtable.setValue = barSetValue;

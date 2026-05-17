@@ -2,6 +2,7 @@
 #include "event.h"
 #include "network/network.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 /*************************** Network connect ***********************/
 

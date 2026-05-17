@@ -161,14 +161,14 @@ static void ChangeMerPin(State *parent) {
 
 /******************** Server settings sub state **********************/
 
-static Menu serverSetMenu;
+static Menu *serverSetMenu;
 static SubState *enterIp;
 static SubState *enterPort;
 static SubState *enableSsl;
 static SubState *enterServerId;
 static SubState *getServerId;
 static SubState *success;
-static Menu sslMenu;
+static Menu *sslMenu;
 
 typedef enum {
     SERV_SET_MAIN = 0,
@@ -242,12 +242,12 @@ static void disSSL() {
 }
 
 STATE_DEF_ENTER(EnableSsl) {
-    ui_menu_create(&sslMenu, disp()->screen);
-    sslMenu.checkEnable = true;
-    OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
-    OOP_CALL(&sslMenu, addItem, phraseGetDef(PHRASE_DISABLE), success, disSSL, NULL);
-    GOTO_MENU(state->parent, &sslMenu, NULL, NULL);
-    OOP_CALL(&sslMenu, setChecked, !settings()->server.sslEn);
+    ui_menu_create(sslMenu, disp()->screen);
+    sslMenu->checkEnable = true;
+    OOP_CALL(sslMenu, addItem, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
+    OOP_CALL(sslMenu, addItem, phraseGetDef(PHRASE_DISABLE), success, disSSL, NULL);
+    GOTO_MENU(state->parent, sslMenu, NULL, NULL);
+    OOP_CALL(sslMenu, setChecked, !settings()->server.sslEn);
 }
 
 STATE_DEF_ENTER(Success) {
@@ -275,11 +275,11 @@ static void setItemToTms() {
 }
 
 STATE_DEF_ENTER(NetworkSettings) {
-    ui_menu_create(&serverSetMenu, disp()->screen);
-    OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
-    OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
-    OOP_CALL(&serverSetMenu, addItem, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
-    GOTO_MENU(state->parent, &serverSetMenu, NULL, NULL);
+    ui_menu_create(serverSetMenu, disp()->screen);
+    OOP_CALL(serverSetMenu, addItem, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
+    OOP_CALL(serverSetMenu, addItem, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
+    OOP_CALL(serverSetMenu, addItem, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
+    GOTO_MENU(state->parent, serverSetMenu, NULL, NULL);
 }
 
 OOP_CTOR(NetworkSettings, State *parent, const char *name) {
@@ -372,14 +372,14 @@ OOP_CTOR(DefaultSettings, State *parent, const char *name) {
 
 /******************** Supervisor menu sub state **********************/
 
-static Menu menu;
+static Menu *menu;
 
 STATE_DEF_ENTER(SupervisorMenu) {
-    ui_menu_create(&menu, disp()->screen);
+    ui_menu_create(menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL ; i++) {
-        OOP_CALL(&menu, addItem, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
+        OOP_CALL(menu, addItem, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
     }
-    GOTO_MENU(getState(STATE_ID_SUPPORTER), &menu, NULL, NULL);
+    GOTO_MENU(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
 }
 
 static void SupervisorMenu(State *parent) {
@@ -420,5 +420,8 @@ OOP_CTOR(Supervisor, State *parent, const char *name) {
     OOP_CALL_CTOR(UpdateApp, subStates[SUBS_UPDATE_APP], supervisorMenu, "update app");
     subStates[SUBS_DEFAULT_SETTINGS] = (DefaultSettings *)MEM_ALLOC(sizeof(DefaultSettings));
     OOP_CALL_CTOR(DefaultSettings, subStates[SUBS_DEFAULT_SETTINGS], supervisorMenu, "default settings");
-
+    
+    sslMenu = MEM_ALLOC(sizeof(*sslMenu));
+    serverSetMenu = MEM_ALLOC(sizeof(*serverSetMenu));
+    menu = MEM_ALLOC(sizeof(*menu));
 }

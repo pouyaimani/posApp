@@ -9,6 +9,7 @@
 #include "storage/storage.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 typedef enum {
     SET_ITEM_SOUND = 0,
@@ -36,7 +37,7 @@ static const Phrases_t SettingsItemTxt[SET_ITEM_ALL] = {
 static Bar soundBar;
 
 STATE_DEF_ENTER(SoundSettings) {
-    uiBar(&soundBar, disp()->screen, 0, sys()->maxSound);
+    ui_bar_create(&soundBar, disp()->screen, 0, sys()->maxSound);
     OOP_CALL(&soundBar, setTitle, "تنظیم صدا");
     OOP_CALL(&soundBar, setValue, settings()->terminal.devVolume);
     OOP_CALL(&soundBar, show);
@@ -46,7 +47,7 @@ STATE_DEF_EXIT(SoundSettings) {
     settings()->terminal.devVolume = soundBar.value;
     settings()->save();
     OOP_CALL(&soundBar, hide);
-    uiBarDelete(&soundBar);
+    ui_bar_destroy(&soundBar);
 }
 
 STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
@@ -76,32 +77,32 @@ static const char* energyItemTxt[2] = {
     "بازه خاموشی"
 };
 
-static Menu energyMenu;
+static Menu *energyMenu;
 static int idx;
 static SubState *getValue;
 
 STATE_DEF_ENTER(EnergySettings) {
-    ui_menu_create(&energyMenu, disp()->screen);
+    ui_menu_create(energyMenu, disp()->screen);
     for (uint8_t i = 0; i < 2 ; i++) {
-        OOP_CALL(&energyMenu, addItem, &energyItemTxt[i], NULL, NULL, NULL);
+        OOP_CALL(energyMenu, addItem, &energyItemTxt[i], NULL, NULL, NULL);
     }
-    OOP_CALL(&energyMenu, show);
+    OOP_CALL(energyMenu, show);
 }
 
 STATE_DEF_EXIT(EnergySettings) {
-    OOP_CALL(&energyMenu, hide);
-    ui_menu_destroy(&energyMenu);
+    OOP_CALL(energyMenu, hide);
+    ui_menu_destroy(energyMenu);
 }
 
 STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
-    OOP_CALL(&energyMenu, handleItem, ev->key);
+    OOP_CALL(energyMenu, handleItem, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        idx = energyMenu.idx;
-        if (energyMenu.idx == 0) {
+        idx = energyMenu->idx;
+        if (energyMenu->idx == 0) {
             GOTO_INPUT(state, getValue, "ورود بازه ذخیره انرژی", "", 2, IN_MODE_NUMBERS, NULL);
-        } else if (energyMenu.idx == 1) {
+        } else if (energyMenu->idx == 1) {
             GOTO_INPUT(state, getValue, "ورود بازه خاموشی", "", 2, IN_MODE_NUMBERS, NULL);
         }
     }
@@ -145,14 +146,14 @@ static const char* receiptItemTxt[4] = {
 
 static SubState *subReceipt[4];
 
-static Menu receiptMenu;
+static Menu *receiptMenu;
 
 STATE_DEF_ENTER(ReceiptSettings) {
-    ui_menu_create(&receiptMenu, disp()->screen);
+    ui_menu_create(receiptMenu, disp()->screen);
     for (uint8_t i = 0; i < 4 ; i++) {
-        OOP_CALL(&receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
+        OOP_CALL(receiptMenu, addItem, &receiptItemTxt[i], subReceipt[i], NULL, NULL);
     }
-    GOTO_MENU(state->parent, &receiptMenu, NULL, NULL);
+    GOTO_MENU(state->parent, receiptMenu, NULL, NULL);
 }
 
 static Menu autoRecMenu;
@@ -207,26 +208,26 @@ STATE_DEF_HANDLE(PrnMerchRec, KeypadEvent) {
     }
 }
 
-static Menu prnModel;
+static Menu *prnModel;
 
 STATE_DEF_ENTER(PrnModel) {
-    ui_menu_create(&prnModel, disp()->screen);
-    OOP_CALL(&prnModel, addItem, "پس زمینه سفید", NULL, NULL, NULL);
-    OOP_CALL(&prnModel, addItem, "پس زمینه مشکی", NULL, NULL, NULL);
-    OOP_CALL(&prnModel, show);
+    ui_menu_create(prnModel, disp()->screen);
+    OOP_CALL(prnModel, addItem, "پس زمینه سفید", NULL, NULL, NULL);
+    OOP_CALL(prnModel, addItem, "پس زمینه مشکی", NULL, NULL, NULL);
+    OOP_CALL(prnModel, show);
 }
 
 STATE_DEF_EXIT(PrnModel) {
-    OOP_CALL(&prnModel, hide);
-    ui_menu_destroy(&prnModel);
+    OOP_CALL(prnModel, hide);
+    ui_menu_destroy(prnModel);
 }
 
 STATE_DEF_HANDLE(PrnModel, KeypadEvent) {
-    OOP_CALL(&prnModel, handleItem, ev->key);
+    OOP_CALL(prnModel, handleItem, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        OOP_CALL(&prnModel, setChecked, prnModel.idx);
+        OOP_CALL(prnModel, setChecked, prnModel->idx);
     }
 }
 
@@ -266,7 +267,7 @@ static void ReceiptSettings(State *parent) {
 static Bar brightBar;
 
 STATE_DEF_ENTER(ScrLightSettings) {
-    uiBar(&brightBar, disp()->screen, 1, sys()->maxBright);
+    ui_bar_create(&brightBar, disp()->screen, 1, sys()->maxBright);
     OOP_CALL(&brightBar, setTitle, "تنظیم نور صفحه");
     OOP_CALL(&brightBar, setValue, settings()->terminal.brightness);
     OOP_CALL(&brightBar, show);
@@ -276,7 +277,7 @@ STATE_DEF_EXIT(ScrLightSettings) {
     settings()->terminal.brightness = brightBar.value;
     settings()->save();
     OOP_CALL(&brightBar, hide);
-    uiBarDelete(&brightBar);
+    ui_bar_destroy(&brightBar);
 }
 
 STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
@@ -360,18 +361,18 @@ static void DateTimeSettings(State *parent) {
 }
 
 /******************** Settings sub state **********************/
-static Menu settingsMenu;
+static Menu *settingsMenu;
 
 static void createUi() {
-    ui_menu_create(&settingsMenu, disp()->screen);
+    ui_menu_create(settingsMenu, disp()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL ; i++) {
-        OOP_CALL(&settingsMenu, addItem, phraseGetDef(SettingsItemTxt[i]), subSettings[i], NULL, NULL);
+        OOP_CALL(settingsMenu, addItem, phraseGetDef(SettingsItemTxt[i]), subSettings[i], NULL, NULL);
     }
 }
 
 STATE_DEF_ENTER(Settings) {
     createUi();
-    GOTO_MENU(state->parent, &settingsMenu, NULL, NULL);
+    GOTO_MENU(state->parent, settingsMenu, NULL, NULL);
 }
 
 OOP_CTOR(Settings, State *parent, const char *name) {
@@ -383,4 +384,9 @@ OOP_CTOR(Settings, State *parent, const char *name) {
     ScrLightSettings(self);
     TouchSettings(self);
     DateTimeSettings(self);
+
+    energyMenu = MEM_ALLOC(sizeof(*energyMenu));
+    receiptMenu = MEM_ALLOC(sizeof(*receiptMenu));
+    prnModel = MEM_ALLOC(sizeof(*prnModel));
+    settingsMenu = MEM_ALLOC(sizeof(*settingsMenu));
 }
