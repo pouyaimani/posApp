@@ -159,7 +159,7 @@ STATE_DEF_ENTER(ReceiptSettings) {
 static Menu *autoRecMenu;
 
 STATE_DEF_ENTER(AutoPrint) {
-    uiOnOffMenu(autoRecMenu, disp()->screen);
+    ui_menu_on_off(autoRecMenu, disp()->screen);
     ui_menu_show(autoRecMenu);
 }
 
@@ -190,7 +190,7 @@ STATE_DEF_ENTER(SecPrintTimeSuc) {
 static Menu merchRecMenu;
 
 STATE_DEF_ENTER(PrnMerchRec) {
-    uiOnOffMenu(&merchRecMenu, disp()->screen);
+    ui_menu_on_off(&merchRecMenu, disp()->screen);
     ui_menu_show(&merchRecMenu);
 }
 
@@ -306,7 +306,7 @@ static void ScrLightSettings(State *parent) {
 static Menu *touchMenu;
 
 STATE_DEF_ENTER(TouchSettings) {
-    uiOnOffMenu(touchMenu, disp()->screen);
+    ui_menu_on_off(touchMenu, disp()->screen);
     int idx = settings()->terminal.touchEnable == true ? 0 : 1;
     ui_menu_set_checked(touchMenu, idx);
     ui_menu_show(touchMenu);

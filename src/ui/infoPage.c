@@ -86,7 +86,5 @@ InfoPage *infoPage() {
         info.vtable.setData = infoSetData;
         infoHide(&info);
     );
-    LV_SET_TEXT(info.title, "");
-    LV_SET_TEXT(info.body, "");
     return &info;
 }

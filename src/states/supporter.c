@@ -13,7 +13,7 @@
 static Menu *menu;
 static SubState *powerOff;
 static Merchant *merchant;
-static Merchant *supervisor;
+static Supervisor *supervisor;
 
 #define ITEM_CNT_MAX    4
 
@@ -33,7 +33,7 @@ STATE_DEF_ENTER(Supporter) {
     ui_menu_addItem(menu, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
-    GOTO_MENU(STATE_IDLE, &menu, NULL, NULL);
+    GOTO_MENU(STATE_IDLE, menu, NULL, NULL);
 }
 
 STATE_DEF_HANDLE(Supporter, TimeOutEvent) {

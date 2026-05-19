@@ -55,5 +55,6 @@ Service *getService(ServiceId_t id) {
 }
 
 OOP_CTOR(Service, State *parent, const char *name) {
-    OOP_CALL_CTOR(State, self, parent, name);
+    OOP_CALL_CTOR(State, &self->state, parent, name);
+    snprintf(self->name, sizeof(self->name), "%s", name);
 }

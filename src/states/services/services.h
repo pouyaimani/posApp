@@ -3,6 +3,7 @@
 
 #include "state.h"
 #include "dcfg.h"
+#include "common.h"
 
 #define PASSWORD_MAX_LEN    4
 
@@ -21,6 +22,7 @@ OOP_CLASS(Service) {
     OOP_IMPLEMENTS(Service);
     State state;
     bool enable;
+    char name[24];
 };
 
 OOP_CTOR(Service, State *parent, const char *name);

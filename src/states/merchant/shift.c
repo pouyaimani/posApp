@@ -108,7 +108,7 @@ static void showShift(lv_obj_t *menu, int latest, const char *sdt,
 /******************** En/Dis shift sub state **********************/
 
 STATE_DEF_ENTER(ShiftEnable) {
-    uiOnOffMenu(EnMenu, disp()->screen);
+    ui_menu_on_off(EnMenu, disp()->screen);
     ui_menu_set_checked(EnMenu, !terminalStg->shiftEnable);
     ui_menu_show(EnMenu);
 }
@@ -363,4 +363,5 @@ OOP_CTOR(Shift, State *parent, const char *name) {
     handleReports->vtable.exit = STATE_EXIT(HandleReports);
     handleReports->vtable.handleKeypad = STATE_HANDLE(HandleReports, KeypadEvent);
     shiftItemMenu = MEM_ALLOC(sizeof(*shiftItemMenu));
+    EnMenu = MEM_ALLOC(sizeof(*EnMenu));
 }

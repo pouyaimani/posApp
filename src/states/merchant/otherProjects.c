@@ -234,7 +234,7 @@ STATE_DEF_ENTER(SaveServiceStatus) {
 }
 
 STATE_DEF_ENTER(EnableServices) {
-    uiToggleMenu(servMenu, disp()->screen);
+    ui_menu_togglable(servMenu, disp()->screen);
     for (uint8_t i = 0; i < SERVICE_ID_ALL ; i++) {
         ui_menu_add_on_off_item(servMenu, getService(i)->state.name,
             getService(i)->enable, NULL, NULL, NULL);

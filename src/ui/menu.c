@@ -167,6 +167,7 @@ void ui_menu_create(Menu *menu, lv_obj_t * parent) {
     menu->checkEnable = false;
     for (size_t i = 0; i < MENU_ITEM_MAX; i++) {
         menu->item[i] = NULL;
+        menu->cb[i] = NULL;
         menu->state[i] = NULL;
         menu->toggle[i] = false;
     }
@@ -217,14 +218,14 @@ void ui_menu_destroy(Menu *menu) {
     }
 }
 
-void uiOnOffMenu(Menu *menu, lv_obj_t * parent) {
+void ui_menu_on_off(Menu *menu, lv_obj_t * parent) {
     RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_ENABLE), NULL, NULL, NULL);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_DISABLE), NULL, NULL, NULL);
 }
 
-void uiToggleMenu(Menu *menu, lv_obj_t * parent) {
+void ui_menu_togglable(Menu *menu, lv_obj_t * parent) {
     RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
     menu->togglable = true;

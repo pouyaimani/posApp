@@ -14,7 +14,6 @@
 #include "ui/infoPage.h"
 
 static Menu *menu;
-static InfoPage infop;
 static ServiceId_t enableServicesId[SERVICE_ID_ALL];
 static int selected;
 
@@ -41,7 +40,7 @@ STATE_DEF_ENTER(CardHolder) {
 
 STATE_DEF_EXIT(CardHolder) {
     ui_menu_hide(menu);
-    OOP_CALL(&infop, hide);
+    OOP_CALL(infoPage(), hide);
     ui_menu_destroy(menu);
 }
 
@@ -68,10 +67,10 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     if (ev->key <= KEY_9) {
         selected = (ServiceId_t)((int)ev->key - 1);
         if (!ch->isMagSwiped) {
-            OOP_CALL(&infop, setData, INFO_T_IMG, 
+            OOP_CALL(infoPage(), setData, INFO_T_IMG, 
                         ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
             ui_menu_hide(menu);
-            OOP_CALL(&infop, show);
+            OOP_CALL(infoPage(), show);
             return;
         }
         gotoService();
@@ -80,10 +79,10 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         selected = (ServiceId_t)menu->idx;
         if (!ch->isMagSwiped) {
-            OOP_CALL(&infop, setData, INFO_T_IMG,
+            OOP_CALL(infoPage(), setData, INFO_T_IMG,
                         ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
             ui_menu_hide(menu);
-            OOP_CALL(&infop, show);
+            OOP_CALL(infoPage(), show);
             return;
         }
         gotoService();     
@@ -99,6 +98,4 @@ OOP_CTOR(CardHolder, State *parent, const char *name) {
     self->base.vtable.handleMag = STATE_HANDLE(CardHolder, MagEvent);
 
     menu = MEM_ALLOC(sizeof(*menu));
-
-    infoPage(&infop);
 }

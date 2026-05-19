@@ -9,14 +9,17 @@
 #include "sys/sys.h"
 #include "phrases/phrases.h"
 
-InfoPage page;
+static void setText(const char *title, const char *body) {
+    OOP_CALL(infoPage(), setData, INFO_T_TEXT, title, body);
+}
 
 STATE_DEF_ENTER(Info) {
-    OOP_CALL(&page, show);
+    OOP_CALL(infoPage(), show);
 }
 
 STATE_DEF_EXIT(Info) {
-    OOP_CALL(&page, hide);
+    OOP_CALL(infoPage(), hide);
+    setText("", "");
 }
 
 STATE_DEF_HANDLE(Info, TimeOutEvent) {
@@ -27,10 +30,6 @@ STATE_DEF_HANDLE(Info, KeypadEvent) {
     SM_GOTO(state->next);
 }
 
-static void setText(const char *title, const char *body) {
-    OOP_CALL(&page, setData, INFO_T_TEXT, title, body);
-}
-
 OOP_CTOR(Info, State *parent, const char *name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Info);
@@ -38,7 +37,6 @@ OOP_CTOR(Info, State *parent, const char *name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(Info, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Info, TimeOutEvent);
     self->setText = setText;
-    infoPage(&page);
 }
 
 /*******************************************************************/
