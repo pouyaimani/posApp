@@ -434,9 +434,9 @@ X(PHRASE_RESET_MERCHAT_PIN  ,   "بازنشانی رمز پذیرنده"        
 )
 X(PHRASE_DEFAULT_SETTINGS   ,   "تنظیمات پیش فرض"              ,   "default settings"
 )
-X(PHRASE_SERVER_SETTINGS    ,   "serverSettings"                ,   ""
+X(PHRASE_SERVER_SETTINGS    ,   "تنظیمات سرور"                 ,   "server settings"
 )
-X(PHRASE_TMS_SETTINGS       ,   "tmsSettings"                   ,   ""
+X(PHRASE_TMS_SETTINGS       ,   "تنظیمات TMS"                   ,   "tms settings"
 )
 X(PHRASE_SOUND_SETTINGS     ,   "تنظیمات صدا"                   ,  "sound settings"
 )
@@ -460,7 +460,7 @@ X(PHRASE_DT_UPDATING        ,   "به روز رسانی زمان و تاریخ" 
 
 X(PHRASE_SPECIAL_PROJECTS   ,    "specialProjects"  ,   ""
 )
-X(PHRASE_SSL                ,    "ssl"              ,   ""
+X(PHRASE_SSL                ,    "ssl"              ,   "ssl"
 )
 X(PHRASE_KEY_INJECTION      ,    "کلیدگذاری"        ,   "key injection"
 )

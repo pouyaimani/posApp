@@ -182,12 +182,6 @@ static char ip[12 + 1];
 static uint16_t port;
 static uint16_t serverId;
 
-static const char* serverSetTxt[SUBS_ALL] = {
-    "تنظیمات سرور",
-    "تنظیمات TMS",
-    "SSL"
-};
-
 STATE_DEF_ENTER(EnterIp) {
     GOTO_INPUT(state->parent, enterPort, phraseGetDef(PHRASE_ENTER_SERV_IP),
         "", IP_MAX_LEN, IN_MODE_IP, NULL);
@@ -276,9 +270,9 @@ static void setItemToTms() {
 
 STATE_DEF_ENTER(NetworkSettings) {
     ui_menu_create(serverSetMenu, disp()->screen);
-    ui_menu_addItem(serverSetMenu, serverSetTxt[SERV_SET_MAIN], enterIp, setItemToMainServer, NULL);
-    ui_menu_addItem(serverSetMenu, serverSetTxt[SERV_SET_TMS], enterIp, setItemToTms, NULL);
-    ui_menu_addItem(serverSetMenu, serverSetTxt[SERV_SET_SSL], enableSsl, NULL, NULL);
+    ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SERVER_SETTINGS), enterIp, setItemToMainServer, NULL);
+    ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_TMS_SETTINGS), enterIp, setItemToTms, NULL);
+    ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SSL), enableSsl, NULL, NULL);
     GOTO_MENU(state->parent, serverSetMenu, NULL, NULL);
 }
 
