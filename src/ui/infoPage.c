@@ -75,6 +75,7 @@ static void infoSetData(InfoPage *pinfo, InfoType_t type, const char *data, cons
         LV_SET_TEXT(pinfo->title, data);
         LV_SET_TEXT(pinfo->body, body);
     }
+    // TODO: force update lvgl
 }
 
 InfoPage *infoPage() {

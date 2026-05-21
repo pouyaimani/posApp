@@ -17,7 +17,8 @@ typedef enum PedErr_t {
 typedef enum PedKeyType_t {
     PED_MASTER_KEY,
     PED_PIN_KEY,
-    PED_DATA_KEY
+    PED_DATA_KEY,
+    PED_MAC_KEY
 } PedKeyType_t;
 
 OOP_DECLARE_CLASS(Ped)
@@ -35,6 +36,7 @@ OOP_CLASS(Ped) {
     OOP_METHOD(PedErr_t, injectMasterKey, uint8_t*, size_t);
     OOP_METHOD(PedErr_t, injectDataKey, uint8_t*, size_t);
     OOP_METHOD(PedErr_t, injectPinKey, uint8_t*, size_t);
+    OOP_METHOD(PedErr_t, injectMacKey, uint8_t*, size_t);
 };
 
 OOP_CTOR(Ped);

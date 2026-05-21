@@ -46,6 +46,12 @@ static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t key, size_t len)
         keyInfo.mDestKeyType = PED_KEY_TDK;
         keyInfo.mSrcKeyIndex = MASTER_KEY_INDEX;
         keyInfo.mDestKeyIndex = DTK_KEY_INDEX;
+    case PED_MAC_KEY:
+        checkValue.mCheckMode = PED_CHECK_MODE_DES;
+        keyInfo.mSrcKeyType = PED_KEY_TDES_TMK;
+        keyInfo.mDestKeyType = PED_KEY_TAK;
+        keyInfo.mSrcKeyIndex = MASTER_KEY_INDEX;
+        keyInfo.mDestKeyIndex = DTK_KEY_INDEX;
     default:
         return PED_ERR_INPUT;
     }

@@ -30,6 +30,10 @@ static PedErr_t injectPinKey(uint8_t* key, size_t len) {
     return OOP_CALL(__ped, injectKey, PED_PIN_KEY, key, len);
 }
 
+static PedErr_t injectMacKey(uint8_t* key, size_t len) {
+    return OOP_CALL(__ped, injectKey, PED_MAC_KEY, key, len);
+}
+
 OOP_CTOR(Ped) {
     LOG_TRACE("Constructing ped ...");
     self->vtable.init = NULL;
@@ -39,6 +43,7 @@ OOP_CTOR(Ped) {
     self->injectMasterKey = injectMasterKey;
     self->injectPinKey = injectPinKey;
     self->injectDataKey = injectDataKey;
+    self->injectMacKey = injectMacKey;
 }
 
 Ped *ped() {

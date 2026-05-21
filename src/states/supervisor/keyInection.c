@@ -1,19 +1,34 @@
 #include "supervisor.h"
 #include "iso8583.h"
+#include "ped/ped.h"
+#include "common.h"
+#include "states/states.h"
+#include "phrases/phrases.h"
+
+int8_t injectOffline() {
+    	// 8F161C2B5F0E891FD943013BC2D85909
+	unsigned char masterKey[16] = { 0x8F, 0x16, 0x1C, 0x2B, 0x5F, 0x0E, 0x89, 0x1F,
+									0xD9, 0x43, 0x01, 0x3B, 0xC2, 0xD8, 0x59, 0x09};
+	// FB5AE17356401A273D40FC4693373960
+	unsigned char logonMacKey[16] = { 0xFB, 0x5A, 0xE1, 0x73, 0x56, 0x40, 0x1A, 0x27, 
+									  0x3D, 0x40, 0xFC, 0x46, 0x93, 0x37, 0x39, 0x60};
+
+    PedErr_t err = ped()->injectMasterKey(masterKey, sizeof(masterKey));
+    if (err != PED_ERR_OK) {
+
+    }
+
+    err = ped()->injectMacKey(logonMacKey, sizeof(logonMacKey));
+    if (err != PED_ERR_OK) {
+
+    }
+	return ERR_OK;
+}
 
 STATE_DEF_ENTER(KeyInjection) {
-    ISO_RESET();
-    ISO_SET_MTI("0800");
-    ISO_SET_STR(ELEMENT_PROCESSING_CODE, "600000");
-    // iso8583()->element[7].data = date + time
-    // iso8583()->element[11].data = getStanStr()
-    // iso8583()->element[12].data = time
-    // iso8583()->element[13].data = date
-    // iso8583()->element[24].data =  req.nii
-    // iso8583()->element[48].data = getField48BasicInfo().pack()
-    // iso8583()->element[53].data = getField53()
-    // iso8583()->element[60].data = getCompressPublicKey()
-    // iso8583()->element[62].data = getSHA1Hash(req.otp.toByteArray())
+    Phrases_t id = injectOffline() == ERR_OK ? 
+                        PHRASE_KEY_INJ_SUCCEED : PHRASE_KEY_INJ_FAILED;
+    GOTO_INFO(state->parent, state->parent, phraseGetDef(id), "");
 }
 
 OOP_CTOR(KeyInjection, State *parent, const char *name) {

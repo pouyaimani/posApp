@@ -120,5 +120,7 @@ typedef enum {
 
 #define AMOUNT_STR(x)        DEFINE_STRING(x, 12 + 1)
 
+typedef int8_t Error_t;
+
 
 #endif
