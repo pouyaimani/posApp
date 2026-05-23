@@ -42,7 +42,7 @@ STATE_DEF_ENTER(EnterPassword) {
 STATE_DEF_ENTER(Communication) {
     Input *in = getState(STATE_ID_INPUT);
     // OOP_CALL(packer(), setCardPwd, in->input);
-    GOTO_ISO_TRANSMITTER(STATE_IDLE, result);
+    // GOTO_ISO_TRANSMITTER(STATE_IDLE, result);
 }
 
 /*********************** Result sub state *************************/

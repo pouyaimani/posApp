@@ -131,6 +131,8 @@ State *getState(StateId_t id) {
 
 void GOTO_INPUT(State *prev, State *next, const char *title,
         const char *body, int max, InputMode_t mode, char *out) {
+    RETURN_IF_NULL(prev, ;);
+    RETURN_IF_NULL(next, ;);
     Input *in = (Input*)getState(STATE_ID_INPUT);
     in->reset();
     in->out = out;
@@ -143,6 +145,8 @@ void GOTO_INPUT(State *prev, State *next, const char *title,
 }
 
 void GOTO_INFO(State *prev, State *next, const char *title, const char *body) {
+    RETURN_IF_NULL(prev, ;);
+    RETURN_IF_NULL(next, ;);
     Info *info = (Info *)getState(STATE_ID_INFO);
     info->setText(title, body);
     OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);
@@ -151,19 +155,14 @@ void GOTO_INFO(State *prev, State *next, const char *title, const char *body) {
 }
 
 void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData) {
+    RETURN_IF_NULL(prev, ;);
+    RETURN_IF_NULL(amenu, ;);
     StMenu *stMenu = (StMenu *)getState(STATE_ID_MENU);
     stMenu->menu = amenu;
     stMenu->onExit = _onExit;
     stMenu->userData = userData;
     OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);
     SM_GOTO(getState(STATE_ID_MENU));
-}
-
-void GOTO_ISO_TRANSMITTER(State *onFail, State *onSucess) {
-    IsoTransmitter *isoTrns = STATE_TRNS_ISO;
-    isoTrns->onSucess = onSucess;
-    isoTrns->onFailure = onFail;
-    SM_GOTO(STATE_TRNS_ISO);
 }
 
 void GOTO_HTTP_TRANSMITTER(State *onFail, State *onSucess) {
@@ -174,31 +173,50 @@ void GOTO_HTTP_TRANSMITTER(State *onFail, State *onSucess) {
 }
 
 void GOTO_TXN_RES(State *prev, State *next){
+    RETURN_IF_NULL(prev, ;);
+    RETURN_IF_NULL(next, ;);
     OOP_CALL(getState(STATE_ID_TXN_RES), setNext, next);
     OOP_CALL(getState(STATE_ID_TXN_RES), setPrev, prev);
     SM_GOTO(getState(STATE_ID_TXN_RES));
 }
 
-void GOTO_NET_CONNNECT(State *onFail, State *onSucess) {
-    STATE_NET_CONNECT;
-    netConnect->onSucess = onSucess;
-    netConnect->onFailure = onFail;
+void GOTO_NET_CONNNECT(NetSubTaskCtx_t *ctx) {
+    RETURN_IF_NULL(ctx, ;);
+    netConnect->ctx.onFailure = ctx->onFailure;
+    netConnect->ctx.onFailureCb = ctx->onFailureCb;
+    netConnect->ctx.onSucess = ctx->onSucess;
+    netConnect->ctx.onSucessCb = ctx->onSucessCb;
+    netConnect->ctx.userDataOnFailure = ctx->userDataOnFailure;
+    netConnect->ctx.userDataOnSucess = ctx->userDataOnSucess;
     SM_GOTO(STATE_NET_CONNECT);
 }
 
-void GOTO_NET_SEND(const ByteArray *ba, State *onFail, State *onSucess) {
+void GOTO_NET_SEND(NetSubTaskCtx_t *ctx, ByteArray *ba) {
+    RETURN_IF_NULL(ba, ;);
+    RETURN_IF_NULL(ctx, ;);
     STATE_NET_SEND;
-    netSend->onSucess = onSucess;
-    netSend->onFailure = onFail;
-    netSend->ba = ba;
+    netSend->ctx.onFailure = ctx->onFailure;
+    netSend->ctx.onFailureCb = ctx->onFailureCb;
+    netSend->ctx.onSucess = ctx->onSucess;
+    netSend->ctx.onSucessCb = ctx->onSucessCb;
+    netSend->data.data = ba->data;
+    netSend->data.len = ba->len;
+    netSend->ctx.userDataOnFailure = ctx->userDataOnFailure;
+    netSend->ctx.userDataOnSucess = ctx->userDataOnSucess;
     SM_GOTO(STATE_NET_SEND);
 }
 
-void GOTO_NET_RECEIVE(ByteArray *ba,State *onFail, State *onSucess) {
-    STATE_NET_RECEIVE;
-    netReceive->onSucess = onSucess;
-    netReceive->onFailure = onFail;
-    netSend->ba = ba;
+void GOTO_NET_RECEIVE(NetSubTaskCtx_t *ctx, ByteArray *ba) {
+    RETURN_IF_NULL(ba, ;);
+    RETURN_IF_NULL(ctx, ;);
+    netReceive->ctx.onFailure = ctx->onFailure;
+    netReceive->ctx.onFailureCb = ctx->onFailureCb;
+    netReceive->ctx.onSucess = ctx->onSucess;
+    netReceive->ctx.onSucessCb = ctx->onSucessCb;
+    netReceive->data.data = ba->data;
+    netReceive->data.len = ba->len;
+    netReceive->ctx.userDataOnFailure = ctx->userDataOnFailure;
+    netReceive->ctx.userDataOnSucess = ctx->userDataOnSucess;
     SM_GOTO(STATE_NET_RECEIVE);
 }
 

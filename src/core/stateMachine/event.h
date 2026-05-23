@@ -4,6 +4,7 @@
 #include "oop.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include "byteArray.h"
 
 typedef enum SmEventType_t {
     SM_EVENT_TIME_OUT = 0,

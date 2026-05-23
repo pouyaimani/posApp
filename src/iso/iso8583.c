@@ -1,6 +1,8 @@
 #include "iso8583.h"
 #include "oscar/dl_iso8583.h"
 #include "sys/sys.h"
+#include "common.h"
+#include "logger.h"
 
 static Iso8583 *__iso8583;
 
@@ -20,7 +22,6 @@ static void reset() {
     DL_ISO8583_MSG_Free(&self->msg);
     DL_ISO8583_MSG_Init(NULL, 0, &self->msg);
 
-    self->buffer_len = 0;
     memset(self->mti, 0, sizeof(self->mti));
 }
 
@@ -31,8 +32,8 @@ static void destroy() {
 
 /* ===== MTI ===== */
 
-static IsoStatus_t setMTI(const char *mti)
-{
+static IsoStatus_t setMTI(const char *mti) {
+    RETURN_VALUE_IF_NULL(mti, ;, ISO_ERR_INPUT);
     SELF;
     if (!mti || strlen(mti) != 4)
         return ISO_ERR_INVALID_FIELD;
@@ -52,6 +53,7 @@ static const char* getMTI(void)
 
 IsoStatus_t setStr(uint16_t field,
                           const void *data) {
+    RETURN_VALUE_IF_NULL(data, ;, ISO_ERR_INPUT);
     SELF;
     if (field == 0 || field > ISO_MAX_FIELDS)
         return ISO_ERR_INVALID_FIELD;
@@ -67,6 +69,7 @@ IsoStatus_t setStr(uint16_t field,
 IsoStatus_t setBin(uint16_t field,
                           const void *data,
                           size_t len) {
+    RETURN_VALUE_IF_NULL(data, ;, ISO_ERR_INPUT);
     SELF;
     if (field == 0 || field > ISO_MAX_FIELDS)
         return ISO_ERR_INVALID_FIELD;
@@ -83,8 +86,7 @@ IsoStatus_t setBin(uint16_t field,
 
 IsoStatus_t getStr(uint16_t field,
                           void *out) {
-    if (!out)
-        return ISO_ERR_INVALID_FIELD;
+    RETURN_VALUE_IF_NULL(out, ;, ISO_ERR_INPUT);
     SELF;
 
     uint8_t *ptr = NULL;
@@ -108,8 +110,8 @@ IsoStatus_t getBin(uint16_t field,
                           void *out,
                           size_t *len)
 {
-    if (!out || !len)
-        return ISO_ERR_INVALID_FIELD;
+    RETURN_VALUE_IF_NULL(out, ;, ISO_ERR_INPUT);
+    RETURN_VALUE_IF_NULL(len, ;, ISO_ERR_INPUT);
     SELF;
     uint8_t *ptr = NULL;
     uint16_t flen = 0;
@@ -133,11 +135,36 @@ IsoStatus_t getBin(uint16_t field,
     return ISO_OK;
 }
 
+static IsoStatus_t addHeader(uint8_t *buffer, const uint8_t *packedData,
+                     size_t *packedLen, IsoHeaderData_t *hd) {
+    RETURN_VALUE_IF_NULL(buffer, ;, ISO_ERR_INPUT);
+    RETURN_VALUE_IF_NULL(packedData, ;, ISO_ERR_INPUT);
+    RETURN_VALUE_IF_NULL(packedLen, ;, ISO_ERR_INPUT);
+    RETURN_VALUE_IF_NULL(hd, ;, ISO_ERR_INPUT);
+    /* create heaer */
+    DEFINE_STRING(nii, 2);
+    memcpy(nii, (unsigned char *)&hd->nii, 2);
+	buffer[2] = 0x60;
+	buffer[3] = nii[1]; // 0x01;
+	buffer[4] = nii[0]; // 0x18;
+	buffer[5] = 0x00;
+	buffer[6] = 0x00;
+    memcpy(buffer + 7, packedData, *packedLen);
+	*packedLen += 5;
+
+	buffer[0] = *packedLen / 256;
+	buffer[1] = *packedLen % 256;
+    *packedLen += 2;
+}
+
 /* ===== PACK ===== */
 
-IsoStatus_t pack()
+IsoStatus_t pack(const uint8_t *data,
+                       size_t *outlen)
 {
     SELF;
+    RETURN_VALUE_IF_NULL(data, ;, ISO_ERR_INPUT);
+    RETURN_VALUE_IF_NULL(outlen, ;, ISO_ERR_INPUT);
     if (self->mti[0] == 0)
         return ISO_ERR_PACK;
 
@@ -151,11 +178,11 @@ IsoStatus_t pack()
 
     if (DL_ISO8583_MSG_Pack(&self->handler,
                             &self->msg,
-                            self->buffer,
+                            data,
                             &out_len) != 0)
         return ISO_ERR_PACK;
 
-    self->buffer_len = out_len;
+    *outlen = out_len;
 
     return ISO_OK;
 }
@@ -163,9 +190,9 @@ IsoStatus_t pack()
 /* ===== PARSE ===== */
 
 IsoStatus_t parse(const uint8_t *data,
-                       size_t len)
-{
+                       size_t len) {
     SELF;
+    RETURN_VALUE_IF_NULL(data, ;, ISO_ERR_INPUT);
     reset();
 
     if (DL_ISO8583_MSG_Unpack(&self->handler,
@@ -189,17 +216,18 @@ IsoStatus_t parse(const uint8_t *data,
 }
 
 OOP_CTOR(Iso8583) {
-    self->init    = init;
-    self->destroy  = destroy;
-    self->reset    = reset;
-    self->setMTI   = setMTI;
-    self->getMTI   = getMTI;
-    self->setBin = setBin;
-    self->setStr = setStr;
-    self->getBin = getBin;
-    self->getStr = getStr;
-    self->pack     = pack;
-    self->parse    = parse;
+    self->init          = init;
+    self->destroy       = destroy;
+    self->reset         = reset;
+    self->setMTI        = setMTI;
+    self->getMTI        = getMTI;
+    self->setBin        = setBin;
+    self->setStr        = setStr;
+    self->getBin        = getBin;
+    self->getStr        = getStr;
+    self->pack          = pack;
+    self->parse         = parse;
+    self->addHeader     = addHeader;
     init();
 }
 

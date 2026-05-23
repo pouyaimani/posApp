@@ -29,6 +29,8 @@ OOP_VTABLE(Ped) {
     OOP_IMETHOD(PedErr_t, Ped, enterPinEntryMode);
     OOP_IMETHOD(PedErr_t, Ped, exitPinEntryMode);
     OOP_IMETHOD(PedErr_t, Ped, getPinBlock, char *pan, char* out);
+    OOP_IMETHOD(PedErr_t, Ped, getMac, size_t keyLen, 
+                    uint8_t *in, size_t inLen, uint8_t *out);
 };
 
 OOP_CLASS(Ped) {
@@ -37,6 +39,8 @@ OOP_CLASS(Ped) {
     OOP_METHOD(PedErr_t, injectDataKey, uint8_t*, size_t);
     OOP_METHOD(PedErr_t, injectPinKey, uint8_t*, size_t);
     OOP_METHOD(PedErr_t, injectMacKey, uint8_t*, size_t);
+    OOP_METHOD(PedErr_t, getMac, size_t keyLen, 
+                    uint8_t *in, size_t inLen, uint8_t *out);
 };
 
 OOP_CTOR(Ped);

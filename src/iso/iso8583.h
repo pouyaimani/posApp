@@ -183,6 +183,7 @@ typedef struct {
 
 typedef enum {
     ISO_OK = 0,
+    ISO_ERR_INPUT,
     ISO_ERR_INVALID_FIELD,
     ISO_ERR_INVALID_FORMAT,
     ISO_ERR_LENGTH_MISMATCH,
@@ -191,6 +192,11 @@ typedef enum {
     ISO_ERR_PARSE,
     ISO_ERR_PACK,
 } IsoStatus_t;
+
+typedef struct {
+    size_t packedLen;
+    uint16_t nii;
+} IsoHeaderData_t;
 
 /* ===== ISO8583 Object ===== */
 
@@ -214,15 +220,16 @@ OOP_CLASS(Iso8583) {
     OOP_METHOD(IsoStatus_t, getStr, uint16_t field,
                void *out);
 
-    OOP_METHOD(IsoStatus_t, pack);
+    OOP_METHOD(IsoStatus_t, pack,
+                const uint8_t *data, size_t *outlen);
     OOP_METHOD(IsoStatus_t, parse,
                const uint8_t *data, size_t len);
+    OOP_METHOD(IsoStatus_t, addHeader,
+                    uint8_t *buffer, const uint8_t *packedData,
+                     size_t *packedLen, IsoHeaderData_t *hd);
 
     /* state */
     char mti[5];
-
-    uint8_t buffer[ISO_MAX_BUFFER];
-    size_t buffer_len;
 
     DL_ISO8583_MSG msg;
     DL_ISO8583_HANDLER handler;

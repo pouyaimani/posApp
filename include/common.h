@@ -2,20 +2,30 @@
 #define COMMON_H_
 
 #include <stdio.h>
-
+#include "logger.h"
+#include <stdint.h>
+#include "helpers/error.h"
 
 /**********************************************************/
-//                         ERRORS
+//                         VERSIONS
 /**********************************************************/
 
-#define ERR_OK                       0
-#define ERR_NOK                     -1
-#define ERR_NOT_SUPPORTED           -2
-#define ERR_BAD_PARAMETER           -3
-#define ERR_MEMORY_ALLOCATION       -4
+#define PNA_APP_VERSION			"09012604101R" // brand[09] model[02] date[2410] version[100] //105 -> 106 
+                               
+#define PNA_TMS_VERSION         "1.3.1" //Stable
+#define PNA_RELEASE_DATE        "1405-02-02"
 
+/**********************************************************/
+//                         LANGUAGES
+/**********************************************************/
+typedef enum {
+    LNG_EN = 0,
+    LNG_FA,
+    LNG_COUNT
+} Language_t;
 
 typedef void (*CallBack_t)(void *arg);
+typedef int8_t (*ErrCallBack_t)(void *arg);
 
 #define MERCHANT_PIN_LEN                                4
 #define MERCHANT_DEFAULT_PIN                            "1111"
@@ -35,12 +45,6 @@ typedef void (*CallBack_t)(void *arg);
 
 #define AMOUNT_MAX_CNT                                  12
 
-typedef enum {
-    LNG_EN = 0,
-    LNG_FA,
-    LNG_COUNT
-} Language_t;
-
 #define PHRASES_JSON_ADDR   ""
 #define BANK_NAME_JSON_ADDR ""
 
@@ -49,7 +53,6 @@ typedef enum {
 /**********************************************************/
 
 #define TMS_VERSION_CACHE                               "/userdata/tms/version"
-
 
 /**********************************************************/
 //                         HELPERS
@@ -61,66 +64,15 @@ typedef enum {
     char name[size];                 \
     memset(name, 0, sizeof(name));
 
-#define RETURN_VALUE_IF_NOT(expr, expected, on_error, retval)      \
-    do {                                                           \
-        __typeof__(expr) __val = (expr);                           \
-        __typeof__(expected) __exp = (expected);                   \
-                                                                   \
-        if (__val != __exp) {                                      \
-            LOG_ERROR("Error: %s returns %d (expected %d)",          \
-                    #expr,                                         \
-                    (int)__val,                                    \
-                    (int)__exp);                                   \
-                                                                   \
-            on_error;                                              \
-            return (retval);                                       \
-        }                                                          \
-    } while (0)
-
-#define RETURN_IF_NOT(expr, expected, on_error)                    \
-    do {                                                           \
-        __typeof__(expr) __val = (expr);                           \
-        __typeof__(expected) __exp = (expected);                   \
-                                                                   \
-        if (__val != __exp) {                                      \
-            LOG_ERROR("Error: %s returns %d (expected %d)",        \
-                    #expr,                                         \
-                    (int)__val,                                    \
-                    (int)__exp);                                   \
-                                                                   \
-            on_error;                                              \
-            return;                                                \
-        }                                                          \
-    } while (0)
-
-
-#define RETURN_VALUE_IF_NULL(ptr, on_error, retval)                \
-    do {                                                           \
-        if ((ptr) == NULL) {                                       \
-            LOG_ERROR("Error: %s is NULL", #ptr);                    \
-            on_error;                                              \
-            return (retval);                                       \
-        }                                                          \
-    } while (0)
-
-#define RETURN_IF_NULL(ptr, on_error)                              \
-    do {                                                           \
-        if ((ptr) == NULL) {                                       \
-            LOG_ERROR("Error: %s is NULL", #ptr);                  \
-            on_error;                                              \
-            return;                                                \
-        }                                                          \
-    } while (0)
+#define DEFINE_BYTE_ARRAY(name, size)           \
+    uint8_t name[size];                         \
+    memset(name, 0, sizeof(name));
 
 #define ARRAY_SIZE(x) \
     (sizeof(x) / sizeof((x)[0]))
 
-
 #define DATE_TIME_STR(x)        DEFINE_STRING(x, 19 + 1)
 
 #define AMOUNT_STR(x)        DEFINE_STRING(x, 12 + 1)
-
-typedef int8_t Error_t;
-
 
 #endif

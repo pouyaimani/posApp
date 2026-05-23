@@ -8,7 +8,8 @@
 
 #define MAX_SHIFT_CNT 100
 
-typedef struct  __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
     bool touchEnable;
 
     uint8_t netRoute;
@@ -45,10 +46,11 @@ typedef struct  __attribute__((packed)) {
     uint8_t shiftActive;
 } TerminalSettings;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
     char mainServerIp[12 + 1];
     uint16_t mainServerPort;
-    uint16_t mainServerId;
+    uint16_t mainServerNii;
     char backupServerIp[12 + 1];
     uint16_t backupServerPort;
     bool useBackupAddressFirst;
@@ -64,7 +66,8 @@ OOP_CLASS(TxnSettings){
 
 };
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
     OOP_METHOD(int, save);
     OOP_METHOD(int, load);
     OOP_METHOD(int, reset);
@@ -74,5 +77,15 @@ typedef struct __attribute__((packed)) {
 } DevSettings;
 
 DevSettings *settings();
+
+typedef struct __attribute__((packed))
+{
+    OOP_METHOD(int, inc);
+    OOP_METHOD(int, load);
+    uint32_t stan;
+    uint32_t batch;
+} TxnTraceInfo;
+
+TxnTraceInfo *txnTraceInfo();
 
 #endif

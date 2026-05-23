@@ -6,53 +6,60 @@
 #include "storage/storage.h"
 
 static DevSettings __settings;
+static TxnTraceInfo __txnTraceInfo;
 
-#define USER_DATA_ROOT_DIR          "/mtd0/"
-#define APP_DIR                     USER_DATA_ROOT_DIR
-#define DEVICE_PROP_FILE            APP_DIR"lv_device_prop"
-#define SETTINGS_FILE_ADDR          DEVICE_PROP_FILE
+#define USER_DATA_ROOT_DIR "/mtd0/"
+#define APP_DIR USER_DATA_ROOT_DIR
+#define DEVICE_PROP_FILE APP_DIR "lv_device_prop"
+#define SETTINGS_FILE_ADDR DEVICE_PROP_FILE
 
-#define SETTINGS_FILE_MAX_SIZE  4096
+#define TXN_TRACE_FILE_ADDR APP_DIR "txn_trace_info"
 
-#define SETTINGS_FILE_HEADER_LEN    4
+#define SETTINGS_FILE_MAX_SIZE 4096
 
-//default property value
-#define DEFAULT_SERVER_IP                                                   ""
-#define DEFAULT_SERVER_PORT                                                 "0"
-#define DEFAULT_BACKUP_SERVER_IP                                            ""
-#define DEFAULT_BACKUP_SERVER_PORT                                          "0"
-#define DEFAULT_TMS_IP                                                      ""
-#define DEFAULT_TMS_PORT                                                    "0"
-#define DEFAULT_COMM_MODE                                                   "0"
-#define DEFAULT_KEY_VOLUME                                                  "5"
-#define DEFAULT_TIMEOUT_SLEEP                                               "5"         
-#define DEFAULT_BRIGHTNESS                                                  "5"
-#define DEFAULT_LANGUAGE                                                    "0"
-#define DEFAULT_PRINT_GREY_SCALE                                            "1"
-#define DEFAULT_UPDATE_FLAG                                                 "0"
-#define DEFAULT_CONNECT_MODE                                                "1"
+#define SETTINGS_FILE_HEADER_LEN 4
 
-#define DEFAULT_TOUCH_ENABLE                                                "0"
+// default property value
+#define DEFAULT_SERVER_IP ""
+#define DEFAULT_SERVER_PORT "0"
+#define DEFAULT_BACKUP_SERVER_IP ""
+#define DEFAULT_BACKUP_SERVER_PORT "0"
+#define DEFAULT_TMS_IP ""
+#define DEFAULT_TMS_PORT "0"
+#define DEFAULT_COMM_MODE "0"
+#define DEFAULT_KEY_VOLUME "5"
+#define DEFAULT_TIMEOUT_SLEEP "5"
+#define DEFAULT_BRIGHTNESS "5"
+#define DEFAULT_LANGUAGE "0"
+#define DEFAULT_PRINT_GREY_SCALE "1"
+#define DEFAULT_UPDATE_FLAG "0"
+#define DEFAULT_CONNECT_MODE "1"
 
-#define DEFAULT_SHIFT_S_DATE                                                "0"
-#define DEFAULT_SHIFT_S_TIME                                                "0"
-#define DEFAULT_SHIFT_E_DATE                                                "0"
-#define DEFAULT_SHIFT_E_TIME                                                "0"
-#define DEFAULT_SHIFT_LATEST                                                "0"
-#define DEFAULT_SHIFT_ENABLE                                                "0"
-#define DEFAULT_SHIFT_ACTIVE                                                "0"
-#define DEFAULT_MAX_AMNT_EN                                                 "0"
-#define DEFAULT_MAX_AMNT                                                    "999999999999/0"
-#define DEFAULT_DIRECT_SALE_EN                                              "0"
-#define DEFAULT_SERVICES_EN                                                 "0"
-#define DEFAULT_FIXED_AMNT_ITEM                                             "0"
-#define DEFAULT_FIXED_AMNT_LIST                                             "0"
-#define DEFAULT_FIXED_AMNT_COEF                                             "0"
-#define DEFAULT_AMNT_LIST_CNT                                               "0"
-#define DEFAULT_SSL_EN                                                      "0"
-#define DEFAULT_MAIN_SERVER_ID                                              "0"
-#define DEFAULT_TMS_ID                                                      "0"
-#define DEFAULT_MERCHANT_PIN                                                MERCHANT_DEFAULT_PIN
+#define DEFAULT_TOUCH_ENABLE "0"
+
+#define DEFAULT_SHIFT_S_DATE "0"
+#define DEFAULT_SHIFT_S_TIME "0"
+#define DEFAULT_SHIFT_E_DATE "0"
+#define DEFAULT_SHIFT_E_TIME "0"
+#define DEFAULT_SHIFT_LATEST "0"
+#define DEFAULT_SHIFT_ENABLE "0"
+#define DEFAULT_SHIFT_ACTIVE "0"
+#define DEFAULT_MAX_AMNT_EN "0"
+#define DEFAULT_MAX_AMNT "999999999999/0"
+#define DEFAULT_DIRECT_SALE_EN "0"
+#define DEFAULT_SERVICES_EN "0"
+#define DEFAULT_FIXED_AMNT_ITEM "0"
+#define DEFAULT_FIXED_AMNT_LIST "0"
+#define DEFAULT_FIXED_AMNT_COEF "0"
+#define DEFAULT_AMNT_LIST_CNT "0"
+#define DEFAULT_SSL_EN "0"
+#define DEFAULT_MAIN_SERVER_ID "0"
+#define DEFAULT_TMS_ID "0"
+#define DEFAULT_MERCHANT_PIN MERCHANT_DEFAULT_PIN
+
+static const DataDescriptor txnTraceInfoDsc[] = {
+    {0, T_INT, (0), (sizeof(__txnTraceInfo.stan)), (0), &(__txnTraceInfo.stan)},
+    {1, T_INT, (0), (sizeof(__txnTraceInfo.batch)), (0), &(__txnTraceInfo.batch)}};
 
 BEGIN_DSC_ARRAY;
 static const DataDescriptor settingsDsc[] = {
@@ -90,7 +97,7 @@ static const DataDescriptor settingsDsc[] = {
     DSC_INT(__settings.server.backupServerPort, DEFAULT_BACKUP_SERVER_PORT),
 
     // 🔹 Server IDs
-    DSC_INT(__settings.server.mainServerId, DEFAULT_MAIN_SERVER_ID),
+    DSC_INT(__settings.server.mainServerNii, DEFAULT_MAIN_SERVER_ID),
     DSC_INT(__settings.server.tmsId, DEFAULT_TMS_ID),
 
     DSC_BYTE(__settings.server.useBackupAddressFirst, "0"),
@@ -127,28 +134,66 @@ static const DataDescriptor settingsDsc[] = {
     DSC_INT(__settings.terminal.amountListCnt, DEFAULT_AMNT_LIST_CNT),
 };
 
-static int saveSettings() {
+static int saveSettings()
+{
     storage()->save(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor), SETTINGS_FILE_ADDR);
 }
 
-static int loadSatings() {
+static int loadSettings()
+{
     storage()->load(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor), SETTINGS_FILE_ADDR);
     LOG_DEBUG("merchant pin = %s", __settings.terminal.merchantPin);
 }
 
-static int resetSettings() {
+static int resetSettings()
+{
     storage()->reset(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor), SETTINGS_FILE_ADDR);
 }
 
-OOP_CTOR(DevSettings) {
-    self->load = loadSatings;
+OOP_CTOR(DevSettings)
+{
+    self->load = loadSettings;
     self->save = saveSettings;
     self->reset = resetSettings;
 }
 
-DevSettings *settings() {
+DevSettings *settings()
+{
     CALL_ONCE(
-        OOP_CALL_CTOR(DevSettings, &__settings);
-    );
+        OOP_CALL_CTOR(DevSettings, &__settings););
     return &__settings;
+}
+
+static int loadTxnTraceInfo()
+{
+    storage()->load(txnTraceInfoDsc, sizeof(txnTraceInfoDsc) / sizeof(DataDescriptor), TXN_TRACE_FILE_ADDR);
+}
+
+static int incTxnTraceInfo()
+{
+    loadTxnTraceInfo();
+    __txnTraceInfo.stan++;
+    if (__txnTraceInfo.stan >= 999999)
+    {
+        __txnTraceInfo.batch++;
+        if (__txnTraceInfo.batch >= 999999)
+        {
+            __txnTraceInfo.batch = 1;
+        }
+        __txnTraceInfo.stan = 1;
+    }
+    storage()->save(txnTraceInfoDsc, sizeof(txnTraceInfoDsc) / sizeof(DataDescriptor), TXN_TRACE_FILE_ADDR);
+}
+
+OOP_CTOR(TxnTraceInfo)
+{
+    self->load = loadSettings;
+    self->inc = saveSettings;
+}
+
+TxnTraceInfo *txnTraceInfo()
+{
+    CALL_ONCE(
+        OOP_CALL_CTOR(TxnTraceInfo, &__txnTraceInfo););
+    return &__txnTraceInfo;
 }

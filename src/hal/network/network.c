@@ -19,13 +19,7 @@ static void constructT3Rtos() {
 
 #endif
 
-#define CONNECT_TIME_OUT 20000
-#define SEND_TIME_OUT 20000
-#define REC_TIME_OUT 20000
-#define REC_BUFF_LEN 1024
-
 static uint32_t tick;
-static uint8_t *recBuffer;
 
 static NetError_t init() {
     NetError_t err = OOP_CALL(network(), setRoute, settings()->terminal.netRoute);
@@ -67,6 +61,7 @@ static int connect() {
 }
 
 static void checkSocketReceive() {
+    DEFINE_BYTE_ARRAY(recBuffer, REC_BUFF_LEN);
     int ret = OOP_CALL(__network, receive, __network->id, recBuffer, REC_BUFF_LEN);
     SocketReadyReadEvent *ev = (SocketReadyReadEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
     ev->ba.data = ret > 0 ? recBuffer : NULL;
@@ -93,7 +88,6 @@ OOP_CTOR(Network) {
     self->connect = connect;
     self->send = send;
     self->disconnect = disconnect;
-    recBuffer = MEM_ALLOC(REC_BUFF_LEN);
 }
 
 Network *network() {

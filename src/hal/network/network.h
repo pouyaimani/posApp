@@ -7,6 +7,11 @@
 #include "dcfg.h"
 #include "event.h"
 
+#define CONNECT_TIME_OUT 20000
+#define SEND_TIME_OUT 20000
+#define REC_TIME_OUT 20000
+#define REC_BUFF_LEN 1024
+
 typedef enum {
     NET_ERR_OK = 0,
     NET_ERR_INPUT_ERR

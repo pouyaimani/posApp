@@ -9,13 +9,18 @@
 
 OOP_CLASS(IsoTransmitter) {
     OOP_EXTENDS(State);
-    State *onSucess;
-    State *onFailure;
+    State *connect;
+    State *send;
+    State *receive;
 };
 
 OOP_CTOR(IsoTransmitter, State *parent, const char *name);
 
 #define STATE_TRNS_ISO getState(STATE_ID_ISO_TRANSMITTER)
+
+void GOTO_ISO_TRANSMITTER(NetSubTaskCtx_t *connect, 
+                            NetSubTaskCtx_t *send,
+                            NetSubTaskCtx_t *receive);
 
 /*************************** http ***********************/
 

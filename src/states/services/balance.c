@@ -24,7 +24,7 @@ STATE_DEF_ENTER(EnterPassword) {
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Communication) {
-    GOTO_ISO_TRANSMITTER(STATE_IDLE, result);
+    // GOTO_ISO_TRANSMITTER(STATE_IDLE, result);
 }
 
 /*********************** Result sub state *************************/

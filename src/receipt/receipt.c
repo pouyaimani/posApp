@@ -10,6 +10,7 @@
 #include "utility/utility.h"
 #include "phrases/phrases.h"
 
+
 #define PRINTER_WIDTH_PIX   384
 #define MAX_HEIGHT          100   // dynamic safe max
 #define SHAPED_MAX          128

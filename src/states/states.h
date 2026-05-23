@@ -5,6 +5,7 @@
 #include "state.h"
 #include <stdbool.h>
 #include "common.h"
+#include "byteArray.h"
 
 typedef enum StateId_t {
     STATE_ID_START_UP,
@@ -196,12 +197,22 @@ OOP_CLASS(TxnResult) {
 
 OOP_CTOR(TxnResult, State *parent, const char *name);
 
+/*************************** Network ***********************/
+
+typedef struct {
+    State *onSucess;
+    State *onFailure;
+    ErrCallBack_t onSucessCb;
+    ErrCallBack_t onFailureCb;
+    void *userDataOnSucess;
+    void *userDataOnFailure;
+} NetSubTaskCtx_t;
+
 /*************************** Network connect ***********************/
 
 OOP_CLASS(NetConnect) {
     OOP_EXTENDS(State);
-    State *onSucess;
-    State *onFailure;
+    NetSubTaskCtx_t ctx;
 };
 
 OOP_CTOR(NetConnect, State *parent, const char *name);
@@ -212,9 +223,8 @@ OOP_CTOR(NetConnect, State *parent, const char *name);
 
 OOP_CLASS(NetSend) {
     OOP_EXTENDS(State);
-    State *onSucess;
-    State *onFailure;
-    ByteArray *ba;
+    NetSubTaskCtx_t ctx;
+    ByteArray data;
 };
 
 OOP_CTOR(NetSend, State *parent, const char *name);
@@ -225,9 +235,8 @@ OOP_CTOR(NetSend, State *parent, const char *name);
 
 OOP_CLASS(NetReceive) {
     OOP_EXTENDS(State);
-    State *onSucess;
-    State *onFailure;
-    ByteArray ba;
+    NetSubTaskCtx_t ctx;
+    ByteArray data;
 };
 
 OOP_CTOR(NetReceive, State *parent, const char *name);
@@ -240,11 +249,10 @@ void GOTO_INPUT(State *prev, State *next, const char *title,
         const char *body, int max, InputMode_t mode, char *out);
 void GOTO_INFO(State *prev, State *next, const char *title, const char *body);
 void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData);
-void GOTO_ISO_TRANSMITTER(State *onFail, State *onSucess);
 void GOTO_HTTP_TRANSMITTER(State *onFail, State *onSucess);
 void GOTO_TXN_RES(State *prev, State *next);
-void GOTO_NET_CONNNECT(State *onFail, State *onSucess);
-void GOTO_NET_SEND(const ByteArray *, State *onFail, State *onSucess);
-void GOTO_NET_RECEIVE(ByteArray *, State *onFail, State *onSucess);
+void GOTO_NET_CONNNECT();
+void GOTO_NET_SEND();
+void GOTO_NET_RECEIVE();
 
 #endif

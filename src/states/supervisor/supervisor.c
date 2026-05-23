@@ -15,7 +15,8 @@
 #define PASSWORD_MAX_LEN 4
 #define IP_MAX_LEN 12
 
-typedef enum {
+typedef enum
+{
     SUBS_NET_SETTINGS = 0,
     SUBS_KEY_INJECTION,
     SUBS_CONFIGURATION,
@@ -26,24 +27,26 @@ typedef enum {
     SUBS_ALL
 } SubStates_t;
 
-static const char* itemTxt[SUBS_ALL] = {
+static const char *itemTxt[SUBS_ALL] = {
     PHRASE_NETWORK_SETTINGS,
     PHRASE_KEY_INJECTION,
     PHRASE_CONFIGURATION,
     PHRASE_FARA,
     PHRASE_RESET_MERCHAT_PIN,
     PHRASE_UPDATE_APP,
-    PHRASE_DEFAULT_SETTINGS
-};
+    PHRASE_DEFAULT_SETTINGS};
 
 static SubState *subStates[SUBS_ALL];
 static SubState *enterPass;
 static SubState *supervisorMenu;
 static SubState *changeMerPin;
 
-static bool validatePass(char *pass0, char *pass1, uint8_t len) {
-    for (size_t i = 0; i < len ; i++) {
-        if (pass0[i] != pass1[i]) {
+static bool validatePass(char *pass0, char *pass1, uint8_t len)
+{
+    for (size_t i = 0; i < len; i++)
+    {
+        if (pass0[i] != pass1[i])
+        {
             return false;
         }
     }
@@ -53,24 +56,30 @@ static bool validatePass(char *pass0, char *pass1, uint8_t len) {
 /******************** Enter pass sub state **********************/
 static SubState *checkPass;
 
-STATE_DEF_ENTER(CheckPassword) {
+STATE_DEF_ENTER(CheckPassword)
+{
     Input *in = getState(STATE_ID_INPUT);
     bool isPassVlaid = validatePass("123456789",
-                in->password, 4);
-    if (isPassVlaid) {
+                                    in->password, 4);
+    if (isPassVlaid)
+    {
         SM_GOTO(supervisorMenu);
-    } else {
+    }
+    else
+    {
         GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER),
-                 phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+                  phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
-STATE_DEF_ENTER(EnterPassword) {
+STATE_DEF_ENTER(EnterPassword)
+{
     GOTO_INPUT(STATE_IDLE, checkPass,
-        phraseGetDef(PHRASE_ENTER_PIN), "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+               phraseGetDef(PHRASE_ENTER_PIN), "", PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
-static void EnterPassword(State *parent) {
+static void EnterPassword(State *parent)
+{
     enterPass = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, parent, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
@@ -80,7 +89,8 @@ static void EnterPassword(State *parent) {
     checkPass->vtable.enter = STATE_ENTER(CheckPassword);
 }
 
-static void D_EnterPassword() {
+static void D_EnterPassword()
+{
     MEM_FREE(enterPass);
 }
 
@@ -92,51 +102,65 @@ static SubState *checkNewPin;
 
 static char newPin[4 + 1];
 
-STATE_DEF_ENTER(CheckPin) {
+STATE_DEF_ENTER(CheckPin)
+{
     Input *in = getState(STATE_ID_INPUT);
     bool isPassVlaid = validatePass(settings()->terminal.merchantPin,
-                in->password, 4);
-    if (isPassVlaid) {
+                                    in->password, 4);
+    if (isPassVlaid)
+    {
         SM_GOTO(enterNewPin);
-    } else {
+    }
+    else
+    {
         GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
-STATE_DEF_ENTER(EnterNewPin) {
-    GOTO_INPUT(state->parent, reEnterNewPin, 
-            phraseGetDef(PHRASE_NEW_PIN), "", 4, IN_MODE_PASSWORD, NULL);
+STATE_DEF_ENTER(EnterNewPin)
+{
+    GOTO_INPUT(state->parent, reEnterNewPin,
+               phraseGetDef(PHRASE_NEW_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
-STATE_DEF_ENTER(ReEnterNewPin) {
+STATE_DEF_ENTER(ReEnterNewPin)
+{
     Input *inp = getState(STATE_ID_INPUT);
-    for (size_t i = 0; i < 4; i++) {
+    for (size_t i = 0; i < 4; i++)
+    {
         newPin[i] = inp->password[i];
     }
-    GOTO_INPUT(supervisorMenu, checkNewPin, 
-            phraseGetDef(PHRASE_REPEAT_NEW_PIN), "", 4, IN_MODE_PASSWORD, NULL);
+    GOTO_INPUT(supervisorMenu, checkNewPin,
+               phraseGetDef(PHRASE_REPEAT_NEW_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
-STATE_DEF_ENTER(CheckNewPin) {
+STATE_DEF_ENTER(CheckNewPin)
+{
     Input *in = getState(STATE_ID_INPUT);
     bool isPassVlaid = validatePass(newPin,
-                in->password, 4);
-    if(isPassVlaid) {
-        for (size_t i = 0; i < 4; i++) {
+                                    in->password, 4);
+    if (isPassVlaid)
+    {
+        for (size_t i = 0; i < 4; i++)
+        {
             settings()->terminal.merchantPin[i] = newPin[i];
         }
         settings()->save();
         GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
-    } else {
+    }
+    else
+    {
         GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
     }
 }
 
-STATE_DEF_ENTER(ChangeMerPin) {
+STATE_DEF_ENTER(ChangeMerPin)
+{
     GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "", 4, IN_MODE_PASSWORD, NULL);
 }
 
-static void ChangeMerPin(State *parent) {
+static void ChangeMerPin(State *parent)
+{
     // subStates[SUBS_CHANGE_MERCHANT_PIN] = (SubState *)MEM_ALLOC(sizeof(SubState));
     // OOP_CALL_CTOR(State, subStates[SUBS_CHANGE_MERCHANT_PIN], parent, "change merchant pin");
     // subStates[SUBS_CHANGE_MERCHANT_PIN]->vtable.enter = STATE_ENTER(ChangeMerPin);
@@ -156,7 +180,6 @@ static void ChangeMerPin(State *parent) {
     // checkNewPin = (SubState *)MEM_ALLOC(sizeof(SubState));
     // OOP_CALL_CTOR(State, checkNewPin, subStates[SUBS_CHANGE_MERCHANT_PIN], "check new merchant pin");
     // checkNewPin->vtable.enter = STATE_ENTER(CheckNewPin);
-
 }
 
 /******************** Server settings sub state **********************/
@@ -170,7 +193,8 @@ static SubState *getServerId;
 static SubState *success;
 static Menu *sslMenu;
 
-typedef enum {
+typedef enum
+{
     SERV_SET_MAIN = 0,
     SERV_SET_TMS,
     SERV_SET_SSL,
@@ -182,60 +206,76 @@ static char ip[12 + 1];
 static uint16_t port;
 static uint16_t serverId;
 
-STATE_DEF_ENTER(EnterIp) {
+STATE_DEF_ENTER(EnterIp)
+{
     GOTO_INPUT(state->parent, enterPort, phraseGetDef(PHRASE_ENTER_SERV_IP),
-        "", IP_MAX_LEN, IN_MODE_IP, NULL);
-    Input * in = STATE_INPUT;
-    if (serverItem == SERV_SET_MAIN) {
+               "", IP_MAX_LEN, IN_MODE_IP, NULL);
+    Input *in = STATE_INPUT;
+    if (serverItem == SERV_SET_MAIN)
+    {
         in->setInput(settings()->server.mainServerIp);
-    } else if (serverItem == SERV_SET_TMS) {
+    }
+    else if (serverItem == SERV_SET_TMS)
+    {
         in->setInput(settings()->server.tmsIp);
     }
 }
 
-STATE_DEF_ENTER(EnterPort) {
-    Input * in = STATE_INPUT;
+STATE_DEF_ENTER(EnterPort)
+{
+    Input *in = STATE_INPUT;
     snprintf(ip, sizeof(ip), "%s", in->input);
     GOTO_INPUT(state->parent, enterServerId, phraseGetDef(PHRASE_ENTER_SERV_PORT),
-        "", 4, IN_MODE_NUMBERS, NULL);
+               "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
-    if (serverItem == SERV_SET_MAIN) {
+    if (serverItem == SERV_SET_MAIN)
+    {
         intToStr(settings()->server.mainServerPort, str, sizeof(str));
-    } else if (serverItem == SERV_SET_TMS) {
+    }
+    else if (serverItem == SERV_SET_TMS)
+    {
         intToStr(settings()->server.tmsPort, str, sizeof(str));
     }
     in->setInput(str);
 }
 
-STATE_DEF_ENTER(EnterServerId) {
-    Input * in = STATE_INPUT;
+STATE_DEF_ENTER(EnterServerId)
+{
+    Input *in = STATE_INPUT;
     port = toInt(in->input);
     GOTO_INPUT(state->parent, getServerId, phraseGetDef(PHRASE_ENTER_SERV_ID),
-        "", 4, IN_MODE_NUMBERS, NULL);
+               "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
-    if (serverItem == SERV_SET_MAIN) {
-        intToStr(settings()->server.mainServerId, str, sizeof(str));
-    } else if (serverItem == SERV_SET_TMS) {
+    if (serverItem == SERV_SET_MAIN)
+    {
+        intToStr(settings()->server.mainServerNii, str, sizeof(str));
+    }
+    else if (serverItem == SERV_SET_TMS)
+    {
         intToStr(settings()->server.tmsId, str, sizeof(str));
     }
     in->setInput(str);
 }
 
-STATE_DEF_ENTER(GetServerId) {
-    Input * in = STATE_INPUT;
+STATE_DEF_ENTER(GetServerId)
+{
+    Input *in = STATE_INPUT;
     serverId = toInt(in->input);
     SM_GOTO(success);
 }
 
-static void enSSL() {
+static void enSSL()
+{
     settings()->server.sslEn = 1;
 }
 
-static void disSSL() {
+static void disSSL()
+{
     settings()->server.sslEn = 0;
 }
 
-STATE_DEF_ENTER(EnableSsl) {
+STATE_DEF_ENTER(EnableSsl)
+{
     ui_menu_create(sslMenu, disp()->screen);
     sslMenu->checkEnable = true;
     ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
@@ -244,15 +284,19 @@ STATE_DEF_ENTER(EnableSsl) {
     ui_menu_set_checked(sslMenu, !settings()->server.sslEn);
 }
 
-STATE_DEF_ENTER(Success) {
-    if (serverItem == SERV_SET_MAIN) {
+STATE_DEF_ENTER(Success)
+{
+    if (serverItem == SERV_SET_MAIN)
+    {
         snprintf(settings()->server.mainServerIp,
-                    sizeof(settings()->server.mainServerIp), "%s", ip);
+                 sizeof(settings()->server.mainServerIp), "%s", ip);
         settings()->server.mainServerPort = port;
-        settings()->server.mainServerId = serverId;
-    } else if (serverItem == SERV_SET_TMS) {
+        settings()->server.mainServerNii = serverId;
+    }
+    else if (serverItem == SERV_SET_TMS)
+    {
         snprintf(settings()->server.tmsIp,
-                    sizeof(settings()->server.tmsIp), "%s", ip);
+                 sizeof(settings()->server.tmsIp), "%s", ip);
         settings()->server.tmsPort = port;
         settings()->server.tmsId = serverId;
     }
@@ -260,15 +304,18 @@ STATE_DEF_ENTER(Success) {
     GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
-static void setItemToMainServer() {
+static void setItemToMainServer()
+{
     serverItem = SERV_SET_MAIN;
 }
 
-static void setItemToTms() {
+static void setItemToTms()
+{
     serverItem = SERV_SET_TMS;
 }
 
-STATE_DEF_ENTER(NetworkSettings) {
+STATE_DEF_ENTER(NetworkSettings)
+{
     ui_menu_create(serverSetMenu, disp()->screen);
     ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SERVER_SETTINGS), enterIp, setItemToMainServer, NULL);
     ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_TMS_SETTINGS), enterIp, setItemToTms, NULL);
@@ -276,7 +323,8 @@ STATE_DEF_ENTER(NetworkSettings) {
     GOTO_MENU(state->parent, serverSetMenu, NULL, NULL);
 }
 
-OOP_CTOR(NetworkSettings, State *parent, const char *name) {
+OOP_CTOR(NetworkSettings, State *parent, const char *name)
+{
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(NetworkSettings);
 
@@ -305,61 +353,58 @@ OOP_CTOR(NetworkSettings, State *parent, const char *name) {
     getServerId->vtable.enter = STATE_ENTER(GetServerId);
 }
 
-/******************** Configuration sub state **********************/
-
-STATE_DEF_ENTER(Configuration) {
-    GOTO_DEV_INFO(state->parent);
-}
-
-OOP_CTOR(Configuration, State *parent, const char *name) {
-    OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(Configuration);
-}
-
 /******************** Merchant pass reset sub state **********************/
 
-STATE_DEF_ENTER(MerchantPassReset) {
+STATE_DEF_ENTER(MerchantPassReset)
+{
     snprintf(settings()->terminal.merchantPin,
-                MERCHANT_PIN_LEN + 1, "%s", MERCHANT_DEFAULT_PIN);
+             MERCHANT_PIN_LEN + 1, "%s", MERCHANT_DEFAULT_PIN);
     settings()->save();
     GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
-OOP_CTOR(MerchantPassReset, State *parent, const char *name) {
+OOP_CTOR(MerchantPassReset, State *parent, const char *name)
+{
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(MerchantPassReset);
 }
 
 /******************** FARA sub state **********************/
 
-STATE_DEF_ENTER(FARA) {
+STATE_DEF_ENTER(FARA)
+{
     GOTO_DEV_INFO(state->parent);
 }
 
-OOP_CTOR(FARA, State *parent, const char *name) {
+OOP_CTOR(FARA, State *parent, const char *name)
+{
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(FARA);
 }
 
 /******************** Update app sub state **********************/
 
-STATE_DEF_ENTER(UpdateApp) {
+STATE_DEF_ENTER(UpdateApp)
+{
     GOTO_DEV_INFO(state->parent);
 }
 
-OOP_CTOR(UpdateApp, State *parent, const char *name) {
+OOP_CTOR(UpdateApp, State *parent, const char *name)
+{
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(UpdateApp);
 }
 
 /******************** Default Settings sub state **********************/
 
-STATE_DEF_ENTER(DefaultSettings) {
+STATE_DEF_ENTER(DefaultSettings)
+{
     settings()->reset();
     GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
-OOP_CTOR(DefaultSettings, State *parent, const char *name) {
+OOP_CTOR(DefaultSettings, State *parent, const char *name)
+{
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(DefaultSettings);
 }
@@ -368,15 +413,18 @@ OOP_CTOR(DefaultSettings, State *parent, const char *name) {
 
 static Menu *menu;
 
-STATE_DEF_ENTER(SupervisorMenu) {
+STATE_DEF_ENTER(SupervisorMenu)
+{
     ui_menu_create(menu, disp()->screen);
-    for (uint8_t i = 0; i < SUBS_ALL ; i++) {
+    for (uint8_t i = 0; i < SUBS_ALL; i++)
+    {
         ui_menu_addItem(menu, phraseGetDef(itemTxt[i]), subStates[i], NULL, NULL);
     }
     GOTO_MENU(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
 }
 
-static void SupervisorMenu(State *parent) {
+static void SupervisorMenu(State *parent)
+{
     supervisorMenu = (SubState *)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, supervisorMenu, parent, "supervisor menu");
     supervisorMenu->vtable.enter = STATE_ENTER(SupervisorMenu);
@@ -384,14 +432,17 @@ static void SupervisorMenu(State *parent) {
 
 /******************************************************************/
 
-STATE_DEF_ENTER(Supervisor) {
+STATE_DEF_ENTER(Supervisor)
+{
     SM_GOTO(enterPass);
 }
 
-STATE_DEF_EXIT(Supervisor) {
+STATE_DEF_EXIT(Supervisor)
+{
 }
 
-OOP_CTOR(Supervisor, State *parent, const char *name) {
+OOP_CTOR(Supervisor, State *parent, const char *name)
+{
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Supervisor);
     self->base.vtable.exit = STATE_EXIT(Supervisor);
@@ -414,7 +465,7 @@ OOP_CTOR(Supervisor, State *parent, const char *name) {
     OOP_CALL_CTOR(UpdateApp, subStates[SUBS_UPDATE_APP], supervisorMenu, "update app");
     subStates[SUBS_DEFAULT_SETTINGS] = (DefaultSettings *)MEM_ALLOC(sizeof(DefaultSettings));
     OOP_CALL_CTOR(DefaultSettings, subStates[SUBS_DEFAULT_SETTINGS], supervisorMenu, "default settings");
-    
+
     sslMenu = MEM_ALLOC(sizeof(*sslMenu));
     serverSetMenu = MEM_ALLOC(sizeof(*serverSetMenu));
     menu = MEM_ALLOC(sizeof(*menu));

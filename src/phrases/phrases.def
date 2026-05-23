@@ -72,6 +72,10 @@ X(PHRASE_RECEIVING_DATA         ,   "دریافت اطلاعات"               
 )
 X(PHRASE_RECEIVING_DATA_ERR     ,   "خطا در دریافت اطلاعات"           ,  "receiving data error"
 )
+X(PHRASE_PROCESS_CB_ERR         ,   "(CBF)خطا در پردازش داده"    ,  "receiving data error"
+)
+X(PHRASE_DATA_SIZE_MISMATCH     ,   "سرریز داده"                    ,  "receiving data error"
+)
 X(PHRASE_SENDING_DATA           ,   "ارسال اطلاعات"                   ,  "sending data"
 )
 X(PHRASE_SENDING_DATA_ERR       ,   "خطا درارسال اطلاعات"             ,  "sending data error"
@@ -449,6 +453,12 @@ X(PHRASE_SCR_BRIGHTNESS     ,   "نور صفحه"                      ,  "scree
 X(PHRASE_TOUCH_STATUS       ,   "وضعیت صفحه لمسی"               ,  "touchpad status"
 )
 X(PHRASE_DT_UPDATING        ,   "به روز رسانی زمان و تاریخ"     ,  "sync date time"
+)
+
+X(PHRASE_GET_KEY            ,   "دریافت کلید"                   ,  "get key"
+)
+
+X(PHRASE_GET_MERCHANT_DATA  ,   "دریافت اطلاعات پذیرنده"        ,  "get merchant info"
 )
 
 /**********************************************************************
