@@ -84,4 +84,8 @@ void prependZerosInt(int number,
                      char *output,
                      size_t outputSize);
 
+bool ipFormatLeftAligned(const char *in, char *out);
+
+bool normalizeIp(const char *input, char *output, size_t outputSize);
+
 #endif

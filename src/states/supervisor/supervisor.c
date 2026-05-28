@@ -202,7 +202,7 @@ typedef enum
 } ServerSetItemt_t;
 
 static ServerSetItemt_t serverItem;
-static char ip[12 + 1];
+static char ip[24];
 static uint16_t port;
 static uint16_t serverId;
 
@@ -211,12 +211,9 @@ STATE_DEF_ENTER(EnterIp)
     GOTO_INPUT(state->parent, enterPort, phraseGetDef(PHRASE_ENTER_SERV_IP),
                "", IP_MAX_LEN, IN_MODE_IP, NULL);
     Input *in = STATE_INPUT;
-    if (serverItem == SERV_SET_MAIN)
-    {
+    if (serverItem == SERV_SET_MAIN) {
         in->setInput(settings()->server.mainServerIp);
-    }
-    else if (serverItem == SERV_SET_TMS)
-    {
+    } else if (serverItem == SERV_SET_TMS) {
         in->setInput(settings()->server.tmsIp);
     }
 }
@@ -228,12 +225,9 @@ STATE_DEF_ENTER(EnterPort)
     GOTO_INPUT(state->parent, enterServerId, phraseGetDef(PHRASE_ENTER_SERV_PORT),
                "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
-    if (serverItem == SERV_SET_MAIN)
-    {
+    if (serverItem == SERV_SET_MAIN) {
         intToStr(settings()->server.mainServerPort, str, sizeof(str));
-    }
-    else if (serverItem == SERV_SET_TMS)
-    {
+    } else if (serverItem == SERV_SET_TMS) {
         intToStr(settings()->server.tmsPort, str, sizeof(str));
     }
     in->setInput(str);

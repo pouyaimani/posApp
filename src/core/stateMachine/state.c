@@ -70,6 +70,12 @@ static void default_sock_read(State *s, SocketReadyReadEvent *ev)
     LOG_WARN("Socket read event hadler is not defined for %s state.", s->name);
 }
 
+static void default_sock_timeout(State *s, SocketTimeOutEvent *ev)
+{
+    (void)ev;
+    LOG_WARN("Socket timeout event hadler is not defined for %s state.", s->name);
+}
+
 static void setNext(State *current, State *next) {
     current->next = next;
 }
@@ -91,6 +97,7 @@ OOP_CTOR(State, State *parent, const char *name)
     self->vtable.onSocketConnect= default_sock_connect;
     self->vtable.onSocketSent = default_sock_sent;
     self->vtable.onSocketReadyRead = default_sock_read;
+    self->vtable.onSocketTimeOut = default_sock_timeout;
     self->vtable.goTo = goTo;
     self->vtable.setNext = setNext;
     self->vtable.setPrev = setPrev;

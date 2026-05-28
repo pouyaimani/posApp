@@ -14,6 +14,7 @@
 
 typedef enum {
     NET_ERR_OK = 0,
+    NET_ERR_NOK,
     NET_ERR_INPUT_ERR
 } NetError_t;
 

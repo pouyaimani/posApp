@@ -53,6 +53,9 @@ Event *createEvent(SmEventType_t type) {
     case SM_EVENT_SOCKET_READY_READ:
         CREATE_EVENT(SocketReadyReadEvent, event);
         break;
+    case SM_EVENT_SOCKET_TIME_OUT:
+        CREATE_EVENT(SocketTimeOutEvent, event);
+        break;
     default:
         break;
     }
@@ -143,4 +146,12 @@ static void socket_rr_dispatchTo(Event *self, State *state) {
 
 OOP_CTOR(SocketReadyReadEvent) {
     self->base.vtable.dispatchTo = socket_rr_dispatchTo;
+}
+
+static void socket_timeout__dispatchTo(Event *self, State *state) {
+    OOP_CALL(state, onSocketTimeOut, self);
+}
+
+OOP_CTOR(SocketTimeOutEvent) {
+    self->base.vtable.dispatchTo = socket_timeout__dispatchTo;
 }

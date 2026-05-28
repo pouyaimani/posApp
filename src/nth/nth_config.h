@@ -1,0 +1,27 @@
+#ifndef NT_CONFIG_H
+#define NT_CONFIG_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "sys/sys.h"
+#include "logger.h"
+
+#define NT_MAX_TRANSACTIONS        1
+#define NT_MAX_EVENTS              32
+#define NT_TX_BUFFER_SIZE          2048
+#define NT_RX_BUFFER_SIZE          2048
+#define NT_DEFAULT_TIMEOUT_MS      30000
+
+#define NTH_GET_TICK()             GET_TICK()
+
+#define NTH_USE_LOG                1
+
+#ifdef NTH_USE_LOG
+    #define NTH_LOG(log) LOG_ERROR(log)
+#else 
+    #define NTH_LOG(log) do {}while(0)
+#endif
+
+
+
+#endif

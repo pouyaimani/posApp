@@ -14,7 +14,8 @@ typedef enum SmEventType_t {
     SM_EVENT_CELLULAR,
     SM_EVENT_SOCKET_CONNECT,
     SM_EVENT_SOCKET_SENT,
-    SM_EVENT_SOCKET_READY_READ
+    SM_EVENT_SOCKET_READY_READ,
+    SM_EVENT_SOCKET_TIME_OUT
 } SmEventType_t;
 
 /* Forward declarations */
@@ -185,6 +186,12 @@ OOP_CLASS(SocketReadyReadEvent) {
 };
 /* ctor */
 OOP_CTOR(SocketReadyReadEvent);
+
+OOP_CLASS(SocketTimeOutEvent) {
+    OOP_EXTENDS(Event);
+};
+/* ctor */
+OOP_CTOR(SocketTimeOutEvent);
 
 
 #endif

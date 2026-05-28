@@ -1,0 +1,57 @@
+#include "nth_transport.h"
+#include "nth_config.h"
+
+#include <errno.h>
+#include <string.h>
+#include "network/network.h"
+#include "error.h"
+
+static int sys_sock_connect(
+            const char *host,
+                uint16_t port) {
+    RETURN_VALUE_IF_NULL(host, ; , ERR_NULL_PARAMETER);
+    SocketAddr_t addr;
+    addr.family = NET_AF_INET;
+    // snprintf(addr.ip, 
+    //     sizeof(addr.ip), "%s", settings()->server.mainServerIp);
+    // addr.port = settings()->server.mainServerPort;
+    SocketType_t type = NET_STREAM;
+    return OOP_CALL(network(), create, &addr, type) == NET_ERR_OK ?
+                                1 : -1;
+}
+
+static int sys_sock_send(
+    int fd,
+    const void *buf,
+    size_t len) {
+        return OOP_CALL(network(), send, fd, buf, len, NT_DEFAULT_TIMEOUT_MS);
+}
+
+static int sys_sock_recv(
+    int fd,
+        void *buf,
+            size_t len) {
+    return OOP_CALL(network(), receive, fd, buf, len);
+}
+
+static int sys_sock_poll(
+    int fd,
+    uint32_t timeoutMs) {
+            SocketStatus_t st = OOP_CALL(network(), getStatus, fd);
+    if (st != NET_STATUS_CONNECTING) {
+        return st == NET_STATUS_CONNECTED ? 1 : -1;
+    }
+    return 0;
+}
+
+static int sys_sock_close(int fd) {
+    return OOP_CALL(network(), close, fd);
+}
+
+NthTransport sysTransport = {
+    .connect = sys_sock_connect,
+    .send = sys_sock_send,
+    .recv = sys_sock_recv,
+    .poll = sys_sock_poll,
+    .close = sys_sock_close
+};

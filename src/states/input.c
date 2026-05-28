@@ -25,6 +25,7 @@ static InputMode_t inMode;
 static char *input;
 static char *amountStr;
 static char *password;
+static char *ipAddr;
 static uint8_t idx = 0;
 static uint8_t maxIn = 0;
 
@@ -68,60 +69,6 @@ static bool ipValidateDigits(const char *in)
     }
 
     return true;
-}
-
-static bool ipFormatLeftAligned(const char *in, char *out)
-{
-    char digits[12] = {0};
-    int dcount = 0;
-
-    // Extract digits only (max 12)
-    for (int i = 0; in[i] && dcount < 12; i++) {
-        if (isDigit((unsigned char)in[i])) {
-            digits[dcount++] = in[i];
-        }
-    }
-
-    int pos = 0;
-    int di = 0;
-    bool valid = true;
-
-    for (int oct = 0; oct < 4; oct++) {
-
-        // If not enough digits for this octet → fill with "---"
-        if (di >= dcount) {
-            out[pos++] = '-';
-            out[pos++] = '-';
-            out[pos++] = '-';
-        } else {
-            int octVal = 0;
-            int start = di;
-
-            // Read up to 3 digits
-            int len = 0;
-            while (di < dcount && len < 3) {
-                octVal = octVal * 10 + (digits[di] - '0');
-                di++;
-                len++;
-            }
-
-            // Clamp to 255 if needed
-            if (octVal > 255) {
-                octVal = 255;
-                valid = false;
-            }
-
-            // Write as 3-digit zero-padded number
-            pos += sprintf(out + pos, "%03d", octVal);
-        }
-
-        if (oct < 3) {
-            out[pos++] = '.';
-        }
-    }
-
-    out[pos] = '\0';
-    return valid;
 }
 
 static void timeFormat(const char *in, char *out)
@@ -305,10 +252,9 @@ static void handleInput(State *state, KeypadEvent *ev)
         amountSeparator(input, amountStr, INPUT_MAX_LEN);
         LV_SET_TEXT(inputBox.textBox, amountStr);
     } else if (isIp) {
-        char buf[24];
-        ipFormatLeftAligned(input, buf);
+        ipFormatLeftAligned(input, ipAddr);
         lv_label_set_recolor(inputBox.textBox, true);
-        LV_SET_TEXT(inputBox.textBox, buf);
+        LV_SET_TEXT(inputBox.textBox, ipAddr);
     } else if (inMode == IN_MODE_DATE) {
         char buf[16];
         dateFormat(input, buf);
@@ -492,8 +438,10 @@ OOP_CTOR(Input, State *parent, const char *name) {
     self->setInput = setInput;
     input = (char*)MEM_ALLOC(INPUT_MAX_LEN);
     password = (char*)MEM_ALLOC(PASS_MAX_LEN + 1);
+    ipAddr = (char*)MEM_ALLOC(INPUT_MAX_LEN / 2);
     self->input = input;
     self->password = password;
+    self->ip = ipAddr;
     amountStr = (char*)MEM_ALLOC(INPUT_MAX_LEN);
     createUi();
 }

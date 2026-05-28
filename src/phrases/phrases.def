@@ -90,25 +90,25 @@ X(PHRASE_AMOUNT_EXCEED          ,   "مبلغ بیش از حد مجاز"        
 )
 X(PHRASE_INPUT_EXCEED           ,   "ورودی بیش از حد مجاز"          ,   "input exceed"
 )
-X(PHRASE_INVALID_IP             ,   "IP نامعتبر است"                 ,   "invalid IP"
+X(PHRASE_INVALID_IP             ,   "نامعتبر است IP"                 ,   "invalid IP"
 )
-X(PHRASE_INVALID_DATE           ,   "IP تاریخ است"                   ,   "invalid date"
+X(PHRASE_INVALID_DATE           ,   "تاریخ نامعتبر است"                   ,   "invalid date"
 )
-X(PHRASE_INVALID_TIME           ,   "IP زمان است"                    ,   "invalid time"
+X(PHRASE_INVALID_TIME           ,   "زمان نامعتبر است"                    ,   "invalid time"
 )
 X(PHRASE_WANNA_EXIT             ,   "قصد خروج دارید؟"                ,   "would you like to exit?"
 )
 X(PHRASE_POWERING_OFF           ,   "در حال خاموش شدن ..."           ,   "powering off ..."
 )
-X(PHRASE_CONNECTING_2_WIFI      ,   "wifi در حال اتصال به"           ,   "connecting to wifi"
+X(PHRASE_CONNECTING_2_WIFI      ,   "در حال اتصال به wifi"           ,   "connecting to wifi"
 )
-X(PHRASE_SEARCHING_4_WIFI       ,   "wifi در حال جستجوی"             ,   "searching for wifi"
+X(PHRASE_SEARCHING_4_WIFI       ,   "در حال جستجوی wifi"             ,   "searching for wifi"
 )
-X(PHRASE_SEARCHING_WIFI_ERR     ,   "wifi خطا در جستجوی"             ,   "error in searching for wifi"
+X(PHRASE_SEARCHING_WIFI_ERR     ,   "خطا در جستجوی wifi"             ,   "error in searching for wifi"
 )
 X(PHRASE_CHECK_SIM_STAT         ,   "وضعیت سیم کارت را بررسی کنید"  ,   "check simcard status"
 )
-X(PHRASE_WIFI_PIN               ,   "wifi رمز"                        ,   "wifi password"
+X(PHRASE_WIFI_PIN               ,   "رمز wifi"                        ,   "wifi password"
 )
 X(PHRASE_INCORRECT_PASSWORD     ,   "رمز نادرست است"                 ,   "incorrect password"
 )
@@ -202,6 +202,13 @@ X(PHRASE_PRICE_LIST             ,   "لیست قیمت"                         
 )
 X(PHRASE_FIXED_WITH_COEF        ,   "ثابت با ضریب"                            ,  "fixed with coefficient"
 )
+X(PHRASE_CHECK_IP               ,   "لطفا آدرس سرور را بررسی نمایید"         ,  "please check IP address"
+)
+X(PHRASE_CHECK_NET             ,   "لطفا از اتصال شبکه اطمینان حاصل فرمایید"         ,  "please check network"
+)
+X(PHRASE_IP_ADDR               ,   "آدرس سرور"                                  , "please check network"
+)
+
 
 /**********************************************************************
  *

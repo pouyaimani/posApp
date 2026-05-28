@@ -54,7 +54,7 @@ static NetError_t create(Network *self, SocketType_t type) {
     case NET_RAW: sdkst = SOCKET_RAW; break;
     }
     int ret = sdkNetCreateSocket(&addr, sdkst);
-    return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
+    return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_NOK;
 }
 
 static NetError_t close(Network *self, int32_t id) {

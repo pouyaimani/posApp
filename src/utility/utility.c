@@ -45,7 +45,7 @@ void removeNonDigits(const char *src, char *dst, size_t dst_size)
     size_t j = 0;
 
     for (size_t i = 0; src[i] != '\0' && j + 1 < dst_size; i++) {
-        if (isdigit((unsigned char)src[i])) {
+        if (isDigit((unsigned char)src[i])) {
             dst[j++] = src[i];
         }
     }
@@ -158,7 +158,7 @@ int addBeHarf(const char *num, char *out, size_t out_size)
 
     /* validate */
     for (const char *p = num; *p; p++) {
-        if (!isdigit((unsigned char)*p))
+        if (!isDigit((unsigned char)*p))
             return -1;
     }
 
@@ -254,7 +254,7 @@ int gregorianToJalaliStr(const char *in_date, char *out_date)
         return -1;
 
     for (int i = 0; i < 6; i++) {
-        if (!isdigit((unsigned char)in_date[i]))
+        if (!isDigit((unsigned char)in_date[i]))
             return -1;
     }
 
@@ -347,7 +347,7 @@ bool isAlphabetic(char c)
 
 int toInt(const char *value)
 {
-    return atoi(value);
+    return libAtoi(value);
 }
 
 int16_t hexCharToDecimal(char hexChar)
@@ -417,7 +417,7 @@ int dateSeparator(const char *in, char *out, size_t out_size)
         return -1;
 
     for (size_t i = 0; i < len; i++) {
-        if (!isdigit((unsigned char)in[i]))
+        if (!isDigit((unsigned char)in[i]))
             return -1;
     }
 
@@ -463,7 +463,7 @@ int timeSeparator(const char *in, char *out, size_t out_size)
         return -1;
 
     for (int i = 0; i < 6; i++) {
-        if (!isdigit((unsigned char)in[i]))
+        if (!isDigit((unsigned char)in[i]))
             return -1;
     }
 
@@ -794,4 +794,96 @@ void prependZerosInt(int number,
              "%0*d",
              totalWidth,
              number);
+}
+
+bool ipFormatLeftAligned(const char *in, char *out) {
+    char digits[12] = {0};
+    int dcount = 0;
+
+    // Extract digits only (max 12)
+    for (int i = 0; in[i] && dcount < 12; i++) {
+        if (isDigit((unsigned char)in[i])) {
+            digits[dcount++] = in[i];
+        }
+    }
+
+    int pos = 0;
+    int di = 0;
+    bool valid = true;
+
+    for (int oct = 0; oct < 4; oct++) {
+
+        // If not enough digits for this octet → fill with "---"
+        if (di >= dcount) {
+            out[pos++] = '-';
+            out[pos++] = '-';
+            out[pos++] = '-';
+        } else {
+            int octVal = 0;
+            int start = di;
+
+            // Read up to 3 digits
+            int len = 0;
+            while (di < dcount && len < 3) {
+                octVal = octVal * 10 + (digits[di] - '0');
+                di++;
+                len++;
+            }
+
+            // Clamp to 255 if needed
+            if (octVal > 255) {
+                octVal = 255;
+                valid = false;
+            }
+
+            // Write as 3-digit zero-padded number
+            pos += sprintf(out + pos, "%03d", octVal);
+        }
+
+        if (oct < 3) {
+            out[pos++] = '.';
+        }
+    }
+
+    out[pos] = '\0';
+    return valid;
+}
+
+bool normalizeIp(const char *input, char *output, size_t outputSize) {
+    if (input == NULL || output == NULL)
+        return false;
+
+    // Must be exactly 12 digits
+    if (strlen(input) != 12)
+        return false;
+
+    for (int i = 0; i < 12; i++)
+    {
+        if (!isDigit((unsigned char)input[i]))
+            return false;
+    }
+
+    char octetStr[4];
+    int octet[4];
+
+    for (int i = 0; i < 4; i++)
+    {
+        memcpy(octetStr, input + (i * 3), 3);
+        octetStr[3] = '\0';
+
+        octet[i] = libAtoi(octetStr);
+        // Validate IPv4 range
+        if (octet[i] < 0 || octet[i] > 255)
+            return false;
+    }
+    // Build normalized IP
+    snprintf(output,
+             outputSize,
+             "%d.%d.%d.%d",
+             octet[0],
+             octet[1],
+             octet[2],
+             octet[3]);
+
+    return true;
 }

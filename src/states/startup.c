@@ -13,6 +13,7 @@
 #include "network/network.h"
 #include "settings/settings.h"
 #include "record/shiftRecs.h"
+#include "nth/nth.h"
 
 static lv_obj_t *startUpPage;
 static lv_obj_t *label;
@@ -25,10 +26,12 @@ STATE_DEF_ENTER(Startup) {
     // settings()->reset();
     settings()->load();
     disp()->init();
+    nth()->init();
     Core *core = smCore();
     core->registerCallback(disp()->update);
     core->registerCallback(getEventloop()->runCycle);
     core->registerCallback(getTimerHanlder()->runCycle);
+    core->registerCallback(nth()->tick);
 
     // Network setitings
     network()->init();

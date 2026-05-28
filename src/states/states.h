@@ -52,7 +52,7 @@ OOP_CTOR(Idle, State *parent, const char *name);
 
 /**********************Input**********************/
 
-#define INPUT_MAX_LEN       50
+#define INPUT_MAX_LEN       64
 
 typedef enum {
     IN_MODE_AMOUNT,
@@ -81,6 +81,7 @@ OOP_CLASS(Input) {
     OOP_METHOD(void, setInput, const char *);
     char *input;
     char *password;
+    char *ip;
     char *out;
 };
 
