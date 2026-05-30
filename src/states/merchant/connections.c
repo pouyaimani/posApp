@@ -61,7 +61,7 @@ STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
         connectState = WIFI_CONNECT_STATE;
     } else {
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
-            GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
             Input * in = (Input*)getState(STATE_ID_INPUT);
             saveWifiInfo(selectedAp, in->input);
         } else {
@@ -104,7 +104,7 @@ static void WifiEnterPass(State *parent) {
 
 /******************** Wifi scan sub state **********************/
 
-static Menu *wifiMenu;
+static Menu *wifiMenu = NULL;
 
 STATE_DEF_ENTER(WifiScan) {
     SHOW_INFO(phraseGetDef(PHRASE_SEARCHING_4_WIFI), phraseGetDef(PHRASE_PLEASE_WAIT));
@@ -112,8 +112,11 @@ STATE_DEF_ENTER(WifiScan) {
 }
 
 STATE_DEF_EXIT(WifiScan) {
-    ui_menu_destroy(wifiMenu);
-    MEM_FREE(wifiMenu);
+    if (wifiMenu) {
+        ui_menu_destroy(wifiMenu);
+        MEM_FREE(wifiMenu);
+        wifiMenu = NULL;
+    }
 }
 
 STATE_DEF_HANDLE(WifiScan, KeypadEvent) {

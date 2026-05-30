@@ -388,7 +388,7 @@ OOP_CTOR(Settings, State *parent, const char *name) {
     energyMenu = MEM_ALLOC(sizeof(*energyMenu));
     receiptMenu = MEM_ALLOC(sizeof(*receiptMenu));
     prnModel = MEM_ALLOC(sizeof(*prnModel));
-
+    settingsMenu = MEM_ALLOC(sizeof(*settingsMenu));
     touchMenu = MEM_ALLOC(sizeof(*touchMenu));
 
     autoRecMenu = MEM_ALLOC(sizeof(*autoRecMenu));

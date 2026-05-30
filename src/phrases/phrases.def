@@ -100,15 +100,15 @@ X(PHRASE_WANNA_EXIT             ,   "قصد خروج دارید؟"              
 )
 X(PHRASE_POWERING_OFF           ,   "در حال خاموش شدن ..."           ,   "powering off ..."
 )
-X(PHRASE_CONNECTING_2_WIFI      ,   "در حال اتصال به wifi"           ,   "connecting to wifi"
+X(PHRASE_CONNECTING_2_WIFI      ,   "wifi در حال اتصال به"           ,   "connecting to wifi"
 )
-X(PHRASE_SEARCHING_4_WIFI       ,   "در حال جستجوی wifi"             ,   "searching for wifi"
+X(PHRASE_SEARCHING_4_WIFI       ,   "wifi در حال جستجوی"             ,   "searching for wifi"
 )
-X(PHRASE_SEARCHING_WIFI_ERR     ,   "خطا در جستجوی wifi"             ,   "error in searching for wifi"
+X(PHRASE_SEARCHING_WIFI_ERR     ,   "wifi خطا در جستجوی"             ,   "error in searching for wifi"
 )
 X(PHRASE_CHECK_SIM_STAT         ,   "وضعیت سیم کارت را بررسی کنید"  ,   "check simcard status"
 )
-X(PHRASE_WIFI_PIN               ,   "رمز wifi"                        ,   "wifi password"
+X(PHRASE_WIFI_PIN               ,   "wifi رمز"                        ,   "wifi password"
 )
 X(PHRASE_INCORRECT_PASSWORD     ,   "رمز نادرست است"                 ,   "incorrect password"
 )

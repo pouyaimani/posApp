@@ -159,8 +159,9 @@ void ui_menu_toggle(Menu *menu, int idx) {
     LV_SET_TEXT_COLOR(obj, menu->toggle[idx] ? 0x00ff00 : 0xcc0000);
 }
 
-void ui_menu_create(Menu *menu, lv_obj_t * parent) {
-    RETURN_IF_NULL(menu, ;);
+int8_t ui_menu_create(Menu *menu, lv_obj_t * parent) {
+    RETURN_VALUE_IF_NULL(menu, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(parent, ;, ERR_NULL_PARAMETER);
     menu->cnt = 0;
     menu->idx = 0;
     menu->selected = 0;
@@ -208,6 +209,7 @@ void ui_menu_create(Menu *menu, lv_obj_t * parent) {
 
     menu->togglable = false;
     ui_menu_hide(menu);
+    return ERR_OK;
 }
 
 void ui_menu_destroy(Menu *menu) {

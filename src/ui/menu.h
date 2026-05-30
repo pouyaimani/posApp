@@ -35,7 +35,7 @@ OOP_CLASS(Menu) {
     bool togglable;
 };
 
-void ui_menu_create(Menu *, lv_obj_t * parent);
+int8_t ui_menu_create(Menu *, lv_obj_t * parent);
 
 void ui_menu_destroy(Menu *menu);
 
