@@ -12,12 +12,11 @@ static int sys_sock_connect(
     RETURN_VALUE_IF_NULL(host, ; , ERR_NULL_PARAMETER);
     SocketAddr_t addr;
     addr.family = NET_AF_INET;
-    // snprintf(addr.ip, 
-    //     sizeof(addr.ip), "%s", settings()->server.mainServerIp);
-    // addr.port = settings()->server.mainServerPort;
+    snprintf(addr.ip, 
+        sizeof(addr.ip), "%s", host);
+    addr.port = port;
     SocketType_t type = NET_STREAM;
-    return OOP_CALL(network(), create, &addr, type) == NET_ERR_OK ?
-                                1 : -1;
+    return OOP_CALL(network(), create, &addr, type);
 }
 
 static int sys_sock_send(

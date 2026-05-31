@@ -136,7 +136,7 @@ NthResult nth_connect(
     tx->socketFd =
         g_transport->connect(host, port);
 
-    if (tx->socketFd < 0) {
+    if (tx->socketFd <= 0) {
         tx->state = NTH_TX_FAILED;
         return NTH_ERR_CONNECT;
     }

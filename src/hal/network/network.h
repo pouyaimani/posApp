@@ -64,7 +64,7 @@ OOP_VTABLE(Network) {
     OOP_IMETHOD(NetError_t, Network, setRoute, NetRoute_t);
     OOP_IMETHOD(NetError_t, Network, setAddr, const char *, uint16_t);
     OOP_IMETHOD(const SocketAddr_t *, Network, getAddr);
-    OOP_IMETHOD(NetError_t, Network, create, SocketAddr_t *, SocketType_t);
+    OOP_IMETHOD(int, Network, create, SocketAddr_t *, SocketType_t);
     OOP_IMETHOD(NetError_t, Network, close, int);
     OOP_IMETHOD(SocketStatus_t, Network, getStatus, int32_t);
     OOP_IMETHOD(int32_t, Network, send, int32_t socketID, const uint8_t *data, uint32_t dataLen, uint32_t timeOut);

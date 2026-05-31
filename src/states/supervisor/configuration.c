@@ -54,6 +54,7 @@ STATE_DEF_HANDLE(LogOn, SocketReadyReadEvent) {
 }
 
 STATE_DEF_HANDLE(LogOn, SocketTimeOutEvent) {
+    nth()->release(tx);
     SM_GOTO(state->parent);
     LOG_DEBUG("Log on is time out...");
 }
@@ -87,9 +88,7 @@ STATE_DEF_ENTER(LogOn) {
     SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
     tx->owner = state;
     DEFINE_STRING(ip, 24);
-    LOG_DEBUG("server ip = %s", settings()->server.mainServerIp);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    LOG_DEBUG("normalize ip = %s", ip);
     NthResult res = nth()->connect(tx, ip,
                 settings()->server.mainServerPort);
     if (res == NTH_ERR_INVALID_HOST) {

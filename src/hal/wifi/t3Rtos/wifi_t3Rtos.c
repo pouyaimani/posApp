@@ -136,10 +136,10 @@ static WifiErr_t translateSdkErr(int err) {
 static void copyWifiAp(Wifi* wifi, WifiAPInfo *apInfo, uint32_t num) {
     wifi->apList.size = num;
     for (uint32_t i = 0; i < num ; i++) {
-        memcpy(wifi->apList.list[i].essid, apinfo[i].mSsid,
-                 sizeof(wifi->apList.list[i].essid));
-        memcpy(wifi->apList.list[i].mac, apinfo[i].mMac,
-                 sizeof(wifi->apList.list[i].mac));
+        snprintf(wifi->apList.list[i].essid, 
+            sizeof(wifi->apList.list[i].essid), "%s", apinfo[i].mSsid);
+        snprintf(wifi->apList.list[i].mac, 
+            sizeof(wifi->apList.list[i].mac), "%s", apinfo[i].mMac);
         wifi->apList.list[i].secMode = apinfo[i].mSecMode;
         wifi->apList.list[i].idx = i;
     }

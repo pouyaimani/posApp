@@ -136,12 +136,29 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
     }
 }
 
+static void normalize_ssid(char *in, char *out) {
+    size_t size = strlen(in);
+    size_t j = 0;
+    for (size_t i = 0; in[i] && j < size - 1; i++) {
+        unsigned char c = (unsigned char)in[i];
+
+        /* Allow printable ASCII only */
+        if (c >= 32 && c <= 126) {
+            out[j++] = c;
+        }
+    }
+    out[j] = '\0';
+}
+
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
         wifiMenu = MEM_ALLOC(sizeof(*wifiMenu));
         ui_menu_create(wifiMenu, disp()->screen);
+        LOG_DEBUG("wifi()->apList.size = %d", wifi()->apList.size);
         for (uint8_t i = 0; i < wifi()->apList.size ; i++) {
-            ui_menu_addItem(wifiMenu, wifi()->apList.list[i].essid, wifiEnterPass, NULL, NULL);
+            DEFINE_STRING(safeSsid, 64);
+            normalize_ssid(wifi()->apList.list[i].essid, safeSsid);
+            ui_menu_addItem(wifiMenu, safeSsid, wifiEnterPass, NULL, NULL);
         }
         HIDE_INFO();
         ui_menu_show(wifiMenu);

@@ -44,8 +44,9 @@ static const SocketAddr_t * getAddr(Network *self) {
     return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
 }
 
-static NetError_t create(Network *self, SocketType_t type) {
-    SockAddr addr;
+static int create(Network *self, 
+                    SocketAddr_t *addr, 
+                        SocketType_t type) {
     SDK_SOCKET_TYPE sdkst;
     switch (type) {
     case NET_STREAM: sdkst = SOCKET_STREAM; break;
@@ -53,8 +54,7 @@ static NetError_t create(Network *self, SocketType_t type) {
     case NET_SEQPACKET: sdkst = SOCKET_SEQPACKET; break;
     case NET_RAW: sdkst = SOCKET_RAW; break;
     }
-    int ret = sdkNetCreateSocket(&addr, sdkst);
-    return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_NOK;
+    return sdkNetCreateSocket(addr, sdkst);
 }
 
 static NetError_t close(Network *self, int32_t id) {
@@ -72,11 +72,16 @@ static SocketStatus_t getStatus(Network *self, int32_t id) {
     }
 }
 
-static int32_t send(Network *self,int32_t socketID, const uint8_t *data, uint32_t dataLen, uint32_t timeOut) {
+static int32_t send(Network *self,int32_t socketID, 
+        const uint8_t *data, 
+            uint32_t dataLen, 
+                uint32_t timeOut) {
     return sdkNetSocketSend(socketID, data, dataLen, timeOut);
 }
 
-static int32_t receive(Network *self, int32_t socketID, const uint8_t *data, uint32_t dataLen) {
+static int32_t receive(Network *self, int32_t socketID,
+                     const uint8_t *data,
+                            uint32_t dataLen) {
     return sdkNetSocketRecv(socketID, data, dataLen);
 }
 
