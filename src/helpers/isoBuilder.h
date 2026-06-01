@@ -11,4 +11,9 @@ Error_t isoBuild(MTI_t mti, ByteArray *buf);
 typedef int8_t (*IsoBuilder)(
     ByteArray *);
 
+typedef struct {
+    MTI_t mti;
+    IsoBuilder builder;
+} IsoTemplate;
+
 #endif

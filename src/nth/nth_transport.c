@@ -16,6 +16,8 @@ static int sys_sock_connect(
         sizeof(addr.ip), "%s", host);
     addr.port = port;
     SocketType_t type = NET_STREAM;
+    NTH_LOG("host ip = %s", addr.ip);
+    NTH_LOG("host port = %d", addr.port);
     return OOP_CALL(network(), create, &addr, type);
 }
 
@@ -36,8 +38,9 @@ static int sys_sock_recv(
 static int sys_sock_poll(
     int fd,
     uint32_t timeoutMs) {
-            SocketStatus_t st = OOP_CALL(network(), getStatus, fd);
+    SocketStatus_t st = OOP_CALL(network(), getStatus, fd);
     if (st != NET_STATUS_CONNECTING) {
+        NTH_LOG("socket connect status = %d", st);
         return st == NET_STATUS_CONNECTED ? 1 : -1;
     }
     return 0;

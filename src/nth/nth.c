@@ -150,11 +150,16 @@ NthResult nth_connect(
 
 NthResult nth_send(NthTransaction *tx,
                     ByteArray *ba) {
-    if (!tx || !ba)
+    if (!tx || !ba) {
+        NTH_LOG("NTH: bad argument.");
         return NTH_ERR_INVALID_ARG;
+    }
 
-    if (ba->len > tx->txBuffer.capacity)
+    if (ba->len > tx->txBuffer.capacity) {
+        NTH_LOG("NTH: buffer overfllow.data len = %d, buffer capacity = %d",
+             ba->len, tx->txBuffer.capacity);
         return NTH_ERR_OVERFLOW;
+    }
 
     memcpy(tx->txBuffer.data,
            ba->data,
@@ -237,7 +242,7 @@ static void nth_handleConnecting(
         0);
 
     if (ret > 0) {
-        NTH_LOG("nth: sending data succeed.");
+        NTH_LOG("nth: socket is connected.");
         tx->state = NTH_TX_IDLE;
         if (tx->onConnect) {
             tx->onConnect(tx, tx->userData);
@@ -245,7 +250,7 @@ static void nth_handleConnecting(
         nth_emitConnectEvent(tx,
                             true);
     } else if (ret < 0) {
-        NTH_LOG("nth: sending data failed.");
+        NTH_LOG("nth: socket can not connect.");
         tx->state = NTH_TX_FAILED;
         tx->lastError = NTH_ERR_CONNECT;
         if (tx->onFailure) {
@@ -339,6 +344,7 @@ static void nth_checkTimeout(
     if ((now - tx->startTick)
                 > tx->timeoutMs) {
         NTH_LOG("nth: time out occured.");
+        tx->prevState = tx->state;
         tx->state =
             NTH_TX_FAILED;
 

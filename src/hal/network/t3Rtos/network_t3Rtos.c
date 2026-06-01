@@ -66,9 +66,9 @@ static SocketStatus_t getStatus(Network *self, int32_t id) {
     SOCKET_STATUS st = sdkNetGetSocketStatus(id);
     switch (st) {
     case SOCKET_STATUS_CONNECTING: return NET_STATUS_CONNECTING;
-    case SOCKET_STATUS_CONNECTED: return NET_STATUS_CONNECTING;
-    case SOCKET_STATUS_DISCONNECT: return NET_STATUS_CONNECTING;
-    case SOCKET_STATUS_ERR: return NET_STATUS_CONNECTING;
+    case SOCKET_STATUS_CONNECTED: return NET_STATUS_CONNECTED;
+    case SOCKET_STATUS_DISCONNECT: return NET_STATUS_DISCONNECTED;
+    default: return SOCKET_STATUS_ERR;
     }
 }
 

@@ -9,9 +9,7 @@ Error_t isoBuildLogOn(ByteArray *buf) {
     iso8583()->reset();
     DEFINE_STRING(privateData, 128);
 	setCommonLtv(OOP_CALL(sys(), getSN), PNA_APP_VERSION, 0 /*language*/, privateData);
-
     DateTime *dt = OOP_CALL(sys(), getDateTime);
-
     /* set ISO message fields */
     // (void)SIPA_ISO8583_MSG_SetField_Str(0, (const DL_UINT8 *)"0100", &isoMsg);
     iso8583()->setMTI((const DL_UINT8 *)MTI_VAL_LOG_ON);
@@ -43,27 +41,32 @@ Error_t isoBuildLogOn(ByteArray *buf) {
     size_t packedLen;
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
     if (packedLen < 8)
-        return ERR_NOK;
+        return ERR_NOK; 
     ped()->getMac(16, tmpBuf, packedLen - 8, mac);
-
     iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8 *)mac, 8);
-
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
-
     IsoHeaderData_t hd = {
         .nii = settings()->server.mainServerNii
     };
     RETURN_VALUE_IF_NOT(
                         iso8583()->addHeader(buf->data, tmpBuf, &packedLen, &hd), 
                             ISO_OK, ;, ERR_NOK);
+                            
     buf->len = packedLen;
     return ERR_OK;
 }
 
-static const IsoBuilder templates[] = {
+static const IsoTemplate templates[] = {
     { MTI_LOG_ON, isoBuildLogOn },
 };
 
-Error_t isoBuild(MTI_t mti, ByteArray *buf) {
-    return templates[mti];
+Error_t isoBuild(MTI_t mti, ByteArray *buf)
+{
+    for (size_t i = 0; i < sizeof(templates) / sizeof(templates[0]); i++) {
+        if (templates[i].mti == mti) {
+            return templates[i].builder(buf);
+        }
+    }
+
+    return ERR_NOK;
 }

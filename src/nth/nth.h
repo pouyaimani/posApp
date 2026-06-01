@@ -24,6 +24,7 @@ typedef struct NthTransaction {
     int socketFd;
 
     NthTxState state;
+    NthTxState prevState;
     ByteArray txBuffer;
     ByteArray rxBuffer;
 

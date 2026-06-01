@@ -11,7 +11,7 @@ OOP_CLASS(ByteArray) {
 };
 
 int8_t byteArrayInit(ByteArray *ba, size_t size);
-
+int8_t byteArrayDestroy(ByteArray *ba);
 #define BYTE_ARRAY(name, size)                      \
     ByteArray *name = MEM_ALLOC(sizeof(ByteArray)); \
     name->data = MEM_ALLOC(size);                   \

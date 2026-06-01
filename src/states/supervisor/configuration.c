@@ -31,6 +31,7 @@ static NthTransaction *tx;
 STATE_DEF_HANDLE(LogOn, SocketConnectEvent) {
     ByteArray ba;
     if (!ev->isConnected) {
+        nth()->release(tx);
         GOTO_INFO(state->parent, 
             state->parent, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
@@ -42,21 +43,49 @@ STATE_DEF_HANDLE(LogOn, SocketConnectEvent) {
         return;
     }
     LOG_DEBUG("Building iso succeed...");
-    nth()->send(tx, &ba);
+    SHOW_INFO(phraseGetDef(PHRASE_SENDING_DATA), "");
+    if (nth()->send(tx, &ba) != NTH_OK) {
+        nth()->release(tx);
+        GOTO_INFO(state->parent, 
+            state->parent, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+    }
+    byteArrayDestroy(&ba);
 }
 
 STATE_DEF_HANDLE(LogOn, SocketSentEvent) {
-
+    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
+    LOG_DEBUG("socket sent event ...");
 }
 
 STATE_DEF_HANDLE(LogOn, SocketReadyReadEvent) {
-
+    LOG_DEBUG("socket rec event ...");
+    nth()->release(tx);
+    GOTO_INFO(state->parent, 
+            state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 STATE_DEF_HANDLE(LogOn, SocketTimeOutEvent) {
+    Phrases_t title;
+    Phrases_t body = PHRASE_TIME_OUT;
+    switch (tx->prevState) {
+    case NTH_TX_CONNECTING:
+        title = PHRASE_CONNECTION_ERR;
+        break;
+    case NTH_TX_SENDING:
+        title = PHRASE_SENDING_DATA_ERR;
+        break;
+    case NTH_TX_RECEIVING:
+        title = PHRASE_RECEIVING_DATA_ERR;
+        break;
+    case NTH_TX_FAILED:
+        return;
+    default:
+        break;
+    }
+    GOTO_INFO(state->parent, 
+            state->parent, phraseGetDef(title),
+                    phraseGetDef(body));
     nth()->release(tx);
-    SM_GOTO(state->parent);
-    LOG_DEBUG("Log on is time out...");
 }
 
 STATE_DEF_ENTER(LogOn) {

@@ -10,3 +10,8 @@ int8_t byteArrayInit(ByteArray *ba, size_t size) {
     ba->capacity = size;
     return ERR_OK;
 }
+
+int8_t byteArrayDestroy(ByteArray *ba) {
+    RETURN_VALUE_IF_NULL(ba, ;, ERR_NULL_PARAMETER);
+    MEM_FREE(ba->data);
+}
