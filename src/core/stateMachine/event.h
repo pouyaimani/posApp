@@ -148,6 +148,7 @@ OOP_CTOR(WifiEvent);
 /* ===== Cellullar ===== */
 
 typedef enum CellPPPStatus_t {
+    CELL_PPP_INIT,
     CELL_PPP_DIALING,
     CELL_PPP_READY,
     CELL_PPP_SUCESS,

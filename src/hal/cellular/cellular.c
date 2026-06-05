@@ -23,24 +23,29 @@ static uint32_t tick;
 #define LOGIN_TIME_OUT 30000
 
 static void checkCellLoginResult() {
-    CellPPPStatus_t st = OOP_CALL(__cellular, getPPPstatus);
-    if (st != CELL_PPP_DIALING) {
-        CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
-        ev->pppSt = st;
-        DISPATCH_EVENT(ev);
-        getEventloop()->unregisterChecker(checkCellLoginResult);
-    }
     if (GET_TICK() - tick >= LOGIN_TIME_OUT) {
         CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
         ev->pppSt = CELL_PPP_FAILURE;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkCellLoginResult);
+        return;
     }
+    CellPPPStatus_t st = OOP_CALL(__cellular, getPPPstatus);
+    if (st == CELL_PPP_DIALING || st == CELL_PPP_INIT) {
+        return;
+    } else if (st == CELL_PPP_READY) {
+        OOP_CALL(__cellular, startPPPlogin, NULL, NULL, NULL, NULL);
+        return;
+    }
+    LOG_DEBUG("cellular status = %d", st);
+    CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
+    ev->pppSt = st;
+    DISPATCH_EVENT(ev);
+    getEventloop()->unregisterChecker(checkCellLoginResult);
 }
 
 static CellErr_t startPPPlogin(const char *apn, const char *user, const char *pass, const char *dialnum) {
     getEventloop()->registerChecker(checkCellLoginResult);
-    OOP_CALL(__cellular, startPPPlogin, apn, user, pass, dialnum);
     tick = GET_TICK();
 }
 

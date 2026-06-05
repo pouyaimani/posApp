@@ -45,7 +45,7 @@ OOP_VTABLE(Cellular) {
     OOP_IMETHOD(CellErr_t, Cellular, ussdGetCharset, char *, uint32_t);
     OOP_IMETHOD(CellErr_t, Cellular, ussdSetCharset, char *);
     OOP_IMETHOD(CellNeyType_t, Cellular, getNetType);
-    OOP_IMETHOD(CellSimInfo *, Cellular, getSimInfo);
+    OOP_IMETHOD(CellErr_t, Cellular, getSimInfo, CellSimInfo *);
     OOP_IMETHOD(CellErr_t, Cellular, selectSim, uint8_t);
     OOP_IMETHOD(CellErr_t, Cellular, getSimStatus);
 };

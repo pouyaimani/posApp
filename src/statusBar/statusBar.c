@@ -21,17 +21,17 @@ lv_obj_t *ldate;
 lv_obj_t *ltime;
 lv_obj_t *infoBox;
 lv_obj_t *info;
-lv_obj_t *connectionIcon;
+lv_obj_t *cellularIcon;
+lv_obj_t *wifiIcon;
 lv_obj_t *soundIcon;
 lv_obj_t *batteryIcon;
+lv_obj_t *operator;
 
-static void anim_y_cb(void * var, int32_t v)
-{
+static void anim_y_cb(void * var, int32_t v) {
     lv_obj_set_y((lv_obj_t *)var, v);
 }
 
-void dtScroll(lv_obj_t * label1, lv_obj_t * label2)
-{
+void dtScroll(lv_obj_t * label1, lv_obj_t * label2) {
     lv_anim_t a1, a2;
     int32_t height = LV_GET_HEIGHT(disp()->statusbar);
 
@@ -90,54 +90,87 @@ static void updateBatteryIcon() {
     }
 }
 
-static void updateConnectionIcon() {
-    NetRoute_t route = OOP_CALL(network(), getRoute);
-    if(1) {
-        if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
-            switch (OOP_CALL(wifi(), getSignalStrength)) {
-            case WIFI_SIGNAL_STRENGTH_0:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_0);
-                break;
-            case WIFI_SIGNAL_STRENGTH_1:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_1);
-                break;
-            case WIFI_SIGNAL_STRENGTH_2:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_2);
-                break;
-            case WIFI_SIGNAL_STRENGTH_3:
-                lv_img_set_src(connectionIcon, ICON_WIFI_STRENGTH_3);
-                break;
-            default:
-                break;
-            }
-        } else {
-            lv_img_set_src(connectionIcon, ICON_WIFI_DISCONNECT);
-        }
-    } else if (route == NET_ROUTE_CELLUALR) {
-        if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
-            lv_img_set_src(connectionIcon, ICON_CELL_DISCONNECT);
-            return;
-        }
-        if (OOP_CALL(cellular(), getPPPstatus) != CELL_PPP_SUCESS) {
-            lv_img_set_src(connectionIcon, ICON_CELL_DISCONNECT);
-            return;
-        }
-        switch (OOP_CALL(cellular(), getSignalStrength)) {
-        case CELL_SIGNAL_STRENGTH_0:
-            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_0);
+static void updateWifiIcon() {
+    if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
+        switch (OOP_CALL(wifi(), getSignalStrength)) {
+        case WIFI_SIGNAL_STRENGTH_0:
+            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_0);
             break;
-        case CELL_SIGNAL_STRENGTH_1:
-            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_1);
+        case WIFI_SIGNAL_STRENGTH_1:
+            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_1);
             break;
-        case CELL_SIGNAL_STRENGTH_2:
-            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_2);
+        case WIFI_SIGNAL_STRENGTH_2:
+            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_2);
             break;
-        case CELL_SIGNAL_STRENGTH_3:
-            lv_img_set_src(connectionIcon, ICON_CELL_STRENGTH_3);
+        case WIFI_SIGNAL_STRENGTH_3:
+            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_3);
             break;
         default:
             break;
         }
+    } else {
+        lv_img_set_src(wifiIcon, ICON_WIFI_DISCONNECT);
+    }
+}
+
+static void updateOperatorDsc() {
+    if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
+        lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
+        return;
+    }
+    CellSimInfo simInfo;
+    if (OOP_CALL(cellular(), getSimInfo, &simInfo) != CELL_ERR_OK) {
+        LV_SET_TEXT(operator, "Unknown");
+        return;
+    }
+    static uint8_t prevOpt = 0;
+    char opt[2+1] = { 0 };
+    memcpy(opt, &simInfo.imsi[3], 2);
+	uint8_t opType = libAtoi(opt);
+    if (prevOpt == opType) return;
+    switch (opType) {
+	case 11:
+		LV_SET_TEXT(operator, "Mci");
+		break;
+	case 35:
+		LV_SET_TEXT(operator, "Irancell");
+		break;
+	case 20:
+		LV_SET_TEXT(operator, "Rightell");
+		break;
+	case 8:
+		LV_SET_TEXT(operator, "Shotell");
+		break;
+    default:
+        LV_SET_TEXT(operator, "Unknown");
+    }
+    prevOpt = opType;
+}
+
+static void updateCellIcon() {
+    if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
+        lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
+        return;
+    }
+    if (OOP_CALL(cellular(), getPPPstatus) != CELL_PPP_SUCESS) {
+        lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
+        return;
+    }
+    switch (OOP_CALL(cellular(), getSignalStrength)) {
+    case CELL_SIGNAL_STRENGTH_0:
+        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_0);
+        break;
+    case CELL_SIGNAL_STRENGTH_1:
+        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_1);
+        break;
+    case CELL_SIGNAL_STRENGTH_2:
+        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_2);
+        break;
+    case CELL_SIGNAL_STRENGTH_3:
+        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_3);
+        break;
+    default:
+        break;
     }
 }
 
@@ -156,7 +189,9 @@ static void update() {
     updateDate();
     updateTime();
     updateBatteryIcon();
-    updateConnectionIcon();
+    updateCellIcon();
+    updateOperatorDsc();
+    updateWifiIcon();
 
     if (settings()->terminal.devVolume > 0) {
         lv_img_set_src(soundIcon, ICON_SOUND_ON);
@@ -248,11 +283,24 @@ OOP_CTOR(StatusBar) {
     batteryIcon = lv_img_create(disp()->statusbar);
     LV_ALIGN(batteryIcon, LV_ALIGN_RIGHT_MID, -15, 5);
 
-    soundIcon = lv_img_create(disp()->statusbar);
-    LV_ALIGN(soundIcon, LV_ALIGN_LEFT_MID, 5, 5);
+    wifiIcon = lv_img_create(disp()->statusbar);
+    LV_ALIGN(wifiIcon, LV_ALIGN_RIGHT_MID, -50, 5);
 
-    connectionIcon = lv_img_create(disp()->statusbar);
-    LV_ALIGN(connectionIcon, LV_ALIGN_LEFT_MID, 40, 5);
+    soundIcon = lv_img_create(disp()->statusbar);
+    LV_ALIGN(soundIcon, LV_ALIGN_RIGHT_MID, -75, 5);
+
+    operator = lv_label_create(disp()->statusbar);
+    LV_SET_SIZE(operator, 70, LV_SIZE_CONTENT);
+    LV_ALIGN(operator, LV_ALIGN_LEFT_MID, 5, 7);
+    LV_SET_BG_OPA(operator, LV_OPA_0);
+    LV_SET_BORDER_OPA(operator, LV_OPA_0);
+    LV_SET_TEXT_FONT(operator, FONT_16);
+    LV_SET_TEXT_COLOR(operator, COLOR_WHITE);
+    LV_SET_TEXT_ALIGN(operator, LV_TEXT_ALIGN_CENTER);
+    // lv_label_set_long_mode(operator, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    cellularIcon = lv_img_create(disp()->statusbar);
+    LV_ALIGN(cellularIcon, LV_ALIGN_LEFT_MID, 75, 5);
 
     __statusBar->setInfo = setInfo;
     __statusBar->enDateTimeMode = enDateTimeMode;

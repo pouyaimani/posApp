@@ -3,6 +3,7 @@
 #ifdef DEVICE_TRENDITT3RTOS
 
 #include "sdkCellular.h"
+#include "logger.h"
 
 static CellErr_t translateSdkErr(int err) {
     CellErr_t cellErr;
@@ -35,20 +36,22 @@ static CellSigStrength_t getSignalStrength(Cellular *self) {
     return strength;
 }
 
-static CellSimInfo *getSimInfo(Cellular *self) {
+static CellErr_t getSimInfo(Cellular *self, CellSimInfo *sinfo) {
     SimInfo info;
-    memset(self->simInfo.iccId, 0, sizeof(self->simInfo.iccId));
-    memset(self->simInfo.imsi, 0, sizeof(self->simInfo.imsi));
-    if (translateSdkErr(sdkCellularGetSimInfo(&info)) == CELL_ERR_OK) {
-        memcpy(self->simInfo.iccId, info.mIccid, sizeof(info.mIccid));
-        memcpy(self->simInfo.imsi, info.mImsi, sizeof(info.mImsi));
+    memset(sinfo->iccId, 0, sizeof(sinfo->iccId));
+    memset(sinfo->imsi, 0, sizeof(sinfo->imsi));
+    if (translateSdkErr(sdkCellularGetSimInfo(&info)) != CELL_ERR_OK) {
+        return CELL_ERR_SIM_ERROR;
     }
-    return &self->simInfo;
+    memcpy(sinfo->iccId, info.mIccid, sizeof(info.mIccid));
+    memcpy(sinfo->imsi, info.mImsi, sizeof(info.mImsi));
+    return CELL_ERR_OK;
 }
 
 static CellPPPStatus_t getPPPstatus(Cellular *self) {
     CellPPPStatus_t status = CELL_PPP_INVALID;
     int st = sdkCellularGetPPPStatus();
+    LOG_DEBUG("sdkCellularGetPPPStatus = %d", st);
     if (st == CELLULAR_PPP_ING) {
         status = CELL_PPP_DIALING;
     } else if (st == CELLULAR_PPP_SUCCESS) {
@@ -107,7 +110,7 @@ static CellNeyType_t getNetType(Cellular *self) {
 
 static CellErr_t getSimStatus(Cellular *self) {
     if (sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0) == SDK_CELLULAR_ERR_SIM) {
-            return CELL_ERR_SIM_ERROR;
+        return CELL_ERR_SIM_ERROR;
     }
     return CELL_ERR_OK;
 }
