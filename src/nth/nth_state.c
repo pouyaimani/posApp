@@ -4,6 +4,7 @@
 #include "settings/settings.h"
 #include "event.h"
 #include "txn.h"
+#include "ui/infoPage.h"
 
 /******************** Get Key sub state **********************/
 
@@ -72,8 +73,8 @@ STATE_DEF_ENTER(NthState) {
     }
 }
 
-OOP_CTOR(NthState, State *parent, 
-        NthTransaction *tx, const char *name) {
-    OOP_CALL_CTOR(State, self, parent, name);
+OOP_CTOR(NthState,
+        NthTransaction *tx) {
+    OOP_CALL_CTOR(State, self, tx->owner, "");
     self->tx = tx;
 }

@@ -156,6 +156,8 @@
 #define ELEMENT_RESERVED_PRIVATE_127                127
 #define ELEMENT_MAC_2                               128
 
+#define USE_DUMP        1
+
 /* Field format types */
 typedef enum {
     FMT_N,      /* Numeric */

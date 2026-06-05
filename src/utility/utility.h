@@ -88,4 +88,9 @@ bool ipFormatLeftAligned(const char *in, char *out);
 
 bool normalizeIp(const char *input, char *output, size_t outputSize);
 
+void bytesToHex(const uint8_t *data,
+                size_t dataLen,
+                char *out,
+                size_t outSize);
+
 #endif

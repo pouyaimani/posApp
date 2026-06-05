@@ -5,8 +5,9 @@
 #include "event.h"
 #include "logger.h"
 #include "utility/tlv.h"
+#include "error.h"
 
-#define SETTINGS_FILE_MAX_SIZE  4096
+#define SETTINGS_FILE_MAX_SIZE  2048
 #define SETTINGS_FILE_HEADER_LEN    4
 
 static Storage __storage;
@@ -17,6 +18,8 @@ typedef struct {
 } StorageCtx;
 
 int storageTlvHandler(const TlvItem *item, void *user) {
+    RETURN_VALUE_IF_NULL(item, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(user, ;, ERR_NULL_PARAMETER);
     StorageCtx *ctx = (StorageCtx *)user;
 
     for (uint32_t i = 0; i < ctx->count; i++)
@@ -62,6 +65,7 @@ int storageTlvHandler(const TlvItem *item, void *user) {
 }
 
 static void init(DataDescriptor *dsc, uint32_t itemsCount) {
+    RETURN_IF_NULL(dsc, ;);
     uint32_t i = 0;
 
     for (i = 0; i < itemsCount; i++)
@@ -88,13 +92,16 @@ static void init(DataDescriptor *dsc, uint32_t itemsCount) {
 
 static bool isSettingsFileCorrect(uint8_t *settingsData, uint32_t settingsDataLen, uint32_t crc) {
     uint16_t calcCrc = 0;
-
+    RETURN_VALUE_IF_NULL(settingsData, ;, false);
     calcCrc = (uint16_t) libCrc16(settingsData, settingsDataLen);
 
     return calcCrc == crc ? true : false;
 }
 
 static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t *fileCrc) {
+    RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(fileSize, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(fileCrc, ;, ERR_NULL_PARAMETER);
     uint32_t readSize = SETTINGS_FILE_HEADER_LEN;
     uint8_t fileSizeBytes[SETTINGS_FILE_HEADER_LEN] = {0};
     int32_t ret = 0;
@@ -102,12 +109,10 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
     if (!fp) {
         return ERR_NOK;
     }
-    LOG_DEBUG("--------------------");
     if (OOP_CALL(file(), seek, fp, 0 , FILE_SEEK_ORG_SET) != 0) {
         OOP_CALL(file(), close, fp);
         return ERR_NOK;
     }
-    LOG_DEBUG("--------------------");
     size_t readsize = OOP_CALL(file(), read, fileSizeBytes, 4 , 1, fp);
     if (readsize != SETTINGS_FILE_HEADER_LEN)
     {
@@ -116,7 +121,6 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
         OOP_CALL(file(), close, fp);
         return ERR_NOK;
     }
-    LOG_DEBUG("--------------------");
     *fileSize = (uint32_t) (fileSizeBytes[0] * 256 + fileSizeBytes[1]);
 
     if (*fileSize > SETTINGS_FILE_MAX_SIZE || *fileSize == 0)
@@ -126,13 +130,14 @@ static int32_t readSettingsFileHeadInfo(char *addr, uint32_t *fileSize, uint32_t
         OOP_CALL(file(), close, fp);
         return ERR_NOK;
     }
-LOG_DEBUG("--------------------");
     *fileCrc = (uint32_t) (fileSizeBytes[2] * 256 + fileSizeBytes[3]);
     OOP_CALL(file(), close, fp);
     return ERR_OK;
 }
 
 static DataDescriptor *getDataDescriptor(char *name, DataDescriptor *dsc, uint32_t itemCount) {
+    RETURN_VALUE_IF_NULL(name, ;, NULL);
+    RETURN_VALUE_IF_NULL(dsc, ;, NULL);
     int32_t i = 0;
     DataDescriptor *item = NULL;
 
@@ -149,6 +154,8 @@ static DataDescriptor *getDataDescriptor(char *name, DataDescriptor *dsc, uint32
 }
 
 static int8_t saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
+    RETURN_VALUE_IF_NULL(dsc, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
     uint8_t *fileWriteBuf = NULL;
     uint32_t itemWriteLen = 0;
     uint16_t crc16 = 0;
@@ -222,12 +229,14 @@ static int8_t saveStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
 }
 
 static int8_t loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *addr) {
+    RETURN_VALUE_IF_NULL(dsc, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
     uint8_t *fileCaches = NULL;
     uint32_t fileSize = 0;
     uint32_t fileCrc = 0;
     uint32_t readSize = 0;
     int32_t ret = -1;
-    // goto init_settings;
+    // goto init_storage_file;
 
     if (addr == NULL || strlen(addr) == 0)
     {
@@ -239,13 +248,13 @@ static int8_t loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
     if (ret != 0)
     {
         LOG_ERROR("read file head info err ret = %d filesize:%d", ret, fileSize);
-        goto init_settings;
+        goto init_storage_file;
     }
 
     fileCaches = (uint8_t *) MEM_ALLOC(fileSize);
     if (fileCaches == NULL) {
         LOG_ERROR("Error in reading storage.");
-        goto init_settings;
+        goto init_storage_file;
     }
     memset(fileCaches, 0, fileSize);
     readSize = fileSize;
@@ -262,13 +271,13 @@ static int8_t loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
         LOG_ERROR("Error in reading storage. error = %d, read sise = %d, "
                         "file size = %d", ret, readSize, fileSize);
         OOP_CALL(file(), close, fp);
-        goto init_settings;
+        goto init_storage_file;
     }
     OOP_CALL(file(), close, fp);
     if (!isSettingsFileCorrect(fileCaches, fileSize, fileCrc))
     {
         LOG_ERROR("error in file verifying.");
-        goto init_settings;
+        goto init_storage_file;
     }
 
     StorageCtx ctx = {
@@ -278,14 +287,14 @@ static int8_t loadStorage(DataDescriptor *dsc, size_t itemsCount, const char *ad
     TlvError_t err = tlv()->decode(fileCaches, fileSize, storageTlvHandler, &ctx);
     if (err != TLV_OK) {
         LOG_ERROR("Error in parsing storage tlv. error = %d", err);
-        goto init_settings;
+        goto init_storage_file;
     }
 
     LOG_TRACE("parse settings tlv data success ... ");
     MEM_FREE(fileCaches);
     return ERR_OK;
 
-    init_settings:
+    init_storage_file:
 
     if (fileCaches != NULL) MEM_FREE(fileCaches);
 

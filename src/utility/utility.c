@@ -887,3 +887,21 @@ bool normalizeIp(const char *input, char *output, size_t outputSize) {
 
     return true;
 }
+
+void bytesToHex(const uint8_t *data,
+                size_t dataLen,
+                char *out,
+                size_t outSize) {
+    static const char hex[] = "0123456789ABCDEF";
+
+    if (!data || !out || outSize < (dataLen * 2 + 1))
+        return;
+
+    for (size_t i = 0; i < dataLen; i++)
+    {
+        out[i * 2]     = hex[(data[i] >> 4) & 0x0F];
+        out[i * 2 + 1] = hex[data[i] & 0x0F];
+    }
+
+    out[dataLen * 2] = '\0';
+}

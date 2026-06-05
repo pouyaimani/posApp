@@ -101,7 +101,9 @@ lv_obj_t *menu;
 
 STATE_DEF_ENTER(DevInfo) {
     menu = uiRowMenu(disp()->screen);
-    rowMenuAdd(menu, phraseGetDef(PHRASE_SERIAL), OOP_CALL(sys(), getSN));
+    DEFINE_STRING(sn, 32);
+    OOP_CALL(sys(), getSN, sn, sizeof(sn));
+    rowMenuAdd(menu, phraseGetDef(PHRASE_SERIAL), sn);
     rowMenuAdd(menu, phraseGetDef(PHRASE_DEVICE_CODE), OOP_CALL(sys(), getCode));
     rowMenuAdd(menu, phraseGetDef(PHRASE_TERMINAL), OOP_CALL(sys(), getName));
     rowMenuAdd(menu, phraseGetDef(PHRASE_MERCHANT), "3331313");

@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define SERIAL_NUMBER_MAX_LEN   50
+#define SERIAL_NUMBER_MAX_LEN   64
 
 typedef struct ModuleExist_t {
     bool wifi;
@@ -54,7 +54,7 @@ OOP_VTABLE(System) {
     OOP_IMETHOD(void, System, sleep);
     OOP_IMETHOD(void, System, reboot);
     OOP_IMETHOD(void, System, powerOff);
-    OOP_IMETHOD(const char*, System, getSN);
+    OOP_IMETHOD(int8_t, System, getSN, char *out, size_t len);
     OOP_IMETHOD(const char*, System, getCode);
     OOP_IMETHOD(const char*, System, getName);
     OOP_IMETHOD(void, System, setVolume, int);

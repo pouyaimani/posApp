@@ -13,7 +13,7 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEVICE_PROP_FILE APP_DIR "lv_device_prop"
 #define SETTINGS_FILE_ADDR DEVICE_PROP_FILE
 
-#define TXN_TRACE_FILE_ADDR APP_DIR "txn_trace_info"
+#define TXN_TRACE_FILE_ADDR "/mtd1/txn_t_info"
 
 #define SETTINGS_FILE_MAX_SIZE 4096
 
@@ -58,8 +58,8 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_MERCHANT_PIN MERCHANT_DEFAULT_PIN
 
 static const DataDescriptor txnTraceInfoDsc[] = {
-    {0, T_INT, (0), (sizeof(__txnTraceInfo.stan)), (0), &(__txnTraceInfo.stan)},
-    {1, T_INT, (0), (sizeof(__txnTraceInfo.batch)), (0), &(__txnTraceInfo.batch)}};
+    {0, T_INT, (0), (sizeof(__txnTraceInfo.stan)), (1), &(__txnTraceInfo.stan)},
+    {1, T_INT, (0), (sizeof(__txnTraceInfo.batch)), (1), &(__txnTraceInfo.batch)}};
 
 BEGIN_DSC_ARRAY;
 static const DataDescriptor settingsDsc[] = {
@@ -134,43 +134,36 @@ static const DataDescriptor settingsDsc[] = {
     DSC_INT(__settings.terminal.amountListCnt, DEFAULT_AMNT_LIST_CNT),
 };
 
-static int saveSettings()
-{
+static int saveSettings() {
     storage()->save(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor), SETTINGS_FILE_ADDR);
 }
 
-static int loadSettings()
-{
+static int loadSettings() {
     storage()->load(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor), SETTINGS_FILE_ADDR);
     LOG_DEBUG("merchant pin = %s", __settings.terminal.merchantPin);
 }
 
-static int resetSettings()
-{
+static int resetSettings() {
     storage()->reset(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor), SETTINGS_FILE_ADDR);
 }
 
-OOP_CTOR(DevSettings)
-{
+OOP_CTOR(DevSettings) {
     self->load = loadSettings;
     self->save = saveSettings;
     self->reset = resetSettings;
 }
 
-DevSettings *settings()
-{
+DevSettings *settings() {
     CALL_ONCE(
         OOP_CALL_CTOR(DevSettings, &__settings););
     return &__settings;
 }
 
-static int loadTxnTraceInfo()
-{
+static int loadTxnTraceInfo() {
     storage()->load(txnTraceInfoDsc, sizeof(txnTraceInfoDsc) / sizeof(DataDescriptor), TXN_TRACE_FILE_ADDR);
 }
 
-static int incTxnTraceInfo()
-{
+static int incTxnTraceInfo() {
     loadTxnTraceInfo();
     __txnTraceInfo.stan++;
     if (__txnTraceInfo.stan >= 999999)
@@ -185,15 +178,15 @@ static int incTxnTraceInfo()
     storage()->save(txnTraceInfoDsc, sizeof(txnTraceInfoDsc) / sizeof(DataDescriptor), TXN_TRACE_FILE_ADDR);
 }
 
-OOP_CTOR(TxnTraceInfo)
-{
-    self->load = loadSettings;
-    self->inc = saveSettings;
+OOP_CTOR(TxnTraceInfo) {
+    self->load = loadTxnTraceInfo;
+    self->inc = incTxnTraceInfo;
 }
 
-TxnTraceInfo *txnTraceInfo()
-{
+TxnTraceInfo *txnTraceInfo() {
     CALL_ONCE(
-        OOP_CALL_CTOR(TxnTraceInfo, &__txnTraceInfo););
+        OOP_CALL_CTOR(TxnTraceInfo, &__txnTraceInfo);
+        loadTxnTraceInfo();
+    );
     return &__txnTraceInfo;
 }

@@ -38,7 +38,9 @@ STATE_DEF_HANDLE(LogOn, SocketConnectEvent) {
     }
     byteArrayInit(&ba, NT_TX_BUFFER_SIZE);
     if (isoBuild(MTI_LOG_ON, &ba) != ERR_OK) {
-        SM_GOTO(state->parent);
+        nth()->release(tx);
+        GOTO_INFO(state->parent, 
+            state->parent, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
         LOG_DEBUG("Building iso failed...");
         return;
     }
@@ -59,9 +61,14 @@ STATE_DEF_HANDLE(LogOn, SocketSentEvent) {
 
 STATE_DEF_HANDLE(LogOn, SocketReadyReadEvent) {
     LOG_DEBUG("socket rec event ...");
-    nth()->release(tx);
-    GOTO_INFO(state->parent, 
+    if(iso8583()->parse(ev->ba.data, ev->ba.len) != ISO_OK) {
+        GOTO_INFO(state->parent, 
+            state->parent, phraseGetDef(PHRASE_PARSE_ERROR), "");
+    } else {
+        GOTO_INFO(state->parent, 
             state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
+    }
+    nth()->release(tx);
 }
 
 STATE_DEF_HANDLE(LogOn, SocketTimeOutEvent) {

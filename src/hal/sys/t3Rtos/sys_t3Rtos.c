@@ -9,10 +9,11 @@
 #include "sdkLog.h"
 #include "utility/arith.h"
 #include "utility/utility.h"
+#include "logger.h"
+#include "error.h"
 
 static DateTime dateTime;
 extern BatteryStat batterySt;
-extern char *serialNumber;
 static TerminalInfo tinfo;
 
 //app address in ram
@@ -79,8 +80,6 @@ static void init(System* dev) {
     dev->module.scanner = sdkSysIsDeviceExist(SYS_DEVICE_CAMERA);
     dev->module.bt = sdkSysIsDeviceExist(SYS_DEVICE_BLUETOOTH);
     dev->module.dialup = false;
-
-    sdkSysReadDeviceSN(SYS_SN_TYPE_MANUFACTURER, serialNumber, SERIAL_NUMBER_MAX_LEN);
     sdkSysReadTerminalInfo(&tinfo);
 }
 
@@ -212,8 +211,15 @@ static void powerOff(System *dev) {
     sdkSysDevicePowerOff();
 }
 
-static const char *getSN(System *dev) {
-    return serialNumber;
+static int8_t getSN(System *dev, char *out, size_t len) {
+    memset(out, 0, sizeof(len));
+    int8_t err = sdkSysReadDeviceSN(SYS_SN_TYPE_MANUFACTURER,
+                     out, len);
+    if (err != SDK_SYS_OK) {
+        LOG_ERROR("SYS: failure in reading device serail number. error = %d", err);
+        return ERR_NOK;
+    }
+    return ERR_OK;
 }
 
 static const char *getCode(System *dev) {

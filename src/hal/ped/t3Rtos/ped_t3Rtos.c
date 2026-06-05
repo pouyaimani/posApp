@@ -125,7 +125,7 @@ OOP_CTOR(PedT3Rtos) {
     self->base.vtable.enterPinEntryMode = enterPinEntryMode;
     self->base.vtable.exitPinEntryMode = exitPinEntryMode;
     self->base.vtable.getPinBlock = getPinBlock;
-    self->base.vtable.getMac = getPinBlock;
+    self->base.vtable.getMac = getMac;
 }
 
 #endif

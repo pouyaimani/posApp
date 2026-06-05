@@ -1,9 +1,8 @@
 #include "nth.h"
-
 #include <string.h>
-
 #include "event.h"
 #include "core.h"
+#include "error.h"
 
 static Nth __nth;
 
@@ -15,8 +14,7 @@ static NthTransaction g_transactions[
 static NthTransport *g_transport;
 
 static bool isValidIPv4(const char *ip) {
-    if (ip == NULL)
-        return false;
+    RETURN_VALUE_IF_NULL(ip, ;, false);
 
     int num = 0;
     int dots = 0;
@@ -87,7 +85,7 @@ NthTransaction *nth_allocTransaction(void) {
             memset(tx,
                    0,
                    sizeof(*tx));
-
+            OOP_CALL_CTOR(NthState, &tx->procState, tx);
             tx->active = true;
 
             tx->txBuffer.data = tx->txStorage;
@@ -109,12 +107,11 @@ NthTransaction *nth_allocTransaction(void) {
 }
 
 void nth_releaseTransaction(
-    NthTransaction *tx)
-{
-    if (!tx)
-        return;
+    NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
 
     if (tx->socketFd >= 0) {
+        NTH_LOG("NTH: closing socekt = %d", tx->socketFd);
         g_transport->close(tx->socketFd);
     }
 
@@ -127,14 +124,15 @@ NthResult nth_connect(
     NthTransaction *tx,
     const char *host,
     uint16_t port) {
-    if (!tx || !host)
-        return NTH_ERR_INVALID_ARG;
+    RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(host, ;, NTH_ERR_INVALID_ARG);
     if (!isValidIPv4(host)) {
         return NTH_ERR_INVALID_HOST;
     }
 
     tx->socketFd =
         g_transport->connect(host, port);
+    NTH_LOG("NTH: connect to socket = %d", tx->socketFd);
 
     if (tx->socketFd <= 0) {
         tx->state = NTH_TX_FAILED;
@@ -150,10 +148,8 @@ NthResult nth_connect(
 
 NthResult nth_send(NthTransaction *tx,
                     ByteArray *ba) {
-    if (!tx || !ba) {
-        NTH_LOG("NTH: bad argument.");
-        return NTH_ERR_INVALID_ARG;
-    }
+    RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(ba, ;, NTH_ERR_INVALID_ARG);
 
     if (ba->len > tx->txBuffer.capacity) {
         NTH_LOG("NTH: buffer overfllow.data len = %d, buffer capacity = %d",
@@ -176,13 +172,12 @@ NthResult nth_send(NthTransaction *tx,
 
 static void nth_emitConnectEvent(
     NthTransaction *tx,
-    bool connected)
-{
+    bool connected) {
+    RETURN_IF_NULL(tx, ;);
     SocketConnectEvent *ev =
         createEvent(SM_EVENT_SOCKET_CONNECT);
 
-    if (!ev)
-        return;
+    RETURN_IF_NULL(ev, ;);
 
     ev->isConnected = connected;
 
@@ -192,26 +187,24 @@ static void nth_emitConnectEvent(
 }
 
 static void nth_emitSendEvent(
-    NthTransaction *tx)
-{
+    NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
     SocketSentEvent *ev =
         createEvent(SM_EVENT_SOCKET_SENT);
 
-    if (!ev)
-        return;
+    RETURN_IF_NULL(ev, ;);
     ev->base.target = tx->owner;
 
     DISPATCH_EVENT(ev);
 }
 
 static void nth_emitReadEvent(
-    NthTransaction *tx)
-{
+    NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
     SocketReadyReadEvent *ev =
         createEvent(SM_EVENT_SOCKET_READY_READ);
 
-    if (!ev)
-        return;
+    RETURN_IF_NULL(ev, ;);
 
     ev->ba.data = tx->rxBuffer.data;
     ev->ba.len = tx->rxBuffer.len;
@@ -223,11 +216,11 @@ static void nth_emitReadEvent(
 
 static void nth_emitTimeout(
     NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
     SocketTimeOutEvent *ev =
         createEvent(SM_EVENT_SOCKET_TIME_OUT);
 
-    if (!ev)
-        return;
+    RETURN_IF_NULL(ev, ;);
     ev->base.target = tx->owner;
 
     DISPATCH_EVENT(ev);
@@ -235,6 +228,7 @@ static void nth_emitTimeout(
 
 static void nth_handleConnecting(
     NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
     int ret;
 
     ret = g_transport->poll(
@@ -263,6 +257,7 @@ static void nth_handleConnecting(
 
 static void nth_handleSending(
     NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
     int ret;
 
     size_t remain;
@@ -297,6 +292,7 @@ static void nth_handleSending(
 }
 
 static void nth_handleReceiving(NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
     int ret;
 
     size_t remain;
@@ -337,6 +333,7 @@ static void nth_handleReceiving(NthTransaction *tx) {
 
 static void nth_checkTimeout(
     NthTransaction *tx) {
+    RETURN_IF_NULL(tx, ;);
     uint32_t now;
 
     now = nth_getTick();
@@ -394,6 +391,11 @@ void nth_tick(void) {
 
         nth_checkTimeout(tx);
     }
+}
+
+static NthResult nth_process(NthTransaction *tx,
+                    ByteArray *dtx) {
+    // SM_GOTO(tx->procState);
 }
 
 OOP_CTOR(Nth) {

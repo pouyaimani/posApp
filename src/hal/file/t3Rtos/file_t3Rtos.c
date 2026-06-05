@@ -17,7 +17,10 @@ static FileHandle* open(File *self, const char* path, const char* mode) {
         LOG_WARN("file (%s) is not exists.", path);
         int ret = sdkFileCreate(path, 2, 0);
         if (ret != SDK_FILE_OK) {
-            LOG_ERROR("file (%s) could not be created.", path);
+            LOG_ERROR("file (%s) could not be created. error = %d", path, ret);
+            u32 fs;
+            sdkFileGetFreeSpace(&fs);
+            LOG_ERROR("flash free space = %u", fs);
             return NULL;
         }
     }

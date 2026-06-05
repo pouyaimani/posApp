@@ -183,6 +183,9 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_1) {
         print();
     } else if (ev->key == KEY_2) {
+        DEFINE_BYTE_ARRAY(stan, 5);
+            prependZerosInt(txnTraceInfo()->stan, 4, stan, sizeof(stan));
+    LOG_DEBUG("stan int= %u, stan string = %s", txnTraceInfo()->stan, stan);
     } else if (ev->key == KEY_3) {
     } else if (ev->key == KEY_4) {
     } else if (ev->key == KEY_5) {

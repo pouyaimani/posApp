@@ -15,6 +15,6 @@ OOP_CLASS(NthState) {
     ByteArray *txData;
 };
 
-OOP_CTOR(NthState, State *parent, NthTransaction *tx, const char *name);
+OOP_CTOR(NthState, NthTransaction *tx);
 
 #endif

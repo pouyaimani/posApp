@@ -44,7 +44,7 @@ static const SocketAddr_t * getAddr(Network *self) {
     return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
 }
 
-static int create(Network *self, 
+static int32_t create(Network *self, 
                     SocketAddr_t *addr, 
                         SocketType_t type) {
     SDK_SOCKET_TYPE sdkst;

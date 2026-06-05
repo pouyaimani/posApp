@@ -3,6 +3,8 @@
 #include "sys/sys.h"
 #include "common.h"
 #include "logger.h"
+#include "error.h"
+#include "utility/utility.h"
 
 static Iso8583 *__iso8583;
 
@@ -135,6 +137,61 @@ IsoStatus_t getBin(uint16_t field,
     return ISO_OK;
 }
 
+#ifdef USE_DUMP
+
+void dump(const DL_ISO8583_HANDLER *iHandler,
+                         const DL_ISO8583_MSG *iMsg)
+{
+    DL_UINT16 i;
+    char line[256];
+
+    LOG_DEBUG("--------------- ISO8583 MSG DUMP ---------------");
+
+    for (i = 0; i < iHandler->fieldItems; i++)
+    {
+        if (iMsg->field[i].ptr != NULL)
+        {
+            snprintf(line,
+                     sizeof(line),
+                     "[%03d] %s",
+                     (int)i,
+                     iMsg->field[i].ptr);
+
+            LOG_DEBUG(line);
+        }
+    }
+
+    LOG_DEBUG("------------------------------------------------");
+}
+
+void dumpRaw(const uint8_t *data, size_t len)
+{
+    char line[128];
+    size_t pos;
+
+    LOG_DEBUG("---------- ISO8583 RAW DUMP (%u bytes) ----------", (unsigned)len);
+
+    for (size_t i = 0; i < len; i += 16)
+    {
+        pos = 0;
+
+        for (size_t j = 0; j < 16 && (i + j) < len; j++)
+        {
+            pos += snprintf(
+                line + pos,
+                sizeof(line) - pos,
+                "%02X ",
+                data[i + j]);
+        }
+
+        LOG_DEBUG("%s", line);
+    }
+
+    LOG_DEBUG("------------------------------------------------");
+}
+
+#endif
+
 static IsoStatus_t addHeader(uint8_t *buffer, const uint8_t *packedData,
                      size_t *packedLen, IsoHeaderData_t *hd) {
     RETURN_VALUE_IF_NULL(buffer, ;, ISO_ERR_INPUT);
@@ -155,6 +212,10 @@ static IsoStatus_t addHeader(uint8_t *buffer, const uint8_t *packedData,
 	buffer[0] = *packedLen / 256;
 	buffer[1] = *packedLen % 256;
     *packedLen += 2;
+#if USE_DUMP
+    dumpRaw(buffer, *packedLen);
+#endif
+    return ISO_OK;
 }
 
 /* ===== PACK ===== */
@@ -168,22 +229,21 @@ IsoStatus_t pack(const uint8_t *data,
     if (self->mti[0] == 0)
         return ISO_ERR_PACK;
 
-    if (DL_ISO8583_MSG_SetField_Str(
-            0,
-            (const uint8_t*)self->mti,
-            &self->msg) != 0)
-        return ISO_ERR_PACK;
+    RETURN_VALUE_IF_NOT(DL_ISO8583_MSG_SetField_Str(
+                        0, (const uint8_t*)self->mti,
+                            &self->msg), 0, ;, ISO_ERR_PACK);
 
     int out_len = 0;
-
-    if (DL_ISO8583_MSG_Pack(&self->handler,
+    RETURN_VALUE_IF_NOT(DL_ISO8583_MSG_Pack(&self->handler,
                             &self->msg,
                             data,
-                            &out_len) != 0)
-        return ISO_ERR_PACK;
+                            &out_len), 0, ;, ISO_ERR_PACK);
 
     *outlen = out_len;
 
+#ifdef USE_DUMP
+    dump(&self->handler, &self->msg);
+#endif
     return ISO_OK;
 }
 
@@ -194,12 +254,15 @@ IsoStatus_t parse(const uint8_t *data,
     SELF;
     RETURN_VALUE_IF_NULL(data, ;, ISO_ERR_INPUT);
     reset();
-
-    if (DL_ISO8583_MSG_Unpack(&self->handler,
-                              data,
-                              len,
-                              &self->msg) != 0)
-        return ISO_ERR_PARSE;
+#ifdef USE_DUMP
+    dumpRaw(data, len);
+#endif
+    uint16_t packedSize = data[0] * 256 + data[1];
+	packedSize = packedSize - 5;				// without header
+    RETURN_VALUE_IF_NOT(DL_ISO8583_MSG_Unpack(&self->handler,
+                              data + 7,
+                              packedSize,
+                              &self->msg), 0, ;, ISO_ERR_PARSE);
 
     uint8_t *ptr = NULL;
     uint16_t flen = 0;
@@ -211,6 +274,10 @@ IsoStatus_t parse(const uint8_t *data,
         memcpy(self->mti, ptr, 4);
         self->mti[4] = '\0';
     }
+
+#ifdef USE_DUMP
+    dump(&self->handler, &self->msg);
+#endif
 
     return ISO_OK;
 }

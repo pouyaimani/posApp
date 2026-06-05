@@ -27,6 +27,7 @@
 /******************************************************************************/
 
 #include "dl_iso8583.h"
+#include "logger.h"
 
 /******************************************************************************/
 
@@ -212,6 +213,8 @@ DL_ERR DL_ISO8583_MSG_Pack ( const DL_ISO8583_HANDLER *iHandler,
 			/* pack field */
 			err = _DL_ISO8583_FIELD_Pack(fieldIdx,iMsg,iHandler,&curPtr);
 		}
+		if (err)
+			LOG_DEBUG("ISO8583: feild = %d, pack error = %d", fieldIdx, err);
 	} /* end-for(i) */
 
 	if ( !err )
@@ -241,7 +244,8 @@ DL_ERR DL_ISO8583_MSG_Unpack ( const DL_ISO8583_HANDLER *iHandler,
 	while ( !err && (curFieldIdx < maxFieldIdx) && (curPtr < endPtr) && !haveBitmap )
 	{
 		err = _DL_ISO8583_FIELD_Unpack(curFieldIdx,ioMsg,iHandler,&curPtr);
-
+		// if (err)
+			LOG_DEBUG("ISO8583: feild = %d, pack error = %d", curFieldIdx, err);
 		if ( DL_ISO8583_IS_BITMAP(iHandler->fieldArr[curFieldIdx].fieldType) )
 			haveBitmap = 1;
 
@@ -255,14 +259,18 @@ DL_ERR DL_ISO8583_MSG_Unpack ( const DL_ISO8583_HANDLER *iHandler,
 		if ( 0 != ioMsg->field[curFieldIdx].len ) /* present */
 		{
 			err = _DL_ISO8583_FIELD_Unpack(curFieldIdx,ioMsg,iHandler,&curPtr);
+			// if (err)
+				LOG_DEBUG("ISO8583: feild = %d, pack error = %d", curFieldIdx, err);
 		}
 
 		curFieldIdx++;
 	} /* end-while */
 
 	/* check for under/over read condition */
-	if ( !err && (curPtr != endPtr) )
+	if ( !err && (curPtr != endPtr) ) {
+		LOG_DEBUG("ISO8583: err = %d, curPtr = %u, endPtr = %u", err, curPtr, endPtr);
 		err = kDL_ERR_OTHER;
+	}
 
 	return err;
 }
