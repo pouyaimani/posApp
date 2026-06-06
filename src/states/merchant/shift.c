@@ -10,6 +10,7 @@
 #include "record/shiftRecs.h"
 #include "logger.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static Menu *shiftItemMenu;
 static lv_obj_t *shiftMenu;
@@ -127,7 +128,8 @@ STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
         if (EnMenu->idx) {
             if (terminalStg->shiftActive) {
                 GOTO_INFO(state->parent, state->parent, 
-                    phraseGetDef(PHRASE_SHIFT_IS_ACTIVE), phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
+                    INFO_WARNING, phraseGetDef(PHRASE_SHIFT_IS_ACTIVE), 
+                        phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
                 return;
             }
         }
@@ -154,7 +156,8 @@ STATE_DEF_ENTER(ShowCurrentShift) {
         showShift(shiftMenu, idx, dt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
+                phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
 
@@ -177,7 +180,7 @@ static uint32_t sdate, stime;
 
 STATE_DEF_ENTER(CreateShift) {
     if (!terminalStg->shiftEnable) {
-        GOTO_INFO(state->parent, state->parent, 
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
                     phraseGetDef(PHRASE_SHIFT_IS_DEACTIVE), 
                         phraseGetDef(PHRASE_SHIFT_EN_FIRST));
         return;
@@ -191,7 +194,7 @@ STATE_DEF_ENTER(CreateShift) {
         showShift(shiftMenu, idx, sdt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, 
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
                     phraseGetDef(PHRASE_SHIFT_IS_RUNNING), "");
     }
 }
@@ -207,7 +210,7 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else {
-        GOTO_INFO(state->parent, state->parent, 
+        GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, 
                 phraseGetDef(PHRASE_SHIFT_IS_ACTIVATED), "");
         terminalStg->shiftActive = true;
         ShiftData data;
@@ -235,7 +238,7 @@ STATE_DEF_ENTER(CloseShift) {
         showShift(shiftMenu, idx, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, 
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
                     phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
@@ -257,10 +260,10 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
         data.endTime = etime;
         terminalStg->shiftActive = false;
         if (shifts()->insert(&data) == 0) {
-            GOTO_INFO(state->parent, state->parent, 
+            GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, 
                     phraseGetDef(PHRASE_SHIFT_IS_CLOSED), "");
         } else {
-            GOTO_INFO(state->parent, state->parent, 
+            GOTO_INFO(state->parent, state->parent, INFO_ERROR, 
                     phraseGetDef(PHRASE_SHIFT_CLOSE_ERR), "");
         }
     }
@@ -277,7 +280,7 @@ STATE_DEF_ENTER(HandleReports) {
     LOG_DEBUG("shiftNum = %d", shiftNum);
     ShiftData data;
     if (shifts()->get(shiftNum, &data) != 0) {
-        GOTO_INFO(state->parent, state->parent, 
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
                 phraseGetDef(PHRASE_SHIFT_TARGET_NOT_FND), "");
         return;
     }

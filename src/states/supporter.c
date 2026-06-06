@@ -9,6 +9,7 @@
 #include "merchant/merchant.h"
 #include "supervisor/supervisor.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static Menu *menu;
 static SubState *powerOff;
@@ -43,7 +44,7 @@ STATE_DEF_HANDLE(Supporter, TimeOutEvent) {
 /******************** Power off sub state **********************/
 
 STATE_DEF_ENTER(PowerOff) {
-    GOTO_INFO(NULL, NULL, phraseGetDef(PHRASE_POWERING_OFF), "");
+    GOTO_INFO(NULL, NULL, INFO_WARNING, phraseGetDef(PHRASE_POWERING_OFF), "");
     OOP_CALL(sys(), powerOff);
 }
 

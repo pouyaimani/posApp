@@ -33,29 +33,30 @@ STATE_DEF_HANDLE(LogOn, SocketConnectEvent) {
     if (!ev->isConnected) {
         nth()->release(tx);
         GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
     byteArrayInit(&ba, NT_TX_BUFFER_SIZE);
     if (isoBuild(MTI_LOG_ON, &ba) != ERR_OK) {
         nth()->release(tx);
         GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+            state->parent, INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
         LOG_DEBUG("Building iso failed...");
         return;
     }
     LOG_DEBUG("Building iso succeed...");
-    SHOW_INFO(phraseGetDef(PHRASE_SENDING_DATA), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SENDING_DATA), "");
     if (nth()->send(tx, &ba) != NTH_OK) {
         nth()->release(tx);
         GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+            state->parent, INFO_ERROR, 
+                phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
     }
     byteArrayDestroy(&ba);
 }
 
 STATE_DEF_HANDLE(LogOn, SocketSentEvent) {
-    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_RECEIVING_DATA), "");
     LOG_DEBUG("socket sent event ...");
 }
 
@@ -63,10 +64,10 @@ STATE_DEF_HANDLE(LogOn, SocketReadyReadEvent) {
     LOG_DEBUG("socket rec event ...");
     if(iso8583()->parse(ev->ba.data, ev->ba.len) != ISO_OK) {
         GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_PARSE_ERROR), "");
+            state->parent, INFO_ERROR, phraseGetDef(PHRASE_PARSE_ERROR), "");
     } else {
         GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
+            state->parent, INFO_SUCCESS, phraseGetDef(PHRASE_SUC_DONME), "");
     }
     nth()->release(tx);
 }
@@ -90,7 +91,7 @@ STATE_DEF_HANDLE(LogOn, SocketTimeOutEvent) {
         break;
     }
     GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(title),
+            state->parent, INFO_ERROR, phraseGetDef(title),
                     phraseGetDef(body));
     nth()->release(tx);
 }
@@ -119,9 +120,9 @@ STATE_DEF_ENTER(LogOn) {
     tx = nth()->alloc();
     RETURN_IF_NULL(tx, 
             GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         );
-    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
     tx->owner = state;
     DEFINE_STRING(ip, 24);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
@@ -129,12 +130,12 @@ STATE_DEF_ENTER(LogOn) {
                 settings()->server.mainServerPort);
     if (res == NTH_ERR_INVALID_HOST) {
         GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_INVALID_IP),
+            state->parent, INFO_ERROR, phraseGetDef(PHRASE_INVALID_IP),
                  ip);
         nth()->release(tx);
     } else if (res != NTH_OK) {
         GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_CONNECTION_ERR),
+            state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR),
                     phraseGetDef(PHRASE_CHECK_NET));
         nth()->release(tx);
     }

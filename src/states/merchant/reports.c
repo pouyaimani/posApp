@@ -272,7 +272,7 @@ static int8_t checkPrinterStatus() {
 }
 
 STATE_DEF_ENTER(ExtractData) {
-    SHOW_INFO(phraseGetDef(PHRASE_EXTRACTING_DATA), 
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_EXTRACTING_DATA), 
                 phraseGetDef(PHRASE_PLEASE_WAIT));
     LOG_DEBUG("start date = %s", rquery.startDate);
     LOG_DEBUG("start time = %s", rquery.startTime);
@@ -352,7 +352,7 @@ STATE_DEF_EXIT(ExtractData) {
 
 STATE_DEF_HANDLE(ExtractData, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        GOTO_INFO(prev, prev, phraseGetDef(PHRASE_NO_RESULT), "");
+        GOTO_INFO(prev, prev, INFO_ERROR, phraseGetDef(PHRASE_NO_RESULT), "");
     }
 }
 

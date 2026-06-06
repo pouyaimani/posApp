@@ -10,6 +10,7 @@
 #include "states/services/services.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static TerminalSettings *termStorage;
 
@@ -169,7 +170,7 @@ static void disMaxAmnt() {
 
 STATE_DEF_ENTER(GetMaxAmnt) {
     Input *in = getState(STATE_ID_INPUT);
-    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_ACTIVATE_SUC), "");
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, phraseGetDef(PHRASE_ACTIVATE_SUC), "");
     termStorage->maxAmntEnable = true;
     snprintf(termStorage->maxAmnt,
         13, "%s", in->input);

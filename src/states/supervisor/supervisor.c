@@ -11,6 +11,7 @@
 #include "common.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 #define PASSWORD_MAX_LEN 4
 #define IP_MAX_LEN 12
@@ -68,7 +69,7 @@ STATE_DEF_ENTER(CheckPassword)
     else
     {
         GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER),
-                  phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+                  INFO_ERROR, phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -113,7 +114,8 @@ STATE_DEF_ENTER(CheckPin)
     }
     else
     {
-        GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+        GOTO_INFO(supervisorMenu, supervisorMenu, INFO_ERROR, 
+                phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -146,11 +148,13 @@ STATE_DEF_ENTER(CheckNewPin)
             settings()->terminal.merchantPin[i] = newPin[i];
         }
         settings()->save();
-        GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
+        GOTO_INFO(supervisorMenu, supervisorMenu, INFO_SUCCESS,
+                     phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
     }
     else
     {
-        GOTO_INFO(supervisorMenu, supervisorMenu, phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
+        GOTO_INFO(supervisorMenu, supervisorMenu, INFO_ERROR, 
+                    phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
     }
 }
 
@@ -295,7 +299,8 @@ STATE_DEF_ENTER(Success)
         settings()->server.tmsId = serverId;
     }
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, 
+                phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 static void setItemToMainServer()
@@ -354,7 +359,8 @@ STATE_DEF_ENTER(MerchantPassReset)
     snprintf(settings()->terminal.merchantPin,
              MERCHANT_PIN_LEN + 1, "%s", MERCHANT_DEFAULT_PIN);
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, 
+            phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 OOP_CTOR(MerchantPassReset, State *parent, const char *name)
@@ -394,7 +400,8 @@ OOP_CTOR(UpdateApp, State *parent, const char *name)
 STATE_DEF_ENTER(DefaultSettings)
 {
     settings()->reset();
-    GOTO_INFO(state->parent, state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+                 phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 OOP_CTOR(DefaultSettings, State *parent, const char *name)

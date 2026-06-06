@@ -20,6 +20,7 @@
 #include "utility/utility.h"
 #include "receipt/receiptTemplates.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -208,9 +209,9 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
 
 STATE_DEF_HANDLE(Idle, SocketConnectEvent) {
     if(ev->isConnected) {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, "error in connecting", "");
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR, "error in connecting", "");
     } else {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, "connected", "");
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_SUCCESS, "connected", "");
     }
     network()->disconnect();
 }

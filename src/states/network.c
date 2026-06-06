@@ -8,7 +8,7 @@
 /*************************** Network connect ***********************/
 
 STATE_DEF_ENTER(NetConnect) {
-    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
     NetConnect* st = (NetConnect*)(STATE_NET_CONNECT);
     network()->connect();
     if (network()->id < 0) {
@@ -16,7 +16,7 @@ STATE_DEF_ENTER(NetConnect) {
             st->ctx.onFailureCb(st->ctx.userDataOnFailure);
         }
         GOTO_INFO(st->ctx.onFailure, 
-            st->ctx.onFailure, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
 }
@@ -32,12 +32,12 @@ STATE_DEF_HANDLE(NetConnect, SocketConnectEvent) {
             st->ctx.onFailureCb(st->ctx.userDataOnFailure);
         }
         GOTO_INFO(st->ctx.onFailure, 
-            st->ctx.onFailure, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
     } else {
         if (st->ctx.onSucessCb) {
             if (st->ctx.onSucessCb(st->ctx.userDataOnSucess) != ERR_OK) {
                 GOTO_INFO(st->ctx.onFailure, 
-                    st->ctx.onFailure, phraseGetDef(PHRASE_PROCESS_CB_ERR), "");
+                    st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_PROCESS_CB_ERR), "");
                 return;
             }
         }
@@ -54,20 +54,20 @@ OOP_CTOR(NetConnect, State *parent, const char *name) {
 /*************************** Network send ***********************/
 STATE_DEF_ENTER(NetSend) {
     NetSend* st = (NetSend*)(STATE_NET_SEND);
-    SHOW_INFO(phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+    SHOW_INFO(INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
     int ret = network()->send(st->data.data, st->data.len);
     if (ret != st->data.len) {
         if (st->ctx.onFailureCb) {
             st->ctx.onFailureCb(st->ctx.userDataOnFailure);
         }
         GOTO_INFO(st->ctx.onFailure, 
-            st->ctx.onFailure, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+            st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
             return;
     }
     if (st->ctx.onSucessCb) {
         if (st->ctx.onSucessCb(st->ctx.userDataOnSucess) != ERR_OK) {
             GOTO_INFO(st->ctx.onFailure, 
-                    st->ctx.onFailure, phraseGetDef(PHRASE_PROCESS_CB_ERR), "");
+                    st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_PROCESS_CB_ERR), "");
             return;
         }
     }
@@ -93,7 +93,7 @@ OOP_CTOR(NetSend, State *parent, const char *name) {
 /*************************** Network receive ***********************/
 
 STATE_DEF_ENTER(NetReceive) {
-    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_RECEIVING_DATA), "");
 }
 
 STATE_DEF_EXIT(NetReceive) {
@@ -111,20 +111,20 @@ STATE_DEF_HANDLE(NetReceive, SocketReadyReadEvent) {
             st->ctx.onFailureCb(st->ctx.userDataOnFailure);
         }
         GOTO_INFO(st->ctx.onFailure, 
-            st->ctx.onFailure, phraseGetDef(PHRASE_RECEIVING_DATA_ERR), "");
+            st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_RECEIVING_DATA_ERR), "");
             return;
     }
     if (st->ctx.onSucessCb) {
         if (st->ctx.onSucessCb(st->ctx.userDataOnSucess) != ERR_OK) {
             GOTO_INFO(st->ctx.onFailure, 
-                st->ctx.onFailure, phraseGetDef(PHRASE_RECEIVING_DATA_ERR), 
+                st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_RECEIVING_DATA_ERR), 
                     phraseGetDef(PHRASE_PROCESS_CB_ERR));
             return;
         }
     }
     if (ev->ba.len > st->data.capacity) {
         GOTO_INFO(st->ctx.onFailure, 
-                st->ctx.onFailure, phraseGetDef(PHRASE_RECEIVING_DATA_ERR),
+                st->ctx.onFailure, INFO_ERROR, phraseGetDef(PHRASE_RECEIVING_DATA_ERR),
                         phraseGetDef(PHRASE_DATA_SIZE_MISMATCH));
         return;
     }

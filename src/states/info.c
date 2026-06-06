@@ -9,8 +9,8 @@
 #include "sys/sys.h"
 #include "phrases/phrases.h"
 
-static void setText(const char *title, const char *body) {
-    OOP_CALL(infoPage(), setData, INFO_T_TEXT, title, body);
+static void setData(InfoType_t type,const char *title, const char *body) {
+    OOP_CALL(infoPage(), setData, type, title, body);
 }
 
 STATE_DEF_ENTER(Info) {
@@ -19,7 +19,7 @@ STATE_DEF_ENTER(Info) {
 
 STATE_DEF_EXIT(Info) {
     OOP_CALL(infoPage(), hide);
-    setText("", "");
+    setData(INFO_WAITING,"", "");
 }
 
 STATE_DEF_HANDLE(Info, TimeOutEvent) {
@@ -36,7 +36,7 @@ OOP_CTOR(Info, State *parent, const char *name) {
     self->base.vtable.exit = STATE_EXIT(Info);
     self->base.vtable.handleKeypad = STATE_HANDLE(Info, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Info, TimeOutEvent);
-    self->setText = setText;
+    self->setData = setData;
 }
 
 /*******************************************************************/

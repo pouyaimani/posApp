@@ -67,7 +67,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     if (ev->key <= KEY_9) {
         selected = (ServiceId_t)((int)ev->key - 1);
         if (!ch->isMagSwiped) {
-            OOP_CALL(infoPage(), setData, INFO_T_IMG, 
+            OOP_CALL(infoPage(), setData, INFO_IMG, 
                         ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
             ui_menu_hide(menu);
             OOP_CALL(infoPage(), show);
@@ -79,7 +79,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         selected = (ServiceId_t)menu->idx;
         if (!ch->isMagSwiped) {
-            OOP_CALL(infoPage(), setData, INFO_T_IMG,
+            OOP_CALL(infoPage(), setData, INFO_IMG,
                         ICON_SWIPE_CARD, phraseGetDef(PHRASE_SWIPRE_CARD));
             ui_menu_hide(menu);
             OOP_CALL(infoPage(), show);

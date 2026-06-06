@@ -116,7 +116,7 @@ STATE_DEF_ENTER(GetValue) {
     } else if (idx == 2) {
 
     }
-    GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, "با موفقیت انجام شد", "");
 }
 
 STATE_DEF_EXIT(GetValue) {
@@ -184,7 +184,7 @@ STATE_DEF_ENTER(SecPrintTime) {
 }
 
 STATE_DEF_ENTER(SecPrintTimeSuc) {
-    GOTO_INFO(state->parent, state->parent, "با موفقیت انجام شد", "");
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, "با موفقیت انجام شد", "");
 }
 
 static Menu merchRecMenu;
@@ -340,7 +340,7 @@ static void TouchSettings(State *parent) {
 /******************** date time sub state **********************/
 
 STATE_DEF_ENTER(DateTimeSettings) {
-    SHOW_INFO("لطفا منتظر بمانید", "");
+    SHOW_INFO(INFO_WAITING, "لطفا منتظر بمانید", "");
 }
 
 STATE_DEF_EXIT(DateTimeSettings) {
@@ -348,7 +348,7 @@ STATE_DEF_EXIT(DateTimeSettings) {
 
 STATE_DEF_HANDLE(DateTimeSettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        GOTO_INFO(state->parent, state->parent, "خطا در به روز رسانی", "");
+        GOTO_INFO(state->parent, state->parent, INFO_ERROR, "خطا در به روز رسانی", "");
     }
 }
 

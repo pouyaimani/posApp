@@ -9,6 +9,7 @@
 #include "storage/storage.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 static bool validatePass(char *pass0, char *pass1, uint8_t len) {
     for (size_t i = 0; i < len ; i++) {
@@ -56,7 +57,8 @@ STATE_DEF_ENTER(CheckPassword) {
         SM_GOTO(merchantMenu);
     } else {
         GOTO_INFO(getState(STATE_ID_SUPPORTER), 
-            getState(STATE_ID_SUPPORTER), phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+            getState(STATE_ID_SUPPORTER), INFO_ERROR, 
+                phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -95,7 +97,7 @@ STATE_DEF_ENTER(CheckPin) {
         SM_GOTO(enterNewPin);
     } else {
         GOTO_INFO(merchantMenu, merchantMenu, 
-                    phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+                    INFO_ERROR, phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -122,9 +124,9 @@ STATE_DEF_ENTER(CheckNewPin) {
         snprintf(settings()->terminal.merchantPin, MERCHANT_PIN_LEN + 1, "%s", newPin);
         settings()->save();
         GOTO_INFO(merchantMenu, merchantMenu,
-                 phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
+                 INFO_SUCCESS, phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
     } else {
-        GOTO_INFO(merchantMenu, merchantMenu, 
+        GOTO_INFO(merchantMenu, merchantMenu, INFO_ERROR, 
                 phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
     }
 }

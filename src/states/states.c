@@ -144,11 +144,11 @@ void GOTO_INPUT(State *prev, State *next, const char *title,
     SM_GOTO(getState(STATE_ID_INPUT));
 }
 
-void GOTO_INFO(State *prev, State *next, const char *title, const char *body) {
+void GOTO_INFO(State *prev, State *next, uint8_t type, const char *title, const char *body) {
     RETURN_IF_NULL(prev, ;);
     RETURN_IF_NULL(next, ;);
     Info *info = (Info *)getState(STATE_ID_INFO);
-    info->setText(title, body);
+    info->setData(type, title, body);
     OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);
     OOP_CALL(getState(STATE_ID_INFO), setNext, next);
     SM_GOTO(getState(STATE_ID_INFO));

@@ -296,7 +296,7 @@ OOP_CTOR(StatusBar) {
     LV_SET_BORDER_OPA(operator, LV_OPA_0);
     LV_SET_TEXT_FONT(operator, FONT_16);
     LV_SET_TEXT_COLOR(operator, COLOR_WHITE);
-    LV_SET_TEXT_ALIGN(operator, LV_TEXT_ALIGN_CENTER);
+    LV_SET_TEXT_ALIGN(operator, LV_TEXT_ALIGN_LEFT);
     // lv_label_set_long_mode(operator, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
     cellularIcon = lv_img_create(disp()->statusbar);

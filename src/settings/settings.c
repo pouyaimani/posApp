@@ -13,7 +13,7 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEVICE_PROP_FILE APP_DIR "lv_device_prop"
 #define SETTINGS_FILE_ADDR DEVICE_PROP_FILE
 
-#define TXN_TRACE_FILE_ADDR "/mtd1/txn_t_info"
+#define TXN_TRACE_FILE_ADDR "/mtd0/txn_t_info"
 
 #define SETTINGS_FILE_MAX_SIZE 4096
 

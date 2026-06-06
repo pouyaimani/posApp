@@ -4,6 +4,7 @@
 #include "common.h"
 #include "states/states.h"
 #include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 int8_t injectOffline() {
     	// 8F161C2B5F0E891FD943013BC2D85909
@@ -26,9 +27,12 @@ int8_t injectOffline() {
 }
 
 STATE_DEF_ENTER(KeyInjection) {
-    Phrases_t id = injectOffline() == ERR_OK ? 
+    int8_t err = injectOffline();
+    Phrases_t id = err == ERR_OK ? 
                         PHRASE_KEY_INJ_SUCCEED : PHRASE_KEY_INJ_FAILED;
-    GOTO_INFO(state->parent, state->parent, phraseGetDef(id), "");
+    int8_t infoType = err == ERR_OK ? 
+                        INFO_SUCCESS : INFO_ERROR;                        
+    GOTO_INFO(state->parent, state->parent, infoType, phraseGetDef(id), "");
 }
 
 OOP_CTOR(KeyInjection, State *parent, const char *name) {

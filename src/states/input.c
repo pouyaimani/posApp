@@ -11,6 +11,7 @@
 #include "utility/alphabetic.h"
 #include "phrases/phrases.h"
 #include "font/myFont.h"
+#include "ui/infoPage.h"
 
 #define PASS_MAX_LEN        4
 #define AMOUNT_MAX_LEN      10
@@ -214,13 +215,13 @@ static bool dateValidate(const char *in)
 static void showMaxError(State *state) {
     switch (inMode) {
     case IN_MODE_AMOUNT:
-        GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+        GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
                     phraseGetDef(PHRASE_AMOUNT_EXCEED));
         break;
     case IN_MODE_PASSWORD:
         break;
     case IN_MODE_NUMBERS:
-        GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+        GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
                     phraseGetDef(PHRASE_INPUT_EXCEED));
         break;
     default:
@@ -298,19 +299,19 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
                 }
             } else if (inMode == IN_MODE_IP) {
                 if (!ipValidateDigits(input)) {
-                    GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                    GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
                                 phraseGetDef(PHRASE_INVALID_IP));
                     return;
                 }
             } else if (inMode == IN_MODE_DATE) {
                 if (!dateValidate(input)) {
-                    GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                    GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
                                 phraseGetDef(PHRASE_INVALID_DATE));
                     return;
                 }
             } else if (inMode == IN_MODE_TIME) {
                 if (!timeValidate(input)) {
-                    GOTO_INFO(state, state, phraseGetDef(PHRASE_ERROR),
+                    GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
                                 phraseGetDef(PHRASE_INVALID_TIME));
                     return;
                 }

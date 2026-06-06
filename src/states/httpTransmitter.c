@@ -10,6 +10,7 @@
 #include "transmitter.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "ui/infoPage.h"
 
 static Network *net;
 
@@ -157,10 +158,10 @@ static void httpProcessChunked(uint8_t *data, uint32_t len)
 STATE_DEF_ENTER(Connecting) {
     // connect();
     if (socketId < 0) {
-        GOTO_INFO(onFailure, onFailure, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+        GOTO_INFO(onFailure, onFailure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
-    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
 }
 
 STATE_DEF_EXIT(Connecting) {
@@ -173,7 +174,7 @@ STATE_DEF_HANDLE(Connecting, KeypadEvent) {
 
 STATE_DEF_HANDLE(Connecting, SocketConnectEvent) {
     if(ev->isConnected) {
-        GOTO_INFO(onFailure, onFailure, PHRASE_CONNECTIING, "");
+        GOTO_INFO(onFailure, onFailure, INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
     } else {
         SM_GOTO(sendData);
     }
@@ -204,7 +205,7 @@ STATE_DEF_ENTER(SendData) {
     int ret = net->send(httpCtx->txBuf, httpCtx->txLen);
 
     if (ret != httpCtx->txLen) {
-        GOTO_INFO(onFailure, onFailure, "HTTP Send Error", "");
+        GOTO_INFO(onFailure, onFailure, INFO_ERROR, "HTTP Send Error", "");
     }
 }
 
@@ -217,13 +218,13 @@ STATE_DEF_HANDLE(SendData, KeypadEvent) {
 }
 
 STATE_DEF_HANDLE(SendData, SocketSentEvent) {
-    SHOW_INFO("HTTP: ارسال", "");
+    SHOW_INFO(INFO_WAITING, "HTTP: ارسال", "");
     httpPrepareRequest();
 
     int ret = net->send(httpCtx->txBuf, httpCtx->txLen);
 
     if (ret != httpCtx->txLen) {
-        GOTO_INFO(onFailure, onFailure, "HTTP Send Error", "");
+        GOTO_INFO(onFailure, onFailure, INFO_ERROR, "HTTP Send Error", "");
     }
 }
 
@@ -241,7 +242,7 @@ static void SendData(State *parent) {
 /******************** Receive data sub state **********************/
 
 STATE_DEF_ENTER(ReceiveData) {
-    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_RECEIVING_DATA), "");
 }
 
 STATE_DEF_EXIT(ReceiveData) {
@@ -255,7 +256,7 @@ STATE_DEF_HANDLE(ReceiveData, KeypadEvent) {
 STATE_DEF_HANDLE(ReceiveData, SocketReadyReadEvent)
 {
     if (ev->ba.len <= 0) {
-        GOTO_INFO(onFailure, onFailure, "HTTP Recv Error", "");
+        GOTO_INFO(onFailure, onFailure, INFO_ERROR, "HTTP Recv Error", "");
         return;
     }
 
@@ -313,14 +314,14 @@ static void ReceiveData(State *parent) {
 /******************** Process sub state **********************/
 
 STATE_DEF_ENTER(ProcessHttp) {
-    SHOW_INFO("پردازش HTTP", "");
+    SHOW_INFO(INFO_WAITING, "پردازش HTTP", "");
 
     // LOG_D("HTTP Status: %d", httpCtx->statusCode);
 
     if (httpCtx->statusCode != 200 &&
         httpCtx->statusCode != 206)
     {
-        GOTO_INFO(onFailure, onFailure, "HTTP Error", "");
+        GOTO_INFO(onFailure, onFailure, INFO_ERROR, "HTTP Error", "");
         return;
     }
 

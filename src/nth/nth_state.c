@@ -12,25 +12,25 @@ STATE_DEF_HANDLE(NthState, SocketConnectEvent) {
     ByteArray ba;
     if (!ev->isConnected) {
         GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
-    SHOW_INFO(phraseGetDef(PHRASE_SENDING_DATA), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SENDING_DATA), "");
     if (nth()->send(((NthState*)state)->tx, ((NthState*)state)->txData) != NTH_OK) {
         GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
     }
 }
 
 STATE_DEF_HANDLE(NthState, SocketSentEvent) {
-    SHOW_INFO(phraseGetDef(PHRASE_RECEIVING_DATA), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_RECEIVING_DATA), "");
     LOG_DEBUG("socket sent event ...");
 }
 
 STATE_DEF_HANDLE(NthState, SocketReadyReadEvent) {
     LOG_DEBUG("socket rec event ...");
     GOTO_INFO(state->parent, 
-            state->parent, phraseGetDef(PHRASE_SUC_DONME), "");
+            state->parent, INFO_SUCCESS, phraseGetDef(PHRASE_SUC_DONME), "");
 }
 
 STATE_DEF_HANDLE(NthState, SocketTimeOutEvent) {
@@ -52,23 +52,23 @@ STATE_DEF_HANDLE(NthState, SocketTimeOutEvent) {
         break;
     }
     GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, phraseGetDef(title),
+            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(title),
                     phraseGetDef(body));
 }
 
 STATE_DEF_ENTER(NthState) {
-    SHOW_INFO(phraseGetDef(PHRASE_CONNECTIING), "");
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
     DEFINE_STRING(ip, 24);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
     NthResult res = nth()->connect(((NthState*)state)->tx, ip,
                 settings()->server.mainServerPort);
     if (res == NTH_ERR_INVALID_HOST) {
         GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, phraseGetDef(PHRASE_INVALID_IP),
+            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_INVALID_IP),
                  ip);
     } else if (res != NTH_OK) {
         GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, phraseGetDef(PHRASE_CONNECTION_ERR),
+            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR),
                     phraseGetDef(PHRASE_CHECK_NET));
     }
 }
