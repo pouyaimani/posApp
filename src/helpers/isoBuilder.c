@@ -2,20 +2,22 @@
 #include "sys/sys.h"
 #include "settings/settings.h"
 #include "ped/ped.h"
+#include "utility/ltv.h"
 
 #define MTI_VAL_LOG_ON              "0800"
 
 Error_t isoBuildLogOn(ByteArray *buf) {
     iso8583()->reset();
-    DEFINE_STRING(privateData, 128);
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
+    LOG_DEBUG("dn = %s", sn );
+    DEFINE_STRING(privateData, 128);
 	setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
     DateTime *dt = OOP_CALL(sys(), getDateTime);
     /* set ISO message fields */
     iso8583()->setMTI((const DL_UINT8 *)MTI_VAL_LOG_ON);
     iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8 *)PRC_LOG_ON);
-    iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)"0001");
+    iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)"000001");
     iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->time);
     iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->date + 2);
     DEFINE_STRING(nni, 8);

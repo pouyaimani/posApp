@@ -62,7 +62,7 @@ typedef int8_t (*ErrCallBack_t)(void *arg);
 
 #define DEFINE_STRING(name, size)    \
     char name[size];                 \
-    memset(name, 0, sizeof(name));
+    memset(name, 0, size);
 
 #define DEFINE_BYTE_ARRAY(name, size)           \
     uint8_t name[size];                         \

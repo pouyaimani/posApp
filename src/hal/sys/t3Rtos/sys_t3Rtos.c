@@ -211,14 +211,20 @@ static void powerOff(System *dev) {
     sdkSysDevicePowerOff();
 }
 
+#define CHANGE_SERIAL			"T3335301003906"
 static int8_t getSN(System *dev, char *out, size_t len) {
-    memset(out, 0, sizeof(len));
-    int8_t err = sdkSysReadDeviceSN(SYS_SN_TYPE_MANUFACTURER,
-                     out, len);
-    if (err != SDK_SYS_OK) {
-        LOG_ERROR("SYS: failure in reading device serail number. error = %d", err);
+    if(!out) {
         return ERR_NOK;
     }
+    memset(out, 0, len);
+    // int8_t err = sdkSysReadDeviceSN(SYS_SN_TYPE_CUSTOM,
+    //                  out, len);
+    // if (err != SDK_SYS_OK) {
+    //     LOG_ERROR("SYS: failure in reading device serail number. error = %d", err);
+    //     return ERR_NOK;
+    // }
+    strcpy(out, CHANGE_SERIAL);
+    
     return ERR_OK;
 }
 

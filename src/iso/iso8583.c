@@ -259,10 +259,17 @@ IsoStatus_t parse(const uint8_t *data,
 #endif
     uint16_t packedSize = data[0] * 256 + data[1];
 	packedSize = packedSize - 5;				// without header
-    RETURN_VALUE_IF_NOT(DL_ISO8583_MSG_Unpack(&self->handler,
-                              data + 7,
+    DL_UINT8 packBufTemp[2048];
+    memset(packBufTemp, 0x00, sizeof(packBufTemp));
+	memcpy(packBufTemp, data + 7, packedSize);
+    // RETURN_VALUE_IF_NOT(DL_ISO8583_MSG_Unpack(&self->handler,
+    //                           packBufTemp,
+    //                           packedSize,
+    //                           &self->msg), 0, ;, ISO_ERR_PARSE);
+    DL_ISO8583_MSG_Unpack(&self->handler,
+                              packBufTemp,
                               packedSize,
-                              &self->msg), 0, ;, ISO_ERR_PARSE);
+                              &self->msg);
 
     uint8_t *ptr = NULL;
     uint16_t flen = 0;
