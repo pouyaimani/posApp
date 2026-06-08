@@ -3,27 +3,20 @@
 
 static void rippleSizeCb(
     void *obj,
-    int32_t v)
-{
-    lv_obj_set_size(obj, v, v);
-
+    int32_t v) {
+    LV_SET_SIZE(obj, v, v);
     lv_obj_center(obj);
 }
 
 static void rippleOpaCb(
     void *obj,
-    int32_t v)
-{
-    lv_obj_set_style_border_opa(
-        obj,
-        v,
-        0);
+    int32_t v) {
+    LV_SET_BORDER_OPA(obj, v);
 }
 
 static void setColor(
     StatusIndicator *si,
-    uint32_t color)
-{
+    uint32_t color) {
     si->color = color;
     LV_SET_BG_COLOR(si->circle, color);
     LV_SET_TEXT_COLOR(si->icon, COLOR_WHITE);
@@ -36,8 +29,7 @@ static void setColor(
 
 static void startRipple(
     lv_obj_t *obj,
-    uint32_t delay)
-{
+    uint32_t delay) {
     lv_anim_t a;
 
     lv_anim_init(&a);
@@ -92,8 +84,7 @@ static void startRipple(
 }
 
 static void waitTimerCb(
-    lv_timer_t *timer)
-{
+    lv_timer_t *timer) {
     StatusIndicator *si =
         lv_timer_get_user_data(timer);
 
@@ -130,10 +121,7 @@ static void waitTimerCb(
             break;
         }
 
-        lv_obj_set_style_bg_opa(
-            si->dots[i],
-            opa,
-            0);
+        LV_SET_BG_OPA(si->dots[i], opa);
     }
 
     si->waitIndex =
@@ -142,8 +130,7 @@ static void waitTimerCb(
 
 void statusIndicatorCreate(
     StatusIndicator *si,
-    lv_obj_t *parent)
-{
+    lv_obj_t *parent) {
     memset(
         si,
         0,
@@ -155,30 +142,14 @@ void statusIndicatorCreate(
     lv_obj_remove_style_all(
         si->root);
 
-    lv_obj_set_size(
-        si->root,
-        160,
-        160);
+    LV_SET_SIZE(si->root, 160, 160);
     si->circle =
         lv_obj_create(si->root);
-
-    lv_obj_set_style_bg_opa(
-        si->circle,
-        LV_OPA_COVER,
-        0);
-
-    lv_obj_set_size(
-        si->circle,
-        CIRCLE_SIZE,
-        CIRCLE_SIZE);
-
+    LV_SET_BG_OPA(si->circle, LV_OPA_COVER);
+    LV_SET_SIZE(si->circle, CIRCLE_SIZE, CIRCLE_SIZE);
     lv_obj_center(
         si->circle);
-
-    lv_obj_set_style_radius(
-        si->circle,
-        LV_RADIUS_CIRCLE,
-        0);
+    LV_SET_RADIUS(si->circle, LV_RADIUS_CIRCLE);
     LV_SET_BG_OPA(si->circle, LV_OPA_40);
     si->icon =
         lv_label_create(
@@ -199,41 +170,21 @@ void statusIndicatorCreate(
     lv_obj_remove_style_all(si->ripple1);
     lv_obj_remove_style_all(si->ripple2);
 
-    lv_obj_set_size(si->ripple1, RIPPLE_START, RIPPLE_START);
-    lv_obj_set_size(si->ripple2, RIPPLE_START, RIPPLE_START);
+    LV_SET_SIZE(si->ripple1, RIPPLE_START, RIPPLE_START);
+    LV_SET_SIZE(si->ripple2, RIPPLE_START, RIPPLE_START);
 
     lv_obj_center(si->ripple1);
     lv_obj_center(si->ripple2);
 
-    lv_obj_set_style_radius(
-        si->ripple1,
-        LV_RADIUS_CIRCLE,
-        0);
+    LV_SET_RADIUS(si->ripple1, LV_RADIUS_CIRCLE);
+    LV_SET_RADIUS(si->ripple2, LV_RADIUS_CIRCLE);
 
-    lv_obj_set_style_radius(
-        si->ripple2,
-        LV_RADIUS_CIRCLE,
-        0);
+    LV_SET_BG_OPA(si->ripple1, LV_OPA_TRANSP);
+    LV_SET_BG_OPA(si->ripple2, LV_OPA_TRANSP);
 
-    lv_obj_set_style_bg_opa(
-        si->ripple1,
-        LV_OPA_TRANSP,
-        0);
+    LV_SET_BORDER_WIDTH(si->ripple1, 2);
+    LV_SET_BORDER_WIDTH(si->ripple2, 2);
 
-    lv_obj_set_style_bg_opa(
-        si->ripple2,
-        LV_OPA_TRANSP,
-        0);
-
-    lv_obj_set_style_border_width(
-        si->ripple1,
-        2,
-        0);
-
-    lv_obj_set_style_border_width(
-        si->ripple2,
-        2,
-        0);
     for(int i = 0 ; i < DOT_COUNT ; i++) {
         si->dots[i] =
             lv_obj_create(
@@ -242,15 +193,8 @@ void statusIndicatorCreate(
         lv_obj_remove_style_all(
             si->dots[i]);
 
-        lv_obj_set_size(
-            si->dots[i],
-            DOT_SIZE,
-            DOT_SIZE);
-
-        lv_obj_set_style_radius(
-            si->dots[i],
-            LV_RADIUS_CIRCLE,
-            0);
+        LV_SET_SIZE(si->dots[i], DOT_SIZE, DOT_SIZE);
+        LV_SET_RADIUS(si->dots[i], LV_RADIUS_CIRCLE);
 
         int32_t a =
             i * 3600 / DOT_COUNT;
@@ -264,23 +208,15 @@ void statusIndicatorCreate(
             lv_trigo_sin(a) *
             DOT_RADIUS /
             LV_TRIGO_SIN_MAX;
-
-        lv_obj_align(
-            si->dots[i],
-            LV_ALIGN_CENTER,
-            x,
-            y);
-
-        lv_obj_add_flag(
-            si->dots[i],
-            LV_OBJ_FLAG_HIDDEN);
+        
+        LV_ALIGN(si->dots[i], LV_ALIGN_CENTER, x, y);
+        LV_HIDE(si->dots[i]);
     }
 }
 
 void statusIndicatorShow(
     StatusIndicator *si,
-    StatusIndicatorState state)
-{
+    StatusIndicatorState state) {
     statusIndicatorHide(si);
     LV_SHOW(si->root);
     si->state = state;
@@ -289,9 +225,7 @@ void statusIndicatorShow(
     }
     switch(state) {
     case STATUS_INDICATOR_WAITING:
-        setColor(
-            si,
-            MAIN_THEME_COLOR);
+        setColor(si, MAIN_THEME_COLOR);
         for(int i=0 ; i < DOT_COUNT ; i++) {
             LV_SHOW(si->dots[i]);
         }
@@ -301,60 +235,30 @@ void statusIndicatorShow(
                 waitTimerCb,
                 WAIT_PERIOD,
                 si);
-        lv_label_set_text(
-            si->icon,
-            "");
+        LV_SET_TEXT(si->icon, "");
         break;
     case STATUS_INDICATOR_SUCCESS:
-        setColor(
-            si,
-            MAIN_THEME_COLOR);
-        lv_label_set_text(
-            si->icon,
-            LV_SYMBOL_OK);
-
-        startRipple(
-            si->ripple1,
-            0);
-
-        startRipple(
-            si->ripple2,
-            RIPPLE_DELAY);
-
+        setColor(si, MAIN_THEME_COLOR);
+        LV_SET_TEXT(si->icon, LV_SYMBOL_OK);
+        startRipple(si->ripple1, 0);
+        startRipple(si->ripple2, RIPPLE_DELAY);
         break;
     case STATUS_INDICATOR_ERROR:
-        setColor(
-            si,
-            MAIN_THEME_COLOR);
-        lv_label_set_text(
-            si->icon,
-            LV_SYMBOL_CLOSE);
-
-        startRipple(
-            si->ripple1,
-            0);
-
-        startRipple(
-            si->ripple2,
-            RIPPLE_DELAY);
-
+        setColor(si, MAIN_THEME_COLOR);
+        LV_SET_TEXT(si->icon, LV_SYMBOL_CLOSE);
+        startRipple(si->ripple1, 0);
+        startRipple(si->ripple2, RIPPLE_DELAY);
         break;
     case STATUS_INDICATOR_WARNING:
-        setColor(
-            si,
-            MAIN_THEME_COLOR);
-        lv_label_set_text(
-            si->icon,
-            LV_SYMBOL_WARNING);
-
+        setColor(si, MAIN_THEME_COLOR);
+        LV_SET_TEXT(si->icon, LV_SYMBOL_WARNING);
         break;
     }
     lv_obj_move_foreground(si->icon);
 }
 
 void statusIndicatorHide(
-    StatusIndicator *si)
-{
+    StatusIndicator *si) {
     lv_anim_del(
         si->ripple1,
         NULL);
@@ -363,11 +267,9 @@ void statusIndicatorHide(
         si->ripple2,
         NULL);
 
-    if(si->waitTimer)
-    {
+    if(si->waitTimer) {
         lv_timer_del(
             si->waitTimer);
-
         si->waitTimer = NULL;
     }
     LV_HIDE(si->root);
@@ -378,9 +280,8 @@ void statusIndicatorHide(
 void statusIndicatorAlign(
     StatusIndicator *si, lv_align_t align,
     int32_t x,
-    int32_t y)
-{
+    int32_t y) {
     if(si == NULL)
         return;
-    lv_obj_align(si->root, align, x, y);
+    LV_ALIGN(si->root, align, x, y);
 }
