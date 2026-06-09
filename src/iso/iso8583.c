@@ -91,6 +91,10 @@ IsoStatus_t getStr(uint16_t field,
     RETURN_VALUE_IF_NULL(out, ;, ISO_ERR_INPUT);
     SELF;
 
+    if (DL_ISO8583_MSG_HaveField(field, &self->msg) == 0)
+		return ISO_ERR_FIELD_NOT_EXIST;
+
+
     uint8_t *ptr = NULL;
     uint16_t flen = 0;
 

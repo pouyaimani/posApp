@@ -28,6 +28,7 @@ typedef struct __attribute__((packed))
     char wifiMac[32];
     uint32_t wifiEnc;
     char wifiPwd[63 + 1];
+    char acquirerIIN[12];
 
     uint32_t appID;
     uint8_t language;

@@ -8,12 +8,17 @@
 
 Error_t isoBuild(MTI_t mti, ByteArray *buf);
 
-typedef int8_t (*IsoBuilder)(
+typedef int8_t (*TxnIsoBuilder)(
+    ByteArray *);
+typedef int8_t (*TxnIsoParser)(
     ByteArray *);
 
+
 typedef struct {
-    MTI_t mti;
-    IsoBuilder builder;
-} IsoTemplate;
+    MTI_t           requestMti;
+    MTI_t           responseMti;
+    TxnIsoBuilder   builder;
+    TxnIsoParser    parser;
+} IsoTransaction;
 
 #endif

@@ -193,6 +193,7 @@ typedef enum {
     ISO_ERR_FEILD_TOO_LONG,
     ISO_ERR_PARSE,
     ISO_ERR_PACK,
+    ISO_ERR_FIELD_NOT_EXIST
 } IsoStatus_t;
 
 typedef struct {
