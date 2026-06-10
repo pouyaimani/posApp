@@ -49,6 +49,7 @@ OOP_VTABLE(System) {
     OOP_IMETHOD(uint32_t, System, getTime);
     OOP_IMETHOD(uint64_t, System, getPackedDateTime);
     OOP_IMETHOD(void, System, setDateTime, DateTime *);
+    OOP_IMETHOD(int8_t, System, setDateTimeBcd, const char *);
     OOP_IMETHOD(void, System, logOut, const char *, size_t, void *);
     OOP_IMETHOD(BatteryStat*, System, getBatteryStatus);
     OOP_IMETHOD(void, System, sleep);

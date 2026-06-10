@@ -10,9 +10,7 @@
 
 typedef enum {
 	MTI_LOG_ON = 0,
-	MTI_LOG_ON_RESPONSE,
 	MTI_CFG,
-	MTI_CFG_RESPONSE,
 } MTI_t;
 
 /**********************************************************/

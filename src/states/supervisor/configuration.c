@@ -62,7 +62,7 @@ STATE_DEF_HANDLE(LogOn, SocketSentEvent) {
 
 STATE_DEF_HANDLE(LogOn, SocketReadyReadEvent) {
     LOG_DEBUG("socket rec event ...");
-    if(iso8583()->parse(ev->ba.data, ev->ba.len) != ISO_OK) {
+    if(isoParse(MTI_LOG_ON, &ev->ba) != ERR_OK) {
         GOTO_INFO(state->parent, 
             state->parent, INFO_ERROR, phraseGetDef(PHRASE_PARSE_ERROR), "");
     } else {

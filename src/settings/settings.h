@@ -21,8 +21,12 @@ typedef struct __attribute__((packed))
 
     char merchantPin[4 + 1];
     char merchantNo[15 + 1];
-    char terminalNo[15 + 1];
+    char merchantAddress[64];
+	char merchantPostalCode[16];
+	char merchantUniqueId[32];
     char merchantName[40 + 1];
+    char merchantPhone[32];
+    char terminalNo[15 + 1];
     char mSafePwd[8 + 1];
     char wfiSSID[32];
     char wifiMac[32];
@@ -45,6 +49,7 @@ typedef struct __attribute__((packed))
     int fixedAmountCoef;
     uint8_t shiftEnable;
     uint8_t shiftActive;
+    
 } TerminalSettings;
 
 typedef struct __attribute__((packed))
@@ -61,6 +66,7 @@ typedef struct __attribute__((packed))
     char tmsBackupIp[12 + 1];
     uint16_t tmsBackupPort;
     bool sslEn;
+    uint8_t forceTMS;
 } ServerSettings;
 
 OOP_CLASS(TxnSettings){

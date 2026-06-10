@@ -1,4 +1,6 @@
 #include "ltv.h"
+#include "common.h"
+#include "utility.h"
 
 static void pubBytesToHexString(unsigned char *bytes, size_t buflen, char *retval)
 {
@@ -46,4 +48,25 @@ void setCommonLtv(char *deviceSerial, const char *version, int iLang, char *buff
     strcat(buffer, pack);
 
     sprintf(buff, "%s", buffer);
+}
+
+int unpackLtv(char *buffer, LtvStructInfo ltvStructInfo[]) {
+	int c = 0;
+	int i = 0;
+    DEFINE_STRING(lenc, 3);
+    DEFINE_STRING(temp, 512);
+
+	while (true) {
+		memcpy(lenc, buffer + c, 2);
+		ltvStructInfo[i].len = libAtoi(lenc);
+		c += 2;
+		if (ltvStructInfo[i].len == 0)
+			break;
+		memcpy(temp, buffer + c, ltvStructInfo[i].len * 2);
+		memcpy(ltvStructInfo[i].tag, temp, 2);
+		memcpy(ltvStructInfo[i].data, temp + 2, (ltvStructInfo[i].len * 2) - 2);
+		c += (ltvStructInfo[i].len * 2);
+		i++;
+	}
+	return i;
 }

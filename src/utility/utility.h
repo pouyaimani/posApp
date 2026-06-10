@@ -92,5 +92,17 @@ void bytesToHex(const uint8_t *data,
                 size_t dataLen,
                 char *out,
                 size_t outSize);
+void hexStringToBytes(char *inhex,
+                     int len, unsigned char *retval);
+
+void convertStrNoNumber(char *source, int len,
+                             unsigned char hex, 
+                                int startCompare, 
+                                int endCompare, char *dest);
+
+
+int hex2data(unsigned char *data,
+                 const unsigned char *hexstring, 
+                    unsigned int len);
 
 #endif

@@ -31,6 +31,8 @@ OOP_VTABLE(Ped) {
     OOP_IMETHOD(PedErr_t, Ped, getPinBlock, char *pan, char* out);
     OOP_IMETHOD(PedErr_t, Ped, getMac, size_t keyLen, 
                     uint8_t *in, size_t inLen, uint8_t *out);
+    OOP_IMETHOD(PedErr_t, Ped, encryptAccountData, void *buffer, 
+                                    int bufLen, void *decryptedData);
 };
 
 OOP_CLASS(Ped) {

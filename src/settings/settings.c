@@ -26,6 +26,7 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_BACKUP_SERVER_PORT "0"
 #define DEFAULT_TMS_IP ""
 #define DEFAULT_TMS_PORT "0"
+#define DEFAULT_TMS_FORCE "0"
 #define DEFAULT_COMM_MODE "0"
 #define DEFAULT_KEY_VOLUME "5"
 #define DEFAULT_TIMEOUT_SLEEP "5"
@@ -78,6 +79,10 @@ static const DataDescriptor settingsDsc[] = {
     DSC_STR_BUF(__settings.terminal.merchantNo, ""),
     DSC_STR_BUF(__settings.terminal.terminalNo, ""),
     DSC_STR_BUF(__settings.terminal.merchantName, ""),
+    DSC_STR_BUF(__settings.terminal.merchantAddress, ""),
+    DSC_STR_BUF(__settings.terminal.merchantPostalCode, ""),
+    DSC_STR_BUF(__settings.terminal.merchantUniqueId, ""),
+    DSC_STR_BUF(__settings.terminal.merchantPhone, ""),
 
     // 🔹 WiFi
     DSC_STR_BUF(__settings.terminal.wfiSSID, ""),
@@ -107,6 +112,7 @@ static const DataDescriptor settingsDsc[] = {
     DSC_INT(__settings.server.tmsPort, DEFAULT_TMS_PORT),
     DSC_STR_BUF(__settings.server.tmsBackupIp, DEFAULT_TMS_IP),
     DSC_INT(__settings.server.tmsBackupPort, DEFAULT_TMS_PORT),
+    DSC_INT(__settings.server.forceTMS, DEFAULT_TMS_FORCE),
 
     DSC_BYTE(__settings.server.sslEn, DEFAULT_SSL_EN),
 

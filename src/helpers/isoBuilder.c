@@ -39,16 +39,36 @@ static int8_t compareMac(int keyIndex, char* data) {
 	return ERR_OK;
 }
 
+static int dtSetSystemDateTime(int _input[]) {
+	unsigned char dt[7] = { 0 };
+
+	dt[0] = (_input[0] / 10) * 16 + (_input[0] % 10);
+	dt[1] = (_input[1] / 10) * 16 + (_input[1] % 10);
+	dt[2] = (_input[2] / 10) * 16 + (_input[2] % 10);
+	dt[3] = (_input[3] / 10) * 16 + (_input[3] % 10);
+	dt[4] = (_input[4] / 10) * 16 + (_input[4] % 10);
+	dt[5] = (_input[5] / 10) * 16 + (_input[5] % 10);
+
+	return OOP_CALL(sys(), setDateTimeBcd, dt);
+}
+
+static int8_t pedDecrypt(void *buffer, int bufLen, void *decryptedData) {
+    RETURN_VALUE_IF_NULL(buffer, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(decryptedData, ;, ERR_NULL_PARAMETER);
+	PedErr_t result = OOP_CALL(ped(), encryptAccountData, buffer, bufLen, decryptedData);
+	return result == PED_ERR_OK? ERR_OK : ERR_NOK;
+}
+
 static void decodeMerchantDesc(char* buffer) {
-    #if 0
+    #if 1
 	int i;
 	int count = 0;
 
 	LOG_DEBUG("size of buffer: %d", sizeof(buffer));
 
 	LtvStructInfo ltvStructInfo[15];
-	unsigned char tmpBuffer[512] = {0};
-	unsigned char merchantFa[512] = {0};
+    DEFINE_BYTE_ARRAY(tmpBuffer, 512);
+    DEFINE_BYTE_ARRAY(merchantFa, 512);
 
 	memset(ltvStructInfo, 0x00, sizeof(LtvStructInfo) * 15);
 	
@@ -58,23 +78,19 @@ static void decodeMerchantDesc(char* buffer) {
 
 	LOG_DEBUG("Count is [%d]", count);
 
-	for (i = 0; i < count; i++)
-	{
-		int tag = sdkatoi(ltvStructInfo[i].tag);
+	for (i = 0; i < count; i++) {
+		int tag = libAtoi(ltvStructInfo[i].tag);
 		LOG_DEBUG("TAG [%d]", tag);
-		switch (tag)
-		{
+		switch (tag) {
 		case 31:
 		{
 			int index = 0;
 			memset(tmpBuffer, 0x00, sizeof(tmpBuffer));
-			memset(config.MerchantName, 0x00, sizeof(config.MerchantName));
-			pubHexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, tmpBuffer);
-			do
-			{
+			memset(settings()->terminal.merchantName, 0x00, sizeof(settings()->terminal.merchantName));
+			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, tmpBuffer);
+			do {
 				//						LOG_DEBUG("decodeMerchantDesc >> tmpBuffer[%d] >> %02X", index, tmpBuffer[index]);
-				if ((tmpBuffer[index] == 0x5C) || (tmpBuffer[index] == 0x00))
-				{
+				if ((tmpBuffer[index] == 0x5C) || (tmpBuffer[index] == 0x00)) {
 					LOG_DEBUG("decodeMerchantDesc >> %02X >> BREAK", tmpBuffer[index]);
 					break;
 				}
@@ -84,8 +100,8 @@ static void decodeMerchantDesc(char* buffer) {
 			} while (1);
 			merchantFa[index] = 0x00;
 			LOG_DEBUG("[*** merchantFa (%d) : %s ***]", index, merchantFa);
-			convertStrNoNumber((char *)merchantFa, index, 0, 4, 5, config.MerchantName); // index, 0, 4, 5
-			LOG_DEBUG("[*** config.MerchantName (%d) : %s ***]", strlen(config.MerchantName), config.MerchantName);
+			convertStrNoNumber((char *)merchantFa, index, 0, 4, 5, settings()->terminal.merchantName); // index, 0, 4, 5
+			LOG_DEBUG("[*** config.MerchantName (%d) : %s ***]", strlen(settings()->terminal.merchantName), settings()->terminal.merchantName);
 			break;
 		}
 		case 32:
@@ -96,11 +112,11 @@ static void decodeMerchantDesc(char* buffer) {
 		}
 		case 34:
 		{
-			memset(config.MerchantPhone, 0x00, sizeof(config.MerchantPhone));
-			pubHexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)config.MerchantPhone);
+			memset(settings()->terminal.merchantPhone, 0x00, sizeof(settings()->terminal.merchantPhone));
+			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)settings()->terminal.merchantPhone);
 			// strcpy (config.MerchantPhone, ltvStructInfo[i].data);
 			LOG_DEBUG(" &&&&&&&&&&&&&&&&&& ltvStructInfo[i].data [%s] len[%d] config.MerchantPhone [%s] &&&&&&&&&&&&&&&&&&&&&&& ",
-					 ltvStructInfo[i].data, ltvStructInfo[i].len, config.MerchantPhone);
+					 ltvStructInfo[i].data, ltvStructInfo[i].len, settings()->terminal.merchantPhone);
 			break;
 		}
 		case 35:
@@ -117,33 +133,33 @@ static void decodeMerchantDesc(char* buffer) {
 			int dateTime[6] = {0};
 			unsigned char tempBuf[512] = {0};
 			char switchDateTime[16] = {0};
-			CLRBUF(tempBuf);
-			CLRBUF(switchDateTime);
+            memset(tempBuf, 0, sizeof(tempBuf));
+            memset(switchDateTime, 0, sizeof(switchDateTime));
 			LOG_DEBUG("dateTime(%d) [%s]", ltvStructInfo[i].len, ltvStructInfo[i].data);
-			pubHexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, tempBuf);
+			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, tempBuf);
 			memset(part, 0x00, sizeof(part));
 			memcpy(part, tempBuf + counter, 2);
-			dateTime[0] = my_atoi(part);
+			dateTime[0] = libAtoi(part);
 			counter += 2;
 			memset(part, 0x00, sizeof(part));
 			memcpy(part, tempBuf + counter, 2);
-			dateTime[1] = my_atoi(part);
+			dateTime[1] = libAtoi(part);
 			counter += 2;
 			memset(part, 0x00, sizeof(part));
 			memcpy(part, tempBuf + counter, 2);
-			dateTime[2] = my_atoi(part);
+			dateTime[2] = libAtoi(part);
 			counter += 2;
 			memset(part, 0x00, sizeof(part));
 			memcpy(part, tempBuf + counter, 2);
-			dateTime[3] = my_atoi(part);
+			dateTime[3] = libAtoi(part);
 			counter += 2;
 			memset(part, 0x00, sizeof(part));
 			memcpy(part, tempBuf + counter, 2);
-			dateTime[4] = my_atoi(part);
+			dateTime[4] = libAtoi(part);
 			counter += 2;
 			memset(part, 0x00, sizeof(part));
 			memcpy(part, tempBuf + counter, 2);
-			dateTime[5] = my_atoi(part);
+			dateTime[5] = libAtoi(part);
 			counter += 2;
 			ret = dtSetSystemDateTime(dateTime);
 			LOG_DEBUG("setSwitchDateTime::[%d] = dtSetSystemDateTime(%s);", ret, tempBuf); // sysSetDateTime(48320218); 20231212231334
@@ -166,51 +182,52 @@ static void decodeMerchantDesc(char* buffer) {
 			memset(pinBytes, 0x00, sizeof(pinBytes));
 			memset(pinData, 0x00, sizeof(pinData));
 
-			pubHexStringToBytes(temp, pinLen, pinTemp); // Pin
+			hexStringToBytes(temp, pinLen, pinTemp); // Pin
 			//TraceExt(pinTemp, pinLen, "[Voucher PIN]");
 			pinLen /= 2;
-			pubHex2data(pinBytes, pinTemp, pinLen);
+			hex2data(pinBytes, pinTemp, pinLen);
 			LOG_DEBUG("parseVoucherTransactionSIPA::pinLen[%d]", pinLen);
 			//TraceExt(pinBytes, pinLen, "[Voucher PIN Ex]");
 
-			pedDecrypt(TDK_INDEX, pinBytes, 16, pinData);
-			strcpy(currentTransaction.sqlTrx.PaymentId, (const char *)pinData);
+			pedDecrypt(pinBytes, 16, pinData);
+            // TODO
+			// strcpy(currentTransaction.sqlTrx.PaymentId, (const char *)pinData);
 			//TraceExt(pinTemp, 16, "VoucherPin [%s]", currentTransaction.sqlTrx.PaymentId);
 			break;
 		}
 		case 80:
 		{
-			memset(currentTransaction.sqlTrx.BillId, 0x00, sizeof(currentTransaction.sqlTrx.BillId));
+			// memset(currentTransaction.sqlTrx.BillId, 0x00, sizeof(currentTransaction.sqlTrx.BillId));
 			LOG_DEBUG("Tag 80 [%s]", ltvStructInfo[i].data);
-			pubHexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, currentTransaction.sqlTrx.BillId);
+			// hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, currentTransaction.sqlTrx.BillId);
 			LOG_DEBUG("*****************************************");
-			LOG_DEBUG("FaraBILLID [%s]", currentTransaction.sqlTrx.BillId);
+			// LOG_DEBUG("FaraBILLID [%s]", currentTransaction.sqlTrx.BillId);
 			LOG_DEBUG("*****************************************");
 			break;
 		}
 
 		case 40:
 		{
-			pubHexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)currentTransaction.sqlTrx.BillId);
-			LOG_DEBUG("VoucherSerial [%s]", currentTransaction.sqlTrx.BillId);
+			// hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)currentTransaction.sqlTrx.BillId);
+			// LOG_DEBUG("VoucherSerial [%s]", currentTransaction.sqlTrx.BillId);
 			break;
 		}
 		case 94:
 		{
-			setting.ForceTMS = 1;
-			pubSaveSetting();
+			settings()->server.forceTMS = 1;
+            // settings()->save();
 			break;
 		}
 		case 98:
 		{
-			memset(config.MerchantUniqueId, 0x00, sizeof(config.MerchantUniqueId));
-			pubHexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)config.MerchantUniqueId);
+			memset(settings()->terminal.merchantUniqueId, 0x00, sizeof(settings()->terminal.merchantUniqueId));
+			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)settings()->terminal.merchantUniqueId);
 			LOG_DEBUG("*****************************************");
 			LOG_DEBUG("*****************************************");
-			LOG_DEBUG("config.MerchantUniqueId [%s]", config.MerchantUniqueId);
+			LOG_DEBUG("settings()->terminal.merchantUniqueId [%s]", settings()->terminal.merchantUniqueId);
 			LOG_DEBUG("*****************************************");
 			LOG_DEBUG("*****************************************");
-			pubSaveConfig();
+			// settings()->save();
 			break;
 		}
 		case 99:
@@ -364,14 +381,12 @@ static Error_t isoParseCfgResponse(ByteArray *buf)
 
 static const IsoTransaction templates[] = {
     {
-        .requestMti  = MTI_LOG_ON,
-        .responseMti = MTI_LOG_ON_RESPONSE,
+        .mti  = MTI_LOG_ON,
         .builder     = isoBuildLogOn,
         .parser      = isoParseLogOnResponse
     },
     {
-        .requestMti  = MTI_CFG,
-        .responseMti = MTI_CFG_RESPONSE,
+        .mti  = MTI_CFG,
         .builder     = isoBuildCfg,
         .parser      = isoParseCfgResponse
     }
@@ -379,7 +394,7 @@ static const IsoTransaction templates[] = {
 
 Error_t isoBuild(MTI_t mti, ByteArray *buf) {
     for (size_t i = 0; i < sizeof(templates) / sizeof(templates[0]); i++) {
-        if (templates[i].requestMti == mti) {
+        if (templates[i].mti == mti) {
             return templates[i].builder(buf);
         }
     }
@@ -399,7 +414,7 @@ Error_t isoParse(MTI_t mti, ByteArray *buf) {
     RETURN_VALUE_IF_NOT(respCode , 0, ;, ERR_NOK);
 
     for (size_t i = 0; i < sizeof(templates) / sizeof(templates[0]); i++) {
-        if (templates[i].responseMti == mti) {
+        if (templates[i].mti == mti) {
             return templates[i].parser(buf);
         }
     }

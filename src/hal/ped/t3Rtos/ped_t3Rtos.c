@@ -9,9 +9,10 @@
 #define KEY_INDEX_MAC               1
 #define KEY_INDEX_PIN               2
 #define KEY_INDEX_DTK               3
+#define KEY_INDEX_TDK               5
 
 static PedErr_t translateSdkErr(int err) {
-    PedErr_t pedErr;
+    PedErr_t pedErr = SDK_PED_ERR_BASE;
     switch (err) {
     case SDK_PED_OK:
         pedErr = PED_ERR_OK;
@@ -23,6 +24,18 @@ static PedErr_t translateSdkErr(int err) {
 }
 
 static void init(Ped* self) {
+}
+static PedErr_t encryptAccountData(Ped* self, void *buffer, 
+                                    int bufLen, void *decryptedData) {
+    u32 keyGroup = 0;
+    u8 keyIndex = 5;
+    PedAccountData accData = { 0 };
+    int err = sdkPedEncryptAccountData(keyGroup, PED_KEY_TDK, keyIndex, 
+        PED_ACCOUNTALG_TDES_DEC_ECB, 0, 0, buffer, bufLen, &accData);
+    RETURN_VALUE_IF_NOT(err, SDK_PED_OK, ;, PED_ERR_INPUT);
+    memcpy (decryptedData, accData.mAccountBlockData, accData.mAccountDataLen);
+    return PED_ERR_OK;
+
 }
 
 static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t key, size_t len) {

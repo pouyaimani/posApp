@@ -259,7 +259,11 @@ static void beepOnce(System *dev) {
 }
 
 static void setDateTime(System *dev, DateTime *dt) {
-    sdkSysBeepOnce();
+    
+}
+
+static int8_t setDateTimeBcd(System *dev, char *dt) {
+    return sdkSysSetRtcTime(dt); // SDK_SYS_OK
 }
 
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
@@ -287,6 +291,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.getDate = getDate;
     self->base.vtable.getTime = getTime;
     self->base.vtable.getPackedDateTime = getPackedDateTime;
+    self->base.vtable.setDateTimeBcd = setDateTimeBcd;
 
     self->base.maxBright = 5;
     self->base.maxSound = 5;
