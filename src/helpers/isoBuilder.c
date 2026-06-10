@@ -4,12 +4,39 @@
 #include "ped/ped.h"
 #include "utility/ltv.h"
 #include "utility/utility.h"
+#include "utility/arith.h"
+
 
 #define MTI_VAL_LOG_ON              "0800"
 #define MTI_VAL_CFG                 "0100"
 
 #define PRC_LOG_ON              "920000"
 #define PRC_CFG                 "930000"
+
+enum {
+    TAG_MERCHANT_NAME      = 31,
+    TAG_MERCHANT_PHONE     = 34,
+    TAG_VOUCHER_PIN        = 41,
+    TAG_SWITCH_DATETIME    = 50,
+    TAG_FORCE_TMS          = 94,
+    TAG_MERCHANT_UNIQUE_ID = 98,
+};
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Helpers                                              * 
+ *                                                                                           *
+ ********************************************************************************************/
+
+static int parse2Digits(const unsigned char *p) {
+    char buf[3] = {
+        (char)p[0],
+        (char)p[1],
+        '\0'
+    };
+
+    return libAtoi(buf);
+}
 
 static int8_t compareMac(int keyIndex, char* data) {
     RETURN_VALUE_IF_NULL(data, ;, ERR_NULL_PARAMETER);
@@ -25,31 +52,28 @@ static int8_t compareMac(int keyIndex, char* data) {
     if (iso8583()->getBin(ELEMENT_MAC_2, mac, &length) == ISO_OK) {
     } else if (iso8583()->getBin(ELEMENT_MAC, mac, &length) == ISO_OK) {
     } else {
-        LOG_DEBUG("+++++++++++++mac:::::::::NO MAC !!!!");
+        LOG_DEBUG("mac:::::::::NO MAC !!!!");
         return ERR_NOK;
     }
     LOG_DEBUG("[mac (%d)] [%s]", length, mac);
     // pedGetMacAscii(keyIndex, 16, packBufTemp, packedSize - 8, (char *)asciiMac);
 	int8_t macCompare = memcmp(mac, asciiMac, 8);
     if (macCompare != 0) {
-		LOG_DEBUG("+++++++++++++mac:::::::::check mac failed !!!!");
+		LOG_DEBUG("mac:::::::::check mac failed !!!!");
 		return ERR_NOK;
 	}
-	LOG_DEBUG("+++++++++++++mac:::::::::check mac succeed !!!!");
+	LOG_DEBUG("mac:::::::::check mac succeed !!!!");
 	return ERR_OK;
 }
 
-static int dtSetSystemDateTime(int _input[]) {
-	unsigned char dt[7] = { 0 };
+static int dtSetSystemDateTime(const int input[6]) {
+    uint8_t dt[7] = {0};
 
-	dt[0] = (_input[0] / 10) * 16 + (_input[0] % 10);
-	dt[1] = (_input[1] / 10) * 16 + (_input[1] % 10);
-	dt[2] = (_input[2] / 10) * 16 + (_input[2] % 10);
-	dt[3] = (_input[3] / 10) * 16 + (_input[3] % 10);
-	dt[4] = (_input[4] / 10) * 16 + (_input[4] % 10);
-	dt[5] = (_input[5] / 10) * 16 + (_input[5] % 10);
+    for (int i = 0; i < 6; i++) {
+        dt[i] = toBcd(input[i]);
+    }
 
-	return OOP_CALL(sys(), setDateTimeBcd, dt);
+    return OOP_CALL(sys(), setDateTimeBcd, dt);
 }
 
 static int8_t pedDecrypt(void *buffer, int bufLen, void *decryptedData) {
@@ -59,201 +83,160 @@ static int8_t pedDecrypt(void *buffer, int bufLen, void *decryptedData) {
 	return result == PED_ERR_OK? ERR_OK : ERR_NOK;
 }
 
-static void decodeMerchantDesc(char* buffer) {
-    #if 1
-	int i;
-	int count = 0;
-
-	LOG_DEBUG("size of buffer: %d", sizeof(buffer));
-
-	LtvStructInfo ltvStructInfo[15];
+static void handleMerchantName(LtvStructInfo *tag) {
     DEFINE_BYTE_ARRAY(tmpBuffer, 512);
-    DEFINE_BYTE_ARRAY(merchantFa, 512);
 
-	memset(ltvStructInfo, 0x00, sizeof(LtvStructInfo) * 15);
-	
-	LOG_DEBUG("before unpackLtv");
+    memset(settings()->terminal.merchantName, 0,
+           sizeof(settings()->terminal.merchantName));
 
-	count = unpackLtv(buffer, ltvStructInfo);
+    hexStringToBytes(tag->data, tag->len - 1, tmpBuffer);
 
-	LOG_DEBUG("Count is [%d]", count);
+    char *end = strchr((char *)tmpBuffer, '\\');
+    size_t len = end
+               ? (size_t)(end - (char *)tmpBuffer)
+               : strlen((char *)tmpBuffer);
 
-	for (i = 0; i < count; i++) {
-		int tag = libAtoi(ltvStructInfo[i].tag);
-		LOG_DEBUG("TAG [%d]", tag);
-		switch (tag) {
-		case 31:
-		{
-			int index = 0;
-			memset(tmpBuffer, 0x00, sizeof(tmpBuffer));
-			memset(settings()->terminal.merchantName, 0x00, sizeof(settings()->terminal.merchantName));
-			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, tmpBuffer);
-			do {
-				//						LOG_DEBUG("decodeMerchantDesc >> tmpBuffer[%d] >> %02X", index, tmpBuffer[index]);
-				if ((tmpBuffer[index] == 0x5C) || (tmpBuffer[index] == 0x00)) {
-					LOG_DEBUG("decodeMerchantDesc >> %02X >> BREAK", tmpBuffer[index]);
-					break;
-				}
-				merchantFa[index] = tmpBuffer[index];
-				index++;
+    LOG_DEBUG("merchantFa (%zu): %.*s",
+              len,
+              (int)len,
+              tmpBuffer);
 
-			} while (1);
-			merchantFa[index] = 0x00;
-			LOG_DEBUG("[*** merchantFa (%d) : %s ***]", index, merchantFa);
-			convertStrNoNumber((char *)merchantFa, index, 0, 4, 5, settings()->terminal.merchantName); // index, 0, 4, 5
-			LOG_DEBUG("[*** config.MerchantName (%d) : %s ***]", strlen(settings()->terminal.merchantName), settings()->terminal.merchantName);
-			break;
-		}
-		case 32:
-		{
-			//					memset (config.MerchantAddress, 0x00, sizeof(config.MerchantAddress));
-			//					convertStr (ltvStructInfo[i].data, strlen(ltvStructInfo[i].data), 0, config.MerchantAddress);
-			break;
-		}
-		case 34:
-		{
-			memset(settings()->terminal.merchantPhone, 0x00, sizeof(settings()->terminal.merchantPhone));
-			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)settings()->terminal.merchantPhone);
-			// strcpy (config.MerchantPhone, ltvStructInfo[i].data);
-			LOG_DEBUG(" &&&&&&&&&&&&&&&&&& ltvStructInfo[i].data [%s] len[%d] config.MerchantPhone [%s] &&&&&&&&&&&&&&&&&&&&&&& ",
-					 ltvStructInfo[i].data, ltvStructInfo[i].len, settings()->terminal.merchantPhone);
-			break;
-		}
-		case 35:
-		{
-			//					memset (config.MerchantPostalCode, 0x00, sizeof(config.MerchantPostalCode));
-			//					hexStringToBytes(ltvStructInfo[i].data, (unsigned char *)config.MerchantPostalCode);
-			break;
-		}
-		case 50:
-		{
-			int ret = 0;
-			int counter = 2;
-			char part[2 + 1] = {0};
-			int dateTime[6] = {0};
-			unsigned char tempBuf[512] = {0};
-			char switchDateTime[16] = {0};
-            memset(tempBuf, 0, sizeof(tempBuf));
-            memset(switchDateTime, 0, sizeof(switchDateTime));
-			LOG_DEBUG("dateTime(%d) [%s]", ltvStructInfo[i].len, ltvStructInfo[i].data);
-			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, tempBuf);
-			memset(part, 0x00, sizeof(part));
-			memcpy(part, tempBuf + counter, 2);
-			dateTime[0] = libAtoi(part);
-			counter += 2;
-			memset(part, 0x00, sizeof(part));
-			memcpy(part, tempBuf + counter, 2);
-			dateTime[1] = libAtoi(part);
-			counter += 2;
-			memset(part, 0x00, sizeof(part));
-			memcpy(part, tempBuf + counter, 2);
-			dateTime[2] = libAtoi(part);
-			counter += 2;
-			memset(part, 0x00, sizeof(part));
-			memcpy(part, tempBuf + counter, 2);
-			dateTime[3] = libAtoi(part);
-			counter += 2;
-			memset(part, 0x00, sizeof(part));
-			memcpy(part, tempBuf + counter, 2);
-			dateTime[4] = libAtoi(part);
-			counter += 2;
-			memset(part, 0x00, sizeof(part));
-			memcpy(part, tempBuf + counter, 2);
-			dateTime[5] = libAtoi(part);
-			counter += 2;
-			ret = dtSetSystemDateTime(dateTime);
-			LOG_DEBUG("setSwitchDateTime::[%d] = dtSetSystemDateTime(%s);", ret, tempBuf); // sysSetDateTime(48320218); 20231212231334
-			break;
-		}
-		case 41:
-		{
-			char temp[128] = {0};
-			int pinLen = 0;
-			unsigned char pinTemp[64];
-			unsigned char pinBytes[32];
-			unsigned char pinData[32];
-			unsigned int outLen = 0;
+    convertStrNoNumber(
+        (char *)tmpBuffer,
+        (int)len, 0, 4, 5,
+        settings()->terminal.merchantName);
 
-			strcpy(temp, ltvStructInfo[i].data);
-			pinLen = strlen(temp) / 2;
-			LOG_DEBUG("parseVoucherTransactionSIPA::temp[%s]pinLen[%d]", temp, pinLen);
-
-			memset(pinTemp, 0x00, sizeof(pinTemp));
-			memset(pinBytes, 0x00, sizeof(pinBytes));
-			memset(pinData, 0x00, sizeof(pinData));
-
-			hexStringToBytes(temp, pinLen, pinTemp); // Pin
-			//TraceExt(pinTemp, pinLen, "[Voucher PIN]");
-			pinLen /= 2;
-			hex2data(pinBytes, pinTemp, pinLen);
-			LOG_DEBUG("parseVoucherTransactionSIPA::pinLen[%d]", pinLen);
-			//TraceExt(pinBytes, pinLen, "[Voucher PIN Ex]");
-
-			pedDecrypt(pinBytes, 16, pinData);
-            // TODO
-			// strcpy(currentTransaction.sqlTrx.PaymentId, (const char *)pinData);
-			//TraceExt(pinTemp, 16, "VoucherPin [%s]", currentTransaction.sqlTrx.PaymentId);
-			break;
-		}
-		case 80:
-		{
-			// memset(currentTransaction.sqlTrx.BillId, 0x00, sizeof(currentTransaction.sqlTrx.BillId));
-			LOG_DEBUG("Tag 80 [%s]", ltvStructInfo[i].data);
-			// hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, currentTransaction.sqlTrx.BillId);
-			LOG_DEBUG("*****************************************");
-			// LOG_DEBUG("FaraBILLID [%s]", currentTransaction.sqlTrx.BillId);
-			LOG_DEBUG("*****************************************");
-			break;
-		}
-
-		case 40:
-		{
-			// hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)currentTransaction.sqlTrx.BillId);
-			// LOG_DEBUG("VoucherSerial [%s]", currentTransaction.sqlTrx.BillId);
-			break;
-		}
-		case 94:
-		{
-			settings()->server.forceTMS = 1;
-            // settings()->save();
-			break;
-		}
-		case 98:
-		{
-			memset(settings()->terminal.merchantUniqueId, 0x00, sizeof(settings()->terminal.merchantUniqueId));
-			hexStringToBytes(ltvStructInfo[i].data, ltvStructInfo[i].len - 1, (unsigned char *)settings()->terminal.merchantUniqueId);
-			LOG_DEBUG("*****************************************");
-			LOG_DEBUG("*****************************************");
-			LOG_DEBUG("settings()->terminal.merchantUniqueId [%s]", settings()->terminal.merchantUniqueId);
-			LOG_DEBUG("*****************************************");
-			LOG_DEBUG("*****************************************");
-			// settings()->save();
-			break;
-		}
-		case 99:
-		{
-			LOG_DEBUG("TAG 99");
-		}
-		}
-
-	} // for (i=0; i<count; i++)
-#endif
+    LOG_DEBUG(
+        "merchantName (%zu): %s",
+        strlen(settings()->terminal.merchantName),
+        settings()->terminal.merchantName);
 }
 
+static void handleMerchantPhone(LtvStructInfo *tag) {
+    memset(settings()->terminal.merchantPhone, 0x00, 
+            sizeof(settings()->terminal.merchantPhone));
+	hexStringToBytes(tag->data, tag->len - 1, 
+            (unsigned char *)settings()->terminal.merchantPhone);
+	// strcpy (config.MerchantPhone, ltvStructInfo[i].data);
+	LOG_DEBUG(" config.MerchantPhone [%s]", settings()->terminal.merchantPhone);
+}
+
+static void handleSwitchDateTime(LtvStructInfo *tag) {
+    int dateTime[6] = {0};
+    unsigned char tempBuf[512] = {0};
+
+    LOG_DEBUG("dateTime(%d) [%s]", tag->len, tag->data);
+
+    hexStringToBytes(tag->data, tag->len - 1, tempBuf);
+
+    for (int i = 0; i < 6; i++) {
+        dateTime[i] = parse2Digits(tempBuf + 2 + (i * 2));
+    }
+
+    int ret = dtSetSystemDateTime(dateTime);
+
+    LOG_DEBUG(
+        "dtSetSystemDateTime(%s) -> %d",
+        tempBuf,
+        ret
+    );
+}
+
+static void handleVoucherPin(LtvStructInfo *tag) {
+    char temp[128] = {0};
+	int pinLen = 0;
+	unsigned char pinTemp[64];
+	unsigned char pinBytes[32];
+	unsigned char pinData[32];
+	unsigned int outLen = 0;
+	strcpy(temp, tag->data);
+	pinLen = strlen(temp) / 2;
+	LOG_DEBUG("parseVoucherTransactionSIPA::temp[%s]pinLen[%d]", temp, pinLen);
+	memset(pinTemp, 0x00, sizeof(pinTemp));
+	memset(pinBytes, 0x00, sizeof(pinBytes));
+	memset(pinData, 0x00, sizeof(pinData));
+	hexStringToBytes(temp, pinLen, pinTemp); // Pin
+	pinLen /= 2;
+	hex2data(pinBytes, pinTemp, pinLen);
+	LOG_DEBUG("parseVoucherTransactionSIPA::pinLen[%d]", pinLen);
+	pedDecrypt(pinBytes, 16, pinData);
+    // TODO
+	// strcpy(currentTransaction.sqlTrx.PaymentId, (const char *)pinData);
+	//TraceExt(pinTemp, 16, "VoucherPin [%s]", currentTransaction.sqlTrx.PaymentId);
+}
+
+static void handleMerchantUniqueId(LtvStructInfo *tag) {
+    memset(settings()->terminal.merchantUniqueId, 0x00, sizeof(settings()->terminal.merchantUniqueId));
+    hexStringToBytes(tag->data, tag->len - 1, (unsigned char *)settings()->terminal.merchantUniqueId);
+    LOG_DEBUG("settings()->terminal.merchantUniqueId [%s]", 
+            settings()->terminal.merchantUniqueId);
+    // settings()->save();
+}
+
+static void decodeMerchantDesc(char *buffer) {
+    LtvStructInfo tags[15] = {0};
+
+    int count = unpackLtv(buffer, tags);
+
+    for (int i = 0; i < count; i++) {
+        int tag = libAtoi(tags[i].tag);
+
+        switch (tag) {
+        case TAG_MERCHANT_NAME:
+            handleMerchantName(&tags[i]);
+            break;
+
+        case TAG_MERCHANT_PHONE:
+            handleMerchantPhone(&tags[i]);
+            break;
+
+        case TAG_SWITCH_DATETIME:
+            handleSwitchDateTime(&tags[i]);
+            break;
+
+        case TAG_VOUCHER_PIN:
+            handleVoucherPin(&tags[i]);
+            break;
+
+        case TAG_FORCE_TMS:
+            settings()->server.forceTMS = 1;
+            break;
+
+        case TAG_MERCHANT_UNIQUE_ID:
+            handleMerchantUniqueId(&tags[i]);
+            break;
+
+        default:
+            LOG_DEBUG("Unknown tag %d", tag);
+            break;
+        }
+    }
+}
+
+Error_t setDateTime() {
+    DateTime *dt = OOP_CALL(sys(), getDateTime);
+    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->time);
+    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->date + 2);
+    return ERR_OK;
+}
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                   Builder/Parsers                                         * 
+ *                                                                                           *
+ ********************************************************************************************/
+
 Error_t isoBuildLogOn(ByteArray *buf) {
-    iso8583()->reset();
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     LOG_DEBUG("dn = %s", sn );
     DEFINE_STRING(privateData, 128);
 	setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
-    DateTime *dt = OOP_CALL(sys(), getDateTime);
     /* set ISO message fields */
     iso8583()->setMTI((const DL_UINT8 *)MTI_VAL_LOG_ON);
     iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8 *)PRC_LOG_ON);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)"000001");
-    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->time);
-    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->date + 2);
+    setDateTime();
     DEFINE_STRING(nni, 8);
     prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
     iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8 *)nni);
@@ -262,28 +245,10 @@ Error_t isoBuildLogOn(ByteArray *buf) {
 #endif
     iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, (const DL_UINT8 *)privateData);
     iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO, (const DL_UINT8 *)SecRelControlInfo);
-    DEFINE_BYTE_ARRAY(mac, 8 + 1);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8 *)mac, 8);
-    DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
-    size_t packedLen;
-    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
-    if (packedLen < 8)
-        return ERR_NOK;
-    ped()->getMac(16, tmpBuf, packedLen - 8, mac);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8 *)mac, 8);
-    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
-    IsoHeaderData_t hd = {
-        .nii = settings()->server.mainServerNii
-    };
-    RETURN_VALUE_IF_NOT(iso8583()->addHeader(buf->data,
-                            tmpBuf, &packedLen, &hd), 
-                            ISO_OK, ;, ERR_NOK);
-    buf->len = packedLen;
     return ERR_OK;
 }
 
-static Error_t isoParseLogOnResponse(ByteArray *buf)
-{
+static Error_t isoParseLogOnResponse(ByteArray *buf) {
 	/*
 	 MASTER		917862ab54de7c916091b5c9a7de0189
 	 PIN		d15d58bb29135b15f56025b2accc027f
@@ -306,19 +271,16 @@ static Error_t isoParseLogOnResponse(ByteArray *buf)
 }
 
 Error_t isoBuildCfg(ByteArray *buf) {
-    iso8583()->reset();
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     LOG_DEBUG("dn = %s", sn );
     DEFINE_STRING(privateData, 128);
 	setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
-    DateTime *dt = OOP_CALL(sys(), getDateTime);
     /* set ISO message fields */
     iso8583()->setMTI((const DL_UINT8 *)MTI_VAL_CFG);
     iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8 *)PRC_CFG);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)"000001");
-    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->time);
-    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION, (const DL_UINT8 *)dt->date + 2);
+    setDateTime();
     DEFINE_STRING(nni, 8);
     prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
     iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8 *)nni);
@@ -326,30 +288,12 @@ Error_t isoBuildCfg(ByteArray *buf) {
     (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8 *)setting.AcquireIIN, &isoMsg); // IIN
 #endif
     iso8583()->setStr(ELEMENT_TERMINAL_ID, (const DL_UINT8 *)privateData);
-    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, (const DL_UINT8 *)settings()->terminal.terminalNo);
-    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO, (const DL_UINT8 *)SecRelControlInfo);
-    DEFINE_BYTE_ARRAY(mac, 8 + 1);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8 *)mac, 8);
-    DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
-    size_t packedLen;
-    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
-    if (packedLen < 8)
-        return ERR_NOK;
-    ped()->getMac(16, tmpBuf, packedLen - 8, mac);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8 *)mac, 8);
-    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
-    IsoHeaderData_t hd = {
-        .nii = settings()->server.mainServerNii
-    };
-    RETURN_VALUE_IF_NOT(iso8583()->addHeader(buf->data,
-                            tmpBuf, &packedLen, &hd), 
-                            ISO_OK, ;, ERR_NOK);
-    buf->len = packedLen;
+    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, 
+                        (const DL_UINT8 *)settings()->terminal.terminalNo);
     return ERR_OK;
 }
 
-static Error_t isoParseCfgResponse(ByteArray *buf)
-{
+static Error_t isoParseCfgResponse(ByteArray *buf) {
 	/*
 	 MASTER		917862ab54de7c916091b5c9a7de0189
 	 PIN		d15d58bb29135b15f56025b2accc027f
@@ -379,26 +323,58 @@ static Error_t isoParseCfgResponse(ByteArray *buf)
 	return ERR_OK;
 }
 
-static const IsoTransaction templates[] = {
-    {
-        .mti  = MTI_LOG_ON,
-        .builder     = isoBuildLogOn,
-        .parser      = isoParseLogOnResponse
-    },
-    {
-        .mti  = MTI_CFG,
-        .builder     = isoBuildCfg,
-        .parser      = isoParseCfgResponse
-    }
-};
+static Error_t isoBuildPurchase(ByteArray *buf) {
+}
+
+static Error_t isoParsePurchaseResponse(ByteArray *buf) {
+}
+
+static Error_t isoBuildBill(ByteArray *buf) {
+}
+
+static Error_t isoParseBillResponse(ByteArray *buf) {
+}
+
+static Error_t isoBuildBalance(ByteArray *buf) {
+    
+}
+
+static Error_t isoParseBalanceResponse(ByteArray *buf) {
+}
+
+static Error_t isoBuildPay(ByteArray *buf) {
+}
+
+static Error_t isoParsePayResponse(ByteArray *buf) {
+}
+
+static Error_t isoBuildMac(ByteArray *buf) {
+    DEFINE_BYTE_ARRAY(mac, 8 + 1);
+    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8 *)mac, 8);
+    DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
+    size_t packedLen;
+    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
+    if (packedLen < 8)
+        return ERR_NOK;
+    ped()->getMac(16, tmpBuf, packedLen - 8, mac);
+    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8 *)mac, 8);
+    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
+    IsoHeaderData_t hd = {
+        .nii = settings()->server.mainServerNii
+    };
+    RETURN_VALUE_IF_NOT(iso8583()->addHeader(buf->data,
+                            tmpBuf, &packedLen, &hd), 
+                            ISO_OK, ;, ERR_NOK);
+    buf->len = packedLen;
+    return ERR_OK;
+}
 
 Error_t isoBuild(MTI_t mti, ByteArray *buf) {
-    for (size_t i = 0; i < sizeof(templates) / sizeof(templates[0]); i++) {
-        if (templates[i].mti == mti) {
-            return templates[i].builder(buf);
-        }
-    }
-    return ERR_NOK;
+    IsoTransaction *txn = isoFindTransaction(mti);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
+    iso8583()->reset();
+    RETURN_VALUE_IF_NOT(txn->builder(buf), ERR_OK, ;, ERR_NOK);
+    return isoBuildMac(buf);
 }
 
 Error_t isoParse(MTI_t mti, ByteArray *buf) {
@@ -413,11 +389,50 @@ Error_t isoParse(MTI_t mti, ByteArray *buf) {
     LOG_DEBUG("Txn responce code = %d", respCode);
     RETURN_VALUE_IF_NOT(respCode , 0, ;, ERR_NOK);
 
-    for (size_t i = 0; i < sizeof(templates) / sizeof(templates[0]); i++) {
+    IsoTransaction *txn = isoFindTransaction(mti);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
+    return txn->parser(buf);
+}
+
+static const IsoTransaction templates[] = {
+    {
+        .mti         = MTI_LOG_ON,
+        .builder     = isoBuildLogOn,
+        .parser      = isoParseLogOnResponse
+    },
+    {
+        .mti         = MTI_CFG,
+        .builder     = isoBuildCfg,
+        .parser      = isoParseCfgResponse
+    },
+    {
+        .mti         = MTI_PURCHASE,
+        .builder     = isoBuildPurchase,
+        .parser      = isoParsePurchaseResponse
+    },
+    {
+        .mti         = MTI_BILL,
+        .builder     = isoBuildBill,
+        .parser      = isoParseBillResponse
+    },
+    {
+        .mti         = MTI_BALANCE,
+        .builder     = isoBuildBalance,
+        .parser      = isoParseBalanceResponse
+    },
+    {
+        .mti         = MTI_PAY,
+        .builder     = isoBuildPay,
+        .parser      = isoParsePayResponse
+    }
+};
+
+const IsoTransaction *isoFindTransaction(MTI_t mti) {
+    for (size_t i = 0; i < ARRAY_SIZE(templates); i++) {
         if (templates[i].mti == mti) {
-            return templates[i].parser(buf);
+            return &templates[i];
         }
     }
 
-    return ERR_NOK;
+    return NULL;
 }

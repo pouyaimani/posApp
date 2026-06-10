@@ -15,4 +15,6 @@ void intToBytes(uint32_t src, uint8_t *bytes, uint32_t bytesLen);
 
 int32_t u32ToHex(uint8_t *pheDest, uint32_t const uiSrc, uint32_t siHexLen);
 
+uint8_t toBcd(int value);
+
 #endif

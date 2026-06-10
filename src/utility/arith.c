@@ -222,3 +222,8 @@ int32_t u32ToHex(uint8_t *pheDest, uint32_t const uiSrc, uint32_t siHexLen)
 
     return siHexLen;
 }
+
+uint8_t toBcd(int value) {
+    return (uint8_t)(((value / 10) << 4) |
+                      (value % 10));
+}
