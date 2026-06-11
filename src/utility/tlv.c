@@ -1,6 +1,7 @@
 #include "tlv.h"
 #include "sys/sys.h"
 #include "logger.h"
+#include "error.h"
 
 static TLV *__tlv;
 
@@ -11,8 +12,12 @@ static TlvError_t encode(uint8_t *out,
                        const void *value,
                        uint16_t valueLen, uint16_t *encodedLen)
 {
-    if (!out || !tag || (!value && valueLen > 0) || !encodedLen) {
-        LOG_DEBUG("tlv encode failed.");
+    RETURN_VALUE_IF_NULL(out, ;, TLV_ERR_INVALID_PARAM);
+    RETURN_VALUE_IF_NULL(tag, ;, TLV_ERR_INVALID_PARAM);
+    RETURN_VALUE_IF_NULL(value, ;, TLV_ERR_INVALID_PARAM);
+    RETURN_VALUE_IF_NULL(encodedLen, ;, TLV_ERR_INVALID_PARAM);
+    if ((!value && valueLen > 0)) {
+        LOG_DEBUG("tlv encode failed. invalid valueLen = %d.", valueLen);
         return TLV_ERR_INVALID_PARAM;
     }
 

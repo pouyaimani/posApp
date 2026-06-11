@@ -59,8 +59,9 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_MERCHANT_PIN MERCHANT_DEFAULT_PIN
 
 static const DataDescriptor txnTraceInfoDsc[] = {
-    {0, T_INT, (0), (sizeof(__txnTraceInfo.stan)), (1), &(__txnTraceInfo.stan)},
-    {1, T_INT, (0), (sizeof(__txnTraceInfo.batch)), (1), &(__txnTraceInfo.batch)}};
+    {"stan", T_INT, (0), (sizeof(__txnTraceInfo.stan)), ("1"), &(__txnTraceInfo.stan)},
+    {"batch", T_INT, (0), (sizeof(__txnTraceInfo.batch)), ("1"), &(__txnTraceInfo.batch)}
+};
 
 BEGIN_DSC_ARRAY;
 static const DataDescriptor settingsDsc[] = {
