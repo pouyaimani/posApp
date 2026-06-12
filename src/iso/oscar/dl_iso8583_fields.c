@@ -95,6 +95,18 @@ static DL_ERR VarLen_Get ( const DL_UINT8 **ioPtr,
 				           DL_UINT16        iMaxValue,
 				           DL_UINT16       *oLen );
 
+static DL_ERR VarLen_Geti(const DL_UINT8 **ioPtr,
+	DL_UINT8         iVarLenDigits,
+	DL_UINT16        iMaxValue,
+	DL_UINT16       *oLen,
+	DL_UINT16		iField);
+
+static DL_ERR VarLen_Puti(DL_UINT8    iVarLenType,
+	DL_UINT32   iActLen,
+	DL_UINT32  *ioReqLen,
+	DL_UINT8  **ioPtr,
+	DL_UINT16 iField);
+
 /******************************************************************************/
 //
 // TYPES
@@ -184,7 +196,7 @@ DL_ERR _pack_iso_ASCHEX ( DL_UINT16                    iField,
 	DL_UINT32             i;
 
 	/* variable length handling */
-	err = VarLen_Put(iFieldDefPtr->varLen,actLen,&reqLen,&tmpPtr);
+	err = VarLen_Puti(iFieldDefPtr->varLen,actLen,&reqLen,&tmpPtr, iField);
 
 	if ( !err )
 	{
@@ -245,7 +257,7 @@ DL_ERR _unpack_iso_ASCHEX ( DL_UINT16                    iField,
 	DL_UINT8  *tmpDataPtr = NULL;
 
 	/* variable length handling */
-	err = VarLen_Get(&tmpPtr,iFieldDefPtr->varLen,iFieldDefPtr->len,&size);
+	err = VarLen_Geti(&tmpPtr,iFieldDefPtr->varLen,iFieldDefPtr->len,&size, iField);
 
 	/* allocate field */
 	if ( !err )
@@ -297,7 +309,7 @@ DL_ERR _pack_iso_ASCII ( DL_UINT16                    iField,
 	DL_UINT32             reqLen   = iFieldDefPtr->len;
 
 	/* variable length handling */
-	err = VarLen_Put(iFieldDefPtr->varLen,actLen,&reqLen,&tmpPtr);
+	err = VarLen_Puti(iFieldDefPtr->varLen,actLen,&reqLen,&tmpPtr, iField);
 
 	if ( !err )
 	{
@@ -340,7 +352,7 @@ DL_ERR _unpack_iso_ASCII ( DL_UINT16                    iField,
 	DL_UINT8  *tmpDataPtr = NULL;
 
 	/* variable length handling */
-	err = VarLen_Get(&tmpPtr,iFieldDefPtr->varLen,iFieldDefPtr->len,&size);
+	err = VarLen_Geti(&tmpPtr,iFieldDefPtr->varLen,iFieldDefPtr->len,&size, iField);
 
 	/* allocate field */
 	if ( !err )
@@ -667,3 +679,103 @@ static DL_ERR VarLen_Get ( const DL_UINT8 **ioPtr,
 }
 
 /******************************************************************************/
+
+static DL_ERR VarLen_Puti(DL_UINT8    iVarLenType,
+	DL_UINT32   iActLen,
+	DL_UINT32  *ioReqLen,
+	DL_UINT8  **ioPtr,
+	DL_UINT16 iField)
+{
+	DL_ERR    err = kDL_ERR_NONE;
+	DL_UINT8 *tmpPtr = *ioPtr;
+
+	switch (iVarLenType)
+	{
+	case kDL_ISO8583_FIXED:
+		/* do nothing */
+		break;
+	case kDL_ISO8583_LLVAR:
+		iActLen %= 100;
+		*ioReqLen = iActLen;
+        if ((iField == 2) || (iField == 32))
+		{
+			*tmpPtr++ = output_bcd_byte(iActLen);
+		}
+        else if ((iField == 35))
+        {
+            *tmpPtr++ = output_bcd_byte(iActLen-1);
+        }
+		else
+		{
+			*tmpPtr++ = output_bcd_byte(iActLen / 2);
+		}
+		break;
+	case kDL_ISO8583_LLLVAR:
+		iActLen %= 1000;
+		*ioReqLen = iActLen;
+        if (iField == 48)
+        {
+            iActLen /= 2;
+        }
+        *tmpPtr++ = output_bcd_byte(iActLen / 100);
+		*tmpPtr++ = output_bcd_byte(iActLen % 100);
+		break;
+	case kDL_ISO8583_LLLLVAR:
+		iActLen %= 10000;
+		*ioReqLen = iActLen;
+		*tmpPtr++ = output_bcd_byte(iActLen / 100);
+		*tmpPtr++ = output_bcd_byte(iActLen % 100);
+		break;
+	default:
+		/* [ERROR] unsupported length type */
+		err = kDL_ERR_OTHER;
+	} /* end-switch */
+
+	*ioPtr = tmpPtr;
+
+	return err;
+}
+
+static DL_ERR VarLen_Geti(const DL_UINT8 **ioPtr,
+	DL_UINT8         iVarLenDigits,
+	DL_UINT16        iMaxValue,
+	DL_UINT16       *oLen,
+	DL_UINT16		iField)
+{
+	DL_ERR    err = kDL_ERR_NONE;
+	DL_UINT8 *tmpPtr = (DL_UINT8*)*ioPtr;
+
+	/* init outputs */
+	*oLen = iMaxValue;
+
+	if (kDL_ISO8583_FIXED != iVarLenDigits)
+	{
+		*oLen = 0;
+
+		if (iVarLenDigits % 2)
+                iVarLenDigits++;
+
+		while (iVarLenDigits > 0)
+		{
+			*oLen = (*oLen * 100) +
+				((((int)(*tmpPtr) >> 4) & 0xf) * 10) +
+				((int)(*tmpPtr) & 0xf);
+			iVarLenDigits -= 2;
+			tmpPtr++;
+		} /* end-while */
+
+        /* limit if exceeds max */
+        if ((iField == 48)) // || (iField == 61) || (iField == 62))
+        {
+            *oLen = MIN(iMaxValue, (*oLen * 2));
+        }
+        else
+		{
+			*oLen = MIN(iMaxValue, (*oLen));
+		}
+	}
+
+	*ioPtr = tmpPtr;
+
+	return err;
+}
