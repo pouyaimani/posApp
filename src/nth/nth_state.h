@@ -10,11 +10,14 @@ typedef struct NthTransaction NthTransaction;
 OOP_CLASS(NthState) {
     OOP_EXTENDS(State);
     NthTransaction *tx;
-    State *onSucess;
-    State *onFailure;
-    ByteArray *txData;
+    State *success;
+    State *failure;
 };
 
-OOP_CTOR(NthState, NthTransaction *tx);
+OOP_CTOR(
+        NthState,
+        NthTransaction *tx);
+
+void GOTO_NTH(NthState *state);
 
 #endif

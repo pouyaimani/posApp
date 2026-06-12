@@ -85,7 +85,8 @@ NthTransaction *nth_allocTransaction(void) {
             memset(tx,
                    0,
                    sizeof(*tx));
-            OOP_CALL_CTOR(NthState, &tx->procState, tx);
+            tx->socketFd = -1;
+            OOP_CALL_CTOR(NthState, &tx->process, tx);
             tx->active = true;
 
             tx->txBuffer.data = tx->txStorage;
@@ -118,6 +119,7 @@ void nth_releaseTransaction(
     memset(tx,
            0,
            sizeof(*tx));
+    tx->socketFd = -1;
 }
 
 NthResult nth_connect(
@@ -166,7 +168,35 @@ NthResult nth_send(NthTransaction *tx,
     tx->txOffset = 0;
 
     tx->state = NTH_TX_SENDING;
+    tx->startTick = nth_getTick();
+    return NTH_OK;
+}
 
+NthResult nth_setTx(NthTransaction *tx,
+                    ByteArray *ba) {
+    RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(ba, ;, NTH_ERR_INVALID_ARG);
+
+    if (ba->len > tx->txBuffer.capacity) {
+        NTH_LOG("NTH: buffer overfllow.data len = %d, buffer capacity = %d",
+             ba->len, tx->txBuffer.capacity);
+        return NTH_ERR_OVERFLOW;
+    }
+
+    memcpy(tx->txBuffer.data,
+           ba->data,
+           ba->len);
+
+    tx->txBuffer.len = ba->len;
+    return NTH_OK;
+}
+
+
+NthResult nth_sendProvidedTx(NthTransaction *tx) {
+    RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
+    tx->txOffset = 0;
+    tx->state = NTH_TX_SENDING;
+    tx->startTick = nth_getTick();
     return NTH_OK;
 }
 
@@ -283,12 +313,13 @@ static void nth_handleSending(
         tx->txBuffer.len) {
 
         tx->state = NTH_TX_RECEIVING;
+        tx->startTick = nth_getTick();
+        if (tx->onSent) {
+            tx->onSent(tx, tx->userData);
+        }
+        nth_emitSendEvent(tx);
+        NTH_LOG("nth: sending data succeed.");
     }
-    if (tx->onSent) {
-        tx->onSent(tx, tx->userData);
-    }
-    nth_emitSendEvent(tx);
-    NTH_LOG("nth: sending data succeed.");
 }
 
 static void nth_handleReceiving(NthTransaction *tx) {
@@ -384,6 +415,7 @@ void nth_tick(void) {
             nth_handleReceiving(tx);
             break;
         case NTH_TX_FAILED:
+            // tx->active = false;
             return;
         default:
             break;
@@ -405,6 +437,8 @@ OOP_CTOR(Nth) {
     self->release = nth_releaseTransaction;
     self->send = nth_send;
     self->tick = nth_tick;
+    self->setTx = nth_setTx;
+    self->sendProvidedTx = nth_sendProvidedTx;
 }
 
 Nth *nth() {

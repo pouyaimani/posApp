@@ -158,6 +158,8 @@
 
 #define USE_DUMP        1
 
+typedef int RespCode_t;
+
 /* Field format types */
 typedef enum {
     FMT_N,      /* Numeric */

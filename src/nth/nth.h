@@ -14,7 +14,7 @@
 
 struct NthTransaction;
 
-typedef void (*NthCallback)(
+typedef int8_t (*NthCallback)(
     struct NthTransaction *tx,
     void *userData);
 
@@ -25,7 +25,7 @@ typedef struct NthTransaction {
     int socketFd;
 
     NthTxState state;
-    NthState procState;
+    NthState process;
     NthTxState prevState;
     ByteArray txBuffer;
     ByteArray rxBuffer;
@@ -62,6 +62,10 @@ OOP_CLASS(Nth) {
         const char *host,
             uint16_t port);
     OOP_METHOD(NthResult, send,
+        NthTransaction *tx, ByteArray *ba);
+    OOP_METHOD(NthResult, sendProvidedTx,
+        NthTransaction *tx);
+    OOP_METHOD(NthResult, setTx,
         NthTransaction *tx, ByteArray *ba);
     OOP_METHOD(void, release, NthTransaction *tx);
     OOP_METHOD(void, tick);

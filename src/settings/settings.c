@@ -173,11 +173,9 @@ static int loadTxnTraceInfo() {
 static int incTxnTraceInfo() {
     loadTxnTraceInfo();
     __txnTraceInfo.stan++;
-    if (__txnTraceInfo.stan >= 999999)
-    {
+    if (__txnTraceInfo.stan >= 999999) {
         __txnTraceInfo.batch++;
-        if (__txnTraceInfo.batch >= 999999)
-        {
+        if (__txnTraceInfo.batch >= 999999) {
             __txnTraceInfo.batch = 1;
         }
         __txnTraceInfo.stan = 1;

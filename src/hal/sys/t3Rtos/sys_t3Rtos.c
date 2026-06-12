@@ -211,7 +211,7 @@ static void powerOff(System *dev) {
     sdkSysDevicePowerOff();
 }
 
-#define CHANGE_SERIAL			"T3335301003906"
+#define CHANGE_SERIAL			"T3335301003905"
 static int8_t getSN(System *dev, char *out, size_t len) {
     if(!out) {
         return ERR_NOK;

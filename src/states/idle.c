@@ -21,6 +21,7 @@
 #include "receipt/receiptTemplates.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "file/file.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -184,10 +185,12 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_1) {
         print();
     } else if (ev->key == KEY_2) {
-        DEFINE_BYTE_ARRAY(stan, 5);
-            prependZerosInt(txnTraceInfo()->stan, 4, stan, sizeof(stan));
+        DEFINE_BYTE_ARRAY(stan, 7);
+        txnTraceInfo()->inc();
+        prependZerosInt(txnTraceInfo()->stan, 6, stan, sizeof(stan));
     LOG_DEBUG("stan int= %u, stan string = %s", txnTraceInfo()->stan, stan);
     } else if (ev->key == KEY_3) {
+        OOP_CALL(file(), remove, "/mtd0/txn_t_info");
     } else if (ev->key == KEY_4) {
     } else if (ev->key == KEY_5) {
     } else if (ev->key == KEY_6) {

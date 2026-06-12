@@ -7,7 +7,7 @@
 #include "txn.h"
 
 Error_t isoBuild(MTI_t mti, ByteArray *buf);
-Error_t isoParse(MTI_t mti, ByteArray *buf);
+RespCode_t isoParse(MTI_t mti, ByteArray *buf);
 
 typedef int8_t (*TxnIsoBuilder)(
     ByteArray *);

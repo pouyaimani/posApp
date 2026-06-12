@@ -62,12 +62,25 @@ STATE_DEF_HANDLE(LogOn, SocketSentEvent) {
 
 STATE_DEF_HANDLE(LogOn, SocketReadyReadEvent) {
     LOG_DEBUG("socket rec event ...");
-    if(isoParse(MTI_LOG_ON, &ev->ba) != ERR_OK) {
+    RespCode_t resp = isoParse(MTI_LOG_ON, &ev->ba);
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    if(resp == ERR_NOK) {
         GOTO_INFO(state->parent, 
             state->parent, INFO_ERROR, phraseGetDef(PHRASE_PARSE_ERROR), "");
-    } else {
+    } else if (resp == 0){
         GOTO_INFO(state->parent, 
             state->parent, INFO_SUCCESS, phraseGetDef(PHRASE_SUC_DONME), "");
+    } else {
+        DEFINE_STRING(dsc, 128);
+        getResponseCode(resp, dsc, sizeof(dsc));
+        GOTO_INFO(state->parent, 
+            state->parent, INFO_ERROR, phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
     }
     nth()->release(tx);
 }
@@ -97,26 +110,6 @@ STATE_DEF_HANDLE(LogOn, SocketTimeOutEvent) {
 }
 
 STATE_DEF_ENTER(LogOn) {
-    // IsoTransmitter *transmitter = (IsoTransmitter *)STATE_TRNS_ISO;
-    // NetConnect *con = (NetConnect *)transmitter->connect;
-    // con->ctx.onFailure = state->parent;
-    // NetSubTaskCtx_t connect = {0};
-    // NetSubTaskCtx_t send = {0};
-    // NetSubTaskCtx_t rec = {0};
-    // connect.onFailure = state->parent;
-    // connect.onFailureCb = onGetKeyFail;
-    // connect.onSucessCb = createIso;
-    // connect.userDataOnSucess = &((NetSend *)transmitter->send)->data;
-    // send.onFailure = state->parent;
-    // send.onFailureCb = onGetKeyFail;
-    // rec.onFailure = state->parent;
-    // rec.onFailureCb = onGetKeyFail;
-    // rec.onSucess = state->parent;
-    // rec.onSucessCb = onGetKeySuc;
-    // rec.userDataOnFailure = &((NetReceive *)transmitter->receive)->data;
-    // rec.userDataOnSucess = &((NetReceive *)transmitter->receive)->data;
-    // GOTO_ISO_TRANSMITTER(&connect, &send, &rec);
-
     tx = nth()->alloc();
     RETURN_IF_NULL(tx, 
             GOTO_INFO(state->parent, 
@@ -140,6 +133,57 @@ STATE_DEF_ENTER(LogOn) {
         nth()->release(tx);
     }
 }
+
+// void preaperData(NthTransaction *tx, void *userData) {
+//     ByteArray ba;
+//     byteArrayInit(&ba, NT_TX_BUFFER_SIZE);
+//     if (isoBuild(MTI_LOG_ON, &ba) != ERR_OK) {
+//         nth()->release(tx);
+//         GOTO_INFO(tx->process.failure, 
+//             tx->process.failure, INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+//         LOG_DEBUG("Building iso failed...");
+//         return;
+//     }
+//     nth()->setTx(tx, &ba);
+//     byteArrayDestroy(&ba);
+// }
+
+// void onRec(NthTransaction *tx, void *userData) {
+//     RespCode_t resp = isoParse(MTI_LOG_ON, &tx->rxBuffer);
+//     if(resp == ERR_NOK) {
+//         GOTO_INFO(tx->process.failure, 
+//             tx->process.failure, INFO_ERROR, phraseGetDef(PHRASE_PARSE_ERROR), "");
+//     } else if (resp == 0){
+//         GOTO_INFO(tx->process.success, 
+//             tx->process.success, INFO_SUCCESS, phraseGetDef(PHRASE_SUC_DONME), "");
+//     } else {
+//         DEFINE_STRING(dsc, 128);
+//         getResponseCode(resp, dsc, sizeof(dsc));
+//         GOTO_INFO(tx->process.failure, 
+//             tx->process.failure, INFO_ERROR, phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
+//     }
+//     nth()->release(tx);
+// }
+
+// void onfailure(NthTransaction *tx, void *userData) {
+
+//     nth()->release(tx);
+// }
+
+// STATE_DEF_ENTER(LogOn) {
+//     tx = nth()->alloc();
+//     RETURN_IF_NULL(tx, 
+//             GOTO_INFO(state->parent, 
+//             state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+//     );
+//     tx->onConnect = preaperData;
+//     tx->onReceive = onRec;
+//     tx->onFailure = preaperData;
+//     tx->onTimeout = preaperData;
+//     tx->process.failure = state->parent;
+//     tx->process.success = state->parent;
+//     GOTO_NTH(&tx->process);
+// }
 
 /******************** Get merchant data sub state **********************/
 

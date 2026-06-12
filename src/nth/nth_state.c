@@ -6,19 +6,23 @@
 #include "txn.h"
 #include "ui/infoPage.h"
 
+static NthState *self(State *s) {
+    return (NthState*)s;
+}
+
 /******************** Get Key sub state **********************/
 
 STATE_DEF_HANDLE(NthState, SocketConnectEvent) {
     ByteArray ba;
     if (!ev->isConnected) {
-        GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+        GOTO_INFO(self(state)->failure, 
+            self(state)->failure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SENDING_DATA), "");
-    if (nth()->send(((NthState*)state)->tx, ((NthState*)state)->txData) != NTH_OK) {
-        GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
+    if (nth()->sendProvidedTx(self(state)->tx) != NTH_OK) {
+        GOTO_INFO(self(state)->failure, 
+            self(state)->failure, INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
     }
 }
 
@@ -27,16 +31,10 @@ STATE_DEF_HANDLE(NthState, SocketSentEvent) {
     LOG_DEBUG("socket sent event ...");
 }
 
-STATE_DEF_HANDLE(NthState, SocketReadyReadEvent) {
-    LOG_DEBUG("socket rec event ...");
-    GOTO_INFO(state->parent, 
-            state->parent, INFO_SUCCESS, phraseGetDef(PHRASE_SUC_DONME), "");
-}
-
 STATE_DEF_HANDLE(NthState, SocketTimeOutEvent) {
     Phrases_t title;
     Phrases_t body = PHRASE_TIME_OUT;
-    switch (((NthState*)state)->tx->prevState) {
+    switch (self(state)->tx->prevState) {
     case NTH_TX_CONNECTING:
         title = PHRASE_CONNECTION_ERR;
         break;
@@ -51,30 +49,40 @@ STATE_DEF_HANDLE(NthState, SocketTimeOutEvent) {
     default:
         break;
     }
-    GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(title),
+    GOTO_INFO(self(state)->failure, 
+            self(state)->failure, INFO_ERROR, phraseGetDef(title),
                     phraseGetDef(body));
 }
 
 STATE_DEF_ENTER(NthState) {
+    self(state)->tx->owner = state;
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
     DEFINE_STRING(ip, 24);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    NthResult res = nth()->connect(((NthState*)state)->tx, ip,
+    NthResult res = nth()->connect(self(state)->tx, ip,
                 settings()->server.mainServerPort);
     if (res == NTH_ERR_INVALID_HOST) {
-        GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_INVALID_IP),
+        GOTO_INFO(self(state)->failure, 
+            self(state)->failure, INFO_ERROR, phraseGetDef(PHRASE_INVALID_IP),
                  ip);
     } else if (res != NTH_OK) {
-        GOTO_INFO(((NthState*)state)->onFailure, 
-            ((NthState*)state)->onFailure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR),
+        GOTO_INFO(self(state)->failure, 
+            self(state)->failure, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR),
                     phraseGetDef(PHRASE_CHECK_NET));
     }
 }
 
 OOP_CTOR(NthState,
         NthTransaction *tx) {
-    OOP_CALL_CTOR(State, self, tx->owner, "");
+    OOP_CALL_CTOR(State, self, NULL, "");
     self->tx = tx;
+    self->base.vtable.enter = STATE_ENTER(NthState);
+    self->base.vtable.onSocketConnect = STATE_HANDLE(NthState, SocketConnectEvent);
+    self->base.vtable.onSocketSent = STATE_HANDLE(NthState, SocketSentEvent);
+    self->base.vtable.onSocketTimeOut = STATE_HANDLE(NthState, SocketTimeOutEvent);
+}
+
+void GOTO_NTH(NthState *state) {
+    RETURN_IF_NULL(state, ;);
+    SM_GOTO((State*)state);
 }

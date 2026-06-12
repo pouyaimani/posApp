@@ -51,7 +51,7 @@ static CellErr_t getSimInfo(Cellular *self, CellSimInfo *sinfo) {
 static CellPPPStatus_t getPPPstatus(Cellular *self) {
     CellPPPStatus_t status = CELL_PPP_INVALID;
     int st = sdkCellularGetPPPStatus();
-    LOG_DEBUG("sdkCellularGetPPPStatus = %d", st);
+    // LOG_DEBUG("sdkCellularGetPPPStatus = %d", st);
     if (st == CELLULAR_PPP_ING) {
         status = CELL_PPP_DIALING;
     } else if (st == CELLULAR_PPP_SUCCESS) {

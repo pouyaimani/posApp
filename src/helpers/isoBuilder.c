@@ -13,6 +13,8 @@
 #define PRC_LOG_ON              "920000"
 #define PRC_CFG                 "930000"
 
+#define STAN_SIZE   6
+
 enum {
     TAG_MERCHANT_NAME      = 31,
     TAG_MERCHANT_PHONE     = 34,
@@ -220,6 +222,15 @@ Error_t setDateTime() {
     return ERR_OK;
 }
 
+void setStan() {
+    // txnTraceInfo()->inc();
+    DEFINE_STRING(stan, (STAN_SIZE + 1));
+    prependZerosInt(txnTraceInfo()->stan, STAN_SIZE, stan, sizeof(stan));
+    stan[STAN_SIZE] = 0;
+    LOG_DEBUG("stan = %d, stan string = %s", txnTraceInfo()->stan, stan);
+    iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)stan);
+}
+
 /*********************************************************************************************
  *                                                                                           *
  *                                   Builder/Parsers                                         * 
@@ -235,7 +246,7 @@ Error_t isoBuildLogOn(ByteArray *buf) {
     /* set ISO message fields */
     iso8583()->setMTI((const DL_UINT8 *)MTI_VAL_LOG_ON);
     iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8 *)PRC_LOG_ON);
-    iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)"000001");
+    setStan();
     setDateTime();
     DEFINE_STRING(nni, 8);
     prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
@@ -260,9 +271,9 @@ static Error_t isoParseLogOnResponse(ByteArray *buf) {
 	if (result != SDK_OK)
 		return result;
 #endif
-    DEFINE_STRING(f48, 16);
+    DEFINE_STRING(f48, 1028);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, f48);
-    DEFINE_STRING(f41, 16);
+    DEFINE_STRING(f41, 256);
     iso8583()->getStr(ELEMENT_TERMINAL_ID, f41);
     LOG_DEBUG("terminal number = %s", f41);
 	decodeMerchantDesc(f48);
@@ -279,7 +290,7 @@ Error_t isoBuildCfg(ByteArray *buf) {
     /* set ISO message fields */
     iso8583()->setMTI((const DL_UINT8 *)MTI_VAL_CFG);
     iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8 *)PRC_CFG);
-    iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)"000001");
+    setStan();
     setDateTime();
     DEFINE_STRING(nni, 8);
     prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
@@ -377,21 +388,37 @@ Error_t isoBuild(MTI_t mti, ByteArray *buf) {
     return isoBuildMac(buf);
 }
 
-Error_t isoParse(MTI_t mti, ByteArray *buf) {
+RespCode_t isoParse(MTI_t mti, ByteArray *buf) {
     RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
     IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
-    LOG_DEBUG("iso parse error = %d", st);
     RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
     // Check responce code
     DEFINE_STRING(f39, 8);
     iso8583()->getStr(ELEMENT_RESPONSE_CODE, f39);
-    int respCode = libAtoi(f39);
+    LOG_DEBUG("f39 = %s", f39);
+    RespCode_t respCode = libAtoi(f39);
     LOG_DEBUG("Txn responce code = %d", respCode);
-    RETURN_VALUE_IF_NOT(respCode , 0, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(respCode , 0, ;, respCode);
 
     IsoTransaction *txn = isoFindTransaction(mti);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
-    return txn->parser(buf);
+        LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    RETURN_VALUE_IF_NOT(txn->parser(buf), ERR_OK, ;, ERR_NOK);
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    LOG_DEBUG("=========================");
+    
+    return respCode;
 }
 
 static const IsoTransaction templates[] = {
@@ -433,6 +460,5 @@ const IsoTransaction *isoFindTransaction(MTI_t mti) {
             return &templates[i];
         }
     }
-
     return NULL;
 }

@@ -15,14 +15,9 @@ int8_t injectOffline() {
 									  0x3D, 0x40, 0xFC, 0x46, 0x93, 0x37, 0x39, 0x60};
 
     PedErr_t err = ped()->injectMasterKey(masterKey, sizeof(masterKey));
-    if (err != PED_ERR_OK) {
-
-    }
-
+    RETURN_VALUE_IF_NOT(err, PED_ERR_OK, ;, ERR_NOK);
     err = ped()->injectMacKey(logonMacKey, sizeof(logonMacKey));
-    if (err != PED_ERR_OK) {
-
-    }
+    RETURN_VALUE_IF_NOT(err, PED_ERR_OK, ;, ERR_NOK);
 	return ERR_OK;
 }
 

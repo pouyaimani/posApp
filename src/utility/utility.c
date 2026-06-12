@@ -787,8 +787,7 @@ void leftPadZero(const char *src,
 void prependZerosInt(int number,
                      int totalWidth,
                      char *output,
-                     size_t outputSize)
-{
+                     size_t outputSize) {
     snprintf(output,
              outputSize,
              "%0*d",

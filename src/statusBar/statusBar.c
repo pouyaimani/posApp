@@ -130,24 +130,26 @@ static void updateOperatorDsc() {
     if (prevOpt == opType) return;
     switch (opType) {
 	case 11:
-		LV_SET_TEXT(operator, "Mci");
+		LV_SET_TEXT(operator, "MCI");
 		break;
 	case 35:
-		LV_SET_TEXT(operator, "Irancell");
+		LV_SET_TEXT(operator, "MTN");
 		break;
 	case 20:
-		LV_SET_TEXT(operator, "Rightell");
+		LV_SET_TEXT(operator, "RTL");
 		break;
 	case 8:
-		LV_SET_TEXT(operator, "Shotell");
+		LV_SET_TEXT(operator, "STL");
 		break;
     default:
-        LV_SET_TEXT(operator, "Unknown");
+        LV_SET_TEXT(operator, "NKN");
     }
     prevOpt = opType;
 }
 
 static void updateCellIcon() {
+    lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_3);
+    return;
     if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
         lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
         return;
@@ -284,14 +286,14 @@ OOP_CTOR(StatusBar) {
     LV_ALIGN(batteryIcon, LV_ALIGN_RIGHT_MID, -15, 5);
 
     wifiIcon = lv_img_create(disp()->statusbar);
-    LV_ALIGN(wifiIcon, LV_ALIGN_RIGHT_MID, -50, 5);
+    LV_ALIGN(wifiIcon, LV_ALIGN_RIGHT_MID, -45, 4);
 
     soundIcon = lv_img_create(disp()->statusbar);
-    LV_ALIGN(soundIcon, LV_ALIGN_RIGHT_MID, -75, 5);
+    LV_ALIGN(soundIcon, LV_ALIGN_RIGHT_MID, -68, 5);
 
     operator = lv_label_create(disp()->statusbar);
-    LV_SET_SIZE(operator, 70, LV_SIZE_CONTENT);
-    LV_ALIGN(operator, LV_ALIGN_LEFT_MID, 5, 7);
+    LV_SET_SIZE(operator, 50, LV_SIZE_CONTENT);
+    LV_ALIGN(operator, LV_ALIGN_LEFT_MID, 30, 7);
     LV_SET_BG_OPA(operator, LV_OPA_0);
     LV_SET_BORDER_OPA(operator, LV_OPA_0);
     LV_SET_TEXT_FONT(operator, FONT_16);
@@ -300,7 +302,7 @@ OOP_CTOR(StatusBar) {
     // lv_label_set_long_mode(operator, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
     cellularIcon = lv_img_create(disp()->statusbar);
-    LV_ALIGN(cellularIcon, LV_ALIGN_LEFT_MID, 75, 5);
+    LV_ALIGN(cellularIcon, LV_ALIGN_LEFT_MID, 5, 7);
 
     __statusBar->setInfo = setInfo;
     __statusBar->enDateTimeMode = enDateTimeMode;
