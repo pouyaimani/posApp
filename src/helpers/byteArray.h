@@ -12,10 +12,12 @@ OOP_CLASS(ByteArray) {
 
 int8_t byteArrayInit(ByteArray *ba, size_t size);
 int8_t byteArrayDestroy(ByteArray *ba);
-#define BYTE_ARRAY(name, size)                      \
-    ByteArray *name = MEM_ALLOC(sizeof(ByteArray)); \
-    name->data = MEM_ALLOC(size);                   \
-    memset(name->data, 0, size);                    \
-    name->capacity = size;                          \
+
+
+#define ByteArray(name, size)                       \
+    uint8_t data_##name[size] = {0};                \
+    ByteArray name;                                 \
+    name.data = data_##name;                       \
+    name.capacity = size;                          \
 
 #endif

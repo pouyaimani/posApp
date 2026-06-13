@@ -29,19 +29,19 @@ static NthTransaction *tx;
 /******************** Get Key sub state **********************/
 
 STATE_DEF_HANDLE(LogOn, SocketConnectEvent) {
-    ByteArray ba;
+    ByteArray(ba, NT_TX_BUFFER_SIZE);
     if (!ev->isConnected) {
         nth()->release(tx);
         GOTO_INFO(state->parent, 
             state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
-    byteArrayInit(&ba, NT_TX_BUFFER_SIZE);
     if (isoBuild(MTI_LOG_ON, &ba) != ERR_OK) {
         nth()->release(tx);
         GOTO_INFO(state->parent, 
             state->parent, INFO_ERROR, phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
         LOG_DEBUG("Building iso failed...");
+        // byteArrayDestroy(&ba);
         return;
     }
     LOG_DEBUG("Building iso succeed...");
@@ -52,7 +52,6 @@ STATE_DEF_HANDLE(LogOn, SocketConnectEvent) {
             state->parent, INFO_ERROR, 
                 phraseGetDef(PHRASE_SENDING_DATA_ERR), "");
     }
-    byteArrayDestroy(&ba);
 }
 
 STATE_DEF_HANDLE(LogOn, SocketSentEvent) {
