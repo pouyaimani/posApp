@@ -140,3 +140,17 @@ InfoPage *infoPage() {
     );
     return &info;
 }
+
+void SHOW_INFO(InfoType_t type, 
+                const char * title, 
+                    const char * body) {
+    InfoPage *info = infoPage();
+    OOP_CALL(info, setData, (InfoType_t)type,
+             title, body);
+        OOP_CALL(info, show);
+};
+
+void HIDE_INFO() {
+    InfoPage *info = infoPage();
+    OOP_CALL(info, hide);
+};

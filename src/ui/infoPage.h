@@ -33,18 +33,7 @@ OOP_CLASS(InfoPage) {
 
 InfoPage *infoPage();
 
-#define SHOW_INFO(type, title, body)            \
-    do {                                        \
-        InfoPage *info = infoPage();            \
-        OOP_CALL(info, setData, (InfoType_t)type,    \
-             title, body);                      \
-        OOP_CALL(info, show);                   \
-    } while (0)
-
-#define HIDE_INFO()                         \
-    do {                                    \
-        InfoPage *info = infoPage();         \
-        OOP_CALL(info, hide);               \
-    } while(0)
+void SHOW_INFO(InfoType_t type, const char * title, const char * body);
+void HIDE_INFO();
 
 #endif
