@@ -6,13 +6,19 @@
 #include "common.h"
 
 #define KEY_INDEX_MASTER            0
-#define KEY_INDEX_MAC               1
-#define KEY_INDEX_PIN               2
-#define KEY_INDEX_DTK               3
-#define KEY_INDEX_TDK               5
+
+#define TMK_INDEX	0
+#define TK_INDEX	1
+#define LTAK_INDEX	2
+#define TAK_INDEX	3
+#define TPK_INDEX	4
+#define TDK_INDEX	5
+#define TMP_INDEX	6
+#define TMH_INDEX	7
 
 static PedErr_t translateSdkErr(int err) {
-    PedErr_t pedErr = SDK_PED_ERR_BASE;
+    LOG_DEBUG("Ped: sdk error = %d", err);
+    PedErr_t pedErr = PED_ERR_INPUT;
     switch (err) {
     case SDK_PED_OK:
         pedErr = PED_ERR_OK;
@@ -38,44 +44,49 @@ static PedErr_t encryptAccountData(Ped* self, void *buffer,
 
 }
 
-static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t key, size_t len) {
+static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t *key, size_t len) {
     RETURN_VALUE_IF_NULL(self, ;, PED_ERR_INPUT);
     int result = 0;
     PedKeyInfo keyInfo = {0};
     PedKeyCheckValue checkValue = {0};
     switch (type) {
     case PED_MASTER_KEY:
+        LOG_DEBUG("Ped: ======================================");
         keyInfo.mSrcKeyType = 0; // Plain
         keyInfo.mDestKeyType = PED_KEY_TDES_TMK;
         keyInfo.mSrcKeyIndex = 0;
         keyInfo.mDestKeyIndex = KEY_INDEX_MASTER;
         break;
     case PED_PIN_KEY:
+        LOG_DEBUG("Ped: ======================================");
+        checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType = PED_KEY_TDES_TPK;
         keyInfo.mSrcKeyIndex = KEY_INDEX_MASTER;
-        keyInfo.mDestKeyIndex = KEY_INDEX_PIN;
-        checkValue.mCheckMode = PED_CHECK_MODE_DES;
+        keyInfo.mDestKeyIndex = TPK_INDEX;
         break;
     case PED_DATA_KEY:
+        LOG_DEBUG("Ped: ======================================");
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType = PED_KEY_TDK;
         keyInfo.mSrcKeyIndex = KEY_INDEX_MASTER;
-        keyInfo.mDestKeyIndex = KEY_INDEX_DTK;
+        keyInfo.mDestKeyIndex = TDK_INDEX;
         break;
     case PED_MAC_KEY:
+        LOG_DEBUG("Ped: ======================================");
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType = PED_KEY_TAK;
         keyInfo.mSrcKeyIndex = KEY_INDEX_MASTER;
-        keyInfo.mDestKeyIndex = KEY_INDEX_DTK;
+        keyInfo.mDestKeyIndex = TAK_INDEX;
         break;
     default:
         return PED_ERR_INPUT;
     }
     keyInfo.mDestKeyLen = len;
     memcpy(keyInfo.mDestKey, key, len);
+    LOG_DEBUG("Ped: Key len = %d, key = %s", len, key);
 
     result = sdkPedWriteKey(&keyInfo, &checkValue);
     return translateSdkErr(result);
@@ -92,7 +103,7 @@ static PedErr_t enterPinEntryMode(Ped* self) {
     int width = 262;
     int height = 41;
 
-    ret = sdkPedEnterPinInputMode(keyGroup, pedKeyType, KEY_INDEX_PIN,
+    ret = sdkPedEnterPinInputMode(keyGroup, pedKeyType, TPK_INDEX,
                                     pedPinMode, 0, PIN_MIN_LEN, PIN_MAX_LEN,
                                         PED_PIN_ENTRY_TIME_OUT);
     return translateSdkErr(ret);

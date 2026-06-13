@@ -231,6 +231,31 @@ void setStan() {
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8 *)stan);
 }
 
+static Error_t setWorkingKeys() {
+    DEFINE_BYTE_ARRAY(keys, 512);
+    size_t size;
+    IsoStatus_t ret = iso8583()->getBin(ELEMENT_RESERVED_PRIVATE_62, keys, &size);
+    RETURN_VALUE_IF_NOT(ret, ISO_OK, ;, ERR_NOK);
+    LOG_DEBUG("Keys length = %d, keys = %s", size, keys);
+    DEFINE_BYTE_ARRAY(tmpKey, 16);
+    int keyLen = 16;
+	memcpy(tmpKey, keys, keyLen);
+    PedErr_t pinKeyErr = ped()->injectPinKey(tmpKey, keyLen);
+    // pinResult = pedPinKeyInject(TMK_INDEX, TPK_INDEX, tmpKey, keyLen);
+    memset(tmpKey, 0x00, sizeof(tmpKey));
+	memcpy(tmpKey, keys + 16, keyLen);
+    PedErr_t macKeyErr = ped()->injectMacKey(tmpKey, keyLen);
+    // macResult = pedMacKeyInject(TMK_INDEX, TAK_INDEX, tmpKey, keyLen);
+	memset(tmpKey, 0x00, sizeof(tmpKey));
+	memcpy(tmpKey, keys + 32, keyLen);
+    PedErr_t dataKeyErr = ped()->injectDataKey(tmpKey, keyLen);
+	// dataResult = pedDataKeyInject(TMK_INDEX, TDK_INDEX, tmpKey, keyLen);
+    RETURN_VALUE_IF_NOT(pinKeyErr, PED_ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(macKeyErr, PED_ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(dataKeyErr, PED_ERR_OK, ;, ERR_NOK);
+	return ERR_OK;
+}
+
 /*********************************************************************************************
  *                                                                                           *
  *                                   Builder/Parsers                                         * 
@@ -271,13 +296,14 @@ static Error_t isoParseLogOnResponse(ByteArray *buf) {
 	if (result != SDK_OK)
 		return result;
 #endif
-    DEFINE_STRING(f48, 1028);
-    iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, f48);
-    DEFINE_STRING(f41, 256);
-    iso8583()->getStr(ELEMENT_TERMINAL_ID, f41);
-    LOG_DEBUG("terminal number = %s", f41);
-	decodeMerchantDesc(f48);
-    settings()->save();
+    DEFINE_STRING(feild, 1028);
+    iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
+    decodeMerchantDesc(feild);
+    memset(feild, 0, sizeof(feild));
+    iso8583()->getStr(ELEMENT_TERMINAL_ID, feild);
+    LOG_DEBUG("terminal number = %s", feild);
+    RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
+    // settings()->save();
 	return ERR_OK;
 }
 

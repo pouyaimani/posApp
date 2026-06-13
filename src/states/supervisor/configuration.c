@@ -62,13 +62,6 @@ STATE_DEF_HANDLE(LogOn, SocketSentEvent) {
 STATE_DEF_HANDLE(LogOn, SocketReadyReadEvent) {
     LOG_DEBUG("socket rec event ...");
     RespCode_t resp = isoParse(MTI_LOG_ON, &ev->ba);
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
     if(resp == ERR_NOK) {
         GOTO_INFO(state->parent, 
             state->parent, INFO_ERROR, phraseGetDef(PHRASE_PARSE_ERROR), "");
