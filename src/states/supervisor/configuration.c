@@ -13,9 +13,11 @@
 #include "settings/settings.h"
 #include "ui/menu.h"
 #include "ui/infoPage.h"
+#include "txnOrchestrator/txnFLow.h"
 
 OOP_CLASS(LogOn) {
     OOP_EXTENDS(State);
+    TxnFlow flow;
 };
 
 OOP_CLASS(GetMerchantData) {
@@ -101,29 +103,39 @@ STATE_DEF_HANDLE(LogOn, SocketTimeOutEvent) {
     nth()->release(tx);
 }
 
+// STATE_DEF_ENTER(LogOn) {
+//     tx = nth()->alloc();
+//     RETURN_IF_NULL(tx, 
+//             GOTO_INFO(state->parent, 
+//             state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
+//         );
+//     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
+//     tx->owner = state;
+//     DEFINE_STRING(ip, 24);
+//     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+//     NthResult res = nth()->connect(tx, ip,
+//                 settings()->server.mainServerPort);
+//     if (res == NTH_ERR_INVALID_HOST) {
+//         GOTO_INFO(state->parent, 
+//             state->parent, INFO_ERROR, phraseGetDef(PHRASE_INVALID_IP),
+//                  ip);
+//         nth()->release(tx);
+//     } else if (res != NTH_OK) {
+//         GOTO_INFO(state->parent, 
+//             state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR),
+//                     phraseGetDef(PHRASE_CHECK_NET));
+//         nth()->release(tx);
+//     }
+// }
 STATE_DEF_ENTER(LogOn) {
-    tx = nth()->alloc();
-    RETURN_IF_NULL(tx, 
-            GOTO_INFO(state->parent, 
-            state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR), "");
-        );
-    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
-    tx->owner = state;
-    DEFINE_STRING(ip, 24);
-    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    NthResult res = nth()->connect(tx, ip,
-                settings()->server.mainServerPort);
-    if (res == NTH_ERR_INVALID_HOST) {
-        GOTO_INFO(state->parent, 
-            state->parent, INFO_ERROR, phraseGetDef(PHRASE_INVALID_IP),
-                 ip);
-        nth()->release(tx);
-    } else if (res != NTH_OK) {
-        GOTO_INFO(state->parent, 
-            state->parent, INFO_ERROR, phraseGetDef(PHRASE_CONNECTION_ERR),
-                    phraseGetDef(PHRASE_CHECK_NET));
-        nth()->release(tx);
-    }
+    DEFINE_STRING(ip, 32);
+
+    normalizeIp(settings()->server.mainServerIp, ip,
+                    sizeof(ip));
+
+    txnRun(&((LogOn*)state)->flow, state, ip,
+        settings()->server
+            .mainServerPort, &logOnTxn);
 }
 
 // void preaperData(NthTransaction *tx, void *userData) {
