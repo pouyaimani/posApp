@@ -40,7 +40,7 @@ OOP_DECLARE_CLASS(System)
 
 OOP_VTABLE(System) {
     OOP_IMETHOD(void, System, init);
-    OOP_IMETHOD(unsigned int, System, getTick);
+    OOP_IMETHOD(uint32_t, System, getTick);
     OOP_IMETHOD(unsigned int, System, getMemory, unsigned int);
     OOP_IMETHOD(void, System, freeMemory, void *);
     OOP_IMETHOD(unsigned int, System, flushDisplay, int32_t, int32_t, int32_t, int32_t, uint8_t*);

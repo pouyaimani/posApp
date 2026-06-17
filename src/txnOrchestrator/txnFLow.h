@@ -120,4 +120,14 @@ void txnFlowRelease(
 
 extern const TxnFlowConfig logOnTxn;
 
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                               Transactions common                                         * 
+ *                                                                                           *
+ ********************************************************************************************/
+
+void showConnecting(TxnFlow *f);
+void showSending(TxnFlow *f);
+void showReceiving(TxnFlow *f);
 #endif

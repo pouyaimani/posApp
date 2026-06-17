@@ -249,7 +249,6 @@ void GOTO_INPUT(State *prev, State *next, const char *title,
         const char *body, int max, InputMode_t mode, char *out);
 void GOTO_INFO(State *prev, State *next, uint8_t type, const char *title, const char *body);
 void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData);
-void GOTO_HTTP_TRANSMITTER(State *onFail, State *onSucess);
 void GOTO_TXN_RES(State *prev, State *next);
 void GOTO_NET_CONNNECT();
 void GOTO_NET_SEND();

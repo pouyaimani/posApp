@@ -21,51 +21,22 @@ static int parseLogOn(
         ba);
 }
 
-static void showConnecting(
-    TxnFlow *f)
-{
-    SHOW_INFO(
-        INFO_WAITING,
-        phraseGetDef(
-            PHRASE_CONNECTIING),
-        "");
-}
-
-static void showSending(
-    TxnFlow *f)
-{
-    SHOW_INFO(
-        INFO_WAITING,
-        phraseGetDef(
-            PHRASE_SENDING_DATA),
-        "");
-}
-
-static void showReceiving(
-    TxnFlow *f)
-{
-    SHOW_INFO(
-        INFO_WAITING,
-        phraseGetDef(
-            PHRASE_RECEIVING_DATA),
-        "");
-}
-
 static void logOnDone(
     TxnFlow *flow,
     const TxnFlowStatus *st) {
     State *state =
         flow->owner;
-
+    LOG_DEBUG("st->result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
-        GOTO_INFO(
-            state->parent,
-            state->parent,
-            INFO_SUCCESS,
+        DEFINE_STRING(dsc, 128);
+        if (st->code != 0) {
+            getResponseCode(st->code, dsc, sizeof(dsc));
+        }
+        GOTO_INFO(state->parent, state->parent,
+            st->code == 0 ? INFO_SUCCESS : INFO_ERROR,
             phraseGetDef(
-                PHRASE_SUC_DONME),
-            "");
-
+                st->code == 0 ? PHRASE_SUC_DONME : PHRASE_UNSUCCESSFUL_OPERATION),
+            dsc);
         return;
     }
 
@@ -79,15 +50,13 @@ static void logOnDone(
 
         case TXN_STAGE_RECEIVING:
         case TXN_STAGE_PARSING:
-            title =
-                PHRASE_RECEIVING_DATA_ERR;
-
+            title =PHRASE_RECEIVING_DATA_ERR;
             break;
 
         default:
             break;
     }
-
+LOG_DEBUG("-------------------------------");
     GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                 phraseGetDef(title),
                     st->result == TXN_FLOW_TIMEOUT ?

@@ -86,7 +86,6 @@ NthTransaction *nth_allocTransaction(void) {
                    0,
                    sizeof(*tx));
             tx->socketFd = -1;
-            OOP_CALL_CTOR(NthState, &tx->process, tx);
             tx->active = true;
 
             tx->txBuffer.data = tx->txStorage;
@@ -365,6 +364,16 @@ static void nth_handleReceiving(NthTransaction *tx) {
 static void nth_checkTimeout(
     NthTransaction *tx) {
     RETURN_IF_NULL(tx, ;);
+
+    switch (tx->state) {
+    case NTH_TX_CONNECTING:
+    case NTH_TX_SENDING:
+    case NTH_TX_RECEIVING:
+        break;
+
+    default:
+        return;
+    }
     uint32_t now;
 
     now = nth_getTick();

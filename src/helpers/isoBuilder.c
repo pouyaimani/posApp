@@ -428,22 +428,7 @@ RespCode_t isoParse(MTI_t mti, ByteArray *buf) {
 
     IsoTransaction *txn = isoFindTransaction(mti);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
-        LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
     RETURN_VALUE_IF_NOT(txn->parser(buf), ERR_OK, ;, ERR_NOK);
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    LOG_DEBUG("=========================");
-    
     return respCode;
 }
 

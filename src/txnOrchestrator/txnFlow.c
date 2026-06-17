@@ -1,8 +1,7 @@
 #include "txnFlow.h"
-
 #include <string.h>
-
 #include "error.h"
+#include "logger.h"
 
 static int8_t onConnect(
     NthTransaction *tx,
@@ -26,6 +25,9 @@ static int8_t onTimeout(
 
 static void complete(TxnFlow *flow,
                         TxnFlowResult result, int code) {
+    RETURN_VALUE_IF_NULL(flow, ;, false);
+    LOG_DEBUG("Txn flow: complete. result = %d, code = %d",
+                     result, code);
     TxnFlowStatus st;
 
     st.result = result;
@@ -33,13 +35,16 @@ static void complete(TxnFlow *flow,
     st.code = code;
 
     if (flow->cfg && flow->cfg->done) {
+        LOG_DEBUG("Txn flow: calling config done.");
         flow->cfg->done(flow, &st);
     }
-
+    LOG_DEBUG("Txn flow: releasing txn");
     txnFlowRelease(flow);
 }
 
 void txnFlowInit(TxnFlow *flow) {
+    RETURN_VALUE_IF_NULL(flow, ;, false);
+    LOG_DEBUG("Txn flow: initing flow");
     memset(flow, 0, sizeof(*flow));
     flow->stage =
         TXN_STAGE_IDLE;
@@ -52,13 +57,19 @@ bool txnRun(
             uint16_t port,
                 const TxnFlowConfig *cfg) {
 
+    RETURN_VALUE_IF_NULL(flow, ;, false);
+    RETURN_VALUE_IF_NULL(owner, ;, false);
+    RETURN_VALUE_IF_NULL(host, ;, false);
+    LOG_DEBUG("Txn flow: running flow ..., host = %s, port = %d",
+                 host, port);
+
     txnFlowInit(flow);
 
     flow->owner = owner;
 
     flow->cfg = cfg;
 
-    flow->stage =TXN_STAGE_CONNECTING;
+    flow->stage = TXN_STAGE_CONNECTING;
 
     flow->tx = nth()->alloc();
 
@@ -96,6 +107,8 @@ bool txnRun(
 }
 
 void txnFlowRelease(TxnFlow *flow) {
+    RETURN_VALUE_IF_NULL(flow, ;, false);
+    LOG_DEBUG("Txn flow: rleasing flow ...");
     if (flow && flow->tx) {
         nth()->release(flow->tx);
         flow->tx = NULL;
@@ -105,6 +118,8 @@ void txnFlowRelease(TxnFlow *flow) {
 }
 
 static int8_t onConnect(NthTransaction *tx, void *ctx) {
+    RETURN_VALUE_IF_NULL(tx, ;, false);
+    LOG_DEBUG("Txn flow: on connect ...");
     TxnFlow *flow = ctx;
     ByteArray(ba, NT_TX_BUFFER_SIZE);
     if (flow->cfg->build(&ba) != ERR_OK) {
@@ -127,10 +142,11 @@ static int8_t onConnect(NthTransaction *tx, void *ctx) {
     return 0;
 }
 
-static int8_t onSent(
-    NthTransaction *tx,
-    void *ctx) {
+static int8_t onSent(NthTransaction *tx,
+                        void *ctx) {
     (void)tx;
+    RETURN_VALUE_IF_NULL(tx, ;, false);
+    LOG_DEBUG("Txn flow: on send ...");
 
     TxnFlow *flow =
         ctx;
@@ -146,6 +162,8 @@ static int8_t onSent(
 
 static int8_t onReceive(NthTransaction *tx,
                             void *ctx) {
+    RETURN_VALUE_IF_NULL(tx, ;, false);
+    LOG_DEBUG("Txn flow: on receive ...");
     TxnFlow *flow = ctx;
     flow->stage =
         TXN_STAGE_PARSING;
@@ -157,12 +175,17 @@ static int8_t onReceive(NthTransaction *tx,
 }
 
 static int8_t onFailure(NthTransaction *tx, void *ctx) {
+
+    RETURN_VALUE_IF_NULL(tx, ;, false);
+    LOG_DEBUG("Txn flow: on failure ...");
     (void)tx;
     complete(ctx, TXN_FLOW_FAILED, 0);
     return 0;
 }
 
 static int8_t onTimeout(NthTransaction *tx, void *ctx) {
+    RETURN_VALUE_IF_NULL(tx, ;, false);
+    LOG_DEBUG("Txn flow: on timeout ...");
     (void)tx;
     complete(ctx, TXN_FLOW_TIMEOUT, 0);
     return 0;

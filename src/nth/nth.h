@@ -10,7 +10,6 @@
 #include "nth_transport.h"
 #include "nth_types.h"
 #include "byteArray.h"
-#include "nth_state.h"
 
 struct NthTransaction;
 
@@ -25,7 +24,6 @@ typedef struct NthTransaction {
     int socketFd;
 
     NthTxState state;
-    NthState process;
     NthTxState prevState;
     ByteArray txBuffer;
     ByteArray rxBuffer;

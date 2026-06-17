@@ -2,7 +2,6 @@
 #include "sys/sys.h"
 #include "file/file.h"
 #include "version.h"
-#include "transmitter.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
 
@@ -17,24 +16,6 @@ static void onTmsChunk(uint8_t *data, uint32_t len) {
 }
 
 static void httpBuildContext(const char *ip, const char* path, void (*onBodyChunk)(uint8_t *, uint32_t)) {
-    HttpTransmitter *httpTrnas = STATE_TRNS_HTTP;
-    HttpContext *httpCtx = httpTrnas->httpCtx;
-    memset(httpCtx, 0, sizeof(*httpCtx));
-
-    snprintf(httpCtx->host, sizeof(httpCtx->host), "%s",
-             ip);
-
-    snprintf(httpCtx->path, sizeof(httpCtx->path), "%s",
-             path);
-
-    httpCtx->rxBuf = MEM_ALLOC(1024);
-    httpCtx->rxMax = 1024;
-
-    httpCtx->txBuf = MEM_ALLOC(512);
-
-    // HERE is answer
-    httpCtx->rangeStart = 0;
-    httpCtx->onBodyChunk = onBodyChunk;
 }
 
 static bool isBatteryOk() {
@@ -81,13 +62,9 @@ static void ExtractTmsNewVersion(State *parent) {
 /*************************** TMS state *******************************/
 
 static void createVersionReq() {
-    versionBuf = MEM_ALLOC(512);
-    httpBuildContext(settings()->server.mainServerIp, API_CHECK_UPDATES, fillVersionBuffer);
 }
 
 STATE_DEF_ENTER(TMS) {
-    createVersionReq();
-    GOTO_HTTP_TRANSMITTER(state->parent, extractTmsNewVersion);
 }
 
 STATE_DEF_EXIT(TMS) {

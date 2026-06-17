@@ -1,21 +1,17 @@
 #include "states.h"
 #include "sys/sys.h"
-#include "transmitter.h"
 
 static Startup *startup;
 static Idle *idle;
 static Input *input;
 static CardHolder *cardHolder;
 static Info *info;
-static Ginfo *ginfo;
 static Dialogue *dialogue;
 static Supporter *supporter;
 static DevInfo *devInfo;
 static StMenu *menu;
 static FixedAmount *fixedAmount;
-static IsoTransmitter *isoTransmitter;
 static TxnResult *txnRes;
-static HttpTransmitter *httpTransmitter;
 static NetConnect *netConnect;
 static NetSend *netSend;
 static NetReceive *netReceive;
@@ -64,12 +60,6 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(Supporter, supporter, idle, "supporter");
         );
         return (State *)supporter;
-    case STATE_ID_GINFO:
-        CALL_ONCE(
-            ginfo = MEM_ALLOC(sizeof(Ginfo));
-            OOP_CALL_CTOR(Ginfo, ginfo, idle, "ginfo");
-        );
-        return (State *)ginfo;
     case STATE_ID_DEV_INFO:
         CALL_ONCE(
             devInfo = MEM_ALLOC(sizeof(DevInfo));
@@ -88,24 +78,6 @@ State *getState(StateId_t id) {
             OOP_CALL_CTOR(FixedAmount, fixedAmount, idle, "fixed Amount");
         );
         return (State *)fixedAmount;
-    case STATE_ID_ISO_TRANSMITTER:
-        CALL_ONCE(
-            isoTransmitter = MEM_ALLOC(sizeof(IsoTransmitter));
-            OOP_CALL_CTOR(IsoTransmitter, isoTransmitter, idle, "iso transmitter");
-        );
-        return (State *)isoTransmitter;
-    case STATE_ID_TXN_RES:
-        CALL_ONCE(
-            txnRes = MEM_ALLOC(sizeof(TxnResult));
-            OOP_CALL_CTOR(TxnResult, txnRes, idle, "txn result");
-        );
-        return (State *)txnRes;
-    case STATE_ID_HTTP_TRANSMITTER:
-        CALL_ONCE(
-            httpTransmitter = MEM_ALLOC(sizeof(HttpTransmitter));
-            OOP_CALL_CTOR(HttpTransmitter, httpTransmitter, idle, "http transmitter");
-        );
-        return (State *)httpTransmitter;
     case STATE_ID_NET_CONNECT:
         CALL_ONCE(
             netConnect = MEM_ALLOC(sizeof(NetConnect));
@@ -163,13 +135,6 @@ void GOTO_MENU(State *prev, Menu * amenu, CallBack_t _onExit, void *userData) {
     stMenu->userData = userData;
     OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);
     SM_GOTO(getState(STATE_ID_MENU));
-}
-
-void GOTO_HTTP_TRANSMITTER(State *onFail, State *onSucess) {
-    HttpTransmitter *httpTrns = STATE_TRNS_HTTP;
-    httpTrns->onSucess = onSucess;
-    httpTrns->onFailure = onFail;
-    SM_GOTO(STATE_TRNS_HTTP);
 }
 
 void GOTO_TXN_RES(State *prev, State *next){

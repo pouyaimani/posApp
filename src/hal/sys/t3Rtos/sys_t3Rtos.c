@@ -83,7 +83,7 @@ static void init(System* dev) {
     sdkSysReadTerminalInfo(&tinfo);
 }
 
-static void getTick(System* dev) {
+static uint32_t getTick(System* dev) {
     return sdkSysGetTicks();
 }
 
