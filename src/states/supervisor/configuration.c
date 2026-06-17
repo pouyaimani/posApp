@@ -4,11 +4,8 @@
 #include "phrases/phrases.h"
 #include "display/display.h"
 #include "sys/sys.h"
-#include "iso8583.h"
 #include "utility/utility.h"
 #include "network/network.h"
-#include "isoBuilder.h"
-#include "nth/nth.h"
 #include "settings/settings.h"
 #include "ui/menu.h"
 #include "ui/infoPage.h"
@@ -21,18 +18,16 @@ OOP_CLASS(LogOn) {
 
 OOP_CLASS(GetMerchantData) {
     OOP_EXTENDS(State);
+    TxnFlow flow;
 };
 
 static LogOn *logOn;
 static GetMerchantData *getMerchantData;
-static NthTransaction *tx;
 
 STATE_DEF_ENTER(LogOn) {
     DEFINE_STRING(ip, 32);
-
     normalizeIp(settings()->server.mainServerIp, ip,
                     sizeof(ip));
-
     txnRun(&((LogOn*)state)->flow, state, ip,
         settings()->server
             .mainServerPort, &logOnTxn);
@@ -41,7 +36,12 @@ STATE_DEF_ENTER(LogOn) {
 /******************** Get merchant data sub state **********************/
 
 STATE_DEF_ENTER(GetMerchantData) {
-
+    DEFINE_STRING(ip, 32);
+    normalizeIp(settings()->server.mainServerIp, ip,
+                    sizeof(ip));
+    txnRun(&((LogOn*)state)->flow, state, ip,
+        settings()->server
+            .mainServerPort, &cfgTxn);
 }
 
 /******************** Configuration sub state **********************/
@@ -62,10 +62,6 @@ OOP_CTOR(Configuration, State *parent, const char *name) {
     logOn = (LogOn *)MEM_ALLOC(sizeof(LogOn));
     OOP_CALL_CTOR(State, &logOn->base, self, "");
     logOn->base.vtable.enter = STATE_ENTER(LogOn);
-    // logOn->base.vtable.onSocketConnect = STATE_HANDLE(LogOn, SocketConnectEvent);
-    // logOn->base.vtable.onSocketSent = STATE_HANDLE(LogOn, SocketSentEvent);
-    // logOn->base.vtable.onSocketReadyRead = STATE_HANDLE(LogOn, SocketReadyReadEvent);
-    // logOn->base.vtable.onSocketTimeOut = STATE_HANDLE(LogOn, SocketTimeOutEvent);
 
     getMerchantData = (GetMerchantData *)MEM_ALLOC(sizeof(GetMerchantData));
     OOP_CALL_CTOR(State, &getMerchantData->base, self, "");

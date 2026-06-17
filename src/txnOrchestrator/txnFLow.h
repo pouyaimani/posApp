@@ -119,6 +119,7 @@ void txnFlowRelease(
  ********************************************************************************************/
 
 extern const TxnFlowConfig logOnTxn;
+extern const TxnFlowConfig cfgTxn;
 
 
 /*********************************************************************************************
@@ -130,4 +131,8 @@ extern const TxnFlowConfig logOnTxn;
 void showConnecting(TxnFlow *f);
 void showSending(TxnFlow *f);
 void showReceiving(TxnFlow *f);
+void commonDone(
+    TxnFlow *flow,
+    const TxnFlowStatus *st);
+
 #endif
