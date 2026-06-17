@@ -22,6 +22,7 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "file/file.h"
+#include "ui/swipeHint.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -34,6 +35,7 @@ static lv_obj_t *menuIcon;
 static lv_obj_t *menuText;
 
 static Timer *timer;
+static SwipeHint swipe;
 
 static void wifiAutoConnect() {
     if (OOP_CALL(network(), getRoute) != NET_ROUTE_WIFI) {
@@ -76,6 +78,7 @@ STATE_DEF_ENTER(Idle) {
     LV_SHOW(mainIcon);
     statusBar()->enDateTimeMode();
     shifts();
+    swipeHintShow(&swipe);
 }
 
 STATE_DEF_EXIT(Idle) {
@@ -83,6 +86,7 @@ STATE_DEF_EXIT(Idle) {
     LV_HIDE(menuBar);
     // LV_HIDE(swipCardCont);
     LV_HIDE(mainIcon);
+    swipeHintHide(&swipe);
 }
 
 STATE_DEF_HANDLE(Idle, TimeOutEvent) {
@@ -287,6 +291,18 @@ static void createUi() {
     LV_SET_TEXT_COLOR(menuText, COLOR_WHITE);
     LV_SET_TEXT(menuText, phraseGetDef(PHRASE_MENU));
     LV_ALIGN_TO(menuText, menuIcon, LV_ALIGN_OUT_BOTTOM_MID, 0, -5);
+
+    swipeHintCreate(
+        &swipe,
+        disp()->screen,   // parent
+        SWIPE_DOWN,           // animation direction
+        7);                   // number of arrows
+
+    swipeHintAlign(
+        &swipe,
+        LV_ALIGN_RIGHT_MID,
+        20,
+        -10);
 }
 
 OOP_CTOR(Idle, State *parent, const char *name) {
