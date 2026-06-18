@@ -5,13 +5,11 @@
 
 #include "../magReader.h"
 
-#define MAG_READER_TRACK_1_SIZE             80
-#define MAG_READER_TRACK_2_SIZE             41
-#define MAG_READER_TRACK_3_SIZE             108
+#define MAG_READER_TRACK_1_SIZE 80
+#define MAG_READER_TRACK_2_SIZE 41
+#define MAG_READER_TRACK_3_SIZE 108
 
-OOP_CLASS(MagReaderT3Rtos) {
-    OOP_EXTENDS(MagReader);
-};
+OOP_CLASS(MagReaderT3Rtos) { OOP_EXTENDS(MagReader); };
 
 OOP_CTOR(MagReaderT3Rtos);
 

@@ -34,40 +34,46 @@ typedef enum {
     NotEqual            /**< Not equal operation */
 } SelectOperation;
 
-typedef enum {
-    DBINT32,
-    DBINT64,
-    DBFLOAT,
-    DBDOUBLE
-} CustomReturnType;
+typedef enum { DBINT32, DBINT64, DBFLOAT, DBDOUBLE } CustomReturnType;
 
 /**
  * @struct activeRule
  * @brief Struct representing a active rule.
  */
 typedef struct activeRule {
-    void* numLastEntries;                                                      /**< Number of last entries to consider */
-    void* threshold;                                                           /**< Threshold value for comparison */
-    embedDBSchema* schema;                                                     /**< Schema of the database */
-    ActiveQueryType type;                                                      /**< Type of the active rule */
-    SelectOperation operation;                                                 /**< Selection operation */
-    uint8_t colNum;                                                            /**< Column number to preform rule on*/
-    void* context;                                                             /**< Context for callback function */
-    void (*callback)(void* aggregateValue, void* currentValue, void* context); /**< Callback function */
-    void* (*executeCustom)(struct activeRule* rule, void* key);                /**< Execute custom rule */
-    CustomReturnType returnType;                                               /**< Return type of custom rule */
+    void*           numLastEntries; /**< Number of last entries to consider */
+    void*           threshold;      /**< Threshold value for comparison */
+    embedDBSchema*  schema;         /**< Schema of the database */
+    ActiveQueryType type;           /**< Type of the active rule */
+    SelectOperation operation;      /**< Selection operation */
+    uint8_t         colNum;         /**< Column number to preform rule on*/
+    void*           context;        /**< Context for callback function */
+    void (*callback)(void* aggregateValue, void* currentValue,
+                     void* context); /**< Callback function */
+    void* (*executeCustom)(struct activeRule* rule,
+                           void*              key); /**< Execute custom rule */
+    CustomReturnType returnType; /**< Return type of custom rule */
 
     void* minData; /**< Minimum data value */
     void* maxData; /**< Maximum data value */
 
     bool enabled; /**< Flag to indicate if the rule is enabled */
 
-    struct activeRule* (*IF)(struct activeRule* rule, uint8_t colNum, ActiveQueryType type);
-    struct activeRule* (*IFCustom)(struct activeRule* rule, uint8_t colNum, void* (*executeCustom)(struct activeRule* rule, void* key), CustomReturnType returnType);
+    struct activeRule* (*IF)(struct activeRule* rule, uint8_t colNum,
+                             ActiveQueryType type);
+    struct activeRule* (*IFCustom)(
+        struct activeRule* rule, uint8_t colNum,
+        void* (*executeCustom)(struct activeRule* rule, void* key),
+        CustomReturnType returnType);
     struct activeRule* (*ofLast)(struct activeRule* rule, void* numLastEntries);
-    struct activeRule* (*where)(struct activeRule* rule, void* minData, void* maxData);
-    struct activeRule* (*is)(struct activeRule* rule, SelectOperation operation, void* threshold);
-    struct activeRule* (*then)(struct activeRule* rule, void (*callback)(void* aggregateValue, void* currentValue, void* context));
+    struct activeRule* (*where)(struct activeRule* rule, void* minData,
+                                void* maxData);
+    struct activeRule* (*is)(struct activeRule* rule, SelectOperation operation,
+                             void* threshold);
+    struct activeRule* (*then)(struct activeRule* rule,
+                               void (*callback)(void* aggregateValue,
+                                                void* currentValue,
+                                                void* context));
 } activeRule;
 
 /**
@@ -79,7 +85,8 @@ typedef struct activeRule {
 typedef int8_t (*Comparator)(void* value1, void* value2);
 
 /**
- * @brief IF method for setting the column the rule will perform on and the type of rule
+ * @brief IF method for setting the column the rule will perform on and the type
+ * of rule
  * @param rule Pointer to the activeRule.
  * @param colNum Column number to perform rule on.
  * @param type Type of the active rule (Avg, max, min, custom).
@@ -95,10 +102,13 @@ activeRule* IF(activeRule* rule, uint8_t colNum, ActiveQueryType type);
  * @param returnType Return type of the custom rule.
  * @return Pointer to the activeRule.
  */
-activeRule* IFCustom(activeRule* rule, uint8_t colNum, void* (*executeCustom)(activeRule* rule, void* key), CustomReturnType returnType);
+activeRule* IFCustom(activeRule* rule, uint8_t colNum,
+                     void* (*executeCustom)(activeRule* rule, void* key),
+                     CustomReturnType returnType);
 
 /**
- * @brief is method for setting the selection operation and value to compare rule result with.
+ * @brief is method for setting the selection operation and value to compare
+ * rule result with.
  * @param rule Pointer to the activeRule.
  * @param operation Selection operation (<, >, <=, >=, =, !=).
  * @param threshold Value to compare rule result with.
@@ -128,7 +138,9 @@ activeRule* where(activeRule* rule, void* minData, void* maxData);
  * @param callback Callback function.
  * @return Pointer to the activeRule.
  */
-activeRule* then(activeRule* rule, void (*callback)(void* aggregateValue, void* currentValue, void* context));
+activeRule* then(activeRule* rule,
+                 void (*callback)(void* aggregateValue, void* currentValue,
+                                  void* context));
 
 /**
  * @brief Creates a new activeRule.
@@ -139,8 +151,9 @@ activeRule* then(activeRule* rule, void (*callback)(void* aggregateValue, void* 
 activeRule* createActiveRule(embedDBSchema* schema, void* context);
 
 /**
- * @brief Inserts a record, performs a rule on that record and the last n specified records (numLastEntries),
- * compares rule result with threshold, and calls callback function if comparison returns true.
+ * @brief Inserts a record, performs a rule on that record and the last n
+ * specified records (numLastEntries), compares rule result with threshold, and
+ * calls callback function if comparison returns true.
  * @param rule Pointer to the activeRule.
  * @param key Pointer to the key.
  * @param data Pointer to the data.
@@ -149,11 +162,12 @@ activeRule* createActiveRule(embedDBSchema* schema, void* context);
 void executeRules(embedDBState* state, void* key, void* data);
 
 /**
- * @brief Gets the average value of last n specified records (numLastEntries) including current value.
+ * @brief Gets the average value of last n specified records (numLastEntries)
+ * including current value.
  *
- * This function creates an operator for the given active rule and key, executes the operator,
- * and retrieves the average value from the result. It then cleans up the allocated resources
- * and returns the retrieved value.
+ * This function creates an operator for the given active rule and key, executes
+ * the operator, and retrieves the average value from the result. It then cleans
+ * up the allocated resources and returns the retrieved value.
  *
  * @param rule A pointer to the activeRule structure.
  * @param key A pointer to the key used for the rule.
@@ -162,11 +176,12 @@ void executeRules(embedDBState* state, void* key, void* data);
 float GetAvg(embedDBState* state, activeRule* rule, void* key);
 
 /**
- * @brief Gets the minimum or maximum 32-bit integer value of last n specified records (numLastEntries) including current value.
+ * @brief Gets the minimum or maximum 32-bit integer value of last n specified
+ * records (numLastEntries) including current value.
  *
- * This function creates an operator for the given active rule and key, executes the operator,
- * and retrieves the minimum or maximum value from the result. It then cleans up the allocated resources
- * and returns the retrieved value.
+ * This function creates an operator for the given active rule and key, executes
+ * the operator, and retrieves the minimum or maximum value from the result. It
+ * then cleans up the allocated resources and returns the retrieved value.
  *
  * @param rule A pointer to the activeRule structure.
  * @param key A pointer to the key used for the rule.
@@ -175,11 +190,12 @@ float GetAvg(embedDBState* state, activeRule* rule, void* key);
 int32_t GetMinMax32(embedDBState* state, activeRule* rule, void* key);
 
 /**
- * @brief Gets the minimum or maximum 64-bit integer value of last n specified records (numLastEntries) including current value.
+ * @brief Gets the minimum or maximum 64-bit integer value of last n specified
+ * records (numLastEntries) including current value.
  *
- * This function creates an operator for the given active rule and key, executes the operator,
- * and retrieves the minimum or maximum value from the result. It then cleans up the allocated resources
- * and returns the retrieved value.
+ * This function creates an operator for the given active rule and key, executes
+ * the operator, and retrieves the minimum or maximum value from the result. It
+ * then cleans up the allocated resources and returns the retrieved value.
  *
  * @param rule A pointer to the activeRule structure.
  * @param key A pointer to the key used for the rule.
@@ -194,15 +210,17 @@ int64_t GetMinMax64(embedDBState* state, activeRule* rule, void* key);
  * aggregate function based on the rule type. It supports queries
  * for average, maximum, and minimum values.
  *
- * @param rule A pointer to the activeRule structure containing the rule details.
- * @param allocatedValues A pointer to a pointer where allocated values will be stored.
- *                        This will be used to store the iterator and aggregate functions.
+ * @param rule A pointer to the activeRule structure containing the rule
+ * details.
+ * @param allocatedValues A pointer to a pointer where allocated values will be
+ * stored. This will be used to store the iterator and aggregate functions.
  * @param key A pointer to the key used for the rule.
  *
  * @return A pointer to the created embedDBOperator structure.
  *         Returns NULL if an unsupported key size is encountered.
  */
-embedDBOperator* createOperator(embedDBState* state, activeRule* rule, void*** allocatedValues, void* key);
+embedDBOperator* createOperator(embedDBState* state, activeRule* rule,
+                                void*** allocatedValues, void* key);
 
 /**
  * @brief Group function for the aggregate operator.
@@ -215,21 +233,24 @@ int8_t groupFunction(const void* lastRecord, const void* record);
 /**
  * @brief Executes a comparison operation for a active rule.
  *
- * This function performs a comparison between a given value and the rule's threshold
- * using the specified comparator function. Depending on the result of the comparison,
- * it invokes the rule's callback function if the condition is met.
+ * This function performs a comparison between a given value and the rule's
+ * threshold using the specified comparator function. Depending on the result of
+ * the comparison, it invokes the rule's callback function if the condition is
+ * met.
  *
  * @param rule Pointer to the activeRule structure.
  * @param value Pointer to the value to be compared.
  * @param comparator Function pointer to the comparator function.
  */
-void executeComparison(activeRule* rule, void* value, Comparator comparator, void* data);
+void executeComparison(activeRule* rule, void* value, Comparator comparator,
+                       void* data);
 
 /**
  * @brief Handles the average value retrieval and comparison for a active rule.
  *
- * This function retrieves the average value for the last n specified records (numLastEntries) including current value and
- * performs a comparison using the executeComparison function.
+ * This function retrieves the average value for the last n specified records
+ * (numLastEntries) including current value and performs a comparison using the
+ * executeComparison function.
  *
  * @param rule Pointer to the activeRule structure.
  * @param key Pointer to the key for the current record.
@@ -237,29 +258,36 @@ void executeComparison(activeRule* rule, void* value, Comparator comparator, voi
 void handleGetAvg(embedDBState* state, activeRule* rule, void* key, void* data);
 
 /**
- * @brief Handles the minimum or maximum value retrieval and comparison for a active rule.
+ * @brief Handles the minimum or maximum value retrieval and comparison for a
+ * active rule.
  *
- * This function retrieves the minimum or maximum value of the last n specified records (numLastEntries) including current value
- * performs a comparison using the executeComparison function.
+ * This function retrieves the minimum or maximum value of the last n specified
+ * records (numLastEntries) including current value performs a comparison using
+ * the executeComparison function.
  *
  * @param rule Pointer to the activeRule structure.
  * @param key Pointer to the key for the current record.
  */
-void handleGetMinMax(embedDBState* state, activeRule* rule, void* key, void* data);
+void handleGetMinMax(embedDBState* state, activeRule* rule, void* key,
+                     void* data);
 
 /**
- * @brief Handles a custom active rule and executes the appropriate comparison based on the return type.
+ * @brief Handles a custom active rule and executes the appropriate comparison
+ * based on the return type.
  *
- * @param rule A pointer to the activeRule structure containing the rule details.
+ * @param rule A pointer to the activeRule structure containing the rule
+ * details.
  * @param key A pointer to the key used for executing the custom rule.
  *
- * The function executes the custom rule using the provided key and then performs a comparison
- * based on the return type specified in the rule. Supported return types include DBINT32, DBINT64,
- * DBFLOAT, and DBDOUBLE. If the return type is unsupported, an error message is printed.
+ * The function executes the custom rule using the provided key and then
+ * performs a comparison based on the return type specified in the rule.
+ * Supported return types include DBINT32, DBINT64, DBFLOAT, and DBDOUBLE. If
+ * the return type is unsupported, an error message is printed.
  */
-void handleCustomQuery(embedDBState* state, activeRule* rule, void* key, void* data);
+void handleCustomQuery(embedDBState* state, activeRule* rule, void* key,
+                       void* data);
 
 #ifdef __cplusplus
 }
 #endif
-#endif  // _ACTIVERULES_H
+#endif // _ACTIVERULES_H

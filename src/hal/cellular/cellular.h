@@ -13,10 +13,7 @@ typedef enum CellSigStrength_t {
     CELL_SIGNAL_STRENGTH_INVALID
 } CellSigStrength_t;
 
-typedef enum CellErr_t {
-    CELL_ERR_OK,
-    CELL_ERR_SIM_ERROR
-} CellErr_t;
+typedef enum CellErr_t { CELL_ERR_OK, CELL_ERR_SIM_ERROR } CellErr_t;
 
 typedef enum CellNeyType_t {
     CELL_NET_TYPE_2G,
@@ -36,29 +33,29 @@ OOP_VTABLE(Cellular) {
     OOP_IMETHOD(void, Cellular, init);
     OOP_IMETHOD(CellSigStrength_t, Cellular, getSignalStrength);
     OOP_IMETHOD(CellPPPStatus_t, Cellular, getPPPstatus);
-    OOP_IMETHOD(CellErr_t, Cellular, startPPPlogin, const char *, 
-                    const char *, const char *, const char *);
+    OOP_IMETHOD(CellErr_t, Cellular, startPPPlogin, const char*, const char*,
+                const char*, const char*);
     OOP_IMETHOD(CellErr_t, Cellular, ussdInit);
-    OOP_IMETHOD(CellErr_t, Cellular, ussdSend, char *, uint8_t);
-    OOP_IMETHOD(CellErr_t, Cellular, ussdRec, char *, size_t);
+    OOP_IMETHOD(CellErr_t, Cellular, ussdSend, char*, uint8_t);
+    OOP_IMETHOD(CellErr_t, Cellular, ussdRec, char*, size_t);
     OOP_IMETHOD(CellErr_t, Cellular, ussdStop);
-    OOP_IMETHOD(CellErr_t, Cellular, ussdGetCharset, char *, uint32_t);
-    OOP_IMETHOD(CellErr_t, Cellular, ussdSetCharset, char *);
+    OOP_IMETHOD(CellErr_t, Cellular, ussdGetCharset, char*, uint32_t);
+    OOP_IMETHOD(CellErr_t, Cellular, ussdSetCharset, char*);
     OOP_IMETHOD(CellNeyType_t, Cellular, getNetType);
-    OOP_IMETHOD(CellErr_t, Cellular, getSimInfo, CellSimInfo *);
+    OOP_IMETHOD(CellErr_t, Cellular, getSimInfo, CellSimInfo*);
     OOP_IMETHOD(CellErr_t, Cellular, selectSim, uint8_t);
     OOP_IMETHOD(CellErr_t, Cellular, getSimStatus);
 };
 
 OOP_CLASS(Cellular) {
     OOP_IMPLEMENTS(Cellular);
-    OOP_METHOD(CellErr_t, startPPPlogin, const char *, 
-                    const char *, const char *, const char *);
+    OOP_METHOD(CellErr_t, startPPPlogin, const char*, const char*, const char*,
+               const char*);
     CellSimInfo simInfo;
 };
 
 OOP_CTOR(Cellular);
 
-Cellular *cellular();
+Cellular* cellular();
 
 #endif

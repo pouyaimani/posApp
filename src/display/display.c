@@ -5,23 +5,25 @@
 #include "logger.h"
 #include "common.h"
 
-#define SCREEN_SIZE         DISP_HOR_RES * DISP_VER_RES
-#define BYTES_PER_PIXEL     2
+#define SCREEN_SIZE     DISP_HOR_RES* DISP_VER_RES
+#define BYTES_PER_PIXEL 2
 
-static Display display;
-static Touchpad *tp;
+static Display   display;
+static Touchpad* tp;
 // Display buffer
-static uint8_t *buffer;
-#define BYTE_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565)) /*will be 2 for RGB565 */
-#define LV_BUFFER_SIZE  (DISP_HOR_RES * 60) * BYTE_PER_PIXEL
+static uint8_t* buffer;
+#define BYTE_PER_PIXEL                                                         \
+    (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565)) /*will be 2 for RGB565  \
+                                                        */
+#define LV_BUFFER_SIZE (DISP_HOR_RES * 60) * BYTE_PER_PIXEL
 
-#define STATUS_BAR_WIDTH DISP_HOR_RES
+#define STATUS_BAR_WIDTH  DISP_HOR_RES
 #define STATUS_BAR_HEIGHT 30
 
 static volatile bool isFlushEnabled;
 
-static lv_display_t *lv_disp;
-static lv_indev_t * indevTp;
+static lv_display_t* lv_disp;
+static lv_indev_t*   indevTp;
 
 static void initBuffer() {
     buffer = MEM_ALLOC(LV_BUFFER_SIZE);
@@ -29,21 +31,21 @@ static void initBuffer() {
     memset(buffer, 0, LV_BUFFER_SIZE);
 }
 
-static void dispFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *cmap)
-{
+static void dispFlush(lv_display_t* disp, const lv_area_t* area,
+                      uint8_t* cmap) {
     OOP_CALL(sys(), flushDisplay, area->x1, area->x2, area->y1, area->y2, cmap);
     // Inform the graphics library that you are ready with the flushing
     lv_display_flush_ready(disp);
 }
 
 /*Will be called by the library to read the touchpad*/
-static void tpCb(lv_indev_t * indev_drv, lv_indev_data_t * data) {
+static void tpCb(lv_indev_t* indev_drv, lv_indev_data_t* data) {
     static lv_coord_t last_x = 0;
     static lv_coord_t last_y = 0;
     OOP_CALL(tp, read);
 
-    data->state = tp->state == TP_STATE_PRESS ? 
-                    LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+    data->state =
+        tp->state == TP_STATE_PRESS ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
 
     /*Set the last pressed coordinates*/
     data->point.x = tp->x;
@@ -51,12 +53,12 @@ static void tpCb(lv_indev_t * indev_drv, lv_indev_data_t * data) {
 }
 
 #if LV_USE_LOG
-void lvLogCb(lv_log_level_t level, const char * buf) {
+void lvLogCb(lv_log_level_t level, const char* buf) {
     OOP_CALL(sys(), logOut, buf, 0, NULL);
 }
 #endif
 
-static void displayInit() { 
+static void displayInit() {
     LOG_TRACE("Initializing display starts ...");
 
     initBuffer();
@@ -70,7 +72,8 @@ static void displayInit() {
     LOG_TRACE("Creating display ...");
     lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
     lv_display_set_default(lv_disp);
-    lv_display_set_buffers(lv_disp, buffer, NULL, (DISP_HOR_RES * 60) , LV_DISPLAY_RENDER_MODE_PARTIAL);
+    lv_display_set_buffers(lv_disp, buffer, NULL, (DISP_HOR_RES * 60),
+                           LV_DISPLAY_RENDER_MODE_PARTIAL);
     lv_display_set_flush_cb(lv_disp, dispFlush);
 
     /*------------------
@@ -90,7 +93,8 @@ static void displayInit() {
     LV_CLICK_DISABLE(display.fscreen);
 
     display.statusbar = lv_obj_create(display.fscreen);
-    LV_SET_SIZE(display.statusbar, STATUS_BAR_WIDTH + 10, STATUS_BAR_HEIGHT + 10);
+    LV_SET_SIZE(display.statusbar, STATUS_BAR_WIDTH + 10,
+                STATUS_BAR_HEIGHT + 10);
     LV_SET_BG_COLOR(display.statusbar, MAIN_THEME_COLOR);
     LV_ALIGN(display.statusbar, LV_ALIGN_TOP_MID, 5, -10);
     LV_SET_RADIUS(display.statusbar, 10);
@@ -117,11 +121,9 @@ static void displayInit() {
 static void displayUpdate() {
     // Previous tick
     static uint32_t ptick = 0;
-    CALL_ONCE(
-        ptick = GET_TICK();
-    );
+    CALL_ONCE(ptick = GET_TICK(););
     // Current tick
-    uint32_t ctick = GET_TICK();
+    uint32_t ctick   = GET_TICK();
     uint32_t elapsed = ctick - ptick;
     lv_tick_inc(elapsed);
     ptick = ctick;
@@ -131,14 +133,12 @@ static void displayUpdate() {
 
 OOP_CTOR(Display) {
     LOG_TRACE("Display constructor ...");
-    self->init = displayInit;
+    self->init   = displayInit;
     self->update = displayUpdate;
-    tp = touchpad();
+    tp           = touchpad();
 }
 
-Display *disp(void) {
-    CALL_ONCE(
-        OOP_CALL_CTOR(Display, &display);
-    );
+Display* disp(void) {
+    CALL_ONCE(OOP_CALL_CTOR(Display, &display););
     return &display;
 }

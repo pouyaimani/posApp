@@ -13,27 +13,25 @@
 #include "storage/storage.h"
 #include "settings/settings.h"
 
-static StatusBar *__statusBar;
-static Timer *timer;
+static StatusBar*          __statusBar;
+static Timer*              timer;
 static StatusBarInfoMode_t infoMode = STBAR_INFO_DATE_TIME;
-lv_obj_t *statusbar;
-lv_obj_t *ldate;
-lv_obj_t *ltime;
-lv_obj_t *infoBox;
-lv_obj_t *info;
-lv_obj_t *cellularIcon;
-lv_obj_t *wifiIcon;
-lv_obj_t *soundIcon;
-lv_obj_t *batteryIcon;
-lv_obj_t *operator;
+lv_obj_t*                  statusbar;
+lv_obj_t*                  ldate;
+lv_obj_t*                  ltime;
+lv_obj_t*                  infoBox;
+lv_obj_t*                  info;
+lv_obj_t*                  cellularIcon;
+lv_obj_t*                  wifiIcon;
+lv_obj_t*                  soundIcon;
+lv_obj_t*                  batteryIcon;
+lv_obj_t*                  operator;
 
-static void anim_y_cb(void * var, int32_t v) {
-    lv_obj_set_y((lv_obj_t *)var, v);
-}
+static void anim_y_cb(void* var, int32_t v) { lv_obj_set_y((lv_obj_t*)var, v); }
 
-void dtScroll(lv_obj_t * label1, lv_obj_t * label2) {
+void dtScroll(lv_obj_t* label1, lv_obj_t* label2) {
     lv_anim_t a1, a2;
-    int32_t height = LV_GET_HEIGHT(disp()->statusbar);
+    int32_t   height = LV_GET_HEIGHT(disp()->statusbar);
 
     lv_anim_init(&a1);
     lv_anim_set_var(&a1, label1);
@@ -67,7 +65,7 @@ static void updateTime() {
 }
 
 static void updateBatteryIcon() {
-    BatteryStat *bat = OOP_CALL(sys(), getBatteryStatus);
+    BatteryStat* bat = OOP_CALL(sys(), getBatteryStatus);
     if (bat->isChanrging) {
         lv_img_set_src(batteryIcon, ICON_BAT_CHARGING);
     } else {
@@ -123,24 +121,25 @@ static void updateOperatorDsc() {
         LV_SET_TEXT(operator, "Unknown");
         return;
     }
-    static uint8_t prevOpt = 0;
-    char opt[2+1] = { 0 };
+    static uint8_t prevOpt    = 0;
+    char           opt[2 + 1] = {0};
     memcpy(opt, &simInfo.imsi[3], 2);
-	uint8_t opType = libAtoi(opt);
-    if (prevOpt == opType) return;
+    uint8_t opType = libAtoi(opt);
+    if (prevOpt == opType)
+        return;
     switch (opType) {
-	case 11:
-		LV_SET_TEXT(operator, "MCI");
-		break;
-	case 35:
-		LV_SET_TEXT(operator, "MTN");
-		break;
-	case 20:
-		LV_SET_TEXT(operator, "RTL");
-		break;
-	case 8:
-		LV_SET_TEXT(operator, "STL");
-		break;
+    case 11:
+        LV_SET_TEXT(operator, "MCI");
+        break;
+    case 35:
+        LV_SET_TEXT(operator, "MTN");
+        break;
+    case 20:
+        LV_SET_TEXT(operator, "RTL");
+        break;
+    case 8:
+        LV_SET_TEXT(operator, "STL");
+        break;
     default:
         LV_SET_TEXT(operator, "NKN");
     }
@@ -213,7 +212,7 @@ static void enDateTimeMode() {
     update();
 }
 
-static void setInfo(const char *data) {
+static void setInfo(const char* data) {
     infoMode = STBAR_INFO;
     LV_SET_TEXT(info, data);
     LV_HIDE(ldate);
@@ -254,7 +253,7 @@ OOP_CTOR(StatusBar) {
     lv_obj_set_style_clip_corner(infoBox, true, 0);
 
     int32_t height = LV_GET_HEIGHT(disp()->statusbar);
-    ltime = lv_label_create(infoBox);
+    ltime          = lv_label_create(infoBox);
     LV_SET_SIZE(ltime, lv_pct(100), lv_pct(100));
     LV_ALIGN(ltime, LV_ALIGN_TOP_MID, 0, 0);
     LV_SET_BG_OPA(ltime, LV_OPA_0);
@@ -304,16 +303,14 @@ OOP_CTOR(StatusBar) {
     cellularIcon = lv_img_create(disp()->statusbar);
     LV_ALIGN(cellularIcon, LV_ALIGN_LEFT_MID, 5, 7);
 
-    __statusBar->setInfo = setInfo;
+    __statusBar->setInfo        = setInfo;
     __statusBar->enDateTimeMode = enDateTimeMode;
     __statusBar->setSoundVolume = setSoundVolume;
     enDateTimeMode();
 }
 
-StatusBar *statusBar() {
-    CALL_ONCE(
-        __statusBar = (StatusBar*)MEM_ALLOC(sizeof(StatusBar));
-        OOP_CALL_CTOR(StatusBar, __statusBar);
-    );
+StatusBar* statusBar() {
+    CALL_ONCE(__statusBar = (StatusBar*)MEM_ALLOC(sizeof(StatusBar));
+              OOP_CALL_CTOR(StatusBar, __statusBar););
     return __statusBar;
 }

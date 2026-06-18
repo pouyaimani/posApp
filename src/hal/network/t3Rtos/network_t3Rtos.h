@@ -5,9 +5,7 @@
 
 #include "../network.h"
 
-OOP_CLASS(NetworkT3Rtos) {
-    OOP_EXTENDS(Network);
-};
+OOP_CLASS(NetworkT3Rtos) { OOP_EXTENDS(Network); };
 
 OOP_CTOR(NetworkT3Rtos);
 

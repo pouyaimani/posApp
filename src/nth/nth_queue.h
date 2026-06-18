@@ -8,7 +8,7 @@
 
 typedef struct {
 
-    Event *events[NT_MAX_EVENTS];
+    Event* events[NT_MAX_EVENTS];
 
     volatile uint32_t head;
     volatile uint32_t tail;
@@ -16,13 +16,10 @@ typedef struct {
 
 } NtEventQueue;
 
-void nth_queueInit(NtEventQueue *q);
+void nth_queueInit(NtEventQueue* q);
 
-bool nth_queuePush(
-    NtEventQueue *q,
-    Event *ev);
+bool nth_queuePush(NtEventQueue* q, Event* ev);
 
-Event *nth_queuePop(
-    NtEventQueue *q);
+Event* nth_queuePop(NtEventQueue* q);
 
 #endif

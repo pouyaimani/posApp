@@ -6,27 +6,24 @@
 #include "keypad/keypad.h"
 #include "logger.h"
 
-#define CREATE_EVENT(type, event)                               \
-    do {                                                        \
-        type## *ev = OOP_CALL(sys(), getMemory, sizeof(type##));  \
-        event = (Event*)ev;                                     \
-        OOP_CALL_CTOR(Event, event);                            \
-        OOP_CALL_CTOR(type##, ev);                              \
-    } while(0)
+#define CREATE_EVENT(type, event)                                              \
+    do {                                                                       \
+        type##* ev = OOP_CALL(sys(), getMemory, sizeof(type##));               \
+        event      = (Event*)ev;                                               \
+        OOP_CALL_CTOR(Event, event);                                           \
+        OOP_CALL_CTOR(type##, ev);                                             \
+    } while (0)
 
 /* ================= Event base ================= */
-static void dispatch(Event *self, State *state)
-{
+static void dispatch(Event* self, State* state) {
     self->target = state;
     smCore()->raiseEvent(self);
 }
 
-OOP_CTOR(Event) {
-    self->vtable.dispatch = dispatch;
-}
+OOP_CTOR(Event) { self->vtable.dispatch = dispatch; }
 
-Event *createEvent(SmEventType_t type) {
-    Event *event;
+Event* createEvent(SmEventType_t type) {
+    Event* event;
     LOG_TRACE("Creating Event. type = %d", type);
     switch (type) {
     case SM_EVENT_TIME_OUT:
@@ -64,67 +61,51 @@ Event *createEvent(SmEventType_t type) {
 
 /* ================= TimeOut ================= */
 
-static void TimeOut_dispatchTo(Event *self, State *state)
-{
+static void TimeOut_dispatchTo(Event* self, State* state) {
     OOP_CALL(state, handleTimeout, self);
 }
 
-OOP_CTOR(TimeOutEvent)
-{
-    self->base.vtable.dispatchTo = TimeOut_dispatchTo;
-}
+OOP_CTOR(TimeOutEvent) { self->base.vtable.dispatchTo = TimeOut_dispatchTo; }
 
 /* ================= Keypad ================= */
 
-static void Keypad_dispatchTo(Event *self, State *state)
-{
+static void Keypad_dispatchTo(Event* self, State* state) {
     LOG_TRACE("Keypad event dispatch to is called ...");
     OOP_CALL(state, handleKeypad, self);
 }
 
-OOP_CTOR(KeypadEvent)
-{
+OOP_CTOR(KeypadEvent) {
     LOG_TRACE("Keypad event is constructing ...");
     self->base.vtable.dispatchTo = Keypad_dispatchTo;
 }
 
 /* ================= MagReader ================= */
 
-static void mag_dispatchTo(Event *self, State *state)
-{
+static void mag_dispatchTo(Event* self, State* state) {
     OOP_CALL(state, handleMag, self);
 }
 
-OOP_CTOR(MagEvent)
-{
-    self->base.vtable.dispatchTo = mag_dispatchTo;
-}
+OOP_CTOR(MagEvent) { self->base.vtable.dispatchTo = mag_dispatchTo; }
 
 /* ==================== Wifi ==================== */
 
-static void wifi_dispatchTo(Event *self, State *state)
-{
+static void wifi_dispatchTo(Event* self, State* state) {
     OOP_CALL(state, handleWifi, self);
 }
 
-OOP_CTOR(WifiEvent)
-{
-    self->base.vtable.dispatchTo = wifi_dispatchTo;
-}
+OOP_CTOR(WifiEvent) { self->base.vtable.dispatchTo = wifi_dispatchTo; }
 
 /* =================== Cellular ================== */
 
-static void cell_dispatchTo(Event *self, State *state) {
+static void cell_dispatchTo(Event* self, State* state) {
     OOP_CALL(state, handleCell, self);
 }
 
-OOP_CTOR(CellEvent) {
-    self->base.vtable.dispatchTo = cell_dispatchTo;
-}
+OOP_CTOR(CellEvent) { self->base.vtable.dispatchTo = cell_dispatchTo; }
 
 /* =================== Socket ================== */
 
-static void socket_connect__dispatchTo(Event *self, State *state) {
+static void socket_connect__dispatchTo(Event* self, State* state) {
     OOP_CALL(state, onSocketConnect, self);
 }
 
@@ -132,7 +113,7 @@ OOP_CTOR(SocketConnectEvent) {
     self->base.vtable.dispatchTo = socket_connect__dispatchTo;
 }
 
-static void socket_sent_dispatchTo(Event *self, State *state) {
+static void socket_sent_dispatchTo(Event* self, State* state) {
     OOP_CALL(state, onSocketSent, self);
 }
 
@@ -140,7 +121,7 @@ OOP_CTOR(SocketSentEvent) {
     self->base.vtable.dispatchTo = socket_sent_dispatchTo;
 }
 
-static void socket_rr_dispatchTo(Event *self, State *state) {
+static void socket_rr_dispatchTo(Event* self, State* state) {
     OOP_CALL(state, onSocketReadyRead, self);
 }
 
@@ -148,7 +129,7 @@ OOP_CTOR(SocketReadyReadEvent) {
     self->base.vtable.dispatchTo = socket_rr_dispatchTo;
 }
 
-static void socket_timeout__dispatchTo(Event *self, State *state) {
+static void socket_timeout__dispatchTo(Event* self, State* state) {
     OOP_CALL(state, onSocketTimeOut, self);
 }
 

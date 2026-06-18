@@ -5,7 +5,7 @@
 #include "common.h"
 
 typedef struct {
-    const char *text[LNG_COUNT];
+    const char* text[LNG_COUNT];
 } PhraseEntry;
 
 typedef enum {
@@ -16,11 +16,11 @@ typedef enum {
     PHRASE_T_COUNT
 } Phrases_t;
 
-const char *phraseGet(Phrases_t id, Language_t);
+const char* phraseGet(Phrases_t id, Language_t);
 
 // Get phrase with device default language
-const char *phraseGetDef(Phrases_t id);
+const char* phraseGetDef(Phrases_t id);
 
-void getResponseCode(int code, char *message, size_t size);
+void getResponseCode(int code, char* message, size_t size);
 
 #endif

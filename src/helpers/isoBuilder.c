@@ -7,25 +7,25 @@
 #include "utility/arith.h"
 
 #define MTI_VAL_LOG_ON "0800"
-#define MTI_VAL_CFG "0100"
+#define MTI_VAL_CFG    "0100"
 
 #define PRC_LOG_ON "920000"
-#define PRC_CFG "930000"
+#define PRC_CFG    "930000"
 
 #define STAN_SIZE 6
 
 enum {
-    TAG_MERCHANT_NAME = 31,
-    TAG_MERCHANT_PHONE = 34,
-    TAG_VOUCHER_PIN = 41,
-    TAG_SWITCH_DATETIME = 50,
-    TAG_FORCE_TMS = 94,
+    TAG_MERCHANT_NAME      = 31,
+    TAG_MERCHANT_PHONE     = 34,
+    TAG_VOUCHER_PIN        = 41,
+    TAG_SWITCH_DATETIME    = 50,
+    TAG_FORCE_TMS          = 94,
     TAG_MERCHANT_UNIQUE_ID = 98,
 };
 
 /*********************************************************************************************
  *                                                                                           *
- *                                      Helpers                                              *
+ *                                      Helpers              *
  *                                                                                           *
  ********************************************************************************************/
 
@@ -38,7 +38,7 @@ static int parse2Digits(const unsigned char* p) {
 static int8_t compareMac(int keyIndex, char* data) {
     RETURN_VALUE_IF_NULL(data, ;, ERR_NULL_PARAMETER);
     uint16_t packedSize = data[0] * 256 + data[1];
-    packedSize = packedSize - 5; // without header
+    packedSize          = packedSize - 5; // without header
     DL_UINT8 packBufTemp[2048];
     memset(packBufTemp, 0x00, sizeof(packBufTemp));
     memcpy(packBufTemp, data + 7, packedSize);
@@ -53,7 +53,8 @@ static int8_t compareMac(int keyIndex, char* data) {
         return ERR_NOK;
     }
     LOG_DEBUG("[mac (%d)] [%s]", length, mac);
-    // pedGetMacAscii(keyIndex, 16, packBufTemp, packedSize - 8, (char *)asciiMac);
+    // pedGetMacAscii(keyIndex, 16, packBufTemp, packedSize - 8, (char
+    // *)asciiMac);
     int8_t macCompare = memcmp(mac, asciiMac, 8);
     if (macCompare != 0) {
         LOG_DEBUG("mac:::::::::check mac failed !!!!");
@@ -76,37 +77,44 @@ static int dtSetSystemDateTime(const int input[6]) {
 static int8_t pedDecrypt(void* buffer, int bufLen, void* decryptedData) {
     RETURN_VALUE_IF_NULL(buffer, ;, ERR_NULL_PARAMETER);
     RETURN_VALUE_IF_NULL(decryptedData, ;, ERR_NULL_PARAMETER);
-    PedErr_t result = OOP_CALL(ped(), encryptAccountData, buffer, bufLen, decryptedData);
+    PedErr_t result =
+        OOP_CALL(ped(), encryptAccountData, buffer, bufLen, decryptedData);
     return result == PED_ERR_OK ? ERR_OK : ERR_NOK;
 }
 
 static void handleMerchantName(LtvStructInfo* tag) {
     DEFINE_BYTE_ARRAY(tmpBuffer, 512);
 
-    memset(settings()->terminal.merchantName, 0, sizeof(settings()->terminal.merchantName));
+    memset(settings()->terminal.merchantName, 0,
+           sizeof(settings()->terminal.merchantName));
 
     hexStringToBytes(tag->data, tag->len - 1, tmpBuffer);
 
-    char* end = strchr((char*)tmpBuffer, '\\');
-    size_t len = end ? (size_t)(end - (char*)tmpBuffer) : strlen((char*)tmpBuffer);
+    char*  end = strchr((char*)tmpBuffer, '\\');
+    size_t len =
+        end ? (size_t)(end - (char*)tmpBuffer) : strlen((char*)tmpBuffer);
 
     LOG_DEBUG("merchantFa (%zu): %.*s", len, (int)len, tmpBuffer);
 
-    convertStrNoNumber((char*)tmpBuffer, (int)len, 0, 4, 5, settings()->terminal.merchantName);
+    convertStrNoNumber((char*)tmpBuffer, (int)len, 0, 4, 5,
+                       settings()->terminal.merchantName);
 
-    LOG_DEBUG("merchantName (%zu): %s", strlen(settings()->terminal.merchantName),
+    LOG_DEBUG("merchantName (%zu): %s",
+              strlen(settings()->terminal.merchantName),
               settings()->terminal.merchantName);
 }
 
 static void handleMerchantPhone(LtvStructInfo* tag) {
-    memset(settings()->terminal.merchantPhone, 0x00, sizeof(settings()->terminal.merchantPhone));
-    hexStringToBytes(tag->data, tag->len - 1, (unsigned char*)settings()->terminal.merchantPhone);
+    memset(settings()->terminal.merchantPhone, 0x00,
+           sizeof(settings()->terminal.merchantPhone));
+    hexStringToBytes(tag->data, tag->len - 1,
+                     (unsigned char*)settings()->terminal.merchantPhone);
     // strcpy (config.MerchantPhone, ltvStructInfo[i].data);
     LOG_DEBUG(" config.MerchantPhone [%s]", settings()->terminal.merchantPhone);
 }
 
 static void handleSwitchDateTime(LtvStructInfo* tag) {
-    int dateTime[6] = {0};
+    int           dateTime[6]  = {0};
     unsigned char tempBuf[512] = {0};
 
     LOG_DEBUG("dateTime(%d) [%s]", tag->len, tag->data);
@@ -123,12 +131,12 @@ static void handleSwitchDateTime(LtvStructInfo* tag) {
 }
 
 static void handleVoucherPin(LtvStructInfo* tag) {
-    char temp[128] = {0};
-    int pinLen = 0;
+    char          temp[128] = {0};
+    int           pinLen    = 0;
     unsigned char pinTemp[64];
     unsigned char pinBytes[32];
     unsigned char pinData[32];
-    unsigned int outLen = 0;
+    unsigned int  outLen = 0;
     strcpy(temp, tag->data);
     pinLen = strlen(temp) / 2;
     LOG_DEBUG("parseVoucherTransactionSIPA::temp[%s]pinLen[%d]", temp, pinLen);
@@ -142,7 +150,8 @@ static void handleVoucherPin(LtvStructInfo* tag) {
     pedDecrypt(pinBytes, 16, pinData);
     // TODO
     // strcpy(currentTransaction.sqlTrx.PaymentId, (const char *)pinData);
-    // TraceExt(pinTemp, 16, "VoucherPin [%s]", currentTransaction.sqlTrx.PaymentId);
+    // TraceExt(pinTemp, 16, "VoucherPin [%s]",
+    // currentTransaction.sqlTrx.PaymentId);
 }
 
 static void handleMerchantUniqueId(LtvStructInfo* tag) {
@@ -150,7 +159,8 @@ static void handleMerchantUniqueId(LtvStructInfo* tag) {
            sizeof(settings()->terminal.merchantUniqueId));
     hexStringToBytes(tag->data, tag->len - 1,
                      (unsigned char*)settings()->terminal.merchantUniqueId);
-    LOG_DEBUG("settings()->terminal.merchantUniqueId [%s]", settings()->terminal.merchantUniqueId);
+    LOG_DEBUG("settings()->terminal.merchantUniqueId [%s]",
+              settings()->terminal.merchantUniqueId);
     // settings()->save();
 }
 
@@ -163,41 +173,43 @@ static void decodeMerchantDesc(char* buffer) {
         int tag = libAtoi(tags[i].tag);
 
         switch (tag) {
-            case TAG_MERCHANT_NAME:
-                handleMerchantName(&tags[i]);
-                break;
+        case TAG_MERCHANT_NAME:
+            handleMerchantName(&tags[i]);
+            break;
 
-            case TAG_MERCHANT_PHONE:
-                handleMerchantPhone(&tags[i]);
-                break;
+        case TAG_MERCHANT_PHONE:
+            handleMerchantPhone(&tags[i]);
+            break;
 
-            case TAG_SWITCH_DATETIME:
-                handleSwitchDateTime(&tags[i]);
-                break;
+        case TAG_SWITCH_DATETIME:
+            handleSwitchDateTime(&tags[i]);
+            break;
 
-            case TAG_VOUCHER_PIN:
-                handleVoucherPin(&tags[i]);
-                break;
+        case TAG_VOUCHER_PIN:
+            handleVoucherPin(&tags[i]);
+            break;
 
-            case TAG_FORCE_TMS:
-                settings()->server.forceTMS = 1;
-                break;
+        case TAG_FORCE_TMS:
+            settings()->server.forceTMS = 1;
+            break;
 
-            case TAG_MERCHANT_UNIQUE_ID:
-                handleMerchantUniqueId(&tags[i]);
-                break;
+        case TAG_MERCHANT_UNIQUE_ID:
+            handleMerchantUniqueId(&tags[i]);
+            break;
 
-            default:
-                LOG_DEBUG("Unknown tag %d", tag);
-                break;
+        default:
+            LOG_DEBUG("Unknown tag %d", tag);
+            break;
         }
     }
 }
 
 Error_t setDateTime() {
     DateTime* dt = OOP_CALL(sys(), getDateTime);
-    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION, (const DL_UINT8*)dt->time);
-    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION, (const DL_UINT8*)dt->date + 2);
+    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION,
+                      (const DL_UINT8*)dt->time);
+    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION,
+                      (const DL_UINT8*)dt->date + 2);
     return ERR_OK;
 }
 
@@ -212,8 +224,9 @@ void setStan() {
 
 static Error_t setWorkingKeys() {
     DEFINE_BYTE_ARRAY(keys, 512);
-    size_t size;
-    IsoStatus_t ret = iso8583()->getBin(ELEMENT_RESERVED_PRIVATE_62, keys, &size);
+    size_t      size;
+    IsoStatus_t ret =
+        iso8583()->getBin(ELEMENT_RESERVED_PRIVATE_62, keys, &size);
     RETURN_VALUE_IF_NOT(ret, ISO_OK, ;, ERR_NOK);
     LOG_DEBUG("Keys length = %d, keys = %s", size, keys);
     DEFINE_BYTE_ARRAY(tmpKey, 16);
@@ -234,7 +247,7 @@ static Error_t setWorkingKeys() {
 
 /*********************************************************************************************
  *                                                                                           *
- *                                   Builder/Parsers                                         *
+ *                                   Builder/Parsers              *
  *                                                                                           *
  ********************************************************************************************/
 
@@ -253,10 +266,13 @@ Error_t isoBuildLogOn(ByteArray* buf) {
     prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
     iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nni);
 #if defined REMOTE_KEY_INJECTION
-    (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN, &isoMsg); // IIN
+    (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
+                                        &isoMsg); // IIN
 #endif
-    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, (const DL_UINT8*)privateData);
-    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO, (const DL_UINT8*)SecRelControlInfo);
+    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
+                      (const DL_UINT8*)privateData);
+    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO,
+                      (const DL_UINT8*)SecRelControlInfo);
     return ERR_OK;
 }
 
@@ -298,7 +314,8 @@ Error_t isoBuildCfg(ByteArray* buf) {
     prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
     iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nni);
 #if defined REMOTE_KEY_INJECTION
-    (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN, &isoMsg); // IIN
+    (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
+                                        &isoMsg); // IIN
 #endif
     iso8583()->setStr(ELEMENT_TERMINAL_ID, (const DL_UINT8*)privateData);
     iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
@@ -325,7 +342,8 @@ static Error_t isoParseCfgResponse(ByteArray* buf) {
     memcpy(settings()->terminal.acquirerIIN, acquirerIIN, length);
     settings()->terminal.acquirerIIN[length] = '\0';
 
-    LOG_DEBUG("[[ setting.AcquireIIN (%d)(%s) ]]", strlen(settings()->terminal.acquirerIIN),
+    LOG_DEBUG("[[ setting.AcquireIIN (%d)(%s) ]]",
+              strlen(settings()->terminal.acquirerIIN),
               settings()->terminal.acquirerIIN);
     DEFINE_STRING(f48, 16);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, f48);
@@ -356,15 +374,18 @@ static Error_t isoBuildMac(ByteArray* buf) {
     iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)mac, 8);
     DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
     size_t packedLen;
-    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
+                        , ERR_NOK);
     if (packedLen < 8)
         return ERR_NOK;
     ped()->getMac(16, tmpBuf, packedLen - 8, mac);
     iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)mac, 8);
-    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;, ERR_NOK);
-    IsoHeaderData_t hd = {.nii = settings()->server.mainServerNii};
-    RETURN_VALUE_IF_NOT(iso8583()->addHeader(buf->data, tmpBuf, &packedLen, &hd), ISO_OK, ;
+    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
                         , ERR_NOK);
+    IsoHeaderData_t hd = {.nii = settings()->server.mainServerNii};
+    RETURN_VALUE_IF_NOT(
+        iso8583()->addHeader(buf->data, tmpBuf, &packedLen, &hd), ISO_OK, ;
+        , ERR_NOK);
     buf->len = packedLen;
     return ERR_OK;
 }
@@ -396,11 +417,17 @@ RespCode_t isoParse(MTI_t mti, ByteArray* buf) {
 }
 
 static const IsoTransaction templates[] = {
-    {.mti = MTI_LOG_ON, .builder = isoBuildLogOn, .parser = isoParseLogOnResponse},
+    {.mti     = MTI_LOG_ON,
+     .builder = isoBuildLogOn,
+     .parser  = isoParseLogOnResponse},
     {.mti = MTI_CFG, .builder = isoBuildCfg, .parser = isoParseCfgResponse},
-    {.mti = MTI_PURCHASE, .builder = isoBuildPurchase, .parser = isoParsePurchaseResponse},
+    {.mti     = MTI_PURCHASE,
+     .builder = isoBuildPurchase,
+     .parser  = isoParsePurchaseResponse},
     {.mti = MTI_BILL, .builder = isoBuildBill, .parser = isoParseBillResponse},
-    {.mti = MTI_BALANCE, .builder = isoBuildBalance, .parser = isoParseBalanceResponse},
+    {.mti     = MTI_BALANCE,
+     .builder = isoBuildBalance,
+     .parser  = isoParseBalanceResponse},
     {.mti = MTI_PAY, .builder = isoBuildPay, .parser = isoParsePayResponse}};
 
 const IsoTransaction* isoFindTransaction(MTI_t mti) {

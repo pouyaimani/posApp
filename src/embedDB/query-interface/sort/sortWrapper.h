@@ -16,15 +16,15 @@ typedef struct embedDBOperator embedDBOperator;
 typedef struct sortData {
     uint32_t count;
     uint16_t recordSize;
-    int8_t colNum;
-    int8_t keyOffset;
-    int8_t keySize;
-    int8_t (*compareFn)(void *a, void *b);
+    int8_t   colNum;
+    int8_t   keyOffset;
+    int8_t   keySize;
+    int8_t (*compareFn)(void* a, void* b);
     int32_t tupleLimit;
 
-    void *readBuffer;
-    embedDBFileInterface *fileInterface;
-    file_iterator_state_t *fileIterator;
+    void*                  readBuffer;
+    embedDBFileInterface*  fileInterface;
+    file_iterator_state_t* fileIterator;
 } sortData;
 
 /**
@@ -43,37 +43,44 @@ metrics_t initMetric();
  * @param recordSize    The size of the data
  * @param keySize       The size of the key
  * @param keyOffset     The offset of the key with in the record (# of bytes)
- * @return uint32_t     The total number of records written or 0 if an error occurs
+ * @return uint32_t     The total number of records written or 0 if an error
+ * occurs
  *
  */
-uint32_t loadRowData(sortData *data, embedDBOperator *op, void *unsortedFile);
+uint32_t loadRowData(sortData* data, embedDBOperator* op, void* unsortedFile);
 
 /**
- * @brief Pure in-memory sort that avoids file I/O completely for very small datasets
+ * @brief Pure in-memory sort that avoids file I/O completely for very small
+ * datasets
  * @param data Sort configuration data
  * @param op The operator to read data from
- * @return file_iterator_state_t* Iterator for reading sorted results from memory
+ * @return file_iterator_state_t* Iterator for reading sorted results from
+ * memory
  */
-file_iterator_state_t *startPureMemorySort(sortData *data, embedDBOperator *op);
+file_iterator_state_t* startPureMemorySort(sortData* data, embedDBOperator* op);
 
 /**
- * @brief The data given in the unsortedFile is sorted and stored in the sortedFile
+ * @brief The data given in the unsortedFile is sorted and stored in the
+ * sortedFile
  *
  * @param fileInterface             The file interface
  * @param unsortedFile              The file that is loaded with row data
  * @param sortedFile                An empty file
  * @param recordSize                The size of the records
- * @param count                     The total number of records stored in unsortedFile
- * @return file_iterator_state_t*   An iterator that is used to retrieve the sorted records
+ * @param count                     The total number of records stored in
+ * unsortedFile
+ * @return file_iterator_state_t*   An iterator that is used to retrieve the
+ * sorted records
  */
-file_iterator_state_t *startSort(sortData *data, void *unsortedFile, void *sortedFile);
+file_iterator_state_t* startSort(sortData* data, void* unsortedFile,
+                                 void* sortedFile);
 
 /**
  * @brief Begins the sorting operation using row data from previous operator
  *
  * @param op The previous operator that will feed row data
  */
-void prepareSort(embedDBOperator *op);
+void prepareSort(embedDBOperator* op);
 
 /**
  * @brief Reads the next record from the sorted file
@@ -82,13 +89,13 @@ void prepareSort(embedDBOperator *op);
  * @param buffer    A buffer that is the size of one record
  * @return uint8_t  0: if read was successful. other wise none zero
  */
-uint8_t readNextRecord(void *state, void *buffer);
+uint8_t readNextRecord(void* state, void* buffer);
 
-void closeSort(file_iterator_state_t *iteratorState);
+void closeSort(file_iterator_state_t* iteratorState);
 
 typedef struct {
     uint32_t key;
-    void *value;
+    void*    value;
 } rowData;
 
 #endif

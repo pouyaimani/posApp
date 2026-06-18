@@ -5,9 +5,7 @@
 
 #include "../touchpad.h"
 
-OOP_CLASS(TouchpadT3Rtos) {
-    OOP_EXTENDS(Touchpad);
-};
+OOP_CLASS(TouchpadT3Rtos) { OOP_EXTENDS(Touchpad); };
 
 OOP_CTOR(TouchpadT3Rtos);
 

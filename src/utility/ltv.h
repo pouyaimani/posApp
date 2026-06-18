@@ -5,14 +5,14 @@
 #include <stdlib.h>
 
 typedef struct {
-	int len;
-	char tag[4];
-	char data[256];
+    int  len;
+    char tag[4];
+    char data[256];
 } LtvStructInfo;
 
+void setCommonLtv(char* deviceSerial, const char* version, int iLang,
+                  char* buff);
 
-void setCommonLtv(char *deviceSerial, const char *version, int iLang, char *buff);
-
-int unpackLtv(char *buffer, LtvStructInfo ltvStructInfo[]);
+int unpackLtv(char* buffer, LtvStructInfo ltvStructInfo[]);
 
 #endif

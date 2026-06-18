@@ -5,9 +5,7 @@
 
 #include "../picc.h"
 
-OOP_CLASS(PiccT3Rtos) {
-    OOP_EXTENDS(Picc);
-};
+OOP_CLASS(PiccT3Rtos) { OOP_EXTENDS(Picc); };
 
 OOP_CTOR(PiccT3Rtos);
 

@@ -5,32 +5,33 @@
 #include "logger.h"
 #include "common.h"
 
-static BankName *__bankName;
-static cJSON *nameEn;
-static cJSON *nameFa;
+static BankName* __bankName;
+static cJSON*    nameEn;
+static cJSON*    nameFa;
 
-static bool findInJson(const char *iin, char *out, size_t size, Language_t lang) {
-    char *jsonData = MEM_ALLOC(4096);
+static bool findInJson(const char* iin, char* out, size_t size,
+                       Language_t lang) {
+    char* jsonData = MEM_ALLOC(4096);
     OOP_CALL(file(), read, BANK_NAME_JSON_ADDR, jsonData, 0, 4096);
 
-    cJSON *root = cJSON_Parse(jsonData);
+    cJSON* root = cJSON_Parse(jsonData);
     if (!root) {
         LOG_ERROR("Json parse error, file = %s", BANK_NAME_JSON_ADDR);
         return false;
     }
 
     for (int i = 0; i < cJSON_GetArraySize(root); i++) {
-        cJSON *bank = cJSON_GetArrayItem(root, i);
+        cJSON* bank = cJSON_GetArrayItem(root, i);
 
-        cJSON *code = cJSON_GetObjectItem(bank, "code");
+        cJSON* code = cJSON_GetObjectItem(bank, "code");
 
         if (strcmp(code->valuestring, iin) == 0) {
 
             if (lang == LNG_EN) {
-                cJSON *name = cJSON_GetObjectItem(bank, "name_en");
+                cJSON* name = cJSON_GetObjectItem(bank, "name_en");
                 snprintf(out, size, "s", name->valuestring);
             } else if (lang == LNG_FA) {
-                cJSON *name = cJSON_GetObjectItem(bank, "name_fa");
+                cJSON* name = cJSON_GetObjectItem(bank, "name_fa");
                 snprintf(out, size, "s", name->valuestring);
             }
             break;
@@ -41,11 +42,11 @@ static bool findInJson(const char *iin, char *out, size_t size, Language_t lang)
     return true;
 }
 
-void getNameFa(const char * iin, char *out, size_t size) {
+void getNameFa(const char* iin, char* out, size_t size) {
     findInJson(iin, out, size, LNG_FA);
 }
 
-void getNameEn(const char * iin, char *out, size_t size) {
+void getNameEn(const char* iin, char* out, size_t size) {
     findInJson(iin, out, size, LNG_EN);
 }
 
@@ -55,9 +56,7 @@ OOP_CTOR(BankName) {
 };
 
 BankName* bankName() {
-    CALL_ONCE(
-        __bankName = MEM_ALLOC(sizeof(__bankName));
-        OOP_CALL_CTOR(BankName, __bankName);
-    );
+    CALL_ONCE(__bankName = MEM_ALLOC(sizeof(__bankName));
+              OOP_CALL_CTOR(BankName, __bankName););
     return __bankName;
 }

@@ -5,9 +5,7 @@
 
 #include "../printer.h"
 
-OOP_CLASS(PrinterT3Rtos) {
-    OOP_EXTENDS(Printer);
-};
+OOP_CLASS(PrinterT3Rtos) { OOP_EXTENDS(Printer); };
 
 OOP_CTOR(PrinterT3Rtos);
 

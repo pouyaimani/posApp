@@ -11,15 +11,15 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 
-static Menu *menu;
-static SubState *powerOff;
-static Merchant *merchant;
-static Supervisor *supervisor;
+static Menu*       menu;
+static SubState*   powerOff;
+static Merchant*   merchant;
+static Supervisor* supervisor;
 
-#define ITEM_CNT_MAX    4
+#define ITEM_CNT_MAX 4
 
 static void onCustomer() {
-    CardHolder *ch = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
+    CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
     SM_GOTO(getState(STATE_ID_CARD_HOLDER));
 }
@@ -30,16 +30,16 @@ static void onExit() {
 
 STATE_DEF_ENTER(Supporter) {
     ui_menu_create(menu, disp()->screen);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer,
+                    NULL);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL,
+                    NULL);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
     GOTO_MENU(STATE_IDLE, menu, NULL, NULL);
 }
 
-STATE_DEF_HANDLE(Supporter, TimeOutEvent) {
-
-}
+STATE_DEF_HANDLE(Supporter, TimeOutEvent) {}
 
 /******************** Power off sub state **********************/
 
@@ -48,12 +48,12 @@ STATE_DEF_ENTER(PowerOff) {
     OOP_CALL(sys(), powerOff);
 }
 
-OOP_CTOR(Supporter, State *parent, const char *name) {
+OOP_CTOR(Supporter, State* parent, const char* name) {
     State_ctor(self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(Supporter);
+    self->base.vtable.enter         = STATE_ENTER(Supporter);
     self->base.vtable.handleTimeout = STATE_HANDLE(Supporter, TimeOutEvent);
 
-    powerOff = (SubState *)MEM_ALLOC(sizeof(SubState));
+    powerOff = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, powerOff, self, "power off");
     powerOff->vtable.enter = STATE_ENTER(PowerOff);
 

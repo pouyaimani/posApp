@@ -1,14 +1,14 @@
 #include "picc.h"
 #include "sys/sys.h"
 
-Picc *__picc;
+Picc* __picc;
 
 #ifdef DEVICE_TRENDITT3RTOS
 #include "t3Rtos/picc_t3Rtos.h"
 
 static void constructT3Rtos() {
     static PiccT3Rtos obj;
-    __picc = (Picc *)&obj;
+    __picc = (Picc*)&obj;
     OOP_CALL_CTOR(Picc, __picc);
     OOP_CALL_CTOR(PiccT3Rtos, &obj);
 }
@@ -19,14 +19,12 @@ static bool isDetected(Picc* self) {
     return self->vtable.detect(self) != PICC_CARD_NO_CARD;
 }
 
-OOP_CTOR(Picc) {
-    self->vtable.isDetected = isDetected;
-}
+OOP_CTOR(Picc) { self->vtable.isDetected = isDetected; }
 
-Picc *picc() {
+Picc* picc() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
-    constructT3Rtos();
+        constructT3Rtos();
 #else
 #error Deivce PICC is undefined. Make sure correct device is chosen and its PICC driver is developed.
 #endif

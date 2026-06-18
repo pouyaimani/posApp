@@ -12,10 +12,10 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 
-static Menu *shiftItemMenu;
-static lv_obj_t *shiftMenu;
+static Menu*     shiftItemMenu;
+static lv_obj_t* shiftMenu;
 
-static TerminalSettings *terminalStg;
+static TerminalSettings* terminalStg;
 
 typedef enum {
     SHIFT_ITEM_ENABLE = 0,
@@ -26,24 +26,19 @@ typedef enum {
     SHIFT_ITEM_ALL
 } ReportsItem_t;
 
-static SubState *subShift[SHIFT_ITEM_ALL];
+static SubState* subShift[SHIFT_ITEM_ALL];
 
 static const Phrases_t shiftItemTxt[SHIFT_ITEM_ALL] = {
-    PHRASE_SHIFT_ENABLING,
-    PHRASE_SHIFT_SHOW_CUR,
-    PHRASE_SHIFT_CREATE,
-    PHRASE_SHIFT_CLOSE,
-    PHRASE_SHIFT_REPORT
-};
+    PHRASE_SHIFT_ENABLING, PHRASE_SHIFT_SHOW_CUR, PHRASE_SHIFT_CREATE,
+    PHRASE_SHIFT_CLOSE, PHRASE_SHIFT_REPORT};
 
+static Menu* EnMenu;
 
-static Menu *EnMenu;
-
-static void ShiftMenuAdd(lv_obj_t *menu, 
-    const char *description, const char *val, lv_text_align_t txtAlign) {
+static void ShiftMenuAdd(lv_obj_t* menu, const char* description,
+                         const char* val, lv_text_align_t txtAlign) {
 
     // Create container
-    lv_obj_t * cont = lv_obj_create(menu);
+    lv_obj_t* cont = lv_obj_create(menu);
     LV_SET_SIZE(cont, lv_pct(100), lv_pct(33));
 
     // Remove default styling if needed
@@ -52,12 +47,12 @@ static void ShiftMenuAdd(lv_obj_t *menu,
     // Enable horizontal flex layout
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(cont,
-                          LV_FLEX_ALIGN_SPACE_BETWEEN,  // main axis
-                          LV_FLEX_ALIGN_CENTER,         // cross axis
-                          LV_FLEX_ALIGN_CENTER);        // track cross
+                          LV_FLEX_ALIGN_SPACE_BETWEEN, // main axis
+                          LV_FLEX_ALIGN_CENTER,        // cross axis
+                          LV_FLEX_ALIGN_CENTER);       // track cross
 
     // Description label (right side)
-    lv_obj_t * desc = lv_label_create(cont);
+    lv_obj_t* desc = lv_label_create(cont);
     LV_SET_SIZE(desc, lv_pct(50), LV_SIZE_CONTENT);
     LV_SET_TEXT_FONT(desc, FONT_16);
     LV_SET_TEXT_ALIGN(desc, LV_TEXT_ALIGN_RIGHT);
@@ -65,7 +60,7 @@ static void ShiftMenuAdd(lv_obj_t *menu,
     LV_SET_TEXT(desc, description);
 
     // Value label (left side)
-    lv_obj_t * value = lv_label_create(cont);
+    lv_obj_t* value = lv_label_create(cont);
     LV_SET_SIZE(value, lv_pct(50), LV_SIZE_CONTENT);
     LV_SET_TEXT_FONT(value, FONT_16);
     LV_SET_TEXT_ALIGN(value, txtAlign);
@@ -74,8 +69,8 @@ static void ShiftMenuAdd(lv_obj_t *menu,
     LV_SET_TEXT(value, val);
 }
 
-lv_obj_t *createShiftMenu(lv_obj_t * parent) {
-    lv_obj_t *main = lv_obj_create(parent);
+lv_obj_t* createShiftMenu(lv_obj_t* parent) {
+    lv_obj_t* main = lv_obj_create(parent);
     LV_SET_SIZE(main, lv_pct(90), lv_pct(70));
     LV_ALIGN(main, LV_ALIGN_CENTER, 0, 0);
     LV_SET_BORDER_WIDTH(main, 5);
@@ -85,23 +80,24 @@ lv_obj_t *createShiftMenu(lv_obj_t * parent) {
 
     /* Vertical layout */
     LV_SET_FLEX_FLOW(main, LV_FLEX_FLOW_COLUMN);
-    LV_SET_FLEX_ALIGN(main,
-                            LV_FLEX_ALIGN_START,   /* main axis */
-                           LV_FLEX_ALIGN_START,   /* cross axis */
-                           LV_FLEX_ALIGN_START);  /* track align */
+    LV_SET_FLEX_ALIGN(main, LV_FLEX_ALIGN_START, /* main axis */
+                      LV_FLEX_ALIGN_START,       /* cross axis */
+                      LV_FLEX_ALIGN_START);      /* track align */
     lv_obj_set_style_base_dir(main, LV_BASE_DIR_RTL, 0);
     return main;
 }
 
-static void showShift(lv_obj_t *menu, int latest, const char *sdt,
-    const char *edt, lv_text_align_t sAlign, lv_text_align_t eAlign) {
+static void showShift(lv_obj_t* menu, int latest, const char* sdt,
+                      const char* edt, lv_text_align_t sAlign,
+                      lv_text_align_t eAlign) {
     char strNum[6];
     intToStr(latest + 1, strNum, 6);
-    ShiftMenuAdd(menu, phraseGetDef(PHRASE_ASHIFT_NUM), strNum, LV_TEXT_ALIGN_CENTER);
+    ShiftMenuAdd(menu, phraseGetDef(PHRASE_ASHIFT_NUM), strNum,
+                 LV_TEXT_ALIGN_CENTER);
     DEFINE_STRING(dsc, 36);
     snprintf(dsc, sizeof(dsc), "%s  ", phraseGetDef(PHRASE_BEG_DT));
     ShiftMenuAdd(menu, dsc, sdt, sAlign);
-    memset(dsc, 0 , sizeof(dsc));
+    memset(dsc, 0, sizeof(dsc));
     snprintf(dsc, sizeof(dsc), "%s  ", phraseGetDef(PHRASE_FIN_DT));
     ShiftMenuAdd(menu, dsc, edt, eAlign);
 }
@@ -127,9 +123,9 @@ STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         if (EnMenu->idx) {
             if (terminalStg->shiftActive) {
-                GOTO_INFO(state->parent, state->parent, 
-                    INFO_WARNING, phraseGetDef(PHRASE_SHIFT_IS_ACTIVE), 
-                        phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
+                GOTO_INFO(state->parent, state->parent, INFO_WARNING,
+                          phraseGetDef(PHRASE_SHIFT_IS_ACTIVE),
+                          phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
                 return;
             }
         }
@@ -142,27 +138,28 @@ STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
 
 STATE_DEF_ENTER(ShowCurrentShift) {
     if (terminalStg->shiftActive) {
-        uint32_t idx = shifts()->getLatestIdx();
+        uint32_t  idx = shifts()->getLatestIdx();
         ShiftData data;
         if (shifts()->getKeeped(&data) != 0) {
             return;
         }
 
-        uint32_t sdate = data.startDate;
-        uint32_t stime = data.startTime;
-        char dt[24] = {0};
-        shiftMenu = createShiftMenu(disp()->screen);
+        uint32_t sdate  = data.startDate;
+        uint32_t stime  = data.startTime;
+        char     dt[24] = {0};
+        shiftMenu       = createShiftMenu(disp()->screen);
         dateTimeToStr(sdate, stime, dt, sizeof(dt));
-        showShift(shiftMenu, idx, dt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
+        showShift(shiftMenu, idx, dt, "...", LV_TEXT_ALIGN_LEFT,
+                  LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
-                phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
+                  phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
 
 STATE_DEF_EXIT(ShowCurrentShift) {
-    if(lv_obj_is_valid(shiftMenu)) {
+    if (lv_obj_is_valid(shiftMenu)) {
         LV_HIDE(shiftMenu);
         LV_DELETE(shiftMenu);
     }
@@ -180,27 +177,28 @@ static uint32_t sdate, stime;
 
 STATE_DEF_ENTER(CreateShift) {
     if (!terminalStg->shiftEnable) {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
-                    phraseGetDef(PHRASE_SHIFT_IS_DEACTIVE), 
-                        phraseGetDef(PHRASE_SHIFT_EN_FIRST));
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
+                  phraseGetDef(PHRASE_SHIFT_IS_DEACTIVE),
+                  phraseGetDef(PHRASE_SHIFT_EN_FIRST));
         return;
     }
     if (!terminalStg->shiftActive) {
         uint16_t idx = shifts()->getLatestIdx();
-        shiftMenu = createShiftMenu(disp()->screen);
+        shiftMenu    = createShiftMenu(disp()->screen);
         char sdt[24];
         getDateTimeUint(&sdate, &stime);
         dateTimeToStr(sdate, stime, sdt, sizeof(sdt));
-        showShift(shiftMenu, idx, sdt, "...", LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_CENTER);
+        showShift(shiftMenu, idx, sdt, "...", LV_TEXT_ALIGN_LEFT,
+                  LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
-                    phraseGetDef(PHRASE_SHIFT_IS_RUNNING), "");
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
+                  phraseGetDef(PHRASE_SHIFT_IS_RUNNING), "");
     }
 }
 
 STATE_DEF_EXIT(CreateShift) {
-    if(lv_obj_is_valid(shiftMenu)) {
+    if (lv_obj_is_valid(shiftMenu)) {
         LV_HIDE(shiftMenu);
         LV_DELETE(shiftMenu);
     }
@@ -210,8 +208,8 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, 
-                phraseGetDef(PHRASE_SHIFT_IS_ACTIVATED), "");
+        GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+                  phraseGetDef(PHRASE_SHIFT_IS_ACTIVATED), "");
         terminalStg->shiftActive = true;
         ShiftData data;
         data.startDate = sdate;
@@ -226,25 +224,26 @@ static uint32_t edate, etime;
 
 STATE_DEF_ENTER(CloseShift) {
     if (terminalStg->shiftActive) {
-        uint16_t idx = shifts()->getLatestIdx();
+        uint16_t  idx = shifts()->getLatestIdx();
         ShiftData data;
         shifts()->getKeeped(&data);
         getDateTimeUint(&edate, &etime);
         char sdt[24] = {0};
         char edt[24] = {0};
-        shiftMenu = createShiftMenu(disp()->screen);
+        shiftMenu    = createShiftMenu(disp()->screen);
         dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
         dateTimeToStr(edate, etime, edt, sizeof(edt));
-        showShift(shiftMenu, idx, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
+        showShift(shiftMenu, idx, sdt, edt, LV_TEXT_ALIGN_LEFT,
+                  LV_TEXT_ALIGN_LEFT);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
-                    phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
+                  phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
 
 STATE_DEF_EXIT(CloseShift) {
-    if(lv_obj_is_valid(shiftMenu)) {
+    if (lv_obj_is_valid(shiftMenu)) {
         LV_HIDE(shiftMenu);
         LV_DELETE(shiftMenu);
     }
@@ -256,45 +255,45 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
     } else {
         ShiftData data;
         shifts()->getKeeped(&data);
-        data.endDate = edate;
-        data.endTime = etime;
+        data.endDate             = edate;
+        data.endTime             = etime;
         terminalStg->shiftActive = false;
         if (shifts()->insert(&data) == 0) {
-            GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, 
-                    phraseGetDef(PHRASE_SHIFT_IS_CLOSED), "");
+            GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+                      phraseGetDef(PHRASE_SHIFT_IS_CLOSED), "");
         } else {
-            GOTO_INFO(state->parent, state->parent, INFO_ERROR, 
-                    phraseGetDef(PHRASE_SHIFT_CLOSE_ERR), "");
+            GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+                      phraseGetDef(PHRASE_SHIFT_CLOSE_ERR), "");
         }
     }
 }
 
 /******************** Shift report sub state **********************/
 
-static SubState *handleReports;
-
+static SubState* handleReports;
 
 STATE_DEF_ENTER(HandleReports) {
-    Input *in = getState(STATE_ID_INPUT);
-    int shiftNum = libAtoi(in->input);
+    Input* in       = getState(STATE_ID_INPUT);
+    int    shiftNum = libAtoi(in->input);
     LOG_DEBUG("shiftNum = %d", shiftNum);
     ShiftData data;
     if (shifts()->get(shiftNum, &data) != 0) {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING, 
-                phraseGetDef(PHRASE_SHIFT_TARGET_NOT_FND), "");
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
+                  phraseGetDef(PHRASE_SHIFT_TARGET_NOT_FND), "");
         return;
     }
     char sdt[24] = {0};
     char edt[24] = {0};
-    shiftMenu = createShiftMenu(disp()->screen);
+    shiftMenu    = createShiftMenu(disp()->screen);
     dateTimeToStr(data.startDate, data.startTime, sdt, sizeof(sdt));
     dateTimeToStr(data.endDate, data.endTime, edt, sizeof(edt));
-    showShift(shiftMenu, shiftNum - 1, sdt, edt, LV_TEXT_ALIGN_LEFT, LV_TEXT_ALIGN_LEFT);
+    showShift(shiftMenu, shiftNum - 1, sdt, edt, LV_TEXT_ALIGN_LEFT,
+              LV_TEXT_ALIGN_LEFT);
     LV_SHOW(shiftMenu);
 }
 
 STATE_DEF_EXIT(HandleReports) {
-    if(lv_obj_is_valid(shiftMenu)) {
+    if (lv_obj_is_valid(shiftMenu)) {
         LV_HIDE(shiftMenu);
         LV_DELETE(shiftMenu);
     }
@@ -309,16 +308,17 @@ STATE_DEF_HANDLE(HandleReports, KeypadEvent) {
 }
 
 STATE_DEF_ENTER(ShiftReports) {
-    GOTO_INPUT(state->parent, handleReports, 
-            phraseGetDef(PHRASE_SHIFT_SELECT), "", 3, IN_MODE_NUMBERS, NULL);
+    GOTO_INPUT(state->parent, handleReports, phraseGetDef(PHRASE_SHIFT_SELECT),
+               "", 3, IN_MODE_NUMBERS, NULL);
 }
 
 /******************** Shift settings state **********************/
 
 static void createUi() {
     ui_menu_create(shiftItemMenu, disp()->screen);
-    for (uint8_t i = 0; i < SHIFT_ITEM_ALL ; i++) {
-        ui_menu_addItem(shiftItemMenu, phraseGetDef(shiftItemTxt[i]), subShift[i], NULL, NULL);
+    for (uint8_t i = 0; i < SHIFT_ITEM_ALL; i++) {
+        ui_menu_addItem(shiftItemMenu, phraseGetDef(shiftItemTxt[i]),
+                        subShift[i], NULL, NULL);
     }
 }
 
@@ -327,44 +327,52 @@ STATE_DEF_ENTER(Shift) {
     GOTO_MENU(state->parent, shiftItemMenu, NULL, NULL);
 }
 
-OOP_CTOR(Shift, State *parent, const char *name) {
+OOP_CTOR(Shift, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Shift);
-    terminalStg = &settings()->terminal;
+    terminalStg             = &settings()->terminal;
 
-    subShift[SHIFT_ITEM_ENABLE] = (SubState *)MEM_ALLOC(sizeof(SubState));
+    subShift[SHIFT_ITEM_ENABLE] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_ENABLE], self, "en/dis shift");
     subShift[SHIFT_ITEM_ENABLE]->vtable.enter = STATE_ENTER(ShiftEnable);
-    subShift[SHIFT_ITEM_ENABLE]->vtable.exit = STATE_EXIT(ShiftEnable);
-    subShift[SHIFT_ITEM_ENABLE]->vtable.handleKeypad = STATE_HANDLE(ShiftEnable, KeypadEvent);
+    subShift[SHIFT_ITEM_ENABLE]->vtable.exit  = STATE_EXIT(ShiftEnable);
+    subShift[SHIFT_ITEM_ENABLE]->vtable.handleKeypad =
+        STATE_HANDLE(ShiftEnable, KeypadEvent);
 
-    subShift[SHIFT_ITEM_SHOW_CURRENT] = (SubState *)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_SHOW_CURRENT], self, "show current shift");
-    subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.enter = STATE_ENTER(ShowCurrentShift);
-    subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.exit = STATE_EXIT(ShowCurrentShift);
-    subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.handleKeypad = STATE_HANDLE(ShowCurrentShift, KeypadEvent);
+    subShift[SHIFT_ITEM_SHOW_CURRENT] = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_SHOW_CURRENT], self,
+                  "show current shift");
+    subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.enter =
+        STATE_ENTER(ShowCurrentShift);
+    subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.exit =
+        STATE_EXIT(ShowCurrentShift);
+    subShift[SHIFT_ITEM_SHOW_CURRENT]->vtable.handleKeypad =
+        STATE_HANDLE(ShowCurrentShift, KeypadEvent);
 
-    subShift[SHIFT_ITEM_CREATE] = (SubState *)MEM_ALLOC(sizeof(SubState));
+    subShift[SHIFT_ITEM_CREATE] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_CREATE], self, "create shift");
     subShift[SHIFT_ITEM_CREATE]->vtable.enter = STATE_ENTER(CreateShift);
-    subShift[SHIFT_ITEM_CREATE]->vtable.exit = STATE_EXIT(CreateShift);
-    subShift[SHIFT_ITEM_CREATE]->vtable.handleKeypad = STATE_HANDLE(CreateShift, KeypadEvent);
+    subShift[SHIFT_ITEM_CREATE]->vtable.exit  = STATE_EXIT(CreateShift);
+    subShift[SHIFT_ITEM_CREATE]->vtable.handleKeypad =
+        STATE_HANDLE(CreateShift, KeypadEvent);
 
-    subShift[SHIFT_ITEM_CLOSE] = (SubState *)MEM_ALLOC(sizeof(SubState));
+    subShift[SHIFT_ITEM_CLOSE] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_CLOSE], self, "close shift");
     subShift[SHIFT_ITEM_CLOSE]->vtable.enter = STATE_ENTER(CloseShift);
-    subShift[SHIFT_ITEM_CLOSE]->vtable.exit = STATE_EXIT(CloseShift);
-    subShift[SHIFT_ITEM_CLOSE]->vtable.handleKeypad = STATE_HANDLE(CloseShift, KeypadEvent);
+    subShift[SHIFT_ITEM_CLOSE]->vtable.exit  = STATE_EXIT(CloseShift);
+    subShift[SHIFT_ITEM_CLOSE]->vtable.handleKeypad =
+        STATE_HANDLE(CloseShift, KeypadEvent);
 
-    subShift[SHIFT_ITEM_REPORT] = (SubState *)MEM_ALLOC(sizeof(SubState));
+    subShift[SHIFT_ITEM_REPORT] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subShift[SHIFT_ITEM_REPORT], self, "Shift reports");
     subShift[SHIFT_ITEM_REPORT]->vtable.enter = STATE_ENTER(ShiftReports);
 
-    handleReports = (SubState *)MEM_ALLOC(sizeof(SubState));
+    handleReports = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, handleReports, self, "Shift reports");
     handleReports->vtable.enter = STATE_ENTER(HandleReports);
-    handleReports->vtable.exit = STATE_EXIT(HandleReports);
-    handleReports->vtable.handleKeypad = STATE_HANDLE(HandleReports, KeypadEvent);
+    handleReports->vtable.exit  = STATE_EXIT(HandleReports);
+    handleReports->vtable.handleKeypad =
+        STATE_HANDLE(HandleReports, KeypadEvent);
     shiftItemMenu = MEM_ALLOC(sizeof(*shiftItemMenu));
-    EnMenu = MEM_ALLOC(sizeof(*EnMenu));
+    EnMenu        = MEM_ALLOC(sizeof(*EnMenu));
 }

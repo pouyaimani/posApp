@@ -36,19 +36,19 @@ OOP_VTABLE(Printer) {
     OOP_IMETHOD(PrinterErr_t, Printer, setGray, PrinterGrayLevel_t);
     OOP_IMETHOD(PrinterGrayLevel_t, Printer, getGray);
     OOP_IMETHOD(PrinterStatus_t, Printer, getStatus);
-    OOP_IMETHOD(PrinterErr_t, Printer, printBmp, uint8_t *, uint16_t, uint16_t);
+    OOP_IMETHOD(PrinterErr_t, Printer, printBmp, uint8_t*, uint16_t, uint16_t);
 };
 
 OOP_CLASS(Printer) {
     OOP_IMPLEMENTS(Printer);
-    OOP_METHOD(PrinterErr_t, print, uint8_t *, uint16_t, uint16_t);
+    OOP_METHOD(PrinterErr_t, print, uint8_t*, uint16_t, uint16_t);
     PrinterStatus_t status;
-    PrinterErr_t error;
+    PrinterErr_t    error;
 };
 
 OOP_CTOR(Printer);
 
-Printer *printer(void);
+Printer* printer(void);
 
 #define PRINTER_INIT() OOP_CALL(printer(), init)
 

@@ -5,14 +5,14 @@
 #include "logger.h"
 #include "timer.h"
 
-Cellular *__cellular;
+Cellular* __cellular;
 
 #ifdef DEVICE_TRENDITT3RTOS
 #include "t3Rtos/cell_t3Rtos.h"
 
 static void constructT3Rtos() {
     static CellT3Rtos obj;
-    __cellular = (Cellular *)&obj;
+    __cellular = (Cellular*)&obj;
     OOP_CALL_CTOR(Cellular, __cellular);
     OOP_CALL_CTOR(CellT3Rtos, &obj);
 }
@@ -24,8 +24,8 @@ static uint32_t tick;
 
 static void checkCellLoginResult() {
     if (GET_TICK() - tick >= LOGIN_TIME_OUT) {
-        CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
-        ev->pppSt = CELL_PPP_FAILURE;
+        CellEvent* ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
+        ev->pppSt     = CELL_PPP_FAILURE;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkCellLoginResult);
         return;
@@ -38,37 +38,38 @@ static void checkCellLoginResult() {
         return;
     }
     LOG_DEBUG("cellular status = %d", st);
-    CellEvent *ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
-    ev->pppSt = st;
+    CellEvent* ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
+    ev->pppSt     = st;
     DISPATCH_EVENT(ev);
     getEventloop()->unregisterChecker(checkCellLoginResult);
 }
 
-static CellErr_t startPPPlogin(const char *apn, const char *user, const char *pass, const char *dialnum) {
+static CellErr_t startPPPlogin(const char* apn, const char* user,
+                               const char* pass, const char* dialnum) {
     getEventloop()->registerChecker(checkCellLoginResult);
     tick = GET_TICK();
 }
 
 OOP_CTOR(Cellular) {
-    self->vtable.getNetType = NULL;
-    self->vtable.getPPPstatus = NULL;
+    self->vtable.getNetType        = NULL;
+    self->vtable.getPPPstatus      = NULL;
     self->vtable.getSignalStrength = NULL;
-    self->vtable.init = NULL;
-    self->vtable.startPPPlogin = NULL;
-    self->vtable.ussdGetCharset = NULL;
-    self->vtable.ussdInit = NULL;
-    self->vtable.ussdRec = NULL;
-    self->vtable.ussdSend = NULL;
-    self->vtable.ussdStop = NULL;
-    self->vtable.getSimStatus = NULL;
+    self->vtable.init              = NULL;
+    self->vtable.startPPPlogin     = NULL;
+    self->vtable.ussdGetCharset    = NULL;
+    self->vtable.ussdInit          = NULL;
+    self->vtable.ussdRec           = NULL;
+    self->vtable.ussdSend          = NULL;
+    self->vtable.ussdStop          = NULL;
+    self->vtable.getSimStatus      = NULL;
 
     self->startPPPlogin = startPPPlogin;
 }
 
-Cellular *cellular() {
+Cellular* cellular() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
-    constructT3Rtos();
+        constructT3Rtos();
 #else
 #error Deivce cellular is undefined. Make sure correct device is chosen and its cellular driver is developed.
 #endif

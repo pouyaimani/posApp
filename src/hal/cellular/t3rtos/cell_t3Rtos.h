@@ -5,9 +5,7 @@
 
 #include "../cellular.h"
 
-OOP_CLASS(CellT3Rtos) {
-    OOP_EXTENDS(Cellular);
-};
+OOP_CLASS(CellT3Rtos) { OOP_EXTENDS(Cellular); };
 
 OOP_CTOR(CellT3Rtos);
 

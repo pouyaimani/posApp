@@ -11,16 +11,16 @@
  * @par 1.Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
- * @par 2.Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and/or other materials provided with the distribution.
+ * @par 2.Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
  *
- * @par 3.Neither the name of the copyright holder nor the names of its contributors
- *  may be used to endorse or promote products derived from this software without
- *  specific prior written permission.
+ * @par 3.Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
  *
- * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
  *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
@@ -48,7 +48,8 @@
 /**
  * @return	Returns -1, 0, 1 as a comparator normally would
  */
-int8_t compareUnsignedNumbers(const void* num1, const void* num2, int8_t numBytes) {
+int8_t compareUnsignedNumbers(const void* num1, const void* num2,
+                              int8_t numBytes) {
     // Cast the pointers to unsigned char pointers for byte-wise comparison
     const uint8_t* bytes1 = (const uint8_t*)num1;
     const uint8_t* bytes2 = (const uint8_t*)num2;
@@ -68,7 +69,8 @@ int8_t compareUnsignedNumbers(const void* num1, const void* num2, int8_t numByte
 /**
  * @return	Returns -1, 0, 1 as a comparator normally would
  */
-int8_t compareSignedNumbers(const void* num1, const void* num2, int8_t numBytes) {
+int8_t compareSignedNumbers(const void* num1, const void* num2,
+                            int8_t numBytes) {
     // Cast the pointers to unsigned char pointers for byte-wise comparison
     const uint8_t* bytes1 = (const uint8_t*)num1;
     const uint8_t* bytes2 = (const uint8_t*)num2;
@@ -98,38 +100,40 @@ int8_t compareSignedNumbers(const void* num1, const void* num2, int8_t numBytes)
 /**
  * @return	0 or 1 to indicate if inequality is true
  */
-int8_t compare(void* a, uint8_t operation, void* b, int8_t isSigned, int8_t numBytes) {
-    int8_t (*compFunc)(const void* num1, const void* num2, int8_t numBytes) = isSigned ? compareSignedNumbers : compareUnsignedNumbers;
+int8_t compare(void* a, uint8_t operation, void* b, int8_t isSigned,
+               int8_t numBytes) {
+    int8_t (*compFunc)(const void* num1, const void* num2, int8_t numBytes) =
+        isSigned ? compareSignedNumbers : compareUnsignedNumbers;
     switch (operation) {
-        case SELECT_GT:
-            return compFunc(a, b, numBytes) > 0;
-        case SELECT_LT:
-            return compFunc(a, b, numBytes) < 0;
-        case SELECT_GTE:
-            return compFunc(a, b, numBytes) >= 0;
-        case SELECT_LTE:
-            return compFunc(a, b, numBytes) <= 0;
-        case SELECT_EQ:
-            return compFunc(a, b, numBytes) == 0;
-        case SELECT_NEQ:
-            return compFunc(a, b, numBytes) != 0;
-        default:
-            return 0;
+    case SELECT_GT:
+        return compFunc(a, b, numBytes) > 0;
+    case SELECT_LT:
+        return compFunc(a, b, numBytes) < 0;
+    case SELECT_GTE:
+        return compFunc(a, b, numBytes) >= 0;
+    case SELECT_LTE:
+        return compFunc(a, b, numBytes) <= 0;
+    case SELECT_EQ:
+        return compFunc(a, b, numBytes) == 0;
+    case SELECT_NEQ:
+        return compFunc(a, b, numBytes) != 0;
+    default:
+        return 0;
     }
 }
 
 /**
  * @brief	Extract a record from an operator
- * @return	1 if a record was returned, 0 if there are no more rows to return
+ * @return	1 if a record was returned, 0 if there are no more rows to
+ * return
  */
-int8_t exec(embedDBOperator* op) {
-    return op->next(op);
-}
+int8_t exec(embedDBOperator* op) { return op->next(op); }
 
 void initTableScan(embedDBOperator* op) {
     if (op->input != NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("WARNING: TableScan operator should not have an input operator\n");
+        debug_log(
+            "WARNING: TableScan operator should not have an input operator\n");
 #endif
     }
     if (op->schema == NULL) {
@@ -141,22 +145,29 @@ void initTableScan(embedDBOperator* op) {
 
     if (op->schema->numCols < 2) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: When creating a table scan, you must include at least two columns: one for the key and one for the data from the iterator\n");
+        debug_log("ERROR: When creating a table scan, you must include at "
+                  "least two columns: one for the key and one for the data "
+                  "from the iterator\n");
 #endif
         return;
     }
 
     // Check that the provided key schema matches what is in the state
     embedDBState* embedDBstate = (embedDBState*)(((void**)op->state)[0]);
-    if (op->schema->columnSizes[0] <= 0 || abs(op->schema->columnSizes[0]) != embedDBstate->keySize) {
+    if (op->schema->columnSizes[0] <= 0 ||
+        abs(op->schema->columnSizes[0]) != embedDBstate->keySize) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Make sure the the key column is at index 0 of the schema initialization and that it matches the keySize in the state and is unsigned\n");
+        debug_log("ERROR: Make sure the the key column is at index 0 of the "
+                  "schema initialization and that it matches the keySize in "
+                  "the state and is unsigned\n");
 #endif
         return;
     }
-    if (getRecordSizeFromSchema(op->schema) != (embedDBstate->keySize + embedDBstate->dataSize)) {
+    if (getRecordSizeFromSchema(op->schema) !=
+        (embedDBstate->keySize + embedDBstate->dataSize)) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Size of provided schema doesn't match the size that will be returned by the provided iterator\n");
+        debug_log("ERROR: Size of provided schema doesn't match the size that "
+                  "will be returned by the provided iterator\n");
 #endif
         return;
     }
@@ -166,7 +177,8 @@ void initTableScan(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to allocate buffer for TableScan operator\n");
+            debug_log(
+                "ERROR: Failed to allocate buffer for TableScan operator\n");
 #endif
             return;
         }
@@ -177,15 +189,17 @@ int8_t nextTableScan(embedDBOperator* op) {
     // Check that a schema was set
     if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Must provide a base schema for a table scan operator\n");
+        debug_log(
+            "ERROR: Must provide a base schema for a table scan operator\n");
 #endif
         return 0;
     }
 
     // Get next record
-    embedDBState* state = (embedDBState*)(((void**)op->state)[0]);
-    embedDBIterator* it = (embedDBIterator*)(((void**)op->state)[1]);
-    if (!embedDBNext(state, it, op->recordBuffer, (int8_t*)op->recordBuffer + state->keySize)) {
+    embedDBState*    state = (embedDBState*)(((void**)op->state)[0]);
+    embedDBIterator* it    = (embedDBIterator*)(((void**)op->state)[1]);
+    if (!embedDBNext(state, it, op->recordBuffer,
+                     (int8_t*)op->recordBuffer + state->keySize)) {
         return 0;
     }
 
@@ -201,16 +215,22 @@ void closeTableScan(embedDBOperator* op) {
 }
 
 /**
- * @brief	Used as the bottom operator that will read records from the database
- * @param	state		The state associated with the database to read from
- * @param	it			An initialized iterator setup to read relevent records for this query
+ * @brief	Used as the bottom operator that will read records from the
+ * database
+ * @param	state		The state associated with the database to read
+ * from
+ * @param	it			An initialized iterator setup to read
+ * relevent records for this query
  * @param	baseSchema	The schema of the database being read from
  */
-embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* it, embedDBSchema* baseSchema) {
+embedDBOperator* createTableScanOperator(embedDBState*    state,
+                                         embedDBIterator* it,
+                                         embedDBSchema*   baseSchema) {
     // Ensure all fields are not NULL
     if (state == NULL || it == NULL || baseSchema == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: All parameters must be provided to create a TableScan operator\n");
+        debug_log("ERROR: All parameters must be provided to create a "
+                  "TableScan operator\n");
 #endif
         return NULL;
     }
@@ -218,7 +238,8 @@ embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* i
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
+        debug_log(
+            "ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
 #endif
         return NULL;
     }
@@ -226,19 +247,20 @@ embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* i
     op->state = EMDB_MEM_ALLOC(2 * sizeof(void*));
     if (op->state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
+        debug_log(
+            "ERROR: EMDB_MEM_ALLOC failed while creating TableScan operator\n");
 #endif
         return NULL;
     }
     memcpy(op->state, &state, sizeof(void*));
     memcpy((int8_t*)op->state + sizeof(void*), &it, sizeof(void*));
 
-    op->schema = copySchema(baseSchema);
-    op->input = NULL;
+    op->schema       = copySchema(baseSchema);
+    op->input        = NULL;
     op->recordBuffer = NULL;
 
-    op->init = initTableScan;
-    op->next = nextTableScan;
+    op->init  = initTableScan;
+    op->next  = nextTableScan;
     op->close = closeTableScan;
 
     return op;
@@ -256,8 +278,8 @@ void initProjection(embedDBOperator* op) {
     op->input->init(op->input);
 
     // Get state
-    uint8_t numCols = *(uint8_t*)op->state;
-    uint8_t* cols = (uint8_t*)op->state + 1;
+    uint8_t              numCols     = *(uint8_t*)op->state;
+    uint8_t*             cols        = (uint8_t*)op->state + 1;
     const embedDBSchema* inputSchema = op->input->schema;
 
     // Init output schema
@@ -265,16 +287,19 @@ void initProjection(embedDBOperator* op) {
         op->schema = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
         if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to allocate space for projection schema\n");
+            debug_log(
+                "ERROR: Failed to allocate space for projection schema\n");
 #endif
             return;
         }
-        op->schema->numCols = numCols;
+        op->schema->numCols     = numCols;
         op->schema->columnSizes = EMDB_MEM_ALLOC(numCols * sizeof(int8_t));
         op->schema->columnTypes = EMDB_MEM_ALLOC(numCols * sizeof(ColumnType));
-        if (op->schema->columnSizes == NULL || op->schema->columnTypes == NULL) {
+        if (op->schema->columnSizes == NULL ||
+            op->schema->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to allocate space for projection while building schema\n");
+            debug_log("ERROR: Failed to allocate space for projection while "
+                      "building schema\n");
 #endif
             return;
         }
@@ -290,7 +315,8 @@ void initProjection(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to allocate buffer for TableScan operator\n");
+            debug_log(
+                "ERROR: Failed to allocate buffer for TableScan operator\n");
 #endif
             return;
         }
@@ -298,18 +324,19 @@ void initProjection(embedDBOperator* op) {
 }
 
 int8_t nextProjection(embedDBOperator* op) {
-    uint8_t numCols = *(uint8_t*)op->state;
-    uint8_t* cols = (uint8_t*)op->state + 1;
+    uint8_t        numCols     = *(uint8_t*)op->state;
+    uint8_t*       cols        = (uint8_t*)op->state + 1;
     embedDBSchema* inputSchema = op->input->schema;
 
     // Get next record
     if (op->input->next(op->input)) {
         uint16_t curColPos = 0;
         for (uint8_t colIdx = 0; colIdx < numCols; colIdx++) {
-            uint8_t col = cols[colIdx];
-            uint8_t colSize = abs(inputSchema->columnSizes[col]);
+            uint8_t  col       = cols[colIdx];
+            uint8_t  colSize   = abs(inputSchema->columnSizes[col]);
             uint16_t srcColPos = getColOffsetFromSchema(inputSchema, col);
-            memcpy((int8_t*)op->recordBuffer + curColPos, (int8_t*)op->input->recordBuffer + srcColPos, colSize);
+            memcpy((int8_t*)op->recordBuffer + curColPos,
+                   (int8_t*)op->input->recordBuffer + srcColPos, colSize);
             curColPos += colSize;
         }
         return 1;
@@ -329,17 +356,22 @@ void closeProjection(embedDBOperator* op) {
 }
 
 /**
- * @brief	Creates an operator capable of projecting the specified columns. Cannot re-order columns
+ * @brief	Creates an operator capable of projecting the specified columns.
+ * Cannot re-order columns
  * @param	input	The operator that this operator can pull records from
  * @param	numCols	How many columns will be in the final projection
- * @param	cols	The indexes of the columns to be outputted. Zero indexed. Column indexes must be strictly increasing i.e. columns must stay in the same order, can only remove columns from input
+ * @param	cols	The indexes of the columns to be outputted. Zero
+ * indexed. Column indexes must be strictly increasing i.e. columns must stay in
+ * the same order, can only remove columns from input
  */
-embedDBOperator* createProjectionOperator(embedDBOperator* input, uint8_t numCols, uint8_t* cols) {
+embedDBOperator* createProjectionOperator(embedDBOperator* input,
+                                          uint8_t numCols, uint8_t* cols) {
     // Create state
     uint8_t* state = EMDB_MEM_ALLOC(numCols + 1);
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating Projection operator\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating Projection "
+                  "operator\n");
 #endif
         return NULL;
     }
@@ -349,18 +381,19 @@ embedDBOperator* createProjectionOperator(embedDBOperator* input, uint8_t numCol
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating Projection operator\n");
+        debug_log("ERROR: EMDB_MEM_ALLOC failed while creating Projection "
+                  "operator\n");
 #endif
         return NULL;
     }
 
-    op->state = state;
-    op->input = input;
-    op->schema = NULL;
+    op->state        = state;
+    op->input        = input;
+    op->schema       = NULL;
     op->recordBuffer = NULL;
-    op->init = initProjection;
-    op->next = nextProjection;
-    op->close = closeProjection;
+    op->init         = initProjection;
+    op->next         = nextProjection;
+    op->close        = closeProjection;
 
     return op;
 }
@@ -368,7 +401,7 @@ embedDBOperator* createProjectionOperator(embedDBOperator* input, uint8_t numCol
 struct selectionInfo {
     int8_t colNum;
     int8_t operation;
-    void* compVal;
+    void*  compVal;
 };
 
 void initSelection(embedDBOperator* op) {
@@ -392,7 +425,8 @@ void initSelection(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to allocate buffer for TableScan operator\n");
+            debug_log(
+                "ERROR: Failed to allocate buffer for TableScan operator\n");
 #endif
             return;
         }
@@ -400,23 +434,24 @@ void initSelection(embedDBOperator* op) {
 }
 
 int8_t nextSelection(embedDBOperator* op) {
-    embedDBSchema* schema = op->input->schema;
-    struct selectionInfo* state = op->state;
+    embedDBSchema*        schema = op->input->schema;
+    struct selectionInfo* state  = op->state;
 
-    int8_t colNum = state->colNum;
-    uint16_t colPos = getColOffsetFromSchema(schema, colNum);
-    int8_t operation = state->operation;
-    int8_t colSize = schema->columnSizes[colNum];
-    int8_t isSigned = 0;
+    int8_t   colNum    = state->colNum;
+    uint16_t colPos    = getColOffsetFromSchema(schema, colNum);
+    int8_t   operation = state->operation;
+    int8_t   colSize   = schema->columnSizes[colNum];
+    int8_t   isSigned  = 0;
     if (colSize < 0) {
-        colSize = -colSize;
+        colSize  = -colSize;
         isSigned = 1;
     }
 
     while (op->input->next(op->input)) {
         void* colData = (int8_t*)op->input->recordBuffer + colPos;
         if (compare(colData, operation, state->compVal, isSigned, colSize)) {
-            memcpy(op->recordBuffer, op->input->recordBuffer, getRecordSizeFromSchema(op->schema));
+            memcpy(op->recordBuffer, op->input->recordBuffer,
+                   getRecordSizeFromSchema(op->schema));
             return 1;
         }
     }
@@ -435,38 +470,47 @@ void closeSelection(embedDBOperator* op) {
 }
 
 /**
- * @brief	Creates an operator that selects records based on simple selection rules
- * @param	input		The operator that this operator can pull records from
- * @param	colNum		The index (zero-indexed) of the column base the select on
- * @param	operation	A constant representing which comparison operation to perform. (e.g. SELECT_GT, SELECT_EQ, etc)
- * @param	compVal		A pointer to the value to compare with. Make sure the size of this is the same number of bytes as is described in the schema
+ * @brief	Creates an operator that selects records based on simple
+ * selection rules
+ * @param	input		The operator that this operator can pull records
+ * from
+ * @param	colNum		The index (zero-indexed) of the column base the
+ * select on
+ * @param	operation	A constant representing which comparison
+ * operation to perform. (e.g. SELECT_GT, SELECT_EQ, etc)
+ * @param	compVal		A pointer to the value to compare with. Make
+ * sure the size of this is the same number of bytes as is described in the
+ * schema
  */
-embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum, int8_t operation, void* compVal) {
+embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum,
+                                         int8_t operation, void* compVal) {
     struct selectionInfo* state = EMDB_MEM_ALLOC(sizeof(struct selectionInfo));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection "
+                  "operator\n");
 #endif
         return NULL;
     }
-    state->colNum = colNum;
+    state->colNum    = colNum;
     state->operation = operation;
     memcpy(&state->compVal, &compVal, sizeof(void*));
 
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating Selection "
+                  "operator\n");
 #endif
         return NULL;
     }
-    op->state = state;
-    op->input = input;
-    op->schema = NULL;
+    op->state        = state;
+    op->input        = input;
+    op->schema       = NULL;
     op->recordBuffer = NULL;
-    op->init = initSelection;
-    op->next = nextSelection;
-    op->close = closeSelection;
+    op->init         = initSelection;
+    op->next         = nextSelection;
+    op->close        = closeSelection;
 
     return op;
 }
@@ -532,7 +576,10 @@ void closeOrderBy(embedDBOperator* op) {
     op->recordBuffer = NULL;
 }
 
-embedDBOperator* createOrderByOperator(embedDBState* dbState, embedDBOperator* input, int8_t colNum, int32_t limit, int8_t (*compareFn)(void* a, void* b)) {
+embedDBOperator* createOrderByOperator(embedDBState*    dbState,
+                                       embedDBOperator* input, int8_t colNum,
+                                       int32_t limit,
+                                       int8_t (*compareFn)(void* a, void* b)) {
     if (input == NULL || dbState == NULL || compareFn == NULL || colNum < 0) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: ORDER BY: Invalid Input data\n");
@@ -542,7 +589,7 @@ embedDBOperator* createOrderByOperator(embedDBState* dbState, embedDBOperator* i
 
     // Operator state
     struct sortData* state = EMDB_MEM_ALLOC(sizeof(struct sortData));
-    embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
+    embedDBOperator* op    = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
 
     if (state == NULL || op == NULL) {
 #ifdef PRINT_ERRORS
@@ -552,17 +599,17 @@ embedDBOperator* createOrderByOperator(embedDBState* dbState, embedDBOperator* i
     }
 
     state->fileInterface = dbState->fileInterface;
-    state->colNum = colNum;
-    state->compareFn = compareFn;
-    state->tupleLimit = limit;
+    state->colNum        = colNum;
+    state->compareFn     = compareFn;
+    state->tupleLimit    = limit;
 
-    op->state = state;
-    op->input = input;
-    op->schema = NULL;
+    op->state        = state;
+    op->input        = input;
+    op->schema       = NULL;
     op->recordBuffer = NULL;
-    op->init = initOrderBy;
-    op->next = nextOrderBy;
-    op->close = closeOrderBy;
+    op->init         = initOrderBy;
+    op->next         = nextOrderBy;
+    op->close        = closeOrderBy;
 
     return op;
 }
@@ -571,12 +618,17 @@ embedDBOperator* createOrderByOperator(embedDBState* dbState, embedDBOperator* i
  * @brief	A private struct to hold the state of the aggregate operator
  */
 struct aggregateInfo {
-    int8_t (*groupfunc)(const void* lastRecord, const void* record);  // Function that determins if both records are in the same group
-    embedDBAggregateFunc* functions;                                  // An array of aggregate functions
-    uint32_t functionsLength;                                         // The length of the functions array
-    void* lastRecordBuffer;                                           // Buffer for the last record read by input->next
-    uint16_t bufferSize;                                              // Size of the input buffer (and lastRecordBuffer)
-    int8_t isLastRecordUsable;                                        // Is the data in lastRecordBuffer usable for checking if the recently read record is in the same group? Is set to 0 at start, and also after the last record
+    int8_t (*groupfunc)(const void* lastRecord,
+                        const void* record); // Function that determins if both
+                                             // records are in the same group
+    embedDBAggregateFunc* functions;         // An array of aggregate functions
+    uint32_t              functionsLength; // The length of the functions array
+    void*    lastRecordBuffer; // Buffer for the last record read by input->next
+    uint16_t bufferSize; // Size of the input buffer (and lastRecordBuffer)
+    int8_t   isLastRecordUsable; // Is the data in lastRecordBuffer usable for
+                               // checking if the recently read record is in the
+                               // same group? Is set to 0 at start, and also
+                               // after the last record
 };
 
 void initAggregate(embedDBOperator* op) {
@@ -591,23 +643,26 @@ void initAggregate(embedDBOperator* op) {
     op->input->init(op->input);
 
     struct aggregateInfo* state = op->state;
-    state->isLastRecordUsable = 0;
+    state->isLastRecordUsable   = 0;
 
     // Init output schema
     if (op->schema == NULL) {
         op->schema = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
         if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing "
+                      "aggregate operator\n");
 #endif
             return;
         }
-        op->schema->numCols = state->functionsLength;
+        op->schema->numCols     = state->functionsLength;
         op->schema->columnSizes = EMDB_MEM_ALLOC(state->functionsLength);
         op->schema->columnTypes = EMDB_MEM_ALLOC(state->functionsLength);
-        if (op->schema->columnSizes == NULL || op->schema->columnTypes == NULL) {
+        if (op->schema->columnSizes == NULL ||
+            op->schema->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing "
+                      "aggregate operator\n");
 #endif
             return;
         }
@@ -623,7 +678,8 @@ void initAggregate(embedDBOperator* op) {
         op->recordBuffer = createBufferFromSchema(op->schema);
         if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing "
+                      "aggregate operator\n");
 #endif
             return;
         }
@@ -632,7 +688,8 @@ void initAggregate(embedDBOperator* op) {
         state->lastRecordBuffer = EMDB_MEM_ALLOC(state->bufferSize);
         if (state->lastRecordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing aggregate operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing "
+                      "aggregate operator\n");
 #endif
             return;
         }
@@ -641,7 +698,7 @@ void initAggregate(embedDBOperator* op) {
 
 int8_t nextAggregate(embedDBOperator* op) {
     struct aggregateInfo* state = op->state;
-    embedDBOperator* input = op->input;
+    embedDBOperator*      input = op->input;
 
     // Reset each operator
     for (int i = 0; i < state->functionsLength; i++) {
@@ -652,12 +709,14 @@ int8_t nextAggregate(embedDBOperator* op) {
 
     int8_t recordsInGroup = 0;
 
-    // Check flag used to indicate whether the last record read has been added to a group
+    // Check flag used to indicate whether the last record read has been added
+    // to a group
     if (state->isLastRecordUsable) {
         recordsInGroup = 1;
         for (int i = 0; i < state->functionsLength; i++) {
             if (state->functions[i].add != NULL) {
-                state->functions[i].add(state->functions + i, input->schema, state->lastRecordBuffer);
+                state->functions[i].add(state->functions + i, input->schema,
+                                        state->lastRecordBuffer);
             }
         }
     }
@@ -665,11 +724,13 @@ int8_t nextAggregate(embedDBOperator* op) {
     int8_t exitType = 0;
     while (input->next(input)) {
         // Check if record is in the same group as the last record
-        if (!state->isLastRecordUsable || state->groupfunc(state->lastRecordBuffer, input->recordBuffer)) {
+        if (!state->isLastRecordUsable ||
+            state->groupfunc(state->lastRecordBuffer, input->recordBuffer)) {
             recordsInGroup = 1;
             for (int i = 0; i < state->functionsLength; i++) {
                 if (state->functions[i].add != NULL) {
-                    state->functions[i].add(state->functions + i, input->schema, input->recordBuffer);
+                    state->functions[i].add(state->functions + i, input->schema,
+                                            input->recordBuffer);
                 }
             }
         } else {
@@ -687,14 +748,17 @@ int8_t nextAggregate(embedDBOperator* op) {
     }
 
     if (exitType == 0) {
-        // Exited because ran out of records, so all read records have been added to a group
+        // Exited because ran out of records, so all read records have been
+        // added to a group
         state->isLastRecordUsable = 0;
     }
 
     // Perform final compute on all functions
     for (int i = 0; i < state->functionsLength; i++) {
         if (state->functions[i].compute != NULL) {
-            state->functions[i].compute(state->functions + i, op->schema, op->recordBuffer, state->lastRecordBuffer);
+            state->functions[i].compute(state->functions + i, op->schema,
+                                        op->recordBuffer,
+                                        state->lastRecordBuffer);
         }
     }
 
@@ -716,54 +780,66 @@ void closeAggregate(embedDBOperator* op) {
 }
 
 /**
- * @brief	Creates an operator that will find groups and preform aggregate functions over each group.
- * @param	input			The operator that this operator can pull records from
- * @param	groupfunc		A function that returns whether or not the @c record is part of the same group as the @c lastRecord. Assumes that records in groups are always next to each other and sorted when read in (i.e. Groups need to be 1122333, not 13213213)
- * @param	functions		An array of aggregate functions, each of which will be updated with each record read from the iterator
- * @param	functionsLength			The number of embedDBAggregateFuncs in @c functions
+ * @brief	Creates an operator that will find groups and preform aggregate
+ * functions over each group.
+ * @param	input			The operator that this operator can pull
+ * records from
+ * @param	groupfunc		A function that returns whether or not
+ * the @c record is part of the same group as the @c lastRecord. Assumes that
+ * records in groups are always next to each other and sorted when read in (i.e.
+ * Groups need to be 1122333, not 13213213)
+ * @param	functions		An array of aggregate functions, each of
+ * which will be updated with each record read from the iterator
+ * @param	functionsLength			The number of
+ * embedDBAggregateFuncs in @c functions
  */
-embedDBOperator* createAggregateOperator(embedDBOperator* input, int8_t (*groupfunc)(const void* lastRecord, const void* record), embedDBAggregateFunc* functions, uint32_t functionsLength) {
+embedDBOperator* createAggregateOperator(
+    embedDBOperator* input,
+    int8_t (*groupfunc)(const void* lastRecord, const void* record),
+    embedDBAggregateFunc* functions, uint32_t functionsLength) {
     struct aggregateInfo* state = EMDB_MEM_ALLOC(sizeof(struct aggregateInfo));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate "
+                  "operator\n");
 #endif
         return NULL;
     }
 
-    state->groupfunc = groupfunc;
-    state->functions = functions;
-    state->functionsLength = functionsLength;
+    state->groupfunc        = groupfunc;
+    state->functions        = functions;
+    state->functionsLength  = functionsLength;
     state->lastRecordBuffer = NULL;
 
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating aggregate "
+                  "operator\n");
 #endif
         return NULL;
     }
 
-    op->state = state;
-    op->input = input;
-    op->schema = NULL;
+    op->state        = state;
+    op->input        = input;
+    op->schema       = NULL;
     op->recordBuffer = NULL;
-    op->init = initAggregate;
-    op->next = nextAggregate;
-    op->close = closeAggregate;
+    op->init         = initAggregate;
+    op->next         = nextAggregate;
+    op->close        = closeAggregate;
 
     return op;
 }
 
 struct keyJoinInfo {
     embedDBOperator* input2;
-    int8_t firstCall;
+    int8_t           firstCall;
 };
 
 void initKeyJoin(embedDBOperator* op) {
-    struct keyJoinInfo* state = op->state;
-    embedDBOperator* input1 = op->input;
-    embedDBOperator* input2 = state->input2;
+    struct keyJoinInfo* state  = op->state;
+    embedDBOperator*    input1 = op->input;
+    embedDBOperator*    input2 = state->input2;
 
     // Init inputs
     input1->init(input1);
@@ -773,9 +849,12 @@ void initKeyJoin(embedDBOperator* op) {
     embedDBSchema* schema2 = input2->schema;
 
     // Check that join is compatible
-    if (schema1->columnSizes[0] != schema2->columnSizes[0] || schema1->columnSizes[0] < 0 || schema2->columnSizes[0] < 0) {
+    if (schema1->columnSizes[0] != schema2->columnSizes[0] ||
+        schema1->columnSizes[0] < 0 || schema2->columnSizes[0] < 0) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: The first columns of the two tables must be the key and must be the same size. Make sure you haven't projected them out.\n");
+        debug_log("ERROR: The first columns of the two tables must be the key "
+                  "and must be the same size. Make sure you haven't projected "
+                  "them out.\n");
 #endif
         return;
     }
@@ -785,30 +864,38 @@ void initKeyJoin(embedDBOperator* op) {
         op->schema = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
         if (op->schema == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join "
+                      "operator\n");
 #endif
             return;
         }
         op->schema->numCols = schema1->numCols + schema2->numCols;
-        op->schema->columnSizes = EMDB_MEM_ALLOC(op->schema->numCols * sizeof(int8_t));
-        op->schema->columnTypes = EMDB_MEM_ALLOC(op->schema->numCols * sizeof(ColumnType));
-        if (op->schema->columnSizes == NULL || op->schema->columnTypes == NULL) {
+        op->schema->columnSizes =
+            EMDB_MEM_ALLOC(op->schema->numCols * sizeof(int8_t));
+        op->schema->columnTypes =
+            EMDB_MEM_ALLOC(op->schema->numCols * sizeof(ColumnType));
+        if (op->schema->columnSizes == NULL ||
+            op->schema->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
+            debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join "
+                      "operator\n");
 #endif
             return;
         }
         memcpy(op->schema->columnSizes, schema1->columnSizes, schema1->numCols);
-        memcpy(op->schema->columnSizes + schema1->numCols, schema2->columnSizes, schema2->numCols);
+        memcpy(op->schema->columnSizes + schema1->numCols, schema2->columnSizes,
+               schema2->numCols);
         memcpy(op->schema->columnTypes, schema1->columnTypes, schema1->numCols);
-        memcpy(op->schema->columnTypes + schema1->numCols, schema2->columnTypes, schema2->numCols);
+        memcpy(op->schema->columnTypes + schema1->numCols, schema2->columnTypes,
+               schema2->numCols);
     }
 
     // Allocate recordBuffer
     op->recordBuffer = EMDB_MEM_ALLOC(getRecordSizeFromSchema(op->schema));
     if (op->recordBuffer == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join operator\n");
+        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while initializing join "
+                  "operator\n");
 #endif
         return;
     }
@@ -817,11 +904,11 @@ void initKeyJoin(embedDBOperator* op) {
 }
 
 int8_t nextKeyJoin(embedDBOperator* op) {
-    struct keyJoinInfo* state = op->state;
-    embedDBOperator* input1 = op->input;
-    embedDBOperator* input2 = state->input2;
-    embedDBSchema* schema1 = input1->schema;
-    embedDBSchema* schema2 = input2->schema;
+    struct keyJoinInfo* state   = op->state;
+    embedDBOperator*    input1  = op->input;
+    embedDBOperator*    input2  = state->input2;
+    embedDBSchema*      schema1 = input1->schema;
+    embedDBSchema*      schema2 = input2->schema;
 
     // We've already used this match
     void* record1 = input1->recordBuffer;
@@ -843,20 +930,23 @@ int8_t nextKeyJoin(embedDBOperator* op) {
         // Advance the input with the smaller value
         int8_t comp = compareUnsignedNumbers(record1, record2, colSize);
         if (comp == 0) {
-            // Move both forward because if they match at this point, they've already been matched
+            // Move both forward because if they match at this point, they've
+            // already been matched
             if (!input1->next(input1) || !input2->next(input2)) {
                 return 0;
             }
         } else if (comp < 0) {
             // Move record 1 forward
             if (!input1->next(input1)) {
-                // We are out of records on one side. Given the assumption that the inputs are sorted, there are no more possible joins
+                // We are out of records on one side. Given the assumption that
+                // the inputs are sorted, there are no more possible joins
                 return 0;
             }
         } else {
             // Move record 2 forward
             if (!input2->next(input2)) {
-                // We are out of records on one side. Given the assumption that the inputs are sorted, there are no more possible joins
+                // We are out of records on one side. Given the assumption that
+                // the inputs are sorted, there are no more possible joins
                 return 0;
             }
         }
@@ -867,7 +957,8 @@ int8_t nextKeyJoin(embedDBOperator* op) {
             // Copy both records into the output
             uint16_t record1Size = getRecordSizeFromSchema(schema1);
             memcpy(op->recordBuffer, input1->recordBuffer, record1Size);
-            memcpy((int8_t*)op->recordBuffer + record1Size, input2->recordBuffer, getRecordSizeFromSchema(schema2));
+            memcpy((int8_t*)op->recordBuffer + record1Size,
+                   input2->recordBuffer, getRecordSizeFromSchema(schema2));
             return 1;
         }
         // Else keep advancing inputs until a match is found
@@ -877,9 +968,9 @@ int8_t nextKeyJoin(embedDBOperator* op) {
 }
 
 void closeKeyJoin(embedDBOperator* op) {
-    struct keyJoinInfo* state = op->state;
-    embedDBOperator* input1 = op->input;
-    embedDBOperator* input2 = state->input2;
+    struct keyJoinInfo* state  = op->state;
+    embedDBOperator*    input1 = op->input;
+    embedDBOperator*    input2 = state->input2;
     input1->close(input1);
     input2->close(input2);
 
@@ -891,13 +982,16 @@ void closeKeyJoin(embedDBOperator* op) {
 }
 
 /**
- * @brief	Creates an operator for performing an equi-join on the keys (sorted and distinct) of two tables
+ * @brief	Creates an operator for performing an equi-join on the keys
+ * (sorted and distinct) of two tables
  */
-embedDBOperator* createKeyJoinOperator(embedDBOperator* input1, embedDBOperator* input2) {
+embedDBOperator* createKeyJoinOperator(embedDBOperator* input1,
+                                       embedDBOperator* input2) {
     embedDBOperator* op = EMDB_MEM_ALLOC(sizeof(embedDBOperator));
     if (op == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
+        debug_log(
+            "ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
 #endif
         return NULL;
     }
@@ -905,19 +999,20 @@ embedDBOperator* createKeyJoinOperator(embedDBOperator* input1, embedDBOperator*
     struct keyJoinInfo* state = EMDB_MEM_ALLOC(sizeof(struct keyJoinInfo));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
+        debug_log(
+            "ERROR: Failed to EMDB_MEM_ALLOC while creating join operator\n");
 #endif
         return NULL;
     }
     state->input2 = input2;
 
-    op->input = input1;
-    op->state = state;
+    op->input        = input1;
+    op->state        = state;
     op->recordBuffer = NULL;
-    op->schema = NULL;
-    op->init = initKeyJoin;
-    op->next = nextKeyJoin;
-    op->close = closeKeyJoin;
+    op->schema       = NULL;
+    op->init         = initKeyJoin;
+    op->next         = nextKeyJoin;
+    op->close        = closeKeyJoin;
 
     return op;
 }
@@ -926,43 +1021,55 @@ void countReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
     *(uint32_t*)aggFunc->state = 0;
 }
 
-void countAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const void* recordBuffer) {
+void countAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema,
+              const void* recordBuffer) {
     (*(uint32_t*)aggFunc->state)++;
 }
 
-void countCompute(embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema, void* recordBuffer, const void* lastRecord) {
+void countCompute(embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema,
+                  void* recordBuffer, const void* lastRecord) {
     // Put count in record
-    memcpy((int8_t*)recordBuffer + getColOffsetFromSchema(outputSchema, aggFunc->colNum), aggFunc->state, sizeof(uint32_t));
+    memcpy((int8_t*)recordBuffer +
+               getColOffsetFromSchema(outputSchema, aggFunc->colNum),
+           aggFunc->state, sizeof(uint32_t));
 }
 
 /**
- * @brief	Creates an aggregate function to count the number of records in a group. To be used in combination with an embedDBOperator produced by createAggregateOperator
+ * @brief	Creates an aggregate function to count the number of records in
+ * a group. To be used in combination with an embedDBOperator produced by
+ * createAggregateOperator
  */
 embedDBAggregateFunc* createCountAggregate() {
-    embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
-    aggFunc->reset = countReset;
-    aggFunc->add = countAdd;
+    embedDBAggregateFunc* aggFunc =
+        EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
+    aggFunc->reset   = countReset;
+    aggFunc->add     = countAdd;
     aggFunc->compute = countCompute;
-    aggFunc->state = EMDB_MEM_ALLOC(sizeof(uint32_t));
+    aggFunc->state   = EMDB_MEM_ALLOC(sizeof(uint32_t));
     aggFunc->colSize = 4;
     return aggFunc;
 }
 
 void sumReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
-    if (abs(inputSchema->columnSizes[*((uint8_t*)aggFunc->state + sizeof(int64_t))]) > 8) {
+    if (abs(inputSchema
+                ->columnSizes[*((uint8_t*)aggFunc->state + sizeof(int64_t))]) >
+        8) {
 #ifdef PRINT_ERRORS
-        debug_log("WARNING: Can't use this sum function for columns bigger than 8 bytes\n");
+        debug_log("WARNING: Can't use this sum function for columns bigger "
+                  "than 8 bytes\n");
 #endif
     }
     *(int64_t*)aggFunc->state = 0;
 }
 
-void sumAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const void* recordBuffer) {
-    uint8_t colNum = *((uint8_t*)aggFunc->state + sizeof(int64_t));
-    int8_t colSize = inputSchema->columnSizes[colNum];
-    int8_t isSigned = embedDB_IS_COL_SIGNED(colSize);
-    colSize = min(abs(colSize), sizeof(int64_t));
-    void* colPos = (int8_t*)recordBuffer + getColOffsetFromSchema(inputSchema, colNum);
+void sumAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema,
+            const void* recordBuffer) {
+    uint8_t colNum   = *((uint8_t*)aggFunc->state + sizeof(int64_t));
+    int8_t  colSize  = inputSchema->columnSizes[colNum];
+    int8_t  isSigned = embedDB_IS_COL_SIGNED(colSize);
+    colSize          = min(abs(colSize), sizeof(int64_t));
+    void* colPos =
+        (int8_t*)recordBuffer + getColOffsetFromSchema(inputSchema, colNum);
     if (isSigned) {
         // Get val to sum from record
         int64_t val = 0;
@@ -970,7 +1077,8 @@ void sumAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const voi
         // Extend two's complement sign to fill 64 bit number if val is negative
         int64_t sign = val & (128 << ((colSize - 1) * 8));
         if (sign != 0) {
-            memset(((int8_t*)(&val)) + colSize, 0xff, sizeof(int64_t) - colSize);
+            memset(((int8_t*)(&val)) + colSize, 0xff,
+                   sizeof(int64_t) - colSize);
         }
         (*(int64_t*)aggFunc->state) += val;
     } else {
@@ -980,111 +1088,134 @@ void sumAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const voi
     }
 }
 
-void sumCompute(embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema, void* recordBuffer, const void* lastRecord) {
+void sumCompute(embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema,
+                void* recordBuffer, const void* lastRecord) {
     // Put count in record
-    memcpy((int8_t*)recordBuffer + getColOffsetFromSchema(outputSchema, aggFunc->colNum), aggFunc->state, sizeof(int64_t));
+    memcpy((int8_t*)recordBuffer +
+               getColOffsetFromSchema(outputSchema, aggFunc->colNum),
+           aggFunc->state, sizeof(int64_t));
 }
 
 /**
- * @brief	Creates an aggregate function to sum a column over a group. To be used in combination with an embedDBOperator produced by createAggregateOperator. Column must be no bigger than 8 bytes.
- * @param	colNum	The index (zero-indexed) of the column which you want to sum. Column must be <= 8 bytes
+ * @brief	Creates an aggregate function to sum a column over a group. To
+ * be used in combination with an embedDBOperator produced by
+ * createAggregateOperator. Column must be no bigger than 8 bytes.
+ * @param	colNum	The index (zero-indexed) of the column which you want to
+ * sum. Column must be <= 8 bytes
  */
 embedDBAggregateFunc* createSumAggregate(uint8_t colNum) {
-    embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
-    aggFunc->reset = sumReset;
-    aggFunc->add = sumAdd;
+    embedDBAggregateFunc* aggFunc =
+        EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
+    aggFunc->reset   = sumReset;
+    aggFunc->add     = sumAdd;
     aggFunc->compute = sumCompute;
-    aggFunc->state = EMDB_MEM_ALLOC(sizeof(int8_t) + sizeof(int64_t));
+    aggFunc->state   = EMDB_MEM_ALLOC(sizeof(int8_t) + sizeof(int64_t));
     *((uint8_t*)aggFunc->state + sizeof(int64_t)) = colNum;
-    aggFunc->colSize = -8;
+    aggFunc->colSize                              = -8;
     return aggFunc;
 }
 
 struct minMaxState {
     uint8_t colNum;  // Which column of input to use
-    void* current;   // The value currently regarded as the min/max
+    void*   current; // The value currently regarded as the min/max
 };
 
 void minReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
-    struct minMaxState* state = aggFunc->state;
-    int8_t colSize = inputSchema->columnSizes[state->colNum];
+    struct minMaxState* state   = aggFunc->state;
+    int8_t              colSize = inputSchema->columnSizes[state->colNum];
     if (aggFunc->colSize != colSize) {
 #ifdef PRINT_ERRORS
-        debug_log("WARNING: Your provided column size for min aggregate function doesn't match the column size in the input schema\n");
+        debug_log(
+            "WARNING: Your provided column size for min aggregate function "
+            "doesn't match the column size in the input schema\n");
 #endif
     }
     int8_t isSigned = embedDB_IS_COL_SIGNED(colSize);
-    colSize = abs(colSize);
+    colSize         = abs(colSize);
     memset(state->current, 0xff, colSize);
     if (isSigned) {
-        // If the number is signed, flip MSB else it will read as -1, not MAX_INT
+        // If the number is signed, flip MSB else it will read as -1, not
+        // MAX_INT
         memset((int8_t*)state->current + colSize - 1, 0x7f, 1);
     }
 }
 
-void minAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const void* record) {
-    struct minMaxState* state = aggFunc->state;
-    int8_t colSize = inputSchema->columnSizes[state->colNum];
-    int8_t isSigned = embedDB_IS_COL_SIGNED(colSize);
-    colSize = abs(colSize);
-    void* newValue = (int8_t*)record + getColOffsetFromSchema(inputSchema, state->colNum);
+void minAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema,
+            const void* record) {
+    struct minMaxState* state    = aggFunc->state;
+    int8_t              colSize  = inputSchema->columnSizes[state->colNum];
+    int8_t              isSigned = embedDB_IS_COL_SIGNED(colSize);
+    colSize                      = abs(colSize);
+    void* newValue =
+        (int8_t*)record + getColOffsetFromSchema(inputSchema, state->colNum);
     if (compare(newValue, SELECT_LT, state->current, isSigned, colSize)) {
         memcpy(state->current, newValue, colSize);
     }
 }
 
-void minMaxCompute(embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema, void* recordBuffer, const void* lastRecord) {
+void minMaxCompute(embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema,
+                   void* recordBuffer, const void* lastRecord) {
     // Put count in record
-    memcpy((int8_t*)recordBuffer + getColOffsetFromSchema(outputSchema, aggFunc->colNum), ((struct minMaxState*)aggFunc->state)->current, abs(outputSchema->columnSizes[aggFunc->colNum]));
+    memcpy((int8_t*)recordBuffer +
+               getColOffsetFromSchema(outputSchema, aggFunc->colNum),
+           ((struct minMaxState*)aggFunc->state)->current,
+           abs(outputSchema->columnSizes[aggFunc->colNum]));
 }
 
 /**
  * @brief	Creates an aggregate function to find the min value in a group
  * @param	colNum	The zero-indexed column to find the min of
- * @param	colSize	The size, in bytes, of the column to find the min of. Negative number represents a signed number, positive is unsigned.
+ * @param	colSize	The size, in bytes, of the column to find the min of.
+ * Negative number represents a signed number, positive is unsigned.
  */
 embedDBAggregateFunc* createMinAggregate(uint8_t colNum, int8_t colSize) {
-    embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
+    embedDBAggregateFunc* aggFunc =
+        EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
     if (aggFunc == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating min aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating min aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
     struct minMaxState* state = EMDB_MEM_ALLOC(sizeof(struct minMaxState));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating min aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating min aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
-    state->colNum = colNum;
+    state->colNum  = colNum;
     state->current = EMDB_MEM_ALLOC(abs(colSize));
     if (state->current == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating min aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating min aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
-    aggFunc->state = state;
+    aggFunc->state   = state;
     aggFunc->colSize = colSize;
-    aggFunc->reset = minReset;
-    aggFunc->add = minAdd;
+    aggFunc->reset   = minReset;
+    aggFunc->add     = minAdd;
     aggFunc->compute = minMaxCompute;
 
     return aggFunc;
 }
 
 void maxReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
-    struct minMaxState* state = aggFunc->state;
-    int8_t colSize = inputSchema->columnSizes[state->colNum];
+    struct minMaxState* state   = aggFunc->state;
+    int8_t              colSize = inputSchema->columnSizes[state->colNum];
     if (aggFunc->colSize != colSize) {
 #ifdef PRINT_ERRORS
-        debug_log("WARNING: Your provided column size for max aggregate function doesn't match the column size in the input schema\n");
+        debug_log(
+            "WARNING: Your provided column size for max aggregate function "
+            "doesn't match the column size in the input schema\n");
 #endif
     }
     int8_t isSigned = embedDB_IS_COL_SIGNED(colSize);
-    colSize = abs(colSize);
+    colSize         = abs(colSize);
     memset(state->current, 0, colSize);
     if (isSigned) {
         // If the number is signed, flip MSB else it will read as 0, not MIN_INT
@@ -1092,12 +1223,14 @@ void maxReset(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
     }
 }
 
-void maxAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const void* record) {
-    struct minMaxState* state = aggFunc->state;
-    int8_t colSize = inputSchema->columnSizes[state->colNum];
-    int8_t isSigned = embedDB_IS_COL_SIGNED(colSize);
-    colSize = abs(colSize);
-    void* newValue = (int8_t*)record + getColOffsetFromSchema(inputSchema, state->colNum);
+void maxAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema,
+            const void* record) {
+    struct minMaxState* state    = aggFunc->state;
+    int8_t              colSize  = inputSchema->columnSizes[state->colNum];
+    int8_t              isSigned = embedDB_IS_COL_SIGNED(colSize);
+    colSize                      = abs(colSize);
+    void* newValue =
+        (int8_t*)record + getColOffsetFromSchema(inputSchema, state->colNum);
     if (compare(newValue, SELECT_GT, state->current, isSigned, colSize)) {
         memcpy(state->current, newValue, colSize);
     }
@@ -1106,179 +1239,201 @@ void maxAdd(embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const voi
 /**
  * @brief	Creates an aggregate function to find the max value in a group
  * @param	colNum	The zero-indexed column to find the max of
- * @param	colSize	The size, in bytes, of the column to find the max of. Negative number represents a signed number, positive is unsigned.
+ * @param	colSize	The size, in bytes, of the column to find the max of.
+ * Negative number represents a signed number, positive is unsigned.
  */
 embedDBAggregateFunc* createMaxAggregate(uint8_t colNum, int8_t colSize) {
-    embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
+    embedDBAggregateFunc* aggFunc =
+        EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
     if (aggFunc == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating max aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating max aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
     struct minMaxState* state = EMDB_MEM_ALLOC(sizeof(struct minMaxState));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating max aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating max aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
-    state->colNum = colNum;
+    state->colNum  = colNum;
     state->current = EMDB_MEM_ALLOC(abs(colSize));
     if (state->current == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating max aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating max aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
-    aggFunc->state = state;
+    aggFunc->state   = state;
     aggFunc->colSize = colSize;
-    aggFunc->reset = maxReset;
-    aggFunc->add = maxAdd;
+    aggFunc->reset   = maxReset;
+    aggFunc->add     = maxAdd;
     aggFunc->compute = minMaxCompute;
 
     return aggFunc;
 }
 
 struct avgState {
-    uint8_t colNum;      // Column to take avg of
-    ColumnType colType;  // Column type
-    uint32_t count;      // Count of records seen in group so far
-    double sum;          // Sum of records seen in group so far
+    uint8_t    colNum;  // Column to take avg of
+    ColumnType colType; // Column type
+    uint32_t   count;   // Count of records seen in group so far
+    double     sum;     // Sum of records seen in group so far
 };
 
-void avgReset(struct embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema) {
+void avgReset(struct embedDBAggregateFunc* aggFunc,
+              embedDBSchema*               inputSchema) {
     struct avgState* state = aggFunc->state;
-    state->colType = inputSchema->columnTypes[state->colNum];
-    state->count = 0;
-    state->sum = 0.0;
+    state->colType         = inputSchema->columnTypes[state->colNum];
+    state->count           = 0;
+    state->sum             = 0.0;
 }
 
-void avgAdd(struct embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const void* record) {
-    struct avgState* state = aggFunc->state;
-    uint8_t colNum = state->colNum;
-    void* colPos = (int8_t*)record + getColOffsetFromSchema(inputSchema, colNum);
+void avgAdd(struct embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema,
+            const void* record) {
+    struct avgState* state  = aggFunc->state;
+    uint8_t          colNum = state->colNum;
+    void*            colPos =
+        (int8_t*)record + getColOffsetFromSchema(inputSchema, colNum);
     switch (state->colType) {
-        case embedDB_COLUMN_INT32: {
-            int32_t val;
-            memcpy(&val, colPos, sizeof(int32_t));
-            state->sum += val;
-            break;
-        }
-        case embedDB_COLUMN_UINT32: {
-            uint32_t val;
-            memcpy(&val, colPos, sizeof(uint32_t));
-            state->sum += val;
-            break;
-        }
-        case embedDB_COLUMN_INT64: {
-            int64_t val;
-            memcpy(&val, colPos, sizeof(int64_t));
-            state->sum += val;
-            break;
-        }
-        case embedDB_COLUMN_UINT64: {
-            uint64_t val;
-            memcpy(&val, colPos, sizeof(uint64_t));
-            state->sum += val;
-            break;
-        }
-        case embedDB_COLUMN_FLOAT: {
-            float val;
-            memcpy(&val, colPos, sizeof(float));
-            state->sum += val;
-            break;
-        }
-        case embedDB_COLUMN_DOUBLE: {
-            double val = 0;
-            memcpy(&val, colPos, sizeof(double));
-            state->sum += val;
-            break;
-        }
-        default:
+    case embedDB_COLUMN_INT32: {
+        int32_t val;
+        memcpy(&val, colPos, sizeof(int32_t));
+        state->sum += val;
+        break;
+    }
+    case embedDB_COLUMN_UINT32: {
+        uint32_t val;
+        memcpy(&val, colPos, sizeof(uint32_t));
+        state->sum += val;
+        break;
+    }
+    case embedDB_COLUMN_INT64: {
+        int64_t val;
+        memcpy(&val, colPos, sizeof(int64_t));
+        state->sum += val;
+        break;
+    }
+    case embedDB_COLUMN_UINT64: {
+        uint64_t val;
+        memcpy(&val, colPos, sizeof(uint64_t));
+        state->sum += val;
+        break;
+    }
+    case embedDB_COLUMN_FLOAT: {
+        float val;
+        memcpy(&val, colPos, sizeof(float));
+        state->sum += val;
+        break;
+    }
+    case embedDB_COLUMN_DOUBLE: {
+        double val = 0;
+        memcpy(&val, colPos, sizeof(double));
+        state->sum += val;
+        break;
+    }
+    default:
 #ifdef PRINT_ERRORS
-            debug_log("WARNING: avgAdd encountered unsupported column type: %d\n", state->colType);
+        debug_log("WARNING: avgAdd encountered unsupported column type: %d\n",
+                  state->colType);
 #endif
-            return;
+        return;
     }
     state->count++;
 }
 
-void avgCompute(struct embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema, void* recordBuffer, const void* lastRecord) {
+void avgCompute(struct embedDBAggregateFunc* aggFunc,
+                embedDBSchema* outputSchema, void* recordBuffer,
+                const void* lastRecord) {
     struct avgState* state = aggFunc->state;
     if (state->count == 0) {
-        return;  // Avoid division by zero
+        return; // Avoid division by zero
     }
 
-    void* outputPos = (int8_t*)recordBuffer + getColOffsetFromSchema(outputSchema, aggFunc->colNum);
+    void* outputPos = (int8_t*)recordBuffer +
+                      getColOffsetFromSchema(outputSchema, aggFunc->colNum);
 
     switch (state->colType) {
-        case embedDB_COLUMN_INT32:
-        case embedDB_COLUMN_UINT32:
-        case embedDB_COLUMN_INT64:
-        case embedDB_COLUMN_UINT64:
-        case embedDB_COLUMN_FLOAT: {
-            float avg = (float)(state->sum / state->count);
-            memcpy(outputPos, &avg, sizeof(float));
-            break;
-        }
-        case embedDB_COLUMN_DOUBLE: {
-            double avg = state->sum / state->count;
-            memcpy(outputPos, &avg, sizeof(double));
-            break;
-        }
-        default:
+    case embedDB_COLUMN_INT32:
+    case embedDB_COLUMN_UINT32:
+    case embedDB_COLUMN_INT64:
+    case embedDB_COLUMN_UINT64:
+    case embedDB_COLUMN_FLOAT: {
+        float avg = (float)(state->sum / state->count);
+        memcpy(outputPos, &avg, sizeof(float));
+        break;
+    }
+    case embedDB_COLUMN_DOUBLE: {
+        double avg = state->sum / state->count;
+        memcpy(outputPos, &avg, sizeof(double));
+        break;
+    }
+    default:
 #ifdef PRINT_ERRORS
-            debug_log("WARNING: avgCompute encountered unsupported column type\n");
+        debug_log("WARNING: avgCompute encountered unsupported column type\n");
 #endif
-            return;
+        return;
     }
 }
 
 /**
- * @brief	Creates an operator to compute the average of a column over a group. **WARNING: Outputs a floating point number that may not be compatible with other operators**
+ * @brief	Creates an operator to compute the average of a column over a
+ * group. **WARNING: Outputs a floating point number that may not be compatible
+ * with other operators**
  * @param	colNum			Zero-indexed column to take average of
- * @param	outputFloatSize	Size of float to output. Must be either 4 (float) or 8 (double)
+ * @param	outputFloatSize	Size of float to output. Must be either 4
+ * (float) or 8 (double)
  */
-embedDBAggregateFunc* createAvgAggregate(uint8_t colNum, int8_t outputFloatSize) {
-    embedDBAggregateFunc* aggFunc = EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
+embedDBAggregateFunc* createAvgAggregate(uint8_t colNum,
+                                         int8_t  outputFloatSize) {
+    embedDBAggregateFunc* aggFunc =
+        EMDB_MEM_ALLOC(sizeof(embedDBAggregateFunc));
     if (aggFunc == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating avg aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating avg aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
     struct avgState* state = EMDB_MEM_ALLOC(sizeof(struct avgState));
     if (state == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate while creating avg aggregate function\n");
+        debug_log("ERROR: Failed to allocate while creating avg aggregate "
+                  "function\n");
 #endif
         return NULL;
     }
-    state->colNum = colNum;
+    state->colNum  = colNum;
     aggFunc->state = state;
     if (outputFloatSize > 8 || (outputFloatSize < 8 && outputFloatSize > 4)) {
 #ifdef PRINT_ERRORS
-        debug_log("WARNING: The size of the output float for AVG must be exactly 4 or 8. Defaulting to 8.");
+        debug_log("WARNING: The size of the output float for AVG must be "
+                  "exactly 4 or 8. Defaulting to 8.");
 #endif
         aggFunc->colSize = 8;
     } else if (outputFloatSize < 4) {
 #ifdef PRINT_ERRORS
-        debug_log("WARNING: The size of the output float for AVG must be exactly 4 or 8. Defaulting to 4.");
+        debug_log("WARNING: The size of the output float for AVG must be "
+                  "exactly 4 or 8. Defaulting to 4.");
 #endif
         aggFunc->colSize = 4;
     } else {
         aggFunc->colSize = outputFloatSize;
     }
-    aggFunc->reset = avgReset;
-    aggFunc->add = avgAdd;
+    aggFunc->reset   = avgReset;
+    aggFunc->add     = avgAdd;
     aggFunc->compute = avgCompute;
 
     return aggFunc;
 }
 
 /**
- * @brief	Completely free a chain of functions recursively after it's already been closed.
+ * @brief	Completely free a chain of functions recursively after it's
+ * already been closed.
  */
 void embedDBFreeOperatorRecursive(embedDBOperator** op) {
     if ((*op)->input != NULL) {

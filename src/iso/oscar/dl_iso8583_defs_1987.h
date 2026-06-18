@@ -35,7 +35,7 @@
 /******************************************************************************/
 
 // sets the specified handler
-void DL_ISO8583_DEFS_1987_GetHandler ( DL_ISO8583_HANDLER *oHandler );
+void DL_ISO8583_DEFS_1987_GetHandler(DL_ISO8583_HANDLER* oHandler);
 
 /******************************************************************************/
 

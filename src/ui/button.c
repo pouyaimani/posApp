@@ -5,8 +5,8 @@
 #include "common.h"
 #include "logger.h"
 
-void ui_button_create(Button *btn, lv_obj_t *parent, 
-                        unsigned int color, const char * text) {
+void ui_button_create(Button* btn, lv_obj_t* parent, unsigned int color,
+                      const char* text) {
     RETURN_IF_NULL(btn, ;);
     btn->main = lv_btn_create(parent);
 

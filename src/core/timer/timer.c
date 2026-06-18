@@ -2,7 +2,7 @@
 #include "sys/sys.h"
 #include "logger.h"
 
-static TimerHandler *__timerHandler;
+static TimerHandler* __timerHandler;
 
 static TimerErr_t registerTimer(Timer* timer) {
     LOG_TRACE("Registring Timer ...");
@@ -21,7 +21,7 @@ static TimerErr_t unRegisterTimer(Timer* timer) {
     for (size_t i = 0; i < __timerHandler->timersCnt; ++i) {
         if (__timerHandler->timers[i] == timer) {
             /* shift remaining callbacks left */
-            for (size_t j = i + 1; j <  __timerHandler->timersCnt; ++j) {
+            for (size_t j = i + 1; j < __timerHandler->timersCnt; ++j) {
                 __timerHandler->timers[j - 1] = __timerHandler->timers[j];
             }
 
@@ -32,32 +32,30 @@ static TimerErr_t unRegisterTimer(Timer* timer) {
     return err;
 }
 
-static void start(Timer *timer) {
+static void start(Timer* timer) {
     timer->isStoped = false;
-    timer->ctime = GET_TICK();
+    timer->ctime    = GET_TICK();
 }
 
-static void stop(Timer *timer) {
-    timer->isStoped = true;
-}
+static void stop(Timer* timer) { timer->isStoped = true; }
 
 OOP_CTOR(Timer, timerChecker checker, uint32_t period, bool singleShot) {
-    self->checker = checker;
-    self->period = period;
+    self->checker      = checker;
+    self->period       = period;
     self->isSingleShot = singleShot;
-    self->isStoped = true;
-    self->start = start;
-    self->stop = stop;
+    self->isStoped     = true;
+    self->start        = start;
+    self->stop         = stop;
 }
 
-Timer *createTimer(timerChecker checker, uint32_t period, bool singleShot) {
-    Timer *timer = (Timer*)MEM_ALLOC(sizeof(Timer));
+Timer* createTimer(timerChecker checker, uint32_t period, bool singleShot) {
+    Timer* timer = (Timer*)MEM_ALLOC(sizeof(Timer));
     OOP_CALL_CTOR(Timer, timer, checker, period, singleShot);
     getTimerHanlder()->registerTimer(timer);
     return timer;
 }
 
-void removeTimer(Timer *timer) {
+void removeTimer(Timer* timer) {
     getTimerHanlder()->unRegisterTimer(timer);
     MEM_FREE(timer);
 }
@@ -65,7 +63,8 @@ void removeTimer(Timer *timer) {
 static void runCycle() {
     for (size_t i = 0; i < __timerHandler->timersCnt; ++i) {
         uint32_t tick = GET_TICK();
-        if(tick - __timerHandler->timers[i]->ctime >= __timerHandler->timers[i]->period) {
+        if (tick - __timerHandler->timers[i]->ctime >=
+            __timerHandler->timers[i]->period) {
             __timerHandler->timers[i]->checker();
             __timerHandler->timers[i]->ctime = tick;
         }
@@ -74,16 +73,14 @@ static void runCycle() {
 
 OOP_CTOR(TimerHandler) {
     LOG_TRACE("Timer handler constructing ...");
-    self->runCycle = runCycle;
-    self->registerTimer = registerTimer;
+    self->runCycle        = runCycle;
+    self->registerTimer   = registerTimer;
     self->unRegisterTimer = unRegisterTimer;
-    self->timersCnt = 0;
+    self->timersCnt       = 0;
 }
 
-TimerHandler *getTimerHanlder(void) {
-    CALL_ONCE(
-        __timerHandler = (TimerHandler*)MEM_ALLOC(sizeof(TimerHandler));
-        OOP_CALL_CTOR(TimerHandler, __timerHandler);
-    );
+TimerHandler* getTimerHanlder(void) {
+    CALL_ONCE(__timerHandler = (TimerHandler*)MEM_ALLOC(sizeof(TimerHandler));
+              OOP_CALL_CTOR(TimerHandler, __timerHandler););
     return __timerHandler;
 }

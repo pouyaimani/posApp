@@ -13,13 +13,13 @@ typedef enum {
 } ReceiptDocType;
 
 typedef struct {
-    TxnType txnType;
+    TxnType  txnType;
     uint32_t date;
     uint32_t time;
 } DailyReportHeader;
 
 typedef struct {
-    TxnType txnType;
+    TxnType  txnType;
     uint32_t dateFrom;
     uint32_t timeFrom;
     uint32_t dateTo;
@@ -29,7 +29,7 @@ typedef struct {
 } DetailedReportHeader;
 
 typedef struct {
-    TxnType txnType;
+    TxnType  txnType;
     uint32_t dateFrom;
     uint32_t timeFrom;
     uint32_t dateTo;
@@ -39,29 +39,25 @@ typedef struct {
 } SummaryReportHeader;
 
 typedef struct {
-    TxnType txnType;
+    TxnType  txnType;
     uint32_t count;
     uint64_t amntSum;
 } SummaryReportBody;
 
 typedef struct {
     ReceiptDocType type;
-    TxnData *txn;
-    bool headerApplied;
+    TxnData*       txn;
+    bool           headerApplied;
     union {
-        DailyReportHeader dailyHeader;
+        DailyReportHeader    dailyHeader;
         DetailedReportHeader detailedHeader;
-        SummaryReportHeader summaryHeader;
-        SummaryReportBody summaryBody;
+        SummaryReportHeader  summaryHeader;
+        SummaryReportBody    summaryBody;
     };
 } ReceiptData;
 
-typedef int8_t (*ReceiptBuilder)(
-    Receipt *,
-    const ReceiptData *);
+typedef int8_t (*ReceiptBuilder)(Receipt*, const ReceiptData*);
 
-int8_t buildReceipt(
-    Receipt *rec,
-    const ReceiptData *data);
+int8_t buildReceipt(Receipt* rec, const ReceiptData* data);
 
 #endif

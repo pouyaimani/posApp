@@ -11,16 +11,16 @@
  * @par 1.Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
- * @par 2.Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and/or other materials provided with the distribution.
+ * @par 2.Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
  *
- * @par 3.Neither the name of the copyright holder nor the names of its contributors
- *  may be used to endorse or promote products derived from this software without
- *  specific prior written permission.
+ * @par 3.Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
  *
- * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
  *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
@@ -44,11 +44,11 @@ extern "C" {
 #include "schema.h"
 #include "sort/external_sort.h"
 
-#define SELECT_GT 0
-#define SELECT_LT 1
+#define SELECT_GT  0
+#define SELECT_LT  1
 #define SELECT_GTE 2
 #define SELECT_LTE 3
-#define SELECT_EQ 4
+#define SELECT_EQ  4
 #define SELECT_NEQ 5
 
 typedef struct sortData sortData;
@@ -57,22 +57,29 @@ typedef struct embedDBAggregateFunc {
     /**
      * @brief	Resets the state
      */
-    void (*reset)(struct embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema);
+    void (*reset)(struct embedDBAggregateFunc* aggFunc,
+                  embedDBSchema*               inputSchema);
 
     /**
      * @brief	Adds another record to the group and updates the state
-     * @param	state	The state tracking the value of the aggregate function e.g. sum
+     * @param	state	The state tracking the value of the aggregate function
+     * e.g. sum
      * @param	record	The record being added
      */
-    void (*add)(struct embedDBAggregateFunc* aggFunc, embedDBSchema* inputSchema, const void* record);
+    void (*add)(struct embedDBAggregateFunc* aggFunc,
+                embedDBSchema* inputSchema, const void* record);
 
     /**
-     * @brief	Finalize aggregate result into the record buffer and modify the schema accordingly. Is called once right before aggroup returns.
+     * @brief	Finalize aggregate result into the record buffer and modify the
+     * schema accordingly. Is called once right before aggroup returns.
      */
-    void (*compute)(struct embedDBAggregateFunc* aggFunc, embedDBSchema* outputSchema, void* recordBuffer, const void* lastRecord);
+    void (*compute)(struct embedDBAggregateFunc* aggFunc,
+                    embedDBSchema* outputSchema, void* recordBuffer,
+                    const void* lastRecord);
 
     /**
-     * @brief	A user-allocated space where the operator saves its state. E.g. a sum operator might have 4 bytes allocated to store the sum of all data
+     * @brief	A user-allocated space where the operator saves its state. E.g.
+     * a sum operator might have 4 bytes allocated to store the sum of all data
      */
     void* state;
 
@@ -94,23 +101,31 @@ typedef struct embedDBOperator {
     struct embedDBOperator* input;
 
     /**
-     * @brief	Initialize the operator. Usually includes setting/calculating the output schema, allocating buffers, etc. Recursively inits input operator as its first action.
+     * @brief	Initialize the operator. Usually includes setting/calculating
+     * the output schema, allocating buffers, etc. Recursively inits input
+     * operator as its first action.
      */
     void (*init)(struct embedDBOperator* op);
 
     /**
-     * @brief	Puts the next tuple to be outputed by this operator into @c operator->recordBuffer. Needs to call next on the input operator if applicable
-     * @return	Returns 0 or 1 to indicate whether a new tuple was outputted to operator->recordBuffer
+     * @brief	Puts the next tuple to be outputed by this operator into @c
+     * operator->recordBuffer. Needs to call next on the input operator if
+     * applicable
+     * @return	Returns 0 or 1 to indicate whether a new tuple was outputted to
+     * operator->recordBuffer
      */
     int8_t (*next)(struct embedDBOperator* op);
 
     /**
-     * @brief	Recursively closes this operator and its input operator. Frees anything allocated in init.
+     * @brief	Recursively closes this operator and its input operator. Frees
+     * anything allocated in init.
      */
     void (*close)(struct embedDBOperator* op);
 
     /**
-     * @brief	A pre-allocated memory area that can be loaded with any extra parameters that the function needs to operate (e.g. column numbers or selection predicates)
+     * @brief	A pre-allocated memory area that can be loaded with any extra
+     * parameters that the function needs to operate (e.g. column numbers or
+     * selection predicates)
      */
     void* state;
 
@@ -127,12 +142,14 @@ typedef struct embedDBOperator {
 
 /**
  * @brief	Extract a record from an operator
- * @return	1 if a record was returned, 0 if there are no more rows to return
+ * @return	1 if a record was returned, 0 if there are no more rows to
+ * return
  */
 int8_t exec(embedDBOperator* op);
 
 /**
- * @brief	Completely free a chain of operators recursively after it's already been closed.
+ * @brief	Completely free a chain of operators recursively after it's
+ * already been closed.
  */
 void embedDBFreeOperatorRecursive(embedDBOperator** op);
 
@@ -141,90 +158,134 @@ void embedDBFreeOperatorRecursive(embedDBOperator** op);
 ///////////////////////////////////////////
 
 /**
- * @brief	Used as the bottom operator that will read records from the database
- * @param	state		The state associated with the database to read from
- * @param	it			An initialized iterator setup to read relevent records for this query
+ * @brief	Used as the bottom operator that will read records from the
+ * database
+ * @param	state		The state associated with the database to read
+ * from
+ * @param	it			An initialized iterator setup to read
+ * relevent records for this query
  * @param	baseSchema	The schema of the database being read from
  */
-embedDBOperator* createTableScanOperator(embedDBState* state, embedDBIterator* it, embedDBSchema* baseSchema);
+embedDBOperator* createTableScanOperator(embedDBState*    state,
+                                         embedDBIterator* it,
+                                         embedDBSchema*   baseSchema);
 
 /**
- * @brief	Creates an operator capable of projecting the specified columns. Cannot re-order columns
+ * @brief	Creates an operator capable of projecting the specified columns.
+ * Cannot re-order columns
  * @param	input	The operator that this operator can pull records from
  * @param	numCols	How many columns will be in the final projection
- * @param	cols	The indexes of the columns to be outputted. *Zero indexed*
+ * @param	cols	The indexes of the columns to be outputted. *Zero
+ * indexed*
  */
-embedDBOperator* createProjectionOperator(embedDBOperator* input, uint8_t numCols, uint8_t* cols);
+embedDBOperator* createProjectionOperator(embedDBOperator* input,
+                                          uint8_t numCols, uint8_t* cols);
 
 /**
- * @brief	Creates an operator that selects records based on simple selection rules
- * @param	input		The operator that this operator can pull records from
- * @param	colNum		The index (zero-indexed) of the column base the select on
- * @param	operation	A constant representing which comparison operation to perform. (e.g. SELECT_GT, SELECT_EQ, etc)
- * @param	compVal		A pointer to the value to compare with. Make sure the size of this is the same number of bytes as is described in the schema
+ * @brief	Creates an operator that selects records based on simple
+ * selection rules
+ * @param	input		The operator that this operator can pull records
+ * from
+ * @param	colNum		The index (zero-indexed) of the column base the
+ * select on
+ * @param	operation	A constant representing which comparison
+ * operation to perform. (e.g. SELECT_GT, SELECT_EQ, etc)
+ * @param	compVal		A pointer to the value to compare with. Make
+ * sure the size of this is the same number of bytes as is described in the
+ * schema
  */
-embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum, int8_t operation, void* compVal);
+embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum,
+                                         int8_t operation, void* compVal);
 
 /**
- * @brief	Creates an operator that will find groups and preform aggregate functions over each group.
- * @param	input			The operator that this operator can pull records from
- * @param	groupfunc		A function that returns whether or not the @c record is part of the same group as the @c lastRecord. Assumes that records in groups are always next to each other and sorted when read in (i.e. Groups need to be 1122333, not 13213213)
- * @param	functions		An array of aggregate functions, each of which will be updated with each record read from the iterator
- * @param	functionsLength			The number of embedDBAggregateFuncs in @c functions
+ * @brief	Creates an operator that will find groups and preform aggregate
+ * functions over each group.
+ * @param	input			The operator that this operator can pull
+ * records from
+ * @param	groupfunc		A function that returns whether or not
+ * the @c record is part of the same group as the @c lastRecord. Assumes that
+ * records in groups are always next to each other and sorted when read in (i.e.
+ * Groups need to be 1122333, not 13213213)
+ * @param	functions		An array of aggregate functions, each of
+ * which will be updated with each record read from the iterator
+ * @param	functionsLength			The number of
+ * embedDBAggregateFuncs in @c functions
  */
-embedDBOperator* createAggregateOperator(embedDBOperator* input, int8_t (*groupfunc)(const void* lastRecord, const void* record), embedDBAggregateFunc* functions, uint32_t functionsLength);
+embedDBOperator* createAggregateOperator(
+    embedDBOperator* input,
+    int8_t (*groupfunc)(const void* lastRecord, const void* record),
+    embedDBAggregateFunc* functions, uint32_t functionsLength);
 
 /**
- * @brief	Creates an operator for perfoming an equijoin on the keys (sorted and distinct) of two tables
+ * @brief	Creates an operator for perfoming an equijoin on the keys
+ * (sorted and distinct) of two tables
  */
-embedDBOperator* createKeyJoinOperator(embedDBOperator* input1, embedDBOperator* input2);
+embedDBOperator* createKeyJoinOperator(embedDBOperator* input1,
+                                       embedDBOperator* input2);
 
 /**
- * @brief Create an operator that will reorder records based on a given direction
+ * @brief Create an operator that will reorder records based on a given
+ * direction
  *
  * @param dbState       The database state
  * @param input         The operator that this operator can pull records from
  * @param colNum        The column that is being sorted on
- * @param limit         The first values to be read and sorted - not like a true limit at the moment
- * @param compareFn     The function being used to make comparisons between row data
+ * @param limit         The first values to be read and sorted - not like a true
+ * limit at the moment
+ * @param compareFn     The function being used to make comparisons between row
+ * data
  */
-embedDBOperator* createOrderByOperator(embedDBState* dbState, embedDBOperator* input, int8_t colNum, int32_t limit, int8_t (*compareFn)(void* a, void* b));
+embedDBOperator* createOrderByOperator(embedDBState*    dbState,
+                                       embedDBOperator* input, int8_t colNum,
+                                       int32_t limit,
+                                       int8_t (*compareFn)(void* a, void* b));
 
 //////////////////////////////////
 // Prebuilt aggregate functions //
 //////////////////////////////////
 
 /**
- * @brief	Creates an aggregate function to count the number of records in a group. To be used in combination with an embedDBOperator produced by createAggregateOperator
+ * @brief	Creates an aggregate function to count the number of records in
+ * a group. To be used in combination with an embedDBOperator produced by
+ * createAggregateOperator
  */
 embedDBAggregateFunc* createCountAggregate();
 
 /**
- * @brief	Creates an aggregate function to sum a column over a group. To be used in combination with an embedDBOperator produced by createAggregateOperator. Column must be no bigger than 8 bytes.
- * @param	colNum	The index (zero-indexed) of the column which you want to sum. Column must be <= 8 bytes
+ * @brief	Creates an aggregate function to sum a column over a group. To
+ * be used in combination with an embedDBOperator produced by
+ * createAggregateOperator. Column must be no bigger than 8 bytes.
+ * @param	colNum	The index (zero-indexed) of the column which you want to
+ * sum. Column must be <= 8 bytes
  */
 embedDBAggregateFunc* createSumAggregate(uint8_t colNum);
 
 /**
  * @brief	Creates an aggregate function to find the min value in a group
  * @param	colNum	The zero-indexed column to find the min of
- * @param	colSize	The size, in bytes, of the column to find the min of. Negative number represents a signed number, positive is unsigned.
+ * @param	colSize	The size, in bytes, of the column to find the min of.
+ * Negative number represents a signed number, positive is unsigned.
  */
 embedDBAggregateFunc* createMinAggregate(uint8_t colNum, int8_t colSize);
 
 /**
  * @brief	Creates an aggregate function to find the max value in a group
  * @param	colNum	The zero-indexed column to find the max of
- * @param	colSize	The size, in bytes, of the column to find the max of. Negative number represents a signed number, positive is unsigned.
+ * @param	colSize	The size, in bytes, of the column to find the max of.
+ * Negative number represents a signed number, positive is unsigned.
  */
 embedDBAggregateFunc* createMaxAggregate(uint8_t colNum, int8_t colSize);
 
 /**
- * @brief	Creates an operator to compute the average of a column over a group. **WARNING: Outputs a floating point number that may not be compatible with other operators**
+ * @brief	Creates an operator to compute the average of a column over a
+ * group. **WARNING: Outputs a floating point number that may not be compatible
+ * with other operators**
  * @param	colNum			Zero-indexed column to take average of
- * @param	outputFloatSize	Size of float to output. Must be either 4 (float) or 8 (double)
+ * @param	outputFloatSize	Size of float to output. Must be either 4
+ * (float) or 8 (double)
  */
-embedDBAggregateFunc* createAvgAggregate(uint8_t colNum, int8_t outputFloatSize);
+embedDBAggregateFunc* createAvgAggregate(uint8_t colNum,
+                                         int8_t  outputFloatSize);
 
 #ifdef __cplusplus
 }

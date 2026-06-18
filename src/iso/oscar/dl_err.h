@@ -36,17 +36,17 @@
 // TYPES
 //
 
-typedef DL_UINT32	DL_ERR;
+typedef DL_UINT32 DL_ERR;
 
 /******************************************************************************/
 //
 // GENERIC ERROR CODES
 //
 
-#define kDL_ERR_NONE					(DL_ERR)0
+#define kDL_ERR_NONE (DL_ERR)0
 
-#define kDL_ERR_OTHER					(DL_ERR)1
-#define kDL_ERR_NOT_IMPLEMENTED			(DL_ERR)2
+#define kDL_ERR_OTHER           (DL_ERR)1
+#define kDL_ERR_NOT_IMPLEMENTED (DL_ERR)2
 
 /******************************************************************************/
 //

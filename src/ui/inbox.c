@@ -5,9 +5,9 @@
 #include "logger.h"
 
 #define INPUT_BOX_HEIGHT 46
-#define INPUT_BOX_WIDTH 270
+#define INPUT_BOX_WIDTH  270
 
-void ui_inBox_create(InputBox *inBox, lv_obj_t *parent) {
+void ui_inBox_create(InputBox* inBox, lv_obj_t* parent) {
     RETURN_IF_NULL(inBox, ;);
     inBox->main = lv_obj_create(disp()->screen);
     LV_SET_SIZE(inBox->main, INPUT_BOX_WIDTH, INPUT_BOX_HEIGHT);

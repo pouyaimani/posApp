@@ -5,9 +5,7 @@
 
 #include "../ped.h"
 
-OOP_CLASS(PedT3Rtos) {
-    OOP_EXTENDS(Ped);
-};
+OOP_CLASS(PedT3Rtos) { OOP_EXTENDS(Ped); };
 
 OOP_CTOR(PedT3Rtos);
 

@@ -6,10 +6,10 @@
 #include "event.h"
 
 OOP_CLASS(Alphebatic) {
-    OOP_METHOD(void , addKey, char *,size_t , Key_t);
-    OOP_METHOD(Alphebatic *, reset);
+    OOP_METHOD(void, addKey, char*, size_t, Key_t);
+    OOP_METHOD(Alphebatic*, reset);
 };
 
-Alphebatic *alphebatic();
+Alphebatic* alphebatic();
 
 #endif

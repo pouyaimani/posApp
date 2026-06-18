@@ -10,27 +10,26 @@ OOP_DECLARE_CLASS(Event);
 /* Callback type */
 typedef void (*CoreCallback)(void);
 
-OOP_CLASS(Core)
-{
+OOP_CLASS(Core) {
     OOP_METHOD(void, exec);
-    OOP_METHOD(void, init, State *);
+    OOP_METHOD(void, init, State*);
     OOP_METHOD(void, runCycle);
-    OOP_METHOD(void, raiseEvent, Event *);
-    OOP_METHOD(void, goTo, State *);
-    OOP_METHOD(void, goToSub, State *);
+    OOP_METHOD(void, raiseEvent, Event*);
+    OOP_METHOD(void, goTo, State*);
+    OOP_METHOD(void, goToSub, State*);
     OOP_METHOD(void, registerCallback, CoreCallback cb);
-    State *current;
-    State *next;
+    State* current;
+    State* next;
 
-    Event *queue[16];
-    size_t qsize;
+    Event*       queue[16];
+    size_t       qsize;
     CoreCallback callbacks[16];
-    size_t cbSize;
+    size_t       cbSize;
 };
 
 OOP_CTOR(Core);
 
 /* singleton */
-Core *smCore(void);
+Core* smCore(void);
 
 #endif

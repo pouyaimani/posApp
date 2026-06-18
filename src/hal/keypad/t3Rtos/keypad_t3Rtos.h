@@ -5,9 +5,7 @@
 
 #include "../keypad.h"
 
-OOP_CLASS(KeypadT3Rtos) {
-    OOP_EXTENDS(Keypad);
-};
+OOP_CLASS(KeypadT3Rtos) { OOP_EXTENDS(Keypad); };
 
 OOP_CTOR(KeypadT3Rtos);
 

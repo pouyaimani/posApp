@@ -2,20 +2,17 @@
 
 #include "lvgl.h"
 
-typedef enum {
-    SWIPE_DOWN,
-    SWIPE_UP
-} SwipeDirection;
+typedef enum { SWIPE_DOWN, SWIPE_UP } SwipeDirection;
 
 #define SWIPE_MAX_ROWS 8
 
 typedef struct {
 
-    lv_obj_t *root;
+    lv_obj_t* root;
 
-    lv_obj_t *rows[SWIPE_MAX_ROWS];
+    lv_obj_t* rows[SWIPE_MAX_ROWS];
 
-    lv_timer_t *timer;
+    lv_timer_t* timer;
 
     uint8_t count;
 
@@ -25,20 +22,10 @@ typedef struct {
 
 } SwipeHint;
 
-void swipeHintCreate(
-    SwipeHint *,
-    lv_obj_t *,
-    SwipeDirection,
-    uint8_t count);
+void swipeHintCreate(SwipeHint*, lv_obj_t*, SwipeDirection, uint8_t count);
 
-void swipeHintShow(
-    SwipeHint *);
+void swipeHintShow(SwipeHint*);
 
-void swipeHintHide(
-    SwipeHint *);
+void swipeHintHide(SwipeHint*);
 
-void swipeHintAlign(
-    SwipeHint *,
-    lv_align_t,
-    int32_t,
-    int32_t);
+void swipeHintAlign(SwipeHint*, lv_align_t, int32_t, int32_t);

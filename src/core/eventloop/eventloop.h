@@ -14,12 +14,13 @@ typedef enum EvLoopErr_t {
     EV_LOOP_CHECKER_NOT_FOUND
 } EvLoopErr_t;
 
-// NOTE: Do not create object of Eventloop yourself, instead use getEventloop() function
+// NOTE: Do not create object of Eventloop yourself, instead use getEventloop()
+// function
 OOP_DECLARE_CLASS(Eventloop)
 
 OOP_CLASS(Eventloop) {
     EventChecker checkers[EVENTLOOP_MAX_CHECKERS];
-    size_t checkersCnt;
+    size_t       checkersCnt;
     OOP_METHOD(void, runCycle);
     OOP_METHOD(EvLoopErr_t, registerChecker, EventChecker);
     OOP_METHOD(EvLoopErr_t, unregisterChecker, EventChecker);
@@ -28,7 +29,6 @@ OOP_CLASS(Eventloop) {
 
 OOP_CTOR(Eventloop);
 
-Eventloop *getEventloop(void);
-
+Eventloop* getEventloop(void);
 
 #endif

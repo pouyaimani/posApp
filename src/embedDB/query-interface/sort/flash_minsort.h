@@ -9,16 +9,16 @@
 
 #include "external_sort.h"
 
-// #define BUFFER_OUTPUT_BLOCK_START_OFFSET  		OUTPUT_BLOCK_ID * es->page_size
-// #define BUFFER_OUTPUT_BLOCK_START_RECORD_OFFSET  OUTPUT_BLOCK_ID * es->page_size + BLOCK_HEADER_SIZE
-// Simplification if OUTPUT_BLOCK_ID is 0
-#define BUFFER_OUTPUT_BLOCK_START_OFFSET 0
+// #define BUFFER_OUTPUT_BLOCK_START_OFFSET  		OUTPUT_BLOCK_ID *
+// es->page_size #define BUFFER_OUTPUT_BLOCK_START_RECORD_OFFSET OUTPUT_BLOCK_ID
+// * es->page_size + BLOCK_HEADER_SIZE Simplification if OUTPUT_BLOCK_ID is 0
+#define BUFFER_OUTPUT_BLOCK_START_OFFSET        0
 #define BUFFER_OUTPUT_BLOCK_START_RECORD_OFFSET BLOCK_HEADER_SIZE
 
 #define INT_SIZE 4
 
 #if !defined(ARDUINO)
-#define true 1
+#define true  1
 #define false 0
 #endif
 
@@ -31,9 +31,11 @@ extern "C" {
 @param      iteratorState
                 Structure stores state of iterator (file info etc.)
 @param      tupleBuffer
-                Pre-allocated space to store one tuple (row) of input being sorted
+                Pre-allocated space to store one tuple (row) of input being
+sorted
 @param      outputFile
-                Already opened file to store sorting output (and in-progress temporary results)
+                Already opened file to store sorting output (and in-progress
+temporary results)
 @param      buffer
                 Pre-allocated space used by algorithm during sorting
 @param      bufferSizeInByes
@@ -47,16 +49,10 @@ extern "C" {
 @param      compareFn
                 Record comparison function for record ordering
 */
-int flash_minsort(
-    void *iteratorState,
-    void *tupleBuffer,
-    void *outputFile,
-    char *buffer,
-    int bufferSizeInBytes,
-    external_sort_t *es,
-    long *resultFilePtr,
-    metrics_t *metric,
-    int8_t (*compareFn)(void *a, void *b));
+int flash_minsort(void* iteratorState, void* tupleBuffer, void* outputFile,
+                  char* buffer, int bufferSizeInBytes, external_sort_t* es,
+                  long* resultFilePtr, metrics_t* metric,
+                  int8_t (*compareFn)(void* a, void* b));
 
 /*
 typedef struct OpState
@@ -73,13 +69,13 @@ typedef struct OpState
 } OpState;
 */
 typedef struct MinSortState {
-    int8_t *buffer;
-    int8_t *min;
-    int8_t *min_initialized;
+    int8_t* buffer;
+    int8_t* min;
+    int8_t* min_initialized;
 
     uint64_t nextIdx;
-    void *current;  // current smallest value
-    void *next;     // keep track of next smallest value for next iteration
+    void*    current; // current smallest value
+    void*    next;    // keep track of next smallest value for next iteration
     uint32_t regionIdx;
     uint32_t lastBlockIdx;
 
@@ -96,7 +92,7 @@ typedef struct MinSortState {
     uint32_t memoryAvailable;
     uint32_t numRegions;
 
-    void *iteratorState;
+    void* iteratorState;
 
     /* Statistics */
     uint32_t blocksRead;
@@ -105,9 +101,11 @@ typedef struct MinSortState {
     uint32_t bytesRead;
 } MinSortState;
 
-void init_MinSort(MinSortState *ms, external_sort_t *es, metrics_t *metric, int8_t (*compareFn)(void *a, void *b));
-char *next_MinSort(MinSortState *ms, external_sort_t *es, void *tupleBuffer, metrics_t *metric, int8_t (*compareFn)(void *a, void *b));
-void close_MinSort(MinSortState *ms, external_sort_t *es);
+void  init_MinSort(MinSortState* ms, external_sort_t* es, metrics_t* metric,
+                   int8_t (*compareFn)(void* a, void* b));
+char* next_MinSort(MinSortState* ms, external_sort_t* es, void* tupleBuffer,
+                   metrics_t* metric, int8_t (*compareFn)(void* a, void* b));
+void  close_MinSort(MinSortState* ms, external_sort_t* es);
 
 #if defined(__cplusplus)
 }

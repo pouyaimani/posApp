@@ -7,18 +7,12 @@
 
 #define TMS_VER_ARR_SIZE 32
 
-OOP_CLASS(TmsVersion) {
-    char data[TMS_VER_ARR_SIZE];
-};
+OOP_CLASS(TmsVersion) { char data[TMS_VER_ARR_SIZE]; };
 
-OOP_CLASS(TmsData) {
-    char curVersion;
-};
+OOP_CLASS(TmsData) { char curVersion; };
 
-OOP_CLASS(TMS) {
-    OOP_EXTENDS(State);
-};
+OOP_CLASS(TMS) { OOP_EXTENDS(State); };
 
-OOP_CTOR(TMS, State *parent, const char *name);
+OOP_CTOR(TMS, State* parent, const char* name);
 
 #endif

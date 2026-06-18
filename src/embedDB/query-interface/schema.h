@@ -11,16 +11,16 @@
  * @par 1.Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
- * @par 2.Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and/or other materials provided with the distribution.
+ * @par 2.Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
  *
- * @par 3.Neither the name of the copyright holder nor the names of its contributors
- *  may be used to endorse or promote products derived from this software without
- *  specific prior written permission.
+ * @par 3.Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
  *
- * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
  *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
@@ -42,36 +42,46 @@ extern "C" {
 
 #include <stdint.h>
 
-#define embedDB_COLUMN_SIGNED 0
-#define embedDB_COLUMN_UNSIGNED 1
+#define embedDB_COLUMN_SIGNED          0
+#define embedDB_COLUMN_UNSIGNED        1
 #define embedDB_IS_COL_SIGNED(colSize) (colSize < 0 ? 1 : 0)
 
 typedef enum {
-    embedDB_COLUMN_INT32 = 0,
+    embedDB_COLUMN_INT32  = 0,
     embedDB_COLUMN_UINT32 = 1,
-    embedDB_COLUMN_INT64 = 2,
+    embedDB_COLUMN_INT64  = 2,
     embedDB_COLUMN_UINT64 = 3,
-    embedDB_COLUMN_FLOAT = 4,
+    embedDB_COLUMN_FLOAT  = 4,
     embedDB_COLUMN_DOUBLE = 5
 } ColumnType;
 
 /**
- * @brief	A struct to desribe the number and sizes of attributes contained in the data of a embedDB table
+ * @brief	A struct to desribe the number and sizes of attributes contained
+ * in the data of a embedDB table
  */
 typedef struct {
-    uint8_t numCols;          // The number of columns in the table
-    int8_t* columnSizes;      // A list of the sizes, in bytes, of each column. Negative numbers indicate signed columns while positive indicate an unsigned column
-    ColumnType* columnTypes;  // A list of the types of each column
+    uint8_t numCols;         // The number of columns in the table
+    int8_t* columnSizes;     // A list of the sizes, in bytes, of each column.
+                             // Negative numbers indicate signed columns while
+                             // positive indicate an unsigned column
+    ColumnType* columnTypes; // A list of the types of each column
 } embedDBSchema;
 
 /**
- * @brief	Create an embedDBSchema from a list of column sizes including both key and data
- * @param	numCols			The total number of key & data columns in table
- * @param	colSizes		An array with the size of each column. Max size is 127
- * @param	colSignedness	An array describing if the data in the column is signed or unsigned. Use the defined constants embedDB_COLUMNN_SIGNED or embedDB_COLUMN_UNSIGNED
- * @param   colTypes        An array describing the type of the column. Use the ColumnType enum
+ * @brief	Create an embedDBSchema from a list of column sizes including
+ * both key and data
+ * @param	numCols			The total number of key & data columns
+ * in table
+ * @param	colSizes		An array with the size of each column.
+ * Max size is 127
+ * @param	colSignedness	An array describing if the data in the column is
+ * signed or unsigned. Use the defined constants embedDB_COLUMNN_SIGNED or
+ * embedDB_COLUMN_UNSIGNED
+ * @param   colTypes        An array describing the type of the column. Use the
+ * ColumnType enum
  */
-embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes, int8_t* colSignedness, ColumnType* colTypes);
+embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes,
+                                   int8_t* colSignedness, ColumnType* colTypes);
 
 /**
  * @brief	Free a schema. Sets the schema pointer to NULL.
@@ -79,7 +89,8 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes, int8_t* co
 void embedDBFreeSchema(embedDBSchema** schema);
 
 /**
- * @brief	Uses schema to determine the length of buffer to allocate and callocs that space
+ * @brief	Uses schema to determine the length of buffer to allocate and
+ * callocs that space
  */
 void* createBufferFromSchema(embedDBSchema* schema);
 

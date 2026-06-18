@@ -6,11 +6,11 @@
 #include "logger.h"
 #include "lvgl.h"
 
-static u8 *gBuf = NULL;
+static u8* gBuf = NULL;
 
-u32 drawFunc(void *arg) {
-    PRINT_DATA *data = (PRINT_DATA *)arg;
-    data->buf = gBuf;
+u32 drawFunc(void* arg) {
+    PRINT_DATA* data = (PRINT_DATA*)arg;
+    data->buf        = gBuf;
     return DRAW_DATA_OK;
 }
 
@@ -60,8 +60,7 @@ PrinterErr_t translateSdkErr(int err) {
     return error;
 }
 
-static void init(Printer* dev) {
-}
+static void init(Printer* dev) {}
 
 static PrinterErr_t open(Printer* dev) {
     int ret = translateSdkErr(sdkPrintOpen());
@@ -88,32 +87,33 @@ static PrinterErr_t setGray(Printer* priter, PrinterGrayLevel_t level) {
 
 PrinterGrayLevel_t getGray(Printer* priter) {
     PRINTER_GRAY_LEVEL g = sdkPrintGetGray();
-    PrinterGrayLevel_t gray = g == SDK_PRINT_GRAY_M ? PRNT_GRAY_LVL_MEDIUM : PRNT_GRAY_LVL_LOW;
+    PrinterGrayLevel_t gray =
+        g == SDK_PRINT_GRAY_M ? PRNT_GRAY_LVL_MEDIUM : PRNT_GRAY_LVL_LOW;
     gray = g == SDK_PRINT_GRAY_L ? PRNT_GRAY_LVL_LOW : PRNT_GRAY_LVL_HIGH;
     return gray;
 }
 
-static PrinterErr_t printBmp(Printer* priter, uint8_t *bmp, uint16_t width, uint16_t height) {
+static PrinterErr_t printBmp(Printer* priter, uint8_t* bmp, uint16_t width,
+                             uint16_t height) {
     PrintFormat format = {0};
-    gBuf = bmp;
+    gBuf               = bmp;
     for (size_t i = 0; i < (width >> 3) * height; i++) {
         gBuf[i] = ~gBuf[i];
     }
     sdkPrintSetDrawFunc(drawFunc);
-    int ret = sdkPrintImage(&format, 
-        (const u8 *)gBuf, width, height);
-    ret = sdkPrintStart();
+    int ret = sdkPrintImage(&format, (const u8*)gBuf, width, height);
+    ret     = sdkPrintStart();
     return translateSdkErr(ret);
 }
 
 OOP_CTOR(PrinterT3Rtos) {
-    self->base.vtable.init = init;
-    self->base.vtable.open = open;
-    self->base.vtable.close = close;
+    self->base.vtable.init      = init;
+    self->base.vtable.open      = open;
+    self->base.vtable.close     = close;
     self->base.vtable.getStatus = getStatus;
-    self->base.vtable.setGray = setGray;
-    self->base.vtable.getGray = getGray;
-    self->base.vtable.printBmp = printBmp;
+    self->base.vtable.setGray   = setGray;
+    self->base.vtable.getGray   = getGray;
+    self->base.vtable.printBmp  = printBmp;
 }
 
 #endif

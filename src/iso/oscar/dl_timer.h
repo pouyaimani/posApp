@@ -50,24 +50,23 @@
 // TYPES
 //
 
-struct DL_TIMER_S
-{
-	DL_UINT32 sec;
-	DL_UINT32 msec;
+struct DL_TIMER_S {
+    DL_UINT32 sec;
+    DL_UINT32 msec;
 };
 typedef struct DL_TIMER_S DL_TIMER;
 
 /******************************************************************************/
 
 // Starts/Initialises the specified timer instance
-void DL_TIMER_Start ( DL_TIMER *oTimer );
+void DL_TIMER_Start(DL_TIMER* oTimer);
 
 /******************************************************************************/
 
 // Returns the duration of the specified timer (in Ms)
 // NB can be called multiple times, to obtain durations at different points
 //    for the same timer instance
-DL_UINT32 DL_TIMER_GetDuration ( DL_TIMER iTimer );
+DL_UINT32 DL_TIMER_GetDuration(DL_TIMER iTimer);
 
 /******************************************************************************/
 

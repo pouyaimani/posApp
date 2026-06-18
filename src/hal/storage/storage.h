@@ -9,49 +9,46 @@
 #include "common.h"
 
 #define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
+#define STR(x)        STR_HELPER(x)
 
-#define BEGIN_DSC_ARRAY \
-    enum { __dsc_base = __COUNTER__ + 1 }
+#define BEGIN_DSC_ARRAY enum { __dsc_base = __COUNTER__ + 1 }
 
 #define NEXT_PROP STR(__COUNTER__ - __dsc_base)
 
-#define DSC_BYTE(field, def) \
-    { NEXT_PROP, T_BYTE, (0), (sizeof(field)), (def), &(field) }
+#define DSC_BYTE(field, def)                                                   \
+    {NEXT_PROP, T_BYTE, (0), (sizeof(field)), (def), &(field)}
 
-#define DSC_INT(field, def) \
-    { NEXT_PROP, T_INT, (0), (sizeof(field)), (def), &(field) }
+#define DSC_INT(field, def)                                                    \
+    {NEXT_PROP, T_INT, (0), (sizeof(field)), (def), &(field)}
 
-#define DSC_STR_BUF(field, def) \
-    { NEXT_PROP, T_STRING, (0), sizeof(field) - 1, (def), (field) }
+#define DSC_STR_BUF(field, def)                                                \
+    {NEXT_PROP, T_STRING, (0), sizeof(field) - 1, (def), (field)}
 
-#define DSC_BIN(field, min, max, def) \
-    { NEXT_PROP, T_BINARY, (min), (max), (def), (void*)(field) }
+#define DSC_BIN(field, min, max, def)                                          \
+    {NEXT_PROP, T_BINARY, (min), (max), (def), (void*)(field)}
 
-typedef enum{
-    T_INT = 0,
-    T_BYTE,
-    T_STRING,
-    T_BINARY
-} DataType;
+typedef enum { T_INT = 0, T_BYTE, T_STRING, T_BINARY } DataType;
 
 typedef struct {
-    const char *key;
-    DataType type;
-    uint16_t minLen;
-    uint16_t maxLen;
-    const char *defaultValue;
-    void *address;
+    const char* key;
+    DataType    type;
+    uint16_t    minLen;
+    uint16_t    maxLen;
+    const char* defaultValue;
+    void*       address;
 } DataDescriptor;
 
-OOP_CLASS(Storage){
-    OOP_METHOD(int8_t, load, DataDescriptor *dsc, size_t itemsCount, const char *addr);
-    OOP_METHOD(int8_t, save, DataDescriptor *dsc, size_t itemsCount, const char *addr);
-    OOP_METHOD(int8_t, reset, DataDescriptor *dsc, size_t itemsCount, const char *addr);
+OOP_CLASS(Storage) {
+    OOP_METHOD(int8_t, load, DataDescriptor* dsc, size_t itemsCount,
+               const char* addr);
+    OOP_METHOD(int8_t, save, DataDescriptor* dsc, size_t itemsCount,
+               const char* addr);
+    OOP_METHOD(int8_t, reset, DataDescriptor* dsc, size_t itemsCount,
+               const char* addr);
 };
 
 OOP_CTOR(Storage);
 
-Storage *storage(void);
+Storage* storage(void);
 
 #endif

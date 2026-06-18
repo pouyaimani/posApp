@@ -8,20 +8,20 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 
-static int *fixedAmountItem;
-static TerminalSettings *termStorage;
+static int*              fixedAmountItem;
+static TerminalSettings* termStorage;
 
-static SubState *amountList;
-static SubState *singleAmount;
-static SubState *variantAmount;
+static SubState* amountList;
+static SubState* singleAmount;
+static SubState* variantAmount;
 
-static Menu *amountListMenu;
+static Menu* amountListMenu;
 
 STATE_DEF_ENTER(AmountList) {
     amountListMenu = MEM_ALLOC(sizeof(*amountListMenu));
     ui_menu_create(amountListMenu, disp()->screen);
-    for (uint8_t i = 0; i < termStorage->amountListCnt ; i++) {
-        char str[32] = {0};
+    for (uint8_t i = 0; i < termStorage->amountListCnt; i++) {
+        char str[32]                = {0};
         char amount[AMOUNT_MAX_CNT] = {0};
         amountSeparator(termStorage->amountList[i], amount, AMOUNT_MAX_CNT);
         snprintf(str, sizeof(str), "[ %s ] [ %s ]", amount, "ریال");
@@ -31,43 +31,45 @@ STATE_DEF_ENTER(AmountList) {
 }
 
 STATE_DEF_ENTER(SingleAmount) {
-    GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+    GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT,
+               NULL);
 }
 
 STATE_DEF_ENTER(VariantAmount) {
-    char str[32] = {0};
+    char str[32]                = {0};
     char amount[AMOUNT_MAX_CNT] = {0};
     amountSeparator(termStorage->amountList[11], amount, AMOUNT_MAX_CNT);
     snprintf(str, sizeof(str), "(%s) %s", phraseGetDef(PHRASE_RIAL), amount);
-    GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, phraseGetDef(PHRASE_ENTER_COUNT), 4, IN_MODE_NUMBERS, NULL);
+    GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, phraseGetDef(PHRASE_ENTER_COUNT), 4,
+               IN_MODE_NUMBERS, NULL);
 }
 
 STATE_DEF_ENTER(FixedAmount) {
     if (*fixedAmountItem == FIXED_AMNT_LISTS) {
         SM_GOTO(amountList);
-    } else if (*fixedAmountItem == FIXED_AMNT_SINGLE){
+    } else if (*fixedAmountItem == FIXED_AMNT_SINGLE) {
         SM_GOTO(singleAmount);
-    } else if (*fixedAmountItem == FIXED_AMNT_VARIANT){
+    } else if (*fixedAmountItem == FIXED_AMNT_VARIANT) {
         SM_GOTO(variantAmount);
     }
 }
 
-OOP_CTOR(FixedAmount, State *parent, const char *name) {
+OOP_CTOR(FixedAmount, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(FixedAmount);
 
-    amountList = (SubState *)MEM_ALLOC(sizeof(SubState));
+    amountList = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, amountList, parent, "amount list");
     amountList->vtable.enter = STATE_ENTER(AmountList);
 
-    singleAmount = (SubState *)MEM_ALLOC(sizeof(SubState));
+    singleAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, singleAmount, parent, "single amount");
     singleAmount->vtable.enter = STATE_ENTER(SingleAmount);
 
-    variantAmount = (SubState *)MEM_ALLOC(sizeof(SubState));
+    variantAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, variantAmount, parent, "variant amount");
     variantAmount->vtable.enter = STATE_ENTER(VariantAmount);
 
     fixedAmountItem = &settings()->terminal.fixedAmountItem;
-    termStorage = &settings()->terminal;
+    termStorage     = &settings()->terminal;
 }

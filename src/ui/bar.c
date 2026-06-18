@@ -6,19 +6,19 @@
 #include "common.h"
 #include "font/myFont.h"
 
-void ui_bar_set_value(Bar *bar, int value) {
+void ui_bar_set_value(Bar* bar, int value) {
     RETURN_IF_NULL(bar, ;);
-    RETURN_IF_NOT(bar->max > 0, true, ; );
+    RETURN_IF_NOT(bar->max > 0, true, ;);
     bar->value = value > bar->max ? bar->max : value;
-    int pval = (bar->value * 100) / bar->max;
+    int pval   = (bar->value * 100) / bar->max;
     lv_bar_set_value(bar->bar, pval, LV_ANIM_ON);
 }
 
-void ui_bar_set_title(Bar *bar, const char *txt) {
+void ui_bar_set_title(Bar* bar, const char* txt) {
     LV_SET_TEXT(bar->title, txt);
 }
 
-void ui_bar_inc(Bar *bar) {
+void ui_bar_inc(Bar* bar) {
     RETURN_IF_NULL(bar, ;);
     if (bar->value < bar->max) {
         bar->value++;
@@ -26,7 +26,7 @@ void ui_bar_inc(Bar *bar) {
     ui_bar_set_value(bar, bar->value);
 }
 
-void ui_bar_dec(Bar *bar) {
+void ui_bar_dec(Bar* bar) {
     RETURN_IF_NULL(bar, ;);
     if (bar->value > bar->min) {
         bar->value--;
@@ -34,28 +34,28 @@ void ui_bar_dec(Bar *bar) {
     ui_bar_set_value(bar, bar->value);
 }
 
-void ui_bar_show(Bar *bar) {
+void ui_bar_show(Bar* bar) {
     RETURN_IF_NULL(bar, ;);
     LV_SHOW(bar->bar);
     LV_SHOW(bar->title);
 }
 
-void ui_bar_hide(Bar *bar) {
+void ui_bar_hide(Bar* bar) {
     RETURN_IF_NULL(bar, ;);
     LV_HIDE(bar->bar);
     LV_HIDE(bar->title);
 }
 
-void ui_bar_destroy(Bar *bar) {
+void ui_bar_destroy(Bar* bar) {
     RETURN_IF_NULL(bar, ;);
     lv_obj_delete(bar->bar);
     lv_obj_delete(bar->title);
 }
 
-void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max) {
+void ui_bar_create(Bar* bar, lv_obj_t* parent, int min, int max) {
     RETURN_IF_NULL(bar, ;);
-    bar->max = max;
-    bar->min = min;
+    bar->max   = max;
+    bar->min   = min;
     bar->value = min;
 
     static lv_style_t style_bg;
@@ -74,7 +74,7 @@ void ui_bar_create(Bar *bar, lv_obj_t * parent, int min, int max) {
     lv_style_set_radius(&style_indic, 3);
 
     bar->bar = lv_bar_create(parent);
-    lv_obj_remove_style_all(bar->bar);  /*To have a clean start*/
+    lv_obj_remove_style_all(bar->bar); /*To have a clean start*/
     lv_obj_add_style(bar->bar, &style_bg, 0);
     lv_obj_add_style(bar->bar, &style_indic, LV_PART_INDICATOR);
 

@@ -15,10 +15,10 @@ extern "C" {
 #endif
 
 /* File functions */
-embedDBFileInterface *getFileInterface();
+embedDBFileInterface* getFileInterface();
 
-void *setupFile(const char *filename);
-void tearDownFile(void *file);
+void* setupFile(const char* filename);
+void  tearDownFile(void* file);
 
 #ifdef __cplusplus
 }

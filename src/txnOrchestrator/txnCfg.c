@@ -5,33 +5,20 @@
 #include "byteArray.h"
 #include "phrases/phrases.h"
 
-static int buildLogOn(
-    ByteArray *ba) {
-    return isoBuild(MTI_CFG, ba);
-}
+static int buildLogOn(ByteArray* ba) { return isoBuild(MTI_CFG, ba); }
 
-static int parseLogOn(
-    ByteArray *ba) {
-    return isoParse(MTI_CFG, ba);
-}
+static int parseLogOn(ByteArray* ba) { return isoParse(MTI_CFG, ba); }
 
 const TxnFlowConfig cfgTxn = {
 
-    .build =
-        buildLogOn,
+    .build = buildLogOn,
 
-    .parse =
-        parseLogOn,
+    .parse = parseLogOn,
 
-    .done =
-        commonDone,
+    .done = commonDone,
 
-    .onConnecting =
-        showConnecting,
+    .onConnecting = showConnecting,
 
-    .onSending =
-        showSending,
+    .onSending = showSending,
 
-    .onReceiving =
-        showReceiving
-};
+    .onReceiving = showReceiving};

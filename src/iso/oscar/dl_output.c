@@ -33,51 +33,46 @@
 // CONSTANTS
 //
 
-#define kDL_OUTPUT_HEX_COLS		16
+#define kDL_OUTPUT_HEX_COLS 16
 
 /******************************************************************************/
 
-void DL_OUTPUT_Hex ( FILE           *iOutFile,
-					 const char     *_iEolStr,
-					 const DL_UINT8 *iPtr,
-					 DL_UINT32       iNumBytes )
-{
-	DL_UINT32  rowIdx,
-		       colIdx;
-	char      *tmpEOL  = _iEolStr == NULL ? "\n" : _iEolStr;
+void DL_OUTPUT_Hex(FILE* iOutFile, const char* _iEolStr, const DL_UINT8* iPtr,
+                   DL_UINT32 iNumBytes) {
+    DL_UINT32 rowIdx, colIdx;
+    char*     tmpEOL = _iEolStr == NULL ? "\n" : _iEolStr;
 
-	for ( rowIdx=0 ; rowIdx<(iNumBytes+kDL_OUTPUT_HEX_COLS-1)/kDL_OUTPUT_HEX_COLS ; rowIdx++ )
-	{
-		fprintf(iOutFile,"%08lxh ",rowIdx*kDL_OUTPUT_HEX_COLS);
+    for (rowIdx = 0;
+         rowIdx < (iNumBytes + kDL_OUTPUT_HEX_COLS - 1) / kDL_OUTPUT_HEX_COLS;
+         rowIdx++) {
+        fprintf(iOutFile, "%08lxh ", rowIdx * kDL_OUTPUT_HEX_COLS);
 
-		/* output hex characters */
-		for ( colIdx=0 ; colIdx<kDL_OUTPUT_HEX_COLS ; colIdx++ )
-		{
-			DL_UINT32 offset = (rowIdx * kDL_OUTPUT_HEX_COLS) + colIdx;
+        /* output hex characters */
+        for (colIdx = 0; colIdx < kDL_OUTPUT_HEX_COLS; colIdx++) {
+            DL_UINT32 offset = (rowIdx * kDL_OUTPUT_HEX_COLS) + colIdx;
 
-			if ( offset >= iNumBytes )
-				fprintf(iOutFile,"   ");
-			else
-				fprintf(iOutFile,"%02x ",(int)(iPtr[offset]));
-		} /* end-for (colIdx) */
+            if (offset >= iNumBytes)
+                fprintf(iOutFile, "   ");
+            else
+                fprintf(iOutFile, "%02x ", (int)(iPtr[offset]));
+        } /* end-for (colIdx) */
 
-		/* output ascii characters (if printable) */
-		for ( colIdx=0 ; colIdx<kDL_OUTPUT_HEX_COLS ; colIdx++ )
-		{
-			DL_UINT32 offset = (rowIdx * kDL_OUTPUT_HEX_COLS) + colIdx;
+        /* output ascii characters (if printable) */
+        for (colIdx = 0; colIdx < kDL_OUTPUT_HEX_COLS; colIdx++) {
+            DL_UINT32 offset = (rowIdx * kDL_OUTPUT_HEX_COLS) + colIdx;
 
-			if ( offset >= iNumBytes )
-				fprintf(iOutFile," ");
-			else if ( (iPtr[offset] >= 33) && (iPtr[offset] <= 126) )
-				fprintf(iOutFile,"%c",(char)(iPtr[offset]));
-			else
-				fprintf(iOutFile,".");
-		} /* end-for (colIdx) */
+            if (offset >= iNumBytes)
+                fprintf(iOutFile, " ");
+            else if ((iPtr[offset] >= 33) && (iPtr[offset] <= 126))
+                fprintf(iOutFile, "%c", (char)(iPtr[offset]));
+            else
+                fprintf(iOutFile, ".");
+        } /* end-for (colIdx) */
 
-		fprintf(iOutFile,"%s",tmpEOL);
-	} /* end-for (rowIdx) */
+        fprintf(iOutFile, "%s", tmpEOL);
+    } /* end-for (rowIdx) */
 
-	return;
+    return;
 }
 
 /******************************************************************************/

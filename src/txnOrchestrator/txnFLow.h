@@ -52,18 +52,13 @@ typedef struct {
 
 /* ================= Callbacks ================= */
 
-typedef int (*TxnBuildFn)(
-    ByteArray *ba);
+typedef int (*TxnBuildFn)(ByteArray* ba);
 
-typedef int (*TxnParseFn)(
-    ByteArray *ba);
+typedef int (*TxnParseFn)(ByteArray* ba);
 
-typedef void (*TxnFlowDone)(
-    TxnFlow *flow,
-    const TxnFlowStatus *status);
+typedef void (*TxnFlowDone)(TxnFlow* flow, const TxnFlowStatus* status);
 
-typedef void (*TxnFlowStageCb)(
-    TxnFlow *flow);
+typedef void (*TxnFlowStageCb)(TxnFlow* flow);
 
 /* ================= Config ================= */
 
@@ -87,52 +82,42 @@ typedef struct {
 
 struct TxnFlow {
 
-    State *owner;
+    State* owner;
 
-    NthTransaction *tx;
+    NthTransaction* tx;
 
-    const TxnFlowConfig *cfg;
+    const TxnFlowConfig* cfg;
 
     TxnFlowStage stage;
 
-    void *userData;
+    void* userData;
 };
 
-void txnFlowInit(
-    TxnFlow *flow);
+void txnFlowInit(TxnFlow* flow);
 
-bool txnRun(
-    TxnFlow *flow,
-    State *owner,
-    const char *host,
-    uint16_t port,
-    const TxnFlowConfig *cfg);
+bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
+            const TxnFlowConfig* cfg);
 
-void txnFlowRelease(
-    TxnFlow *flow);
-
+void txnFlowRelease(TxnFlow* flow);
 
 /*********************************************************************************************
  *                                                                                           *
- *                               Transactions config                                         * 
+ *                               Transactions config              *
  *                                                                                           *
  ********************************************************************************************/
 
 extern const TxnFlowConfig logOnTxn;
 extern const TxnFlowConfig cfgTxn;
 
-
 /*********************************************************************************************
  *                                                                                           *
- *                               Transactions common                                         * 
+ *                               Transactions common              *
  *                                                                                           *
  ********************************************************************************************/
 
-void showConnecting(TxnFlow *f);
-void showSending(TxnFlow *f);
-void showReceiving(TxnFlow *f);
-void commonDone(
-    TxnFlow *flow,
-    const TxnFlowStatus *st);
+void showConnecting(TxnFlow* f);
+void showSending(TxnFlow* f);
+void showReceiving(TxnFlow* f);
+void commonDone(TxnFlow* flow, const TxnFlowStatus* st);
 
 #endif

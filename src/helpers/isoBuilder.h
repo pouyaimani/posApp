@@ -6,19 +6,16 @@
 #include "byteArray.h"
 #include "txn.h"
 
-Error_t isoBuild(MTI_t mti, ByteArray *buf);
-RespCode_t isoParse(MTI_t mti, ByteArray *buf);
+Error_t    isoBuild(MTI_t mti, ByteArray* buf);
+RespCode_t isoParse(MTI_t mti, ByteArray* buf);
 
-typedef int8_t (*TxnIsoBuilder)(
-    ByteArray *);
-typedef int8_t (*TxnIsoParser)(
-    ByteArray *);
-
+typedef int8_t (*TxnIsoBuilder)(ByteArray*);
+typedef int8_t (*TxnIsoParser)(ByteArray*);
 
 typedef struct {
-    MTI_t           mti;
-    TxnIsoBuilder   builder;
-    TxnIsoParser    parser;
+    MTI_t         mti;
+    TxnIsoBuilder builder;
+    TxnIsoParser  parser;
 } IsoTransaction;
 
 #endif

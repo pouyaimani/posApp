@@ -7,7 +7,7 @@
 #include "sdkemvapp.h"
 #include "sdkUtils.h"
 
-static SDK_ICC_PARAM param;
+static SDK_ICC_PARAM    param;
 static SDK_ICC_CARDDATA data;
 
 static MagReaderErr_t translateSdkErr(int err) {
@@ -36,20 +36,18 @@ static void init(MagReader* mag) {
     sdkMagClear();
 }
 
-bool isLegalTrack2(s8 *track2)
-{
+bool isLegalTrack2(s8* track2) {
     u32 track2Len = 0;
 
     track2Len = track2 == NULL ? 0 : strlen(track2);
-    if ((track2Len > 0 && track2Len <= 12 * 2) || (track2Len > 19 * 2) || (track2Len == 0))
-    {
+    if ((track2Len > 0 && track2Len <= 12 * 2) || (track2Len > 19 * 2) ||
+        (track2Len == 0)) {
         return false;
     }
     return true;
 }
 
-static s32 libTransAdjustTrack(s8 *track1, s8 *track2, s8 *track3)
-{
+static s32 libTransAdjustTrack(s8* track1, s8* track2, s8* track3) {
     u32 track1Len = 0, track2Len = 0, track3Len = 0;
 
     track1Len = track1 == NULL ? 0 : strlen(track1);
@@ -60,9 +58,12 @@ static s32 libTransAdjustTrack(s8 *track1, s8 *track2, s8 *track3)
         return SDK_MAG_ERR_INPUT;
     }
 
-    if (track1Len > 76) track1[76] = '\0';
-    if (track2Len > 19 * 2) track2[38] = '\0';
-    if (track3Len > 52 * 2) track3[104] = '\0';
+    if (track1Len > 76)
+        track1[76] = '\0';
+    if (track2Len > 19 * 2)
+        track2[38] = '\0';
+    if (track3Len > 52 * 2)
+        track3[104] = '\0';
 
     return SDK_OK;
 }
@@ -70,7 +71,9 @@ static s32 libTransAdjustTrack(s8 *track1, s8 *track2, s8 *track3)
 static void read(MagReader* mag) {
     int ret = sdkMagReadData(&param, &data);
     if (ret == SDK_OK) {
-        ret = libTransAdjustTrack((s8 *)data.asTrack1Data, (s8 *)data.asTrack2Data, (s8 *)data.asTrack3Data);
+        ret =
+            libTransAdjustTrack((s8*)data.asTrack1Data, (s8*)data.asTrack2Data,
+                                (s8*)data.asTrack3Data);
         if (ret != SDK_OK) {
             mag->error = MAG_ERR_DATA_ERR;
             return;
@@ -83,8 +86,8 @@ static void read(MagReader* mag) {
 }
 
 OOP_CTOR(MagReaderT3Rtos) {
-    self->base.vtable.init = init;
-    self->base.vtable.read = read;
+    self->base.vtable.init      = init;
+    self->base.vtable.read      = read;
     self->base.data.track1.data = data.asTrack1Data;
     self->base.data.track2.data = data.asTrack2Data;
     self->base.data.track3.data = data.asTrack3Data;

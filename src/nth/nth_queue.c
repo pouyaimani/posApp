@@ -1,16 +1,12 @@
 #include "nth_queue.h"
 
-void nth_queueInit(NtEventQueue *q)
-{
-    q->head = 0;
-    q->tail = 0;
+void nth_queueInit(NtEventQueue* q) {
+    q->head  = 0;
+    q->tail  = 0;
     q->count = 0;
 }
 
-bool nth_queuePush(
-    NtEventQueue *q,
-    Event *ev)
-{
+bool nth_queuePush(NtEventQueue* q, Event* ev) {
     if (!q || !ev)
         return false;
 
@@ -27,10 +23,8 @@ bool nth_queuePush(
     return true;
 }
 
-Event *nth_queuePop(
-    NtEventQueue *q)
-{
-    Event *ev;
+Event* nth_queuePop(NtEventQueue* q) {
+    Event* ev;
 
     if (!q)
         return NULL;

@@ -5,14 +5,14 @@
 #include "logger.h"
 #include "settings/settings.h"
 
-Network *__network;
+Network* __network;
 
 #ifdef DEVICE_TRENDITT3RTOS
 #include "t3Rtos/network_t3Rtos.h"
 
 static void constructT3Rtos() {
     static NetworkT3Rtos obj;
-    __network = (Network *)&obj;
+    __network = (Network*)&obj;
     OOP_CALL_CTOR(Network, __network);
     OOP_CALL_CTOR(NetworkT3Rtos, &obj);
 }
@@ -22,25 +22,28 @@ static void constructT3Rtos() {
 static uint32_t tick;
 
 static NetError_t init() {
-    NetError_t err = OOP_CALL(network(), setRoute, settings()->terminal.netRoute);
+    NetError_t err =
+        OOP_CALL(network(), setRoute, settings()->terminal.netRoute);
     if (err != NET_ERR_OK) {
         return err;
     }
     err = OOP_CALL(network(), setAddr, settings()->server.mainServerIp,
-        settings()->server.mainServerPort);
+                   settings()->server.mainServerPort);
     return err;
 }
 
 static void checkSocketConnectStatus() {
     SocketStatus_t st = OOP_CALL(__network, getStatus, __network->id);
     if (st != NET_STATUS_CONNECTING) {
-        SocketConnectEvent *ev = (WifiEvent*)createEvent(SM_EVENT_SOCKET_CONNECT);
+        SocketConnectEvent* ev =
+            (WifiEvent*)createEvent(SM_EVENT_SOCKET_CONNECT);
         ev->isConnected = st == NET_STATUS_CONNECTED;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkSocketConnectStatus);
     }
     if (GET_TICK() - tick >= CONNECT_TIME_OUT) {
-        SocketConnectEvent *ev = (WifiEvent*)createEvent(SM_EVENT_SOCKET_CONNECT);
+        SocketConnectEvent* ev =
+            (WifiEvent*)createEvent(SM_EVENT_SOCKET_CONNECT);
         ev->isConnected = false;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkSocketConnectStatus);
@@ -50,28 +53,30 @@ static void checkSocketConnectStatus() {
 static int connect() {
     SocketAddr_t addr;
     addr.family = NET_AF_INET;
-    snprintf(addr.ip, 
-        sizeof(addr.ip), "%s", settings()->server.mainServerIp);
-    addr.port = settings()->server.mainServerPort;
+    snprintf(addr.ip, sizeof(addr.ip), "%s", settings()->server.mainServerIp);
+    addr.port         = settings()->server.mainServerPort;
     SocketType_t type = NET_STREAM;
-    __network->id = OOP_CALL(__network, create, &addr, type);
-    tick = GET_TICK();
+    __network->id     = OOP_CALL(__network, create, &addr, type);
+    tick              = GET_TICK();
     getEventloop()->registerChecker(checkSocketConnectStatus);
     return __network->id;
 }
 
 static void checkSocketReceive() {
     DEFINE_BYTE_ARRAY(recBuffer, REC_BUFF_LEN);
-    int ret = OOP_CALL(__network, receive, __network->id, recBuffer, REC_BUFF_LEN);
-    SocketReadyReadEvent *ev = (SocketReadyReadEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
+    int ret =
+        OOP_CALL(__network, receive, __network->id, recBuffer, REC_BUFF_LEN);
+    SocketReadyReadEvent* ev =
+        (SocketReadyReadEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
     ev->ba.data = ret > 0 ? recBuffer : NULL;
-    ev->ba.len = ret;
+    ev->ba.len  = ret;
     DISPATCH_EVENT(ev);
     getEventloop()->unregisterChecker(checkSocketReceive);
 }
 
-static int send(uint8_t *data, size_t len) {
-    int ret = OOP_CALL(__network, send, __network->id, data, len, SEND_TIME_OUT);
+static int send(uint8_t* data, size_t len) {
+    int ret =
+        OOP_CALL(__network, send, __network->id, data, len, SEND_TIME_OUT);
     if (ret == len) {
         getEventloop()->registerChecker(checkSocketReceive);
         tick = GET_TICK();
@@ -79,21 +84,19 @@ static int send(uint8_t *data, size_t len) {
     return ret;
 }
 
-static void disconnect() {
-    OOP_CALL(__network, close, __network->id);
-}
+static void disconnect() { OOP_CALL(__network, close, __network->id); }
 
 OOP_CTOR(Network) {
-    self->init = init;
-    self->connect = connect;
-    self->send = send;
+    self->init       = init;
+    self->connect    = connect;
+    self->send       = send;
     self->disconnect = disconnect;
 }
 
-Network *network() {
+Network* network() {
     CALL_ONCE(
 #ifdef DEVICE_TRENDITT3RTOS
-    constructT3Rtos();
+        constructT3Rtos();
 #else
 #error Deivce network is undefined. Make sure correct device is chosen and its network driver is developed.
 #endif

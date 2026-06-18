@@ -11,16 +11,16 @@
  * @par 1.Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
- * @par 2.Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and/or other materials provided with the distribution.
+ * @par 2.Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
  *
- * @par 3.Neither the name of the copyright holder nor the names of its contributors
- *  may be used to endorse or promote products derived from this software without
- *  specific prior written permission.
+ * @par 3.Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
  *
- * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
  *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
@@ -47,22 +47,29 @@
 #endif
 
 /**
- * @brief	Create an embedDBSchema from a list of column sizes including both key and data
+ * @brief	Create an embedDBSchema from a list of column sizes including
+ * both key and data
  * @param	numCols			The total number of columns in table
- * @param	colSizes		An array with the size of each column. Max size is 127
- * @param	colSignedness	An array describing if the data in the column is signed or unsigned. Use the defined constants embedDB_COLUMNN_SIGNED or embedDB_COLUMN_UNSIGNED
- * @param   colTypes        An array describing the type of the column. Use the defined constants embedDB_COLUMN_INT or embedDB_COLUMN_FLOAT
+ * @param	colSizes		An array with the size of each column.
+ * Max size is 127
+ * @param	colSignedness	An array describing if the data in the column is
+ * signed or unsigned. Use the defined constants embedDB_COLUMNN_SIGNED or
+ * embedDB_COLUMN_UNSIGNED
+ * @param   colTypes        An array describing the type of the column. Use the
+ * defined constants embedDB_COLUMN_INT or embedDB_COLUMN_FLOAT
  */
-embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes, int8_t* colSignedness, ColumnType* colTypes) {
+embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes,
+                                   int8_t*     colSignedness,
+                                   ColumnType* colTypes) {
     embedDBSchema* schema = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
-    schema->columnSizes = EMDB_MEM_ALLOC(numCols * sizeof(int8_t));
-    schema->numCols = numCols;
-    schema->columnTypes = EMDB_MEM_ALLOC(numCols * sizeof(ColumnType));
+    schema->columnSizes   = EMDB_MEM_ALLOC(numCols * sizeof(int8_t));
+    schema->numCols       = numCols;
+    schema->columnTypes   = EMDB_MEM_ALLOC(numCols * sizeof(ColumnType));
     memcpy(schema->columnTypes, colTypes, numCols * sizeof(ColumnType));
 
     uint16_t totalSize = 0;
     for (uint8_t i = 0; i < numCols; i++) {
-        int8_t sign = colSignedness[i];
+        int8_t  sign    = colSignedness[i];
         uint8_t colSize = colSizes[i];
         totalSize += colSize;
         if (colSize <= 0) {
@@ -77,7 +84,9 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes, int8_t* co
             schema->columnSizes[i] = colSizes[i];
         } else {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Must only use embedDB_COLUMN_SIGNED or embedDB_COLUMN_UNSIGNED to describe column signedness\n");
+            debug_log(
+                "ERROR: Must only use embedDB_COLUMN_SIGNED or "
+                "embedDB_COLUMN_UNSIGNED to describe column signedness\n");
 #endif
             return NULL;
         }
@@ -90,7 +99,8 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes, int8_t* co
  * @brief	Free a schema. Sets the schema pointer to NULL.
  */
 void embedDBFreeSchema(embedDBSchema** schema) {
-    if (*schema == NULL) return;
+    if (*schema == NULL)
+        return;
     EMDB_MEM_FREE((*schema)->columnSizes);
     EMDB_MEM_FREE((*schema)->columnTypes);
     EMDB_MEM_FREE(*schema);
@@ -98,15 +108,16 @@ void embedDBFreeSchema(embedDBSchema** schema) {
 }
 
 /**
- * @brief	Uses schema to determine the length of buffer to allocate and callocs that space
+ * @brief	Uses schema to determine the length of buffer to allocate and
+ * callocs that space
  */
 void* createBufferFromSchema(embedDBSchema* schema) {
     uint16_t totalSize = 0;
     for (uint8_t i = 0; i < schema->numCols; i++) {
         totalSize += abs(schema->columnSizes[i]);
     }
-    uint8_t *buf = EMDB_MEM_ALLOC(totalSize);
-    memset(buf, 0 , totalSize);
+    uint8_t* buf = EMDB_MEM_ALLOC(totalSize);
+    memset(buf, 0, totalSize);
     return buf;
 }
 
@@ -121,7 +132,7 @@ embedDBSchema* copySchema(const embedDBSchema* schema) {
 #endif
         return NULL;
     }
-    copy->numCols = schema->numCols;
+    copy->numCols     = schema->numCols;
     copy->columnSizes = EMDB_MEM_ALLOC(schema->numCols * sizeof(int8_t));
     copy->columnTypes = EMDB_MEM_ALLOC(schema->numCols * sizeof(ColumnType));
     if (copy->columnSizes == NULL || copy->columnTypes == NULL) {
@@ -130,8 +141,10 @@ embedDBSchema* copySchema(const embedDBSchema* schema) {
 #endif
         return NULL;
     }
-    memcpy(copy->columnSizes, schema->columnSizes, schema->numCols * sizeof(int8_t));
-    memcpy(copy->columnTypes, schema->columnTypes, schema->numCols * sizeof(ColumnType));
+    memcpy(copy->columnSizes, schema->columnSizes,
+           schema->numCols * sizeof(int8_t));
+    memcpy(copy->columnTypes, schema->columnTypes,
+           schema->numCols * sizeof(ColumnType));
     return copy;
 }
 

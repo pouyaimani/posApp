@@ -4,23 +4,20 @@
 #include "posplatform.h"
 #include <sdkTp.h>
 
-static void init(Touchpad* tp) {
-    sdkTPOpen();
-}
+static void init(Touchpad* tp) { sdkTPOpen(); }
 
 static void readTp(Touchpad* tp) {
     static TpEvent ev = {0};
-    tp->x = 0;
-    tp->y = 0;
+    tp->x             = 0;
+    tp->y             = 0;
 
     sdkTPRead(&ev);
 
-    if(ev.type == EVENT_TOUCH_HOLD || ev.type == EVENT_TOUCH_BEGIN) {
-        tp->x = ev.x;
-        tp->y = ev.y;
+    if (ev.type == EVENT_TOUCH_HOLD || ev.type == EVENT_TOUCH_BEGIN) {
+        tp->x     = ev.x;
+        tp->y     = ev.y;
         tp->state = TP_STATE_PRESS;
-    }
-    else {
+    } else {
         tp->state = TP_STATE_RELEASE;
     }
 }

@@ -29,49 +29,40 @@
 
 // allocates a chunk of memory
 // returns: error code
-DL_ERR DL_MEM_malloc ( DL_UINT32   iNumBytes,
-					   void      **oPtr )
-{
-	DL_ERR err = 0;
+DL_ERR DL_MEM_malloc(DL_UINT32 iNumBytes, void** oPtr) {
+    DL_ERR err = 0;
 
-	err = DL_MEM_callocWithInit(1,iNumBytes,oPtr);
+    err = DL_MEM_callocWithInit(1, iNumBytes, oPtr);
 
-	return err;
+    return err;
 }
 
 /* based on calloc - but does not indicate an error if 0 items requested
    NB also init's the array elements to 0 on success
    returns: 1 if ok / 0 otherwise */
-DL_ERR DL_MEM_callocWithInit ( DL_UINT32   numItems,
-							   size_t      itemSize,
-							   void      **out )
-{
-	DL_ERR err = 0;
+DL_ERR DL_MEM_callocWithInit(DL_UINT32 numItems, size_t itemSize, void** out) {
+    DL_ERR err = 0;
 
-	/* init output params */
-	*out = NULL;
+    /* init output params */
+    *out = NULL;
 
-	/* attempt to allocate memory - if numItems > 0 */
-	if ( numItems > 0 )
-	{
-		/* allocate array - with error check */
-		if ( (*out = (void*)MEM_ALLOC(numItems*itemSize)) == NULL )
-		{
-			err = kDL_ERR_MEM_ALLOC;
-		}
-		else /* init array elements (to 0) */
-		{
-			DL_MEM_memset(*out,0,numItems*itemSize);
-		}
-	}
+    /* attempt to allocate memory - if numItems > 0 */
+    if (numItems > 0) {
+        /* allocate array - with error check */
+        if ((*out = (void*)MEM_ALLOC(numItems * itemSize)) == NULL) {
+            err = kDL_ERR_MEM_ALLOC;
+        } else /* init array elements (to 0) */
+        {
+            DL_MEM_memset(*out, 0, numItems * itemSize);
+        }
+    }
 
-	/* cleanup (on error) */
-	if ( err )
-	{
-		DL_MEM_free(*out);
-	}
+    /* cleanup (on error) */
+    if (err) {
+        DL_MEM_free(*out);
+    }
 
-	return err;
+    return err;
 }
 
 /******************************************************************************/

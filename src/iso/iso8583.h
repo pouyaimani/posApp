@@ -10,11 +10,10 @@
 // Message Standards
 #define ISO8583 1
 
-#define MSG_STANDARD ISO8583
-#define MSG_BUFFER_SIZE 1000
+#define MSG_STANDARD     ISO8583
+#define MSG_BUFFER_SIZE  1000
 #define MSG_FIELDS_CONUT 64
-#define MSG_FIELD_SIZE 128
-
+#define MSG_FIELD_SIZE   128
 
 #define ISO_MAX_FIELDS     128
 #define ISO_MAX_FIELD_SIZE 256
@@ -24,70 +23,70 @@
 
 /* ===== Primary Bitmap Fields ===== */
 
-#define ELEMENT_BITMAP_SECONDARY                    1
-#define ELEMENT_PAN                                 2
-#define ELEMENT_PROCESSING_CODE                     3
-#define ELEMENT_AMOUNT_TRANSACTION                  4
-#define ELEMENT_AMOUNT_SETTLEMENT                   5
-#define ELEMENT_AMOUNT_CARDHOLDER_BILLING           6
-#define ELEMENT_TRANSMISSION_DATE_TIME              7
-#define ELEMENT_AMOUNT_CARDHOLDER_FEE               8
-#define ELEMENT_CONVERSION_RATE_SETTLEMENT          9
-#define ELEMENT_CONVERSION_RATE_BILLING             10
-#define ELEMENT_STAN                                11
-#define ELEMENT_TIME_LOCAL_TRANSACTION              12
-#define ELEMENT_DATE_LOCAL_TRANSACTION              13
-#define ELEMENT_DATE_EXPIRATION                     14
-#define ELEMENT_DATE_SETTLEMENT                     15
-#define ELEMENT_DATE_CONVERSION                     16
-#define ELEMENT_DATE_CAPTURE                        17
-#define ELEMENT_MERCHANT_TYPE                       18
-#define ELEMENT_ACQUIRING_COUNTRY_CODE              19
-#define ELEMENT_PAN_EXTENDED_COUNTRY_CODE           20
-#define ELEMENT_FORWARDING_COUNTRY_CODE             21
-#define ELEMENT_POS_ENTRY_MODE                      22
-#define ELEMENT_CARD_SEQUENCE_NUMBER                23
-#define ELEMENT_NETWORK_INTL_ID                     24
-#define ELEMENT_POS_CONDITION_CODE                  25
-#define ELEMENT_POS_PIN_CAPTURE_CODE                26
-#define ELEMENT_AUTH_ID_RESPONSE_LENGTH             27
-#define ELEMENT_AMOUNT_TRANSACTION_FEE              28
-#define ELEMENT_AMOUNT_SETTLEMENT_FEE               29
-#define ELEMENT_AMOUNT_TXN_PROCESSING_FEE           30
-#define ELEMENT_AMOUNT_SETTLEMENT_PROCESSING_FEE    31
-#define ELEMENT_ACQUIRING_INSTITUTION_ID            32
-#define ELEMENT_FORWARDING_INSTITUTION_ID           33
-#define ELEMENT_PAN_EXTENDED                        34
-#define ELEMENT_TRACK2                              35
-#define ELEMENT_TRACK3                              36
-#define ELEMENT_RETRIEVAL_REFERENCE_NUMBER          37
-#define ELEMENT_AUTH_ID_RESPONSE                    38
-#define ELEMENT_RESPONSE_CODE                       39
-#define ELEMENT_SERVICE_RESTRICTION_CODE            40
-#define ELEMENT_TERMINAL_ID                         41
-#define ELEMENT_CARD_ACCEPTOR_ID                    42
-#define ELEMENT_CARD_ACCEPTOR_NAME_LOCATION         43
-#define ELEMENT_ADDITIONAL_RESPONSE_DATA            44
-#define ELEMENT_TRACK1                              45
-#define ELEMENT_ADDITIONAL_DATA_ISO                 46
-#define ELEMENT_ADDITIONAL_DATA_NATIONAL            47
-#define ELEMENT_ADDITIONAL_DATA_PRIVATE             48
-#define ELEMENT_CURRENCY_CODE_TRANSACTION           49
-#define ELEMENT_CURRENCY_CODE_SETTLEMENT            50
-#define ELEMENT_CURRENCY_CODE_BILLING               51
-#define ELEMENT_PIN_DATA                            52
-#define ELEMENT_SECURITY_CONTROL_INFO               53
-#define ELEMENT_ADDITIONAL_AMOUNTS                  54
-#define ELEMENT_ICC_DATA                            55
-#define ELEMENT_RESERVED_ISO_56                     56
-#define ELEMENT_RESERVED_NATIONAL_57                57
-#define ELEMENT_RESERVED_NATIONAL_58                58
-#define ELEMENT_RESERVED_NATIONAL_59                59
-#define ELEMENT_RESERVED_PRIVATE_60                 60
-#define ELEMENT_RESERVED_PRIVATE_61                 61
-#define ELEMENT_RESERVED_PRIVATE_62                 62
-#define ELEMENT_RESERVED_PRIVATE_63                 63
-#define ELEMENT_MAC                                 64
+#define ELEMENT_BITMAP_SECONDARY                 1
+#define ELEMENT_PAN                              2
+#define ELEMENT_PROCESSING_CODE                  3
+#define ELEMENT_AMOUNT_TRANSACTION               4
+#define ELEMENT_AMOUNT_SETTLEMENT                5
+#define ELEMENT_AMOUNT_CARDHOLDER_BILLING        6
+#define ELEMENT_TRANSMISSION_DATE_TIME           7
+#define ELEMENT_AMOUNT_CARDHOLDER_FEE            8
+#define ELEMENT_CONVERSION_RATE_SETTLEMENT       9
+#define ELEMENT_CONVERSION_RATE_BILLING          10
+#define ELEMENT_STAN                             11
+#define ELEMENT_TIME_LOCAL_TRANSACTION           12
+#define ELEMENT_DATE_LOCAL_TRANSACTION           13
+#define ELEMENT_DATE_EXPIRATION                  14
+#define ELEMENT_DATE_SETTLEMENT                  15
+#define ELEMENT_DATE_CONVERSION                  16
+#define ELEMENT_DATE_CAPTURE                     17
+#define ELEMENT_MERCHANT_TYPE                    18
+#define ELEMENT_ACQUIRING_COUNTRY_CODE           19
+#define ELEMENT_PAN_EXTENDED_COUNTRY_CODE        20
+#define ELEMENT_FORWARDING_COUNTRY_CODE          21
+#define ELEMENT_POS_ENTRY_MODE                   22
+#define ELEMENT_CARD_SEQUENCE_NUMBER             23
+#define ELEMENT_NETWORK_INTL_ID                  24
+#define ELEMENT_POS_CONDITION_CODE               25
+#define ELEMENT_POS_PIN_CAPTURE_CODE             26
+#define ELEMENT_AUTH_ID_RESPONSE_LENGTH          27
+#define ELEMENT_AMOUNT_TRANSACTION_FEE           28
+#define ELEMENT_AMOUNT_SETTLEMENT_FEE            29
+#define ELEMENT_AMOUNT_TXN_PROCESSING_FEE        30
+#define ELEMENT_AMOUNT_SETTLEMENT_PROCESSING_FEE 31
+#define ELEMENT_ACQUIRING_INSTITUTION_ID         32
+#define ELEMENT_FORWARDING_INSTITUTION_ID        33
+#define ELEMENT_PAN_EXTENDED                     34
+#define ELEMENT_TRACK2                           35
+#define ELEMENT_TRACK3                           36
+#define ELEMENT_RETRIEVAL_REFERENCE_NUMBER       37
+#define ELEMENT_AUTH_ID_RESPONSE                 38
+#define ELEMENT_RESPONSE_CODE                    39
+#define ELEMENT_SERVICE_RESTRICTION_CODE         40
+#define ELEMENT_TERMINAL_ID                      41
+#define ELEMENT_CARD_ACCEPTOR_ID                 42
+#define ELEMENT_CARD_ACCEPTOR_NAME_LOCATION      43
+#define ELEMENT_ADDITIONAL_RESPONSE_DATA         44
+#define ELEMENT_TRACK1                           45
+#define ELEMENT_ADDITIONAL_DATA_ISO              46
+#define ELEMENT_ADDITIONAL_DATA_NATIONAL         47
+#define ELEMENT_ADDITIONAL_DATA_PRIVATE          48
+#define ELEMENT_CURRENCY_CODE_TRANSACTION        49
+#define ELEMENT_CURRENCY_CODE_SETTLEMENT         50
+#define ELEMENT_CURRENCY_CODE_BILLING            51
+#define ELEMENT_PIN_DATA                         52
+#define ELEMENT_SECURITY_CONTROL_INFO            53
+#define ELEMENT_ADDITIONAL_AMOUNTS               54
+#define ELEMENT_ICC_DATA                         55
+#define ELEMENT_RESERVED_ISO_56                  56
+#define ELEMENT_RESERVED_NATIONAL_57             57
+#define ELEMENT_RESERVED_NATIONAL_58             58
+#define ELEMENT_RESERVED_NATIONAL_59             59
+#define ELEMENT_RESERVED_PRIVATE_60              60
+#define ELEMENT_RESERVED_PRIVATE_61              61
+#define ELEMENT_RESERVED_PRIVATE_62              62
+#define ELEMENT_RESERVED_PRIVATE_63              63
+#define ELEMENT_MAC                              64
 
 /* ===== Secondary Bitmap Fields ===== */
 
@@ -113,9 +112,9 @@
 #define ELEMENT_DEBITS_PROCESSING_FEE_AMOUNT        84
 #define ELEMENT_DEBITS_TRANSACTION_FEE_AMOUNT       85
 #define ELEMENT_CREDITS_AMOUNT                      86
-#define ELEMENT_CREDITS_REVERSAL_AMOUNT              87
+#define ELEMENT_CREDITS_REVERSAL_AMOUNT             87
 #define ELEMENT_DEBITS_AMOUNT                       88
-#define ELEMENT_DEBITS_REVERSAL_AMOUNT               89
+#define ELEMENT_DEBITS_REVERSAL_AMOUNT              89
 #define ELEMENT_ORIGINAL_DATA_ELEMENTS              90
 #define ELEMENT_FILE_UPDATE_CODE                    91
 #define ELEMENT_FILE_SECURITY_CODE                  92
@@ -156,33 +155,29 @@
 #define ELEMENT_RESERVED_PRIVATE_127                127
 #define ELEMENT_MAC_2                               128
 
-#define USE_DUMP        1
+#define USE_DUMP 1
 
 typedef int RespCode_t;
 
 /* Field format types */
 typedef enum {
-    FMT_N,      /* Numeric */
-    FMT_AN,     /* Alphanumeric */
-    FMT_ANS,    /* Alphanumeric Special */
-    FMT_B,      /* Binary */
-    FMT_Z       /* Track data */
+    FMT_N,   /* Numeric */
+    FMT_AN,  /* Alphanumeric */
+    FMT_ANS, /* Alphanumeric Special */
+    FMT_B,   /* Binary */
+    FMT_Z    /* Track data */
 } Isoformat_t;
 
 /* Length types */
-typedef enum {
-    LEN_FIXED,
-    LEN_LLVAR,
-    LEN_LLLVAR
-} IsolenType_t;
+typedef enum { LEN_FIXED, LEN_LLVAR, LEN_LLLVAR } IsolenType_t;
 
 /* Field descriptor */
 typedef struct {
-    uint16_t field;
-    const char *name;
-    Isoformat_t format;
+    uint16_t     field;
+    const char*  name;
+    Isoformat_t  format;
     IsolenType_t lenType;
-    uint16_t maxLen;
+    uint16_t     maxLen;
 } IsofieldDef_t;
 
 typedef enum {
@@ -199,7 +194,7 @@ typedef enum {
 } IsoStatus_t;
 
 typedef struct {
-    size_t packedLen;
+    size_t   packedLen;
     uint16_t nii;
 } IsoHeaderData_t;
 
@@ -212,45 +207,40 @@ OOP_CLASS(Iso8583) {
     OOP_METHOD(void, init);
     OOP_METHOD(void, destroy);
 
-    OOP_METHOD(IsoStatus_t, setMTI, const char *mti);
+    OOP_METHOD(IsoStatus_t, setMTI, const char* mti);
     OOP_METHOD(const char*, getMTI);
 
-    OOP_METHOD(IsoStatus_t, setBin, uint16_t field,
-               const void *data, size_t len);
-    OOP_METHOD(IsoStatus_t, setStr, uint16_t field,
-               const void *data);
+    OOP_METHOD(IsoStatus_t, setBin, uint16_t field, const void* data,
+               size_t len);
+    OOP_METHOD(IsoStatus_t, setStr, uint16_t field, const void* data);
 
-    OOP_METHOD(IsoStatus_t, getBin, uint16_t field,
-               void *out, size_t *len);
-    OOP_METHOD(IsoStatus_t, getStr, uint16_t field,
-               void *out);
+    OOP_METHOD(IsoStatus_t, getBin, uint16_t field, void* out, size_t* len);
+    OOP_METHOD(IsoStatus_t, getStr, uint16_t field, void* out);
 
-    OOP_METHOD(IsoStatus_t, pack,
-                const uint8_t *data, size_t *outlen);
-    OOP_METHOD(IsoStatus_t, parse,
-               const uint8_t *data, size_t len);
-    OOP_METHOD(IsoStatus_t, addHeader,
-                    uint8_t *buffer, const uint8_t *packedData,
-                     size_t *packedLen, IsoHeaderData_t *hd);
+    OOP_METHOD(IsoStatus_t, pack, const uint8_t* data, size_t* outlen);
+    OOP_METHOD(IsoStatus_t, parse, const uint8_t* data, size_t len);
+    OOP_METHOD(IsoStatus_t, addHeader, uint8_t* buffer,
+               const uint8_t* packedData, size_t* packedLen,
+               IsoHeaderData_t* hd);
 
     /* state */
     char mti[5];
 
-    DL_ISO8583_MSG msg;
+    DL_ISO8583_MSG     msg;
     DL_ISO8583_HANDLER handler;
 };
 
-Iso8583 *iso8583();
+Iso8583* iso8583();
 
-#define ISO_RESET()                         iso8583()->reset()
-#define ISO_SET_MTI(MTI)                    iso8583()->setMTI(MTI)
-#define ISO_GET_MTI(MTI)                    iso8583()->getMTI(MTI)
-#define ISO_SET_STR(FIELD, DATA)            iso8583()->setStr(FIELD, DATA)
-#define ISO_SET_BIN(FIELD, DATA, LEN)       iso8583()->setBin(FIELD, DATA, LEN)
-#define ISO_GET_STR(FIELD, DATA)            iso8583()->getStr(FIELD, DATA)
-#define ISO_GET_BIN(FIELD, DATA, LEN)       iso8583()->getBin(FIELD, DATA, LEN)
-#define ISO_PACK()                          iso8583()->pack()
-#define ISO_PARSE(DATA, LEN)                iso8583()->parse(DATA, LEN)
+#define ISO_RESET()                   iso8583()->reset()
+#define ISO_SET_MTI(MTI)              iso8583()->setMTI(MTI)
+#define ISO_GET_MTI(MTI)              iso8583()->getMTI(MTI)
+#define ISO_SET_STR(FIELD, DATA)      iso8583()->setStr(FIELD, DATA)
+#define ISO_SET_BIN(FIELD, DATA, LEN) iso8583()->setBin(FIELD, DATA, LEN)
+#define ISO_GET_STR(FIELD, DATA)      iso8583()->getStr(FIELD, DATA)
+#define ISO_GET_BIN(FIELD, DATA, LEN) iso8583()->getBin(FIELD, DATA, LEN)
+#define ISO_PACK()                    iso8583()->pack()
+#define ISO_PARSE(DATA, LEN)          iso8583()->parse(DATA, LEN)
 
 #endif
 

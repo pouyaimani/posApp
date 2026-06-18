@@ -30,15 +30,15 @@ OOP_VTABLE(MagReader) {
 OOP_CLASS(MagReader) {
     OOP_IMPLEMENTS(MagReader);
     OOP_METHOD(void, ioRead);
-    OOP_METHOD(void, getPan, char *pan, size_t len);
-    bool swiped;
+    OOP_METHOD(void, getPan, char* pan, size_t len);
+    bool            swiped;
     MagReaderData_t data;
-    MagReaderErr_t error;
+    MagReaderErr_t  error;
 };
 
 OOP_CTOR(MagReader);
 
-MagReader *magreader(void);
+MagReader* magreader(void);
 
 #define MAG_INIT() OOP_CALL(magreader(), init)
 

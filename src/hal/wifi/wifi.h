@@ -12,7 +12,7 @@
 #error Wifi AP info list size is undefined.
 #endif
 
-#define WIFI_PASS_SIZE  32
+#define WIFI_PASS_SIZE 32
 
 typedef enum WifiErr_t {
     WIFI_ERR_OK,
@@ -31,22 +31,22 @@ typedef enum WifiSigStrenght_t {
 } WifiSigStrength_t;
 
 typedef struct WifiApInfo_t {
-    char essid[64];
+    char     essid[64];
     uint32_t secMode;
-    char mac[18];
-    int idx;
+    char     mac[18];
+    int      idx;
 } WifiApInfo_t;
 
 typedef struct WifiApList_t {
     WifiApInfo_t list[WIFI_AP_LIST_SIZE];
-    uint16_t size;
+    uint16_t     size;
 } WifiApList_t;
 
 OOP_DECLARE_CLASS(Wifi)
 
 OOP_VTABLE(Wifi) {
     OOP_IMETHOD(void, Wifi, init);
-    OOP_IMETHOD(WifiErr_t, Wifi, hconnect, WifiApInfo_t *, char *);
+    OOP_IMETHOD(WifiErr_t, Wifi, hconnect, WifiApInfo_t*, char*);
     OOP_IMETHOD(WifiErr_t, Wifi, hdisconnect);
     OOP_IMETHOD(void, Wifi, hstartScan);
     OOP_IMETHOD(WifiScanSt_t, Wifi, hgetScanStatus);
@@ -59,17 +59,17 @@ OOP_CLASS(Wifi) {
     OOP_METHOD(void, startScan);
     WifiSigStrength_t signalStrength;
     OOP_METHOD(WifiApList_t, getApList);
-    OOP_METHOD(WifiErr_t, connect, WifiApInfo_t *, char *);
-    OOP_METHOD(WifiErr_t,  disconnect);
+    OOP_METHOD(WifiErr_t, connect, WifiApInfo_t*, char*);
+    OOP_METHOD(WifiErr_t, disconnect);
     WifiApList_t apList;
     WifiScanSt_t scanSt;
 };
 
 OOP_CTOR(Wifi);
 
-Wifi *wifi(void);
+Wifi* wifi(void);
 
-#define WIFI_INIT()  OOP_CALL(wifi(), init)
+#define WIFI_INIT()       OOP_CALL(wifi(), init)
 #define WIFI_START_SCAN() wifi()->startScan()
 
 #endif

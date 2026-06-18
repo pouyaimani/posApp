@@ -7,11 +7,7 @@
 
 typedef int point_t;
 
-typedef enum {
-    TP_STATE_PRESS,
-    TP_STATE_RELEASE,
-    TP_STATE_HOLD
-} TpState_t;
+typedef enum { TP_STATE_PRESS, TP_STATE_RELEASE, TP_STATE_HOLD } TpState_t;
 
 OOP_DECLARE_CLASS(Touchpad)
 
@@ -22,14 +18,14 @@ OOP_VTABLE(Touchpad) {
 
 OOP_CLASS(Touchpad) {
     OOP_IMPLEMENTS(Touchpad);
-    point_t x;
-    point_t y;
+    point_t   x;
+    point_t   y;
     TpState_t state;
 };
 
 OOP_CTOR(Touchpad);
 
-Touchpad *touchpad(void);
+Touchpad* touchpad(void);
 
 #define TOUCH_INIT() OOP_CALL(touchpad(), init)
 

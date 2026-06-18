@@ -5,9 +5,7 @@
 
 #include "../file.h"
 
-OOP_CLASS(FileT3Rtos) {
-    OOP_EXTENDS(File);
-};
+OOP_CLASS(FileT3Rtos) { OOP_EXTENDS(File); };
 
 OOP_CTOR(FileT3Rtos);
 

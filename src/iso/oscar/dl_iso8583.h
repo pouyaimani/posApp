@@ -40,73 +40,63 @@
 
 // Initialises an ISO8583 message
 // returns: none
-void DL_ISO8583_MSG_Init ( DL_UINT8       *_iStaticBuf,
-				           DL_UINT16       _iStaticBufSize,
-				           DL_ISO8583_MSG *ioMsg );
+void DL_ISO8583_MSG_Init(DL_UINT8* _iStaticBuf, DL_UINT16 _iStaticBufSize,
+                         DL_ISO8583_MSG* ioMsg);
 
 // Frees a previously initialised ISO8583 message, de-allocating memory as req
 // returns: none
-void DL_ISO8583_MSG_Free ( DL_ISO8583_MSG *ioMsg );
+void DL_ISO8583_MSG_Free(DL_ISO8583_MSG* ioMsg);
 
 /******************************************************************************/
 
 // allocates and sets the specified (string) field
 // NB iField range is 0..kDL_ISO8583_MAX_FIELD_IDX
 // returns: error code
-DL_ERR DL_ISO8583_MSG_SetField_Str ( DL_UINT16       iField,
-					                 const DL_UINT8 *iDataStr,
-						             DL_ISO8583_MSG *ioMsg );
+DL_ERR DL_ISO8583_MSG_SetField_Str(DL_UINT16 iField, const DL_UINT8* iDataStr,
+                                   DL_ISO8583_MSG* ioMsg);
 
 // allocates and sets the specified field
 // NB iField range is 0..kDL_ISO8583_MAX_FIELD_IDX
 // NB iDataLen indicates the length of the data (0..n)
 // NB iData can be NULL if iDataLen is 0
 // returns: error code
-DL_ERR DL_ISO8583_MSG_SetField_Bin ( DL_UINT16       iField,
-					                 const DL_UINT8 *_iData,
-					                 DL_UINT16       _iDataLen,
-					                 DL_ISO8583_MSG *ioMsg );
+DL_ERR DL_ISO8583_MSG_SetField_Bin(DL_UINT16 iField, const DL_UINT8* _iData,
+                                   DL_UINT16 _iDataLen, DL_ISO8583_MSG* ioMsg);
 
 /******************************************************************************/
 
 // NB iField range is 0..kDL_ISO8583_MAX_FIELD_IDX
 // returns: 1 if the field is set / 0 otherwise
-int DL_ISO8583_MSG_HaveField ( DL_UINT16             iField,
-					           const DL_ISO8583_MSG *iMsg );
+int DL_ISO8583_MSG_HaveField(DL_UINT16 iField, const DL_ISO8583_MSG* iMsg);
 
 /******************************************************************************/
 
 // NB iField range is 0..kDL_ISO8583_MAX_FIELD_IDX
 // outputs: oPtr - static pointer to field data
 // returns: error code
-DL_ERR DL_ISO8583_MSG_GetField_Str ( DL_UINT16              iField,
-							         const DL_ISO8583_MSG  *iMsg,
-									 DL_UINT8             **oPtr );
+DL_ERR DL_ISO8583_MSG_GetField_Str(DL_UINT16 iField, const DL_ISO8583_MSG* iMsg,
+                                   DL_UINT8** oPtr);
 
 // NB iField range is 0..kDL_ISO8583_MAX_FIELD_IDX
 // outputs: oPtr     - static pointer to field data
 //			oByteLen - byte length of field data
 // returns: error code
-DL_ERR DL_ISO8583_MSG_GetField_Bin ( DL_UINT16              iField,
-								     const DL_ISO8583_MSG  *iMsg,
-									 DL_UINT8             **oPtr,
-									 DL_UINT16             *oByteLen );
+DL_ERR DL_ISO8583_MSG_GetField_Bin(DL_UINT16 iField, const DL_ISO8583_MSG* iMsg,
+                                   DL_UINT8** oPtr, DL_UINT16* oByteLen);
 
 /******************************************************************************/
 
 // NB doesn't check for overwrite of 'oByteArr'!
 // returns: error code
-DL_ERR DL_ISO8583_MSG_Pack ( const DL_ISO8583_HANDLER *iHandler,
-					         const DL_ISO8583_MSG     *iMsg,
-		                     DL_UINT8                 *ioByteArr,
-			                 DL_UINT16                *oNumBytes );
+DL_ERR DL_ISO8583_MSG_Pack(const DL_ISO8583_HANDLER* iHandler,
+                           const DL_ISO8583_MSG* iMsg, DL_UINT8* ioByteArr,
+                           DL_UINT16* oNumBytes);
 
 // NB 'ioMsg' must be initialised (using 'DL_ISO_MSG_Init') before calling
 // returns: error code
-DL_ERR DL_ISO8583_MSG_Unpack ( const DL_ISO8583_HANDLER *iHandler,
-					           const DL_UINT8           *iByteArr,
-			                   DL_UINT16                 iByteArrSize,
-			                   DL_ISO8583_MSG           *ioMsg );
+DL_ERR DL_ISO8583_MSG_Unpack(const DL_ISO8583_HANDLER* iHandler,
+                             const DL_UINT8* iByteArr, DL_UINT16 iByteArrSize,
+                             DL_ISO8583_MSG* ioMsg);
 
 /******************************************************************************/
 
@@ -116,10 +106,9 @@ DL_ERR DL_ISO8583_MSG_Unpack ( const DL_ISO8583_HANDLER *iHandler,
 //          iHandler - ISO8583 handler instance
 //          iMsg     - ISO8583 message
 // returns: none
-void DL_ISO8583_MSG_Dump ( FILE                     *iOutFile,
-					       const char               *_iEolStr,
-					       const DL_ISO8583_HANDLER *iHandler,
-					       const DL_ISO8583_MSG     *iMsg );
+void DL_ISO8583_MSG_Dump(FILE* iOutFile, const char* _iEolStr,
+                         const DL_ISO8583_HANDLER* iHandler,
+                         const DL_ISO8583_MSG*     iMsg);
 
 /******************************************************************************/
 

@@ -33,13 +33,12 @@
 /******************************************************************************/
 
 // returns: number of milliseconds
-static DL_UINT32 getMSec ( void );
+static DL_UINT32 getMSec(void);
 
 /******************************************************************************/
 
-void DL_TIMER_Start ( DL_TIMER *oTimer )
-{
-	#if 0
+void DL_TIMER_Start(DL_TIMER* oTimer) {
+#if 0
 	/* init outputs */
 	DL_MEM_memset(oTimer,0,sizeof(DL_TIMER));
 
@@ -48,15 +47,14 @@ void DL_TIMER_Start ( DL_TIMER *oTimer )
 
 	/* record micro-seconds */
 	oTimer->msec = getMSec();
-	#endif
-	return;
+#endif
+    return;
 }
 
 /******************************************************************************/
 
-DL_UINT32 DL_TIMER_GetDuration ( DL_TIMER iTimer )
-{
-	#if 0
+DL_UINT32 DL_TIMER_GetDuration(DL_TIMER iTimer) {
+#if 0
 	DL_UINT32 durMs    = 0;
 	DL_TIMER  tmpTimer;
 
@@ -69,14 +67,13 @@ DL_UINT32 DL_TIMER_GetDuration ( DL_TIMER iTimer )
 			& DL_MAX_UINT32;
 
 	return durMs;
-	#endif
+#endif
 }
 
 /******************************************************************************/
 
-static DL_UINT32 getMSec ( void )
-{
-	#if 0
+static DL_UINT32 getMSec(void) {
+#if 0
 	DL_UINT32 ret = 0;
 
 #if defined(DL_WIN32)
@@ -97,7 +94,7 @@ static DL_UINT32 getMSec ( void )
 #endif
 
 	return ret;
-	#endif
+#endif
 }
 
 /******************************************************************************/

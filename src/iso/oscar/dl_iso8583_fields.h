@@ -37,15 +37,13 @@
 
 /******************************************************************************/
 
-DL_ERR _DL_ISO8583_FIELD_Pack ( DL_UINT16                  iField,
-								const DL_ISO8583_MSG      *iMsg,
-								const DL_ISO8583_HANDLER  *iHandler,
-								DL_UINT8                 **ioPtr );
+DL_ERR _DL_ISO8583_FIELD_Pack(DL_UINT16 iField, const DL_ISO8583_MSG* iMsg,
+                              const DL_ISO8583_HANDLER* iHandler,
+                              DL_UINT8**                ioPtr);
 
-DL_ERR _DL_ISO8583_FIELD_Unpack ( DL_UINT16                  iField,
-								  DL_ISO8583_MSG            *ioMsg,
-								  const DL_ISO8583_HANDLER  *iHandler,
-								  DL_UINT8                 **ioPtr );
+DL_ERR _DL_ISO8583_FIELD_Unpack(DL_UINT16 iField, DL_ISO8583_MSG* ioMsg,
+                                const DL_ISO8583_HANDLER* iHandler,
+                                DL_UINT8**                ioPtr);
 
 /******************************************************************************/
 

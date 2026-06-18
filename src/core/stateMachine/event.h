@@ -30,34 +30,28 @@ OOP_DECLARE_CLASS(SocketEvent);
 
 /* ===== Event vtable ===== */
 
-OOP_VTABLE(Event)
-{
-    OOP_IMETHOD(void, Event, dispatch, State *state);
-    OOP_IMETHOD(void, Event, dispatchTo, State *state);
+OOP_VTABLE(Event) {
+    OOP_IMETHOD(void, Event, dispatch, State* state);
+    OOP_IMETHOD(void, Event, dispatchTo, State* state);
 };
 
 /* ===== Event base ===== */
 
-OOP_CLASS(Event)
-{
+OOP_CLASS(Event) {
     OOP_IMPLEMENTS(Event);
-    State *target;
+    State* target;
 };
 
 /* Base API */
 OOP_CTOR(Event);
 
-Event *createEvent(SmEventType_t type);
+Event* createEvent(SmEventType_t type);
 
-#define DISPATCH_EVENT(event) \
-    ((event)->base.vtable.dispatch((event), NULL));
+#define DISPATCH_EVENT(event) ((event)->base.vtable.dispatch((event), NULL));
 
 /* ===== TimeOut ===== */
 
-OOP_CLASS(TimeOutEvent)
-{
-    OOP_EXTENDS(Event);
-};
+OOP_CLASS(TimeOutEvent) { OOP_EXTENDS(Event); };
 
 /* ctor */
 OOP_CTOR(TimeOutEvent);
@@ -86,11 +80,10 @@ typedef enum Key_t {
     KEY_POWER
 } Key_t;
 
-OOP_CLASS(KeypadEvent)
-{
+OOP_CLASS(KeypadEvent) {
     OOP_EXTENDS(Event);
     Key_t key;
-    char keyStr;
+    char  keyStr;
 };
 
 /* ctor */
@@ -100,7 +93,7 @@ OOP_CTOR(KeypadEvent);
 
 typedef struct TrackData_t {
     uint16_t len;
-    char *data;
+    char*    data;
 } TrackData_t;
 
 typedef struct MagReaderData_t {
@@ -109,10 +102,9 @@ typedef struct MagReaderData_t {
     TrackData_t track3;
 } MagReaderData_t;
 
-OOP_CLASS(MagEvent)
-{
+OOP_CLASS(MagEvent) {
     OOP_EXTENDS(Event);
-    MagReaderData_t *data;
+    MagReaderData_t* data;
 };
 
 /* ctor */
@@ -133,13 +125,12 @@ typedef enum WifiConnectSt_t {
 } WifiConnectSt_t;
 
 OOP_DECLARE_CLASS(WifiApList_t);
-  
-OOP_CLASS(WifiEvent)
-{
+
+OOP_CLASS(WifiEvent) {
     OOP_EXTENDS(Event);
-    WifiScanSt_t scanStatus;
+    WifiScanSt_t    scanStatus;
     WifiConnectSt_t connectStatus;
-    WifiApList_t *apList;
+    WifiApList_t*   apList;
 };
 
 /* ctor */
@@ -155,9 +146,8 @@ typedef enum CellPPPStatus_t {
     CELL_PPP_FAILURE,
     CELL_PPP_INVALID
 } CellPPPStatus_t;
-  
-OOP_CLASS(CellEvent)
-{
+
+OOP_CLASS(CellEvent) {
     OOP_EXTENDS(Event);
     CellPPPStatus_t pppSt;
 };
@@ -188,11 +178,8 @@ OOP_CLASS(SocketReadyReadEvent) {
 /* ctor */
 OOP_CTOR(SocketReadyReadEvent);
 
-OOP_CLASS(SocketTimeOutEvent) {
-    OOP_EXTENDS(Event);
-};
+OOP_CLASS(SocketTimeOutEvent) { OOP_EXTENDS(Event); };
 /* ctor */
 OOP_CTOR(SocketTimeOutEvent);
-
 
 #endif

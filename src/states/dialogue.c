@@ -7,11 +7,11 @@
 #include "myColor.h"
 #include "ui/button.h"
 
-static lv_obj_t *title;
-static lv_obj_t *body;
+static lv_obj_t* title;
+static lv_obj_t* body;
 
-static char *textTitle;
-static char *textBody;
+static char*  textTitle;
+static char*  textBody;
 static Button confirmBut;
 static Button cancelBut;
 
@@ -29,16 +29,14 @@ STATE_DEF_EXIT(Dialogue) {
     LV_HIDE(cancelBut.main);
 }
 
-STATE_DEF_HANDLE(Dialogue, TimeOutEvent) {
-
-}
+STATE_DEF_HANDLE(Dialogue, TimeOutEvent) {}
 
 STATE_DEF_HANDLE(Dialogue, KeypadEvent) {
     if (ev->key == KEY_ENTER) {
         SM_GOTO(state->next);
     } else if (ev->key == KEY_ESC) {
         SM_GOTO(state->prev);
-    } 
+    }
 }
 
 static void createUi() {
@@ -48,7 +46,7 @@ static void createUi() {
     LV_SET_TEXT_ALIGN(title, LV_TEXT_ALIGN_CENTER);
     LV_SET_SIZE(title, lv_pct(90), LV_SIZE_CONTENT);
     LV_ALIGN(title, LV_ALIGN_CENTER, 0, -50);
-    
+
     body = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(body, FONT_16);
     LV_SET_TEXT_COLOR(body, COLOR_BLACK);
@@ -65,21 +63,17 @@ static void createUi() {
     LV_SET_TEXT(body, "");
 }
 
-static void setTitle(const char *str) {
-    LV_SET_TEXT(title, str);
-}
+static void setTitle(const char* str) { LV_SET_TEXT(title, str); }
 
-static void setBody(const char *str) {
-    LV_SET_TEXT(body, str);
-}
+static void setBody(const char* str) { LV_SET_TEXT(body, str); }
 
-OOP_CTOR(Dialogue, State *parent, const char *name) {
+OOP_CTOR(Dialogue, State* parent, const char* name) {
     State_ctor(self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(Dialogue);
-    self->base.vtable.exit = STATE_EXIT(Dialogue);
-    self->base.vtable.handleKeypad = STATE_HANDLE(Dialogue, KeypadEvent);
+    self->base.vtable.enter         = STATE_ENTER(Dialogue);
+    self->base.vtable.exit          = STATE_EXIT(Dialogue);
+    self->base.vtable.handleKeypad  = STATE_HANDLE(Dialogue, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Dialogue, TimeOutEvent);
-    self->setTitle = setTitle;
-    self->setBody = setBody;
+    self->setTitle                  = setTitle;
+    self->setBody                   = setBody;
     createUi();
 }

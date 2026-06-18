@@ -53,33 +53,33 @@
 //
 
 // indicates the length of a YYYYMMDDHHMISS format timestamp
-#define kDL_TIME_TIMESTAMP_LEN		14
+#define kDL_TIME_TIMESTAMP_LEN 14
 
 // indicates the length of a 'DD/MM/YYYY (HH:MI:SS)' format string
-#define kDL_TIME_FORMAT_STR_LEN		21
+#define kDL_TIME_FORMAT_STR_LEN 21
 
 // Day-of-Week definitions
-#define kDL_TIME_DOW_SUNDAY			0
-#define kDL_TIME_DOW_MONDAY			1
-#define kDL_TIME_DOW_TUESDAY		2
-#define kDL_TIME_DOW_WEDNESDAY		3
-#define kDL_TIME_DOW_THURSDAY		4
-#define kDL_TIME_DOW_FRIDAY			5
-#define kDL_TIME_DOW_SATURDAY		6
+#define kDL_TIME_DOW_SUNDAY    0
+#define kDL_TIME_DOW_MONDAY    1
+#define kDL_TIME_DOW_TUESDAY   2
+#define kDL_TIME_DOW_WEDNESDAY 3
+#define kDL_TIME_DOW_THURSDAY  4
+#define kDL_TIME_DOW_FRIDAY    5
+#define kDL_TIME_DOW_SATURDAY  6
 
 // Month definitions
-#define kDL_TIME_MON_JANUARY		1
-#define kDL_TIME_MON_FEBRUARY		2
-#define kDL_TIME_MON_MARCH			3
-#define kDL_TIME_MON_APRIL			4
-#define kDL_TIME_MON_MAY			5
-#define kDL_TIME_MON_JUNE			6
-#define kDL_TIME_MON_JULY			7
-#define kDL_TIME_MON_AUGUST			8
-#define kDL_TIME_MON_SEPTEMBER		9
-#define kDL_TIME_MON_OCTOBER		10
-#define kDL_TIME_MON_NOVEMBER		11
-#define kDL_TIME_MON_DECEMBER		12
+#define kDL_TIME_MON_JANUARY   1
+#define kDL_TIME_MON_FEBRUARY  2
+#define kDL_TIME_MON_MARCH     3
+#define kDL_TIME_MON_APRIL     4
+#define kDL_TIME_MON_MAY       5
+#define kDL_TIME_MON_JUNE      6
+#define kDL_TIME_MON_JULY      7
+#define kDL_TIME_MON_AUGUST    8
+#define kDL_TIME_MON_SEPTEMBER 9
+#define kDL_TIME_MON_OCTOBER   10
+#define kDL_TIME_MON_NOVEMBER  11
+#define kDL_TIME_MON_DECEMBER  12
 
 /******************************************************************************/
 //
@@ -87,91 +87,85 @@
 //
 
 // Note: supports either Absolute or Day-in-Month modes
-struct DL_TIME_S
-{
-	// Day-in-month mode:
-	//
-	// Identified by 'Year' = 0
-	// 'dayOfWeek' indicates Sunday->Saturday
-	// 'day' indicates week (1-5, where 5=last)
-	//
-	// e.g. Last Thursday of April...
-	//
-	//        Year     : 0
-	//        Month    : 4 (April)
-	//        Day      : 5 (Last)
-	//        DayOfWeek: 4 (Thursday)
+struct DL_TIME_S {
+    // Day-in-month mode:
+    //
+    // Identified by 'Year' = 0
+    // 'dayOfWeek' indicates Sunday->Saturday
+    // 'day' indicates week (1-5, where 5=last)
+    //
+    // e.g. Last Thursday of April...
+    //
+    //        Year     : 0
+    //        Month    : 4 (April)
+    //        Day      : 5 (Last)
+    //        DayOfWeek: 4 (Thursday)
 
-	int year;   /* 1970-2106 */
-	int month;  /* 1-12, as per kDL_TIME_MON_* */
-	int day;    /* 1-31 */
-	int hour;   /* 0-23 */
-	int minute; /* 0-59 */
-	int second; /* 0-59 */
+    int year;   /* 1970-2106 */
+    int month;  /* 1-12, as per kDL_TIME_MON_* */
+    int day;    /* 1-31 */
+    int hour;   /* 0-23 */
+    int minute; /* 0-59 */
+    int second; /* 0-59 */
 
-	int _dayOfWeek; /* 0-6, as per kDL_TIME_DOW_* */
+    int _dayOfWeek; /* 0-6, as per kDL_TIME_DOW_* */
 };
 typedef struct DL_TIME_S DL_TIME;
 
 /******************************************************************************/
 
 // returns: number of UTC seconds since epoch
-DL_UINT32 DL_TIME_GetUTCSeconds ( void );
+DL_UINT32 DL_TIME_GetUTCSeconds(void);
 
 /******************************************************************************/
 
 // converts UTC seconds to local time structure
-void DL_TIME_ConvUTCSecondsToLocalStruct ( DL_UINT32  iUtcSecs,
-										   DL_TIME   *oData );
+void DL_TIME_ConvUTCSecondsToLocalStruct(DL_UINT32 iUtcSecs, DL_TIME* oData);
 
 // converts UTC seconds to local timestamp
-void DL_TIME_ConvUTCSecondsToLocalTimestamp ( DL_UINT32 iUtcSecs,
-											  char      oTimestamp[] );
+void DL_TIME_ConvUTCSecondsToLocalTimestamp(DL_UINT32 iUtcSecs,
+                                            char      oTimestamp[]);
 
 // converts UTC seconds to UTC time structure
-void DL_TIME_ConvUTCSecondsToUTCStruct ( DL_UINT32  iUtcSecs,
-										 DL_TIME   *oData );
+void DL_TIME_ConvUTCSecondsToUTCStruct(DL_UINT32 iUtcSecs, DL_TIME* oData);
 
 // converts UTC seconds to UTC timestamp
-void DL_TIME_ConvUTCSecondsToUTCTimestamp ( DL_UINT32 iUtcSecs,
-										    char      oTimestamp[] );
+void DL_TIME_ConvUTCSecondsToUTCTimestamp(DL_UINT32 iUtcSecs,
+                                          char      oTimestamp[]);
 
 /******************************************************************************/
 
 // converts UTC timestamp to UTC seconds
 // returns: 1 if okay, 0 if error (ie invalid timestamp)
-int DL_TIME_ConvUTCTimestampToUTCSeconds ( const char  iTimestamp[],
-										   DL_UINT32  *oUtcSecs );
+int DL_TIME_ConvUTCTimestampToUTCSeconds(const char iTimestamp[],
+                                         DL_UINT32* oUtcSecs);
 
 /******************************************************************************/
 
 // converts local timestamp to UTC seconds
 // returns: 1 if okay, 0 if error (ie invalid timestamp)
-int DL_TIME_ConvLocalTimestampToUTCSeconds ( const char  iTimestamp[],
-											 DL_UINT32  *oUtcSecs );
+int DL_TIME_ConvLocalTimestampToUTCSeconds(const char iTimestamp[],
+                                           DL_UINT32* oUtcSecs);
 
 /******************************************************************************/
 
 // converts UTC seconds to a local time formatted string
 // NB ioFormatStr must point to at least kDL_TIME_FORMAT_STR_LEN byte of memory
-void DL_TIME_ConvUTCSecondsToLocalFormatStr ( DL_UINT32  iUtcSecs,
-										      char      *ioFormatStr );
+void DL_TIME_ConvUTCSecondsToLocalFormatStr(DL_UINT32 iUtcSecs,
+                                            char*     ioFormatStr);
 
 /******************************************************************************/
 
 // adds the months (iNumMonths) to the date/time value (iSeconds)
 // outputs: oSeconds - updated value with months added
 // returns: 1 if success / 0 if error (ie would exceed max date/time)
-int _DL_TIME_AddMonths ( DL_UINT32  iSeconds,
-						 DL_UINT16  iNumMonths,
-						 DL_UINT32 *oSeconds );
+int _DL_TIME_AddMonths(DL_UINT32 iSeconds, DL_UINT16 iNumMonths,
+                       DL_UINT32* oSeconds);
 
 /******************************************************************************/
 
 // outputs the number of days based on the specified year and month
-void _DL_TIME_GetDaysInMonth ( int  iMonth,
-						       int  iYear,
-							   int *oDaysInMonth );
+void _DL_TIME_GetDaysInMonth(int iMonth, int iYear, int* oDaysInMonth);
 
 /******************************************************************************/
 

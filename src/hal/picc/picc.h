@@ -23,17 +23,18 @@ typedef enum PiccCardType_t {
 } PiccCardType_t;
 
 typedef struct ApduSend_t {
-    uint8_t *command;
-    uint32_t *lc;            // Length of data in
-    uint8_t *dataIn;
-    uint32_t *le;            // Expected to return the length of the data, the actual length of the returned data.
+    uint8_t*  command;
+    uint32_t* lc; // Length of data in
+    uint8_t*  dataIn;
+    uint32_t* le; // Expected to return the length of the data, the actual
+                  // length of the returned data.
 } ApduSend_t;
 
 typedef struct ApduResp_t {
-    uint32_t *lenOut;
-    uint8_t *dataOut;
-    uint32_t *swa;
-    uint32_t *swb;
+    uint32_t* lenOut;
+    uint8_t*  dataOut;
+    uint32_t* swa;
+    uint32_t* swb;
 } ApduResp_t;
 
 OOP_DECLARE_CLASS(Picc)
@@ -55,6 +56,6 @@ OOP_CLASS(Picc) {
 
 OOP_CTOR(Picc);
 
-Picc *picc(void);
+Picc* picc(void);
 
 #endif

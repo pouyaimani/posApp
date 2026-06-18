@@ -5,9 +5,7 @@
 
 #include "../wifi.h"
 
-OOP_CLASS(WifiT3Rtos) {
-    OOP_EXTENDS(Wifi);
-};
+OOP_CLASS(WifiT3Rtos) { OOP_EXTENDS(Wifi); };
 
 OOP_CTOR(WifiT3Rtos);
 

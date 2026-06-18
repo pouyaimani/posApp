@@ -10,9 +10,9 @@
 #include "external_sort.h"
 
 #define SORT_KEY_SIZE 4
-#define INT_SIZE 4
+#define INT_SIZE      4
 
-#define true 1
+#define true  1
 #define false 0
 
 #if defined(__cplusplus)
@@ -24,9 +24,11 @@ extern "C" {
 @param      iteratorState
                 Structure stores state of iterator (file info etc.)
 @param      tupleBuffer
-                Pre-allocated space to store one tuple (row) of input being sorted
+                Pre-allocated space to store one tuple (row) of input being
+sorted
 @param      outputFile
-                Already opened file to store sorting output (and in-progress temporary results)
+                Already opened file to store sorting output (and in-progress
+temporary results)
 @param      buffer
                 Pre-allocated space used by algorithm during sorting
 @param      bufferSizeInBytes
@@ -42,43 +44,38 @@ extern "C" {
 @param      numSubList
                 Number of sublists
 */
-int flash_minsort_sublist(
-    void *iteratorState,
-    void *tupleBuffer,
-    void *outputFile,
-    char *buffer,
-    int bufferSizeInBytes,
-    external_sort_t *es,
-    long *resultFilePtr,
-    metrics_t *metric,
-    int8_t (*compareFn)(void *a, void *b),
-    long numSubList);
+int flash_minsort_sublist(void* iteratorState, void* tupleBuffer,
+                          void* outputFile, char* buffer, int bufferSizeInBytes,
+                          external_sort_t* es, long* resultFilePtr,
+                          metrics_t* metric,
+                          int8_t (*compareFn)(void* a, void* b),
+                          long numSubList);
 
 typedef struct MinSortStateSublist {
-    char *buffer;
-    uint8_t *min;
-    uint8_t *min_set;
-    unsigned long *offset;
+    char*          buffer;
+    uint8_t*       min;
+    uint8_t*       min_set;
+    unsigned long* offset;
 
-    uint8_t *current;  // current smallest value
-    uint8_t *next;     // keep track of next smallest value for next iteration
+    uint8_t* current; // current smallest value
+    uint8_t* next;    // keep track of next smallest value for next iteration
     unsigned long int nextIdx;
-    uint8_t current_set;
-    uint8_t next_set;
-    uint8_t nextIdx_set;
+    uint8_t           current_set;
+    uint8_t           next_set;
+    uint8_t           nextIdx_set;
 
-    unsigned int record_size;
+    unsigned int      record_size;
     unsigned long int num_records;
-    unsigned int numBlocks;
-    unsigned int memoryAvailable;
-    unsigned int numRegions;
-    unsigned int regionIdx;
-    unsigned int lastBlockIdx;
-    unsigned long fileOffset;
-    uint8_t lastBlockIdx_set;
-    uint8_t regionIdx_set;
+    unsigned int      numBlocks;
+    unsigned int      memoryAvailable;
+    unsigned int      numRegions;
+    unsigned int      regionIdx;
+    unsigned int      lastBlockIdx;
+    unsigned long     fileOffset;
+    uint8_t           lastBlockIdx_set;
+    uint8_t           regionIdx_set;
 
-    void *iteratorState;
+    void* iteratorState;
 
     /* Statistics */
     unsigned int blocksRead;
@@ -87,9 +84,11 @@ typedef struct MinSortStateSublist {
     unsigned int bytesRead;
 } MinSortStateSublist;
 
-void init_MinSort_sublist(MinSortStateSublist *ms, external_sort_t *es, metrics_t *metric);
-char *next_MinSort_sublist(MinSortStateSublist *ms, external_sort_t *es, void *tupleBuffer, metrics_t *metric);
-void close_MinSort_sublist(MinSortStateSublist *ms, external_sort_t *es);
+void  init_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
+                           metrics_t* metric);
+char* next_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
+                           void* tupleBuffer, metrics_t* metric);
+void  close_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es);
 
 #if defined(__cplusplus)
 }

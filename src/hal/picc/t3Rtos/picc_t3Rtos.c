@@ -13,13 +13,11 @@ static PiccErr_t translateSdkErr(int err) {
     return piccErr;
 }
 
-static void init(Picc* picc) {
-
-}
+static void init(Picc* picc) {}
 
 static PiccCardType_t detect(Picc* picc) {
     PiccCardType_t cardType = PICC_CARD_NO_CARD;
-    int32_t ret = sdkPiccDetect();
+    int32_t        ret      = sdkPiccDetect();
     switch (ret) {
     case PICC_CARD_TYPE_MORE:
         cardType = PICC_CARD_MORE;
@@ -50,26 +48,26 @@ static PiccErr_t exchangeApdu(Picc* picc) {
     return err;
 }
 
-static ApduSend_t *getSendAdpu(Picc* picc) {
-    picc->sendAdpu.dataIn = apduSend.mDataIn;
+static ApduSend_t* getSendAdpu(Picc* picc) {
+    picc->sendAdpu.dataIn  = apduSend.mDataIn;
     picc->sendAdpu.command = apduSend.mCommand;
-    picc->sendAdpu.lc = &apduSend.mLc;
-    picc->sendAdpu.le = &apduSend.mLe;
+    picc->sendAdpu.lc      = &apduSend.mLc;
+    picc->sendAdpu.le      = &apduSend.mLe;
 }
 
-static ApduResp_t *getRespAdpu(Picc* picc) {
+static ApduResp_t* getRespAdpu(Picc* picc) {
     picc->respAdpu.dataOut = apduResp.mDataOut;
-    picc->respAdpu.lenOut = &apduResp.mLenOut;
-    picc->respAdpu.swa = &apduResp.mSWA;
-    picc->respAdpu.swb = &apduResp.mSWB;
+    picc->respAdpu.lenOut  = &apduResp.mLenOut;
+    picc->respAdpu.swa     = &apduResp.mSWA;
+    picc->respAdpu.swb     = &apduResp.mSWB;
 }
 
 OOP_CTOR(PiccT3Rtos) {
-    self->base.vtable.init = init;
-    self->base.vtable.detect = detect;
+    self->base.vtable.init         = init;
+    self->base.vtable.detect       = detect;
     self->base.vtable.exchangeApdu = exchangeApdu;
-    self->base.vtable.getSendAdpu = getSendAdpu;
-    self->base.vtable.getRespAdpu = getRespAdpu;
+    self->base.vtable.getSendAdpu  = getSendAdpu;
+    self->base.vtable.getRespAdpu  = getRespAdpu;
 }
 
 #endif

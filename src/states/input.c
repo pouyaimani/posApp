@@ -13,22 +13,22 @@
 #include "font/myFont.h"
 #include "ui/infoPage.h"
 
-#define PASS_MAX_LEN        4
-#define AMOUNT_MAX_LEN      10
+#define PASS_MAX_LEN   4
+#define AMOUNT_MAX_LEN 10
 
-static InputBox inputBox;
-static Button confirmBut;
-static Button cancelBut;
-static lv_obj_t *title;
-static lv_obj_t *info;
+static InputBox  inputBox;
+static Button    confirmBut;
+static Button    cancelBut;
+static lv_obj_t* title;
+static lv_obj_t* info;
 
 static InputMode_t inMode;
-static char *input;
-static char *amountStr;
-static char *password;
-static char *ipAddr;
-static uint8_t idx = 0;
-static uint8_t maxIn = 0;
+static char*       input;
+static char*       amountStr;
+static char*       password;
+static char*       ipAddr;
+static uint8_t     idx   = 0;
+static uint8_t     maxIn = 0;
 
 typedef struct {
     uint8_t octet[4];
@@ -39,11 +39,11 @@ typedef struct {
 
 static IpInput ip;
 
-static bool ipValidateDigits(const char *in)
-{
-    if (!in) return false;
+static bool ipValidateDigits(const char* in) {
+    if (!in)
+        return false;
 
-    int len = 0;
+    int  len = 0;
     char digits[12];
 
     // Extract digits only (same logic as formatter)
@@ -72,10 +72,9 @@ static bool ipValidateDigits(const char *in)
     return true;
 }
 
-static void timeFormat(const char *in, char *out)
-{
+static void timeFormat(const char* in, char* out) {
     char digits[6] = {0};
-    int dcount = 0;
+    int  dcount    = 0;
 
     // Extract digits (max 6)
     for (int i = 0; in[i] && dcount < 6; i++) {
@@ -85,7 +84,7 @@ static void timeFormat(const char *in, char *out)
     }
 
     int pos = 0;
-    int di = 0;
+    int di  = 0;
 
     // HH
     for (int i = 0; i < 2; i++) {
@@ -109,10 +108,9 @@ static void timeFormat(const char *in, char *out)
     out[pos] = '\0';
 }
 
-static bool timeValidate(const char *in)
-{
+static bool timeValidate(const char* in) {
     char digits[6];
-    int len = 0;
+    int  len = 0;
 
     for (int i = 0; in[i] && len < 6; i++) {
         if (isDigit((unsigned char)in[i])) {
@@ -120,23 +118,26 @@ static bool timeValidate(const char *in)
         }
     }
 
-    if (len != 6) return false;
+    if (len != 6)
+        return false;
 
-    int hh = (digits[0]-'0') * 10 + (digits[1]-'0');
-    int mm = (digits[2]-'0') * 10 + (digits[3]-'0');
-    int ss = (digits[4]-'0') * 10 + (digits[5]-'0');
+    int hh = (digits[0] - '0') * 10 + (digits[1] - '0');
+    int mm = (digits[2] - '0') * 10 + (digits[3] - '0');
+    int ss = (digits[4] - '0') * 10 + (digits[5] - '0');
 
-    if (hh > 23) return false;
-    if (mm > 59) return false;
-    if (ss > 59) return false;
+    if (hh > 23)
+        return false;
+    if (mm > 59)
+        return false;
+    if (ss > 59)
+        return false;
 
     return true;
 }
 
-static void dateFormat(const char *in, char *out)
-{
+static void dateFormat(const char* in, char* out) {
     char digits[8] = {0};
-    int dcount = 0;
+    int  dcount    = 0;
 
     // Extract digits (max 8)
     for (int i = 0; in[i] && dcount < 8; i++) {
@@ -146,7 +147,7 @@ static void dateFormat(const char *in, char *out)
     }
 
     int pos = 0;
-    int di = 0;
+    int di  = 0;
 
     // YYYY
     for (int i = 0; i < 4; i++) {
@@ -170,10 +171,9 @@ static void dateFormat(const char *in, char *out)
     out[pos] = '\0';
 }
 
-static bool dateValidate(const char *in)
-{
+static bool dateValidate(const char* in) {
     char digits[8];
-    int len = 0;
+    int  len = 0;
 
     for (int i = 0; in[i] && len < 8; i++) {
         if (isDigit((unsigned char)in[i])) {
@@ -181,7 +181,8 @@ static bool dateValidate(const char *in)
         }
     }
 
-    if (len != 8) return false;
+    if (len != 8)
+        return false;
 
     int year = 0, month = 0, day = 0;
 
@@ -197,14 +198,16 @@ static bool dateValidate(const char *in)
     for (int i = 6; i < 8; i++)
         day = day * 10 + (digits[i] - '0');
 
-    if (month < 1 || month > 12) return false;
-    if (day < 1 || day > 31) return false;
+    if (month < 1 || month > 12)
+        return false;
+    if (day < 1 || day > 31)
+        return false;
 
     // Optional: better day validation per month
     int maxDay = 31;
     if (month == 2) {
         bool leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-        maxDay = leap ? 29 : 28;
+        maxDay    = leap ? 29 : 28;
     } else if (month == 4 || month == 6 || month == 9 || month == 11) {
         maxDay = 30;
     }
@@ -212,28 +215,27 @@ static bool dateValidate(const char *in)
     return day <= maxDay;
 }
 
-static void showMaxError(State *state) {
+static void showMaxError(State* state) {
     switch (inMode) {
     case IN_MODE_AMOUNT:
         GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
-                    phraseGetDef(PHRASE_AMOUNT_EXCEED));
+                  phraseGetDef(PHRASE_AMOUNT_EXCEED));
         break;
     case IN_MODE_PASSWORD:
         break;
     case IN_MODE_NUMBERS:
         GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
-                    phraseGetDef(PHRASE_INPUT_EXCEED));
+                  phraseGetDef(PHRASE_INPUT_EXCEED));
         break;
     default:
         break;
     }
 }
 
-static void handleInput(State *state, KeypadEvent *ev)
-{
+static void handleInput(State* state, KeypadEvent* ev) {
     bool isPassword = inMode == IN_MODE_PASSWORD ? true : false;
-    bool isAmount = inMode == IN_MODE_AMOUNT ? true : false;
-    bool isIp = inMode == IN_MODE_IP ? true : false;
+    bool isAmount   = inMode == IN_MODE_AMOUNT ? true : false;
+    bool isIp       = inMode == IN_MODE_IP ? true : false;
     if (ev->key == KEY_CLEAR) {
         deleteChar(input);
         deleteChar(password);
@@ -242,8 +244,7 @@ static void handleInput(State *state, KeypadEvent *ev)
             showMaxError(state);
             return;
         }
-        appendChar(input, INPUT_MAX_LEN,
-                   isPassword ? '*' : ev->keyStr);
+        appendChar(input, INPUT_MAX_LEN, isPassword ? '*' : ev->keyStr);
         if (isPassword) {
             appendChar(password, INPUT_MAX_LEN, ev->keyStr);
         }
@@ -274,8 +275,7 @@ static void handleInput(State *state, KeypadEvent *ev)
     }
 }
 
-static void handleAlpahb(State *state, KeypadEvent *ev)
-{
+static void handleAlpahb(State* state, KeypadEvent* ev) {
     if (ev->key == KEY_CLEAR) {
         deleteChar(input);
     } else {
@@ -299,33 +299,36 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
                 }
             } else if (inMode == IN_MODE_IP) {
                 if (!ipValidateDigits(input)) {
-                    GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
-                                phraseGetDef(PHRASE_INVALID_IP));
+                    GOTO_INFO(state, state, INFO_ERROR,
+                              phraseGetDef(PHRASE_ERROR),
+                              phraseGetDef(PHRASE_INVALID_IP));
                     return;
                 }
             } else if (inMode == IN_MODE_DATE) {
                 if (!dateValidate(input)) {
-                    GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
-                                phraseGetDef(PHRASE_INVALID_DATE));
+                    GOTO_INFO(state, state, INFO_ERROR,
+                              phraseGetDef(PHRASE_ERROR),
+                              phraseGetDef(PHRASE_INVALID_DATE));
                     return;
                 }
             } else if (inMode == IN_MODE_TIME) {
                 if (!timeValidate(input)) {
-                    GOTO_INFO(state, state, INFO_ERROR, phraseGetDef(PHRASE_ERROR),
-                                phraseGetDef(PHRASE_INVALID_TIME));
+                    GOTO_INFO(state, state, INFO_ERROR,
+                              phraseGetDef(PHRASE_ERROR),
+                              phraseGetDef(PHRASE_INVALID_TIME));
                     return;
                 }
             }
             SM_GOTO(state->next);
         } else
             LOG_WARN("Input state: next state is not set.");
-    } 
+    }
 
     if (inMode == IN_MODE_ALPHAB) {
         handleAlpahb(state, ev);
         return;
     }
-    if (ev->key > KEY_9 && ev->key != KEY_CLEAR )
+    if (ev->key > KEY_9 && ev->key != KEY_CLEAR)
         return;
 
     handleInput(state, ev);
@@ -343,33 +346,30 @@ static void createUi() {
     LV_SET_TEXT_COLOR(info, 0x333333);
     LV_SET_SIZE(info, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_ALIGN(info, LV_ALIGN_CENTER, 0, -30);
-    
+
     ui_inBox_create(&inputBox, disp()->screen);
     LV_ALIGN(inputBox.main, LV_ALIGN_CENTER, 0, 10);
-    ui_button_create(&confirmBut, disp()->screen, 0x68DD40, phraseGetDef(PHRASE_CONFIRM));
+    ui_button_create(&confirmBut, disp()->screen, 0x68DD40,
+                     phraseGetDef(PHRASE_CONFIRM));
     LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
-    ui_button_create(&cancelBut, disp()->screen, 0xFF4E4E, phraseGetDef(PHRASE_CANCEL));
+    ui_button_create(&cancelBut, disp()->screen, 0xFF4E4E,
+                     phraseGetDef(PHRASE_CANCEL));
     LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(inputBox.textBox, "");
 }
 
-static void setMode(InputMode_t mode) {
-    inMode = mode;
-}
+static void setMode(InputMode_t mode) { inMode = mode; }
 
-static void setData(const char *dtitle, const char *dinfo) {
+static void setData(const char* dtitle, const char* dinfo) {
     LV_SET_TEXT(title, dtitle);
     LV_SET_TEXT(info, dinfo);
 }
 
-static void setMax(int val) {
-    maxIn = val;
-}
+static void setMax(int val) { maxIn = val; }
 
-static void setInput(const char *in) {
-    snprintf(input,
-        INPUT_MAX_LEN, "%s", in);
+static void setInput(const char* in) {
+    snprintf(input, INPUT_MAX_LEN, "%s", in);
     idx = strlen(input);
 }
 
@@ -401,7 +401,7 @@ STATE_DEF_ENTER(Input) {
         char buf[16];
         dateFormat(input, buf);
         LV_SET_TEXT(inputBox.textBox, buf);
-    }else if (inMode == IN_MODE_TIME) {
+    } else if (inMode == IN_MODE_TIME) {
         char buf[16];
         timeFormat(input, buf);
         LV_SET_TEXT(inputBox.textBox, buf);
@@ -411,7 +411,7 @@ STATE_DEF_ENTER(Input) {
 }
 
 STATE_DEF_EXIT(Input) {
-    Input *in = STATE_INPUT;
+    Input* in = STATE_INPUT;
     if (in->out) {
         snprintf(in->out, maxIn + 1, "%s", in->input);
     }
@@ -422,27 +422,25 @@ STATE_DEF_EXIT(Input) {
     LV_HIDE(info);
 }
 
-STATE_DEF_HANDLE(Input, TimeOutEvent) {
+STATE_DEF_HANDLE(Input, TimeOutEvent) {}
 
-}
-
-OOP_CTOR(Input, State *parent, const char *name) {
+OOP_CTOR(Input, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(Input);
-    self->base.vtable.exit = STATE_EXIT(Input);
-    self->base.vtable.handleKeypad = STATE_HANDLE(Input, KeypadEvent);
+    self->base.vtable.enter         = STATE_ENTER(Input);
+    self->base.vtable.exit          = STATE_EXIT(Input);
+    self->base.vtable.handleKeypad  = STATE_HANDLE(Input, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Input, TimeOutEvent);
-    self->setMode = setMode;
-    self->setData = setData;
-    self->setMax = setMax;
-    self->reset = reset;
-    self->setInput = setInput;
-    input = (char*)MEM_ALLOC(INPUT_MAX_LEN);
-    password = (char*)MEM_ALLOC(PASS_MAX_LEN + 1);
-    ipAddr = (char*)MEM_ALLOC(INPUT_MAX_LEN / 2);
-    self->input = input;
-    self->password = password;
-    self->ip = ipAddr;
-    amountStr = (char*)MEM_ALLOC(INPUT_MAX_LEN);
+    self->setMode                   = setMode;
+    self->setData                   = setData;
+    self->setMax                    = setMax;
+    self->reset                     = reset;
+    self->setInput                  = setInput;
+    input                           = (char*)MEM_ALLOC(INPUT_MAX_LEN);
+    password                        = (char*)MEM_ALLOC(PASS_MAX_LEN + 1);
+    ipAddr                          = (char*)MEM_ALLOC(INPUT_MAX_LEN / 2);
+    self->input                     = input;
+    self->password                  = password;
+    self->ip                        = ipAddr;
+    amountStr                       = (char*)MEM_ALLOC(INPUT_MAX_LEN);
     createUi();
 }

@@ -45,16 +45,14 @@ static EvLoopErr_t unregisterAll() {
 
 OOP_CTOR(Eventloop) {
     LOG_TRACE("Event loop constructing ...");
-    self->runCycle = runCycle;
-    self->registerChecker = registerChecker;
+    self->runCycle          = runCycle;
+    self->registerChecker   = registerChecker;
     self->unregisterChecker = unregisterChecker;
-    self->unregisterAll = unregisterAll;
-    self->checkersCnt = 0;
+    self->unregisterAll     = unregisterAll;
+    self->checkersCnt       = 0;
 }
 
-Eventloop *getEventloop(void) {
-    CALL_ONCE(
-        OOP_CALL_CTOR(Eventloop, &__loop);
-    );
+Eventloop* getEventloop(void) {
+    CALL_ONCE(OOP_CALL_CTOR(Eventloop, &__loop););
     return &__loop;
 }
