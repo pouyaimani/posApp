@@ -4,6 +4,7 @@
 #include "sdkPed.h"
 #include "utility/arith.h"
 #include "common.h"
+#include "sdkLog.h"
 
 #define KEY_INDEX_MASTER            0
 
@@ -86,7 +87,8 @@ static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t *key, size_t len
     }
     keyInfo.mDestKeyLen = len;
     memcpy(keyInfo.mDestKey, key, len);
-    LOG_DEBUG("Ped: Key len = %d, key = %s", len, key);
+    LOG_DEBUG("Ped: Key len = %d", len);
+    LOG_E_HEX("pin key = ", key, len);
 
     result = sdkPedWriteKey(&keyInfo, &checkValue);
     return translateSdkErr(result);
