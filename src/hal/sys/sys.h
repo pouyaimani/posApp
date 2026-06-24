@@ -31,7 +31,7 @@ typedef enum BatteryLevel_t {
 
 OOP_CLASS(BatteryStat) {
     BatteryLevel_t level;
-    bool           isChanrging;
+    bool           isCharging;
     uint16_t       percent;
 };
 

@@ -174,8 +174,8 @@ static BatteryStat* getBatteryStatus(System* dev) {
     } else {
         batterySt.level = DEV_BAT_LEV_3;
     }
-    batterySt.isChanrging = st.mIsCharging;
-    batterySt.percent     = st.mBatteryPercent;
+    batterySt.isCharging = st.mIsCharging;
+    batterySt.percent    = st.mBatteryPercent;
     return &batterySt;
 }
 

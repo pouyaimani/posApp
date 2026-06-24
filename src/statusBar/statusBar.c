@@ -12,6 +12,7 @@
 #include "network/network.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
+#include "common.h"
 
 static StatusBar*          __statusBar;
 static Timer*              timer;
@@ -27,6 +28,23 @@ lv_obj_t*                  wifiIcon;
 lv_obj_t*                  soundIcon;
 lv_obj_t*                  batteryIcon;
 lv_obj_t*                  operator;
+
+static void setIconIfChanged(lv_obj_t* img, const void* src,
+                             const void** cache) {
+    if (*cache == src)
+        return;
+
+    lv_img_set_src(img, src);
+    *cache = src;
+}
+
+static void setTextIfChanged(lv_obj_t* label, const char* txt) {
+    if (strcmp(lv_label_get_text(label), txt) == 0) {
+        return;
+    }
+
+    LV_SET_TEXT(label, txt);
+}
 
 static void anim_y_cb(void* var, int32_t v) { lv_obj_set_y((lv_obj_t*)var, v); }
 
@@ -52,77 +70,82 @@ void dtScroll(lv_obj_t* label1, lv_obj_t* label2) {
 }
 
 static void updateDate() {
-    char dt[24];
-    char day[24];
-    memset(dt, 0, sizeof(dt));
+    DEFINE_STRING(dt, 24);
+    DEFINE_STRING(day, 24);
     formatDateTimeStr(dt, day, sizeof(dt));
-    LV_SET_TEXT(ldate, dt);
-    LV_SET_TEXT(lday, day);
+    setTextIfChanged(ldate, dt);
+    setTextIfChanged(lday, day);
 }
 
 static void updateTime() {
-    char dt[40];
-    memset(dt, 0, sizeof(dt));
+    DEFINE_STRING(dt, 24);
     formatTimeStr(dt, sizeof(dt));
-    LV_SET_TEXT(ltime, dt);
+    setTextIfChanged(ltime, dt);
 }
 
 static void updateBatteryIcon() {
-    BatteryStat* bat = OOP_CALL(sys(), getBatteryStatus);
-    if (bat->isChanrging) {
-        lv_img_set_src(batteryIcon, ICON_BAT_CHARGING);
+    static char* current = NULL;
+    char*        icon    = NULL;
+    BatteryStat* bat     = OOP_CALL(sys(), getBatteryStatus);
+    if (bat->isCharging) {
+        icon = ICON_BAT_CHARGING;
     } else {
         switch (bat->level) {
         case DEV_BAT_LEV_LOW:
-            lv_img_set_src(batteryIcon, ICON_BAT_LEV_LOW);
+            icon = ICON_BAT_LEV_LOW;
             break;
         case DEV_BAT_LEV_1:
-            lv_img_set_src(batteryIcon, ICON_BAT_LEV_1);
+            icon = ICON_BAT_LEV_1;
             break;
         case DEV_BAT_LEV_2:
-            lv_img_set_src(batteryIcon, ICON_BAT_LEV_2);
+            icon = ICON_BAT_LEV_2;
             break;
         case DEV_BAT_LEV_3:
-            lv_img_set_src(batteryIcon, ICON_BAT_LEV_3);
+            icon = ICON_BAT_LEV_3;
             break;
         default:
             break;
         }
     }
+    setIconIfChanged(batteryIcon, icon, &current);
 }
 
 static void updateWifiIcon() {
+    static char* current = NULL;
+    char*        icon    = NULL;
     if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED) {
         switch (OOP_CALL(wifi(), getSignalStrength)) {
         case WIFI_SIGNAL_STRENGTH_0:
-            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_0);
+            icon = ICON_WIFI_STRENGTH_0;
             break;
         case WIFI_SIGNAL_STRENGTH_1:
-            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_1);
+            icon = ICON_WIFI_STRENGTH_1;
             break;
         case WIFI_SIGNAL_STRENGTH_2:
-            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_2);
+            icon = ICON_WIFI_STRENGTH_2;
             break;
         case WIFI_SIGNAL_STRENGTH_3:
-            lv_img_set_src(wifiIcon, ICON_WIFI_STRENGTH_3);
+            icon = ICON_WIFI_STRENGTH_3;
             break;
         default:
             break;
         }
     } else {
-        lv_img_set_src(wifiIcon, ICON_WIFI_DISCONNECT);
+        icon = ICON_WIFI_DISCONNECT;
     }
+    setIconIfChanged(wifiIcon, icon, &current);
 }
 
 static void updateOperatorDsc() {
+    static char* current = NULL;
     if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
-        LV_SET_TEXT(operator, "NoSim");
-        lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
+        setTextIfChanged(operator, "NoSim");
+        setIconIfChanged(cellularIcon, ICON_CELL_DISCONNECT, &current);
         return;
     }
     CellSimInfo simInfo;
     if (OOP_CALL(cellular(), getSimInfo, &simInfo) != CELL_ERR_OK) {
-        LV_SET_TEXT(operator, "NKN");
+        setTextIfChanged(operator, "NKN");
         return;
     }
     static uint8_t prevOpt    = 0;
@@ -151,30 +174,35 @@ static void updateOperatorDsc() {
 }
 
 static void updateCellIcon() {
+    static char* current = NULL;
+    char*        icon    = NULL;
     if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
-        lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
+        icon = ICON_CELL_DISCONNECT;
+        setIconIfChanged(cellularIcon, icon, &current);
         return;
     }
     if (OOP_CALL(cellular(), getPPPstatus) != CELL_PPP_SUCESS) {
-        lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
+        icon = ICON_CELL_DISCONNECT;
+        setIconIfChanged(cellularIcon, icon, &current);
         return;
     }
     switch (OOP_CALL(cellular(), getSignalStrength)) {
     case CELL_SIGNAL_STRENGTH_0:
-        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_0);
+        icon = ICON_CELL_STRENGTH_0;
         break;
     case CELL_SIGNAL_STRENGTH_1:
-        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_1);
+        icon = ICON_CELL_STRENGTH_1;
         break;
     case CELL_SIGNAL_STRENGTH_2:
-        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_2);
+        icon = ICON_CELL_STRENGTH_2;
         break;
     case CELL_SIGNAL_STRENGTH_3:
-        lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_3);
+        icon = ICON_CELL_STRENGTH_3;
         break;
     default:
         break;
     }
+    setIconIfChanged(cellularIcon, icon, &current);
 }
 
 static void showDateTime() {
@@ -190,6 +218,15 @@ static void showDateTime() {
     }
 }
 
+static void updateVolume() {
+    static char* current = NULL;
+    if (settings()->terminal.devVolume > 0) {
+        setIconIfChanged(soundIcon, ICON_SOUND_ON, &current);
+    } else {
+        setIconIfChanged(soundIcon, ICON_SOUND_OFF, &current);
+    }
+}
+
 static void update() {
     updateDate();
     updateTime();
@@ -197,12 +234,7 @@ static void update() {
     updateCellIcon();
     updateOperatorDsc();
     updateWifiIcon();
-
-    if (settings()->terminal.devVolume > 0) {
-        lv_img_set_src(soundIcon, ICON_SOUND_ON);
-    } else {
-        lv_img_set_src(soundIcon, ICON_SOUND_OFF);
-    }
+    updateVolume();
     if (infoMode == STBAR_INFO_DATE_TIME) {
         showDateTime();
     }
