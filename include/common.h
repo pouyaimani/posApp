@@ -59,6 +59,7 @@ typedef int8_t (*ErrCallBack_t)(void* arg);
 #define STR_MAX(field) (sizeof(field) - 1)
 
 #define DEFINE_STRING(name, size) char name[size] = {0};
+#define RESET_STRING(name)        memset(name, 0, sizeof(name));
 
 #define DEFINE_BYTE_ARRAY(name, size) uint8_t name[size] = {0};
 

@@ -107,7 +107,6 @@ static void handleMerchantPhone(LtvStructInfo* tag) {
            sizeof(settings()->terminal.merchantPhone));
     hexStringToBytes(tag->data, tag->len - 1,
                      (unsigned char*)settings()->terminal.merchantPhone);
-    // strcpy (config.MerchantPhone, ltvStructInfo[i].data);
     LOG_DEBUG(" config.MerchantPhone [%s]", settings()->terminal.merchantPhone);
 }
 
@@ -202,7 +201,7 @@ static void decodeMerchantDesc(char* buffer) {
     }
 }
 
-Error_t setDateTime() {
+static inline Error_t setDateTime() {
     DateTime* dt = OOP_CALL(sys(), getDateTime);
     iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION,
                       (const DL_UINT8*)dt->time);
@@ -211,13 +210,43 @@ Error_t setDateTime() {
     return ERR_OK;
 }
 
-void setStan() {
+static inline Error_t setStan() {
     // txnTraceInfo()->inc();
     DEFINE_STRING(stan, (STAN_SIZE + 1));
     prependZerosInt(txnTraceInfo()->stan, STAN_SIZE, stan, sizeof(stan));
     stan[STAN_SIZE] = 0;
     LOG_DEBUG("stan = %d, stan string = %s", txnTraceInfo()->stan, stan);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
+    return ERR_OK;
+}
+
+static inline Error_t setNii() {
+    DEFINE_STRING(nni, 8);
+    prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
+    iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nni);
+    return ERR_OK;
+}
+
+static inline Error_t setTerminalNum() {
+    iso8583()->setStr(ELEMENT_TERMINAL_ID,
+                      (const DL_UINT8*)settings()->terminal.terminalNo);
+    return ERR_OK;
+}
+
+static inline Error_t setSecRelCtrlInfo() {
+    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO,
+                      (const DL_UINT8*)SecRelControlInfo);
+    return ERR_OK;
+}
+
+static inline Error_t setPrCode(const char* code) {
+    iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)code);
+    return ERR_OK;
+}
+
+static inline Error_t setMti(const char* mti) {
+    iso8583()->setMTI((const DL_UINT8*)mti);
+    return ERR_OK;
 }
 
 static Error_t setWorkingKeys() {
@@ -256,21 +285,13 @@ Error_t isoBuildLogOn(ByteArray* buf) {
     DEFINE_STRING(privateData, 128);
     setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
     /* set ISO message fields */
-    iso8583()->setMTI((const DL_UINT8*)MTI_VAL_LOG_ON);
-    iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)PRC_LOG_ON);
-    setStan();
-    setDateTime();
-    DEFINE_STRING(nni, 8);
-    prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
-    iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nni);
 #if defined REMOTE_KEY_INJECTION
     (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
                                         &isoMsg); // IIN
 #endif
     iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
                       (const DL_UINT8*)privateData);
-    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO,
-                      (const DL_UINT8*)SecRelControlInfo);
+    setSecRelCtrlInfo();
     return ERR_OK;
 }
 
@@ -291,9 +312,13 @@ static Error_t isoParseLogOnResponse(ByteArray* buf) {
     decodeMerchantDesc(feild);
     memset(feild, 0, sizeof(feild));
     iso8583()->getStr(ELEMENT_TERMINAL_ID, feild);
+    memset(settings()->terminal.terminalNo, 0,
+           sizeof(settings()->terminal.terminalNo));
+    snprintf(settings()->terminal.terminalNo,
+             sizeof(settings()->terminal.terminalNo), "%s", feild);
     LOG_DEBUG("terminal number = %s", feild);
     RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
-    // settings()->save();
+    settings()->save();
     return ERR_OK;
 }
 
@@ -303,20 +328,14 @@ Error_t isoBuildCfg(ByteArray* buf) {
     DEFINE_STRING(privateData, 128);
     setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
     /* set ISO message fields */
-    iso8583()->setMTI((const DL_UINT8*)MTI_VAL_CFG);
-    iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)PRC_CFG);
-    setStan();
-    setDateTime();
-    DEFINE_STRING(nni, 8);
-    prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
-    iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nni);
 #if defined REMOTE_KEY_INJECTION
     (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
                                         &isoMsg); // IIN
 #endif
-    iso8583()->setStr(ELEMENT_TERMINAL_ID, (const DL_UINT8*)privateData);
+    setTerminalNum();
     iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
-                      (const DL_UINT8*)settings()->terminal.terminalNo);
+                      (const DL_UINT8*)privateData);
+    setSecRelCtrlInfo();
     return ERR_OK;
 }
 
@@ -332,20 +351,20 @@ static Error_t isoParseCfgResponse(ByteArray* buf) {
     if (result != SDK_OK)
         return result;
 #endif
-    DEFINE_STRING(acquirerIIN, 11);
+    DEFINE_STRING(feild, 1028);
     size_t length;
-    iso8583()->getBin(ELEMENT_ACQUIRING_INSTITUTION_ID, acquirerIIN, &length);
-    LOG_DEBUG("[[ acquirerIIN (%d)(%s) ]]", length, acquirerIIN);
-    memcpy(settings()->terminal.acquirerIIN, acquirerIIN, length);
+    iso8583()->getBin(ELEMENT_ACQUIRING_INSTITUTION_ID, feild, &length);
+    LOG_DEBUG("[[ acquirerIIN (%d)(%s) ]]", length, feild);
+    memcpy(settings()->terminal.acquirerIIN, feild, length);
     settings()->terminal.acquirerIIN[length] = '\0';
-
     LOG_DEBUG("[[ setting.AcquireIIN (%d)(%s) ]]",
               strlen(settings()->terminal.acquirerIIN),
               settings()->terminal.acquirerIIN);
-    DEFINE_STRING(f48, 16);
-    iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, f48);
-    decodeMerchantDesc(f48);
+    RESET_STRING(feild);
+    iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
+    decodeMerchantDesc(feild);
     // compareMac(TAK_INDEX, buf);
+    settings()->terminal.isCfgDone = true;
     settings()->save();
     return ERR_OK;
 }
@@ -391,6 +410,11 @@ Error_t isoBuild(MTI_t mti, ByteArray* buf) {
     IsoTransaction* txn = isoFindTransaction(mti);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
     iso8583()->reset();
+    setMti(txn->mtiStr);
+    setPrCode(txn->prcode);
+    setStan();
+    setDateTime();
+    setNii();
     RETURN_VALUE_IF_NOT(txn->builder(buf), ERR_OK, ;, ERR_NOK);
     return isoBuildMac(buf);
 }
@@ -416,8 +440,14 @@ RespCode_t isoParse(MTI_t mti, ByteArray* buf) {
 static const IsoTransaction templates[] = {
     {.mti     = MTI_LOG_ON,
      .builder = isoBuildLogOn,
-     .parser  = isoParseLogOnResponse},
-    {.mti = MTI_CFG, .builder = isoBuildCfg, .parser = isoParseCfgResponse},
+     .parser  = isoParseLogOnResponse,
+     .prcode  = PRC_LOG_ON,
+     .mtiStr  = MTI_VAL_LOG_ON},
+    {.mti     = MTI_CFG,
+     .builder = isoBuildCfg,
+     .parser  = isoParseCfgResponse,
+     .prcode  = PRC_CFG,
+     .mtiStr  = MTI_VAL_CFG},
     {.mti     = MTI_PURCHASE,
      .builder = isoBuildPurchase,
      .parser  = isoParsePurchaseResponse},

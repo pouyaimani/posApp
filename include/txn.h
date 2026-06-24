@@ -11,6 +11,8 @@
 typedef enum {
     MTI_LOG_ON = 0,
     MTI_CFG,
+    MTI_SETTLEMENT,
+    MTI_REVERSAL,
     MTI_PURCHASE,
     MTI_BALANCE,
     MTI_PAY,

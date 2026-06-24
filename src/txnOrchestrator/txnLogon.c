@@ -1,9 +1,4 @@
 #include "txnFLow.h"
-#include "states/states.h"
-#include "ui/infoPage.h"
-#include "txn.h"
-#include "byteArray.h"
-#include "phrases/phrases.h"
 
 static int buildLogOn(ByteArray* ba) { return isoBuild(MTI_LOG_ON, ba); }
 

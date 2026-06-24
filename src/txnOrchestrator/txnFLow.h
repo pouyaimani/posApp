@@ -7,6 +7,7 @@
 #include "state.h"
 #include "nth/nth.h"
 #include "byteArray.h"
+#include "txn.h"
 
 typedef struct TxnFlow TxnFlow;
 

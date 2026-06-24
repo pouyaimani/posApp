@@ -33,6 +33,7 @@ static lv_obj_t* mainIcon;
 static lv_obj_t* menuButton;
 static lv_obj_t* menuIcon;
 static lv_obj_t* menuText;
+static lv_obj_t* merchantName;
 
 static Timer*    timer;
 static SwipeHint swipe;
@@ -68,10 +69,22 @@ static void menuEventCb(lv_event_t* e) {
     }
 }
 
+static void setTextIfChanged(lv_obj_t* label, const char* txt) {
+    if (strcmp(lv_label_get_text(label), txt) == 0) {
+        return;
+    }
+
+    LV_SET_TEXT(label, txt);
+}
+
 STATE_DEF_ENTER(Idle) {
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
     getEventloop()->registerChecker(magreader()->ioRead);
+    setTextIfChanged(merchantName,
+                     settings()->terminal.isCfgDone
+                         ? settings()->terminal.merchantName
+                         : phraseGetDef(PHRASE_DEV_IS_NOT_CONFIGURED));
     LV_SHOW(menuBar);
     // LV_SHOW(swipCardCont);
     LV_SHOW(mainIcon);
@@ -236,26 +249,13 @@ static void createUi() {
     lv_obj_set_scroll_dir(menuBar, LV_DIR_NONE);
     LV_CLICK_DISABLE(menuBar);
 
-    // swipCardCont = lv_obj_create(disp()->screen);
-    // LV_SET_SIZE(swipCardText, lv_pct(100), lv_pct(100));
-    // LV_SET_BG_OPA(swipCardCont, LV_OPA_0);
-    // LV_SET_BORDER_OPA(swipCardCont, LV_OPA_0);
-    // LV_SCROLL_DISABLE(swipCardCont);
-    // lv_obj_update_layout(swipCardCont);
-
-    // swipCardText = lv_label_create(swipCardCont);
-    // LV_SET_SIZE(swipCardText, 180, 20);
-    // LV_SET_TEXT_COLOR(swipCardText, MAIN_THEME_COLOR);
-    // LV_SET_TEXT_FONT(swipCardText, FONT_16);
-    // LV_SET_TEXT(swipCardText, "لطفا کارت خود را بکشید");
-    // LV_SCROLL_DISABLE(swipCardText);
-    // LV_ALIGN(swipCardText, LV_ALIGN_RIGHT_MID, 70, -35);
-
-    // lv_obj_update_layout(swipCardText);
-
-    // lv_obj_set_style_transform_angle(swipCardText, -900, 0);
-    // lv_obj_set_style_transform_pivot_x(swipCardText, 90, 0);
-    // lv_obj_set_style_transform_pivot_y(swipCardText, 10 , 0);
+    merchantName = lv_label_create(menuBar);
+    LV_SET_TEXT_FONT(merchantName, FONT_16);
+    LV_SET_TEXT_COLOR(merchantName, COLOR_WHITE);
+    LV_SET_TEXT(merchantName, settings()->terminal.isCfgDone
+                                  ? settings()->terminal.merchantName
+                                  : phraseGetDef(PHRASE_DEV_IS_NOT_CONFIGURED));
+    LV_ALIGN(merchantName, LV_ALIGN_CENTER, -15, -10);
 
     mainIcon = lv_img_create(disp()->screen);
     lv_img_set_src(mainIcon, ICON_IDLE_MAIN);

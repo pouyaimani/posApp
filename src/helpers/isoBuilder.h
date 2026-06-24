@@ -14,6 +14,8 @@ typedef int8_t (*TxnIsoParser)(ByteArray*);
 
 typedef struct {
     MTI_t         mti;
+    const char*   prcode;
+    const char*   mtiStr;
     TxnIsoBuilder builder;
     TxnIsoParser  parser;
 } IsoTransaction;

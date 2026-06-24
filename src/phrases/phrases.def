@@ -214,6 +214,8 @@ X(PHRASE_TIME_OUT              ,   "اتمام زمان مجاز"               
 )
 X(PHRASE_PARSE_ERROR           ,   "خطا در تفسیر داده دریافتی"                 , "parsing data error"
 )
+X(PHRASE_DEV_IS_NOT_CONFIGURED ,   "دستگاه پیکربندی نشده است"                 , "device is not configured"
+)
 
 /**********************************************************************
  *

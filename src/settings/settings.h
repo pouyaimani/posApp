@@ -48,7 +48,7 @@ typedef struct __attribute__((packed)) {
     int      fixedAmountCoef;
     uint8_t  shiftEnable;
     uint8_t  shiftActive;
-
+    bool     isCfgDone;
 } TerminalSettings;
 
 typedef struct __attribute__((packed)) {

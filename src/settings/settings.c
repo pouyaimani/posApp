@@ -69,6 +69,7 @@ static const DataDescriptor settingsDsc[] = {
 
     // 🔹 Terminal - basic
     DSC_BYTE(__settings.terminal.touchEnable, DEFAULT_TOUCH_ENABLE),
+    DSC_BYTE(__settings.terminal.isCfgDone, DEFAULT_TOUCH_ENABLE),
     DSC_BYTE(__settings.terminal.netRoute, DEFAULT_COMM_MODE),
     DSC_BYTE(__settings.terminal.devVolume, DEFAULT_KEY_VOLUME),
     DSC_BYTE(__settings.terminal.sleepTimeout, DEFAULT_TIMEOUT_SLEEP),
