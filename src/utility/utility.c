@@ -599,22 +599,22 @@ Date_t getJalaliDate() {
     return jalali;
 }
 
-void formatDateTimeStr(char* out, size_t out_size) {
+void formatDateTimeStr(char* date, char* day, size_t out_size) {
     DateTime* dt = OOP_CALL(sys(), getDateTime);
 
     int yy, mm, dd;
     sscanf(dt->date, "%2d%2d%2d", &yy, &mm, &dd);
 
-    int         full_year = 2000 + yy; // adjust if needed
-    const char* day       = getDayName(full_year, mm, dd);
-    Date_t      greg;
+    int full_year = 2000 + yy; // adjust if needed
+    snprintf(day, out_size, "%s", getDayName(full_year, mm, dd));
+    Date_t greg;
     greg.day   = dd;
     greg.month = mm;
     greg.year  = full_year;
     Date_t jalali;
     gregorianToJalali(greg, &jalali);
-    snprintf(out, out_size, "%02d/%02d/%02d-%s", jalali.year % 100,
-             jalali.month, jalali.day, day);
+    snprintf(date, out_size, "%02d/%02d/%02d", jalali.year % 100, jalali.month,
+             jalali.day);
 }
 
 void formatTimeStr(char* out, size_t out_size) {

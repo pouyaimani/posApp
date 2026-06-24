@@ -42,7 +42,7 @@ void clearStr(char* buf);
 int amountSeparator(const char* in, char* out, size_t out_size);
 
 // Date time utilities
-void formatDateTimeStr(char* out, size_t out_size);
+void formatDateTimeStr(char* date, char* day, size_t out_size);
 void formatTimeStr(char* out, size_t out_size);
 int  dateSeparator(const char* in, char* out, size_t out_size);
 int  timeSeparator(const char* in, char* out, size_t out_size);

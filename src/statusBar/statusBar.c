@@ -19,6 +19,7 @@ static StatusBarInfoMode_t infoMode = STBAR_INFO_DATE_TIME;
 lv_obj_t*                  statusbar;
 lv_obj_t*                  ldate;
 lv_obj_t*                  ltime;
+lv_obj_t*                  lday;
 lv_obj_t*                  infoBox;
 lv_obj_t*                  info;
 lv_obj_t*                  cellularIcon;
@@ -51,10 +52,12 @@ void dtScroll(lv_obj_t* label1, lv_obj_t* label2) {
 }
 
 static void updateDate() {
-    char dt[40];
+    char dt[24];
+    char day[24];
     memset(dt, 0, sizeof(dt));
-    formatDateTimeStr(dt, sizeof(dt));
+    formatDateTimeStr(dt, day, sizeof(dt));
     LV_SET_TEXT(ldate, dt);
+    LV_SET_TEXT(lday, day);
 }
 
 static void updateTime() {
@@ -113,12 +116,13 @@ static void updateWifiIcon() {
 
 static void updateOperatorDsc() {
     if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
+        LV_SET_TEXT(operator, "NoSim");
         lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
         return;
     }
     CellSimInfo simInfo;
     if (OOP_CALL(cellular(), getSimInfo, &simInfo) != CELL_ERR_OK) {
-        LV_SET_TEXT(operator, "Unknown");
+        LV_SET_TEXT(operator, "NKN");
         return;
     }
     static uint8_t prevOpt    = 0;
@@ -147,8 +151,6 @@ static void updateOperatorDsc() {
 }
 
 static void updateCellIcon() {
-    lv_img_set_src(cellularIcon, ICON_CELL_STRENGTH_3);
-    return;
     if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
         lv_img_set_src(cellularIcon, ICON_CELL_DISCONNECT);
         return;
@@ -179,8 +181,10 @@ static void showDateTime() {
     static uint8_t cnt = 0;
     cnt++;
     if (cnt == 5) {
-        dtScroll(ldate, ltime);
+        dtScroll(ldate, lday);
     } else if (cnt == 10) {
+        dtScroll(lday, ltime);
+    } else if (cnt == 15) {
         dtScroll(ltime, ldate);
         cnt = 0;
     }
@@ -208,6 +212,7 @@ static void enDateTimeMode() {
     infoMode = STBAR_INFO_DATE_TIME;
     LV_SHOW(ldate);
     LV_SHOW(ltime);
+    LV_SHOW(lday);
     LV_HIDE(info);
     update();
 }
@@ -216,6 +221,7 @@ static void setInfo(const char* data) {
     infoMode = STBAR_INFO;
     LV_SET_TEXT(info, data);
     LV_HIDE(ldate);
+    LV_HIDE(ltime);
     LV_HIDE(ltime);
     LV_SHOW(info);
 }
@@ -272,6 +278,16 @@ OOP_CTOR(StatusBar) {
     LV_SET_TEXT_COLOR(ldate, COLOR_WHITE);
     LV_SET_TEXT_ALIGN(ldate, LV_TEXT_ALIGN_CENTER);
 
+    lday = lv_label_create(infoBox);
+    LV_SET_SIZE(lday, lv_pct(100), lv_pct(100));
+    LV_ALIGN(lday, LV_ALIGN_TOP_MID, 0, 0);
+    LV_SET_BG_OPA(lday, LV_OPA_0);
+    LV_SET_BORDER_OPA(lday, LV_OPA_0);
+    LV_SET_TEXT_FONT(lday, FONT_16);
+    LV_SET_TEXT_COLOR(lday, COLOR_WHITE);
+    LV_SET_TEXT_ALIGN(lday, LV_TEXT_ALIGN_CENTER);
+    lv_obj_set_y(lday, -height);
+
     info = lv_label_create(infoBox);
     LV_SET_SIZE(info, lv_pct(100), lv_pct(100));
     LV_ALIGN(info, LV_ALIGN_TOP_MID, 0, 0);
@@ -291,13 +307,14 @@ OOP_CTOR(StatusBar) {
     LV_ALIGN(soundIcon, LV_ALIGN_RIGHT_MID, -68, 5);
 
     operator = lv_label_create(disp()->statusbar);
-    LV_SET_SIZE(operator, 50, LV_SIZE_CONTENT);
+    LV_SET_SIZE(operator, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_ALIGN(operator, LV_ALIGN_LEFT_MID, 30, 7);
     LV_SET_BG_OPA(operator, LV_OPA_0);
     LV_SET_BORDER_OPA(operator, LV_OPA_0);
     LV_SET_TEXT_FONT(operator, FONT_16);
     LV_SET_TEXT_COLOR(operator, COLOR_WHITE);
     LV_SET_TEXT_ALIGN(operator, LV_TEXT_ALIGN_LEFT);
+    LV_SET_TEXT(operator, "NoSim");
     // lv_label_set_long_mode(operator, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
     cellularIcon = lv_img_create(disp()->statusbar);
