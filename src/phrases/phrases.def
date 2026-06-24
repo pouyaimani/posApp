@@ -90,6 +90,8 @@ X(PHRASE_AMOUNT_EXCEED          ,   "مبلغ بیش از حد مجاز"        
 )
 X(PHRASE_INPUT_EXCEED           ,   "ورودی بیش از حد مجاز"          ,   "input exceed"
 )
+X(PHRASE_INVALID_AMOUNT         ,   "مبلغ نامعتبر است"              ,   "invalid amount"
+)
 X(PHRASE_INVALID_IP             ,   "نامعتبر است IP"                 ,   "invalid IP"
 )
 X(PHRASE_INVALID_DATE           ,   "تاریخ نامعتبر است"                   ,   "invalid date"

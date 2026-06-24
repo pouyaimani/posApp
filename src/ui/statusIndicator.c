@@ -1,13 +1,6 @@
 #include "statusIndicator.h"
 #include "myColor.h"
 
-static void rippleSizeCb(void* obj, int32_t v) {
-    LV_SET_SIZE(obj, v, v);
-    lv_obj_center(obj);
-}
-
-static void rippleOpaCb(void* obj, int32_t v) { LV_SET_BORDER_OPA(obj, v); }
-
 static void setColor(StatusIndicator* si, uint32_t color) {
     si->color = color;
     LV_SET_BG_COLOR(si->circle, color);
@@ -19,8 +12,20 @@ static void setColor(StatusIndicator* si, uint32_t color) {
     }
 }
 
-static void startRipple(lv_obj_t* obj, uint32_t delay) {
+/* ---------------- Ripple ---------------- */
+
+static void rippleSizeCb(void* obj, int32_t v) {
+    LV_SET_SIZE(obj, v, v);
+
+    lv_obj_center(obj);
+}
+
+static void rippleOpaCb(void* obj, int32_t v) { LV_SET_BORDER_OPA(obj, v); }
+
+static void startRippleAnim(lv_obj_t* obj, uint32_t delay) {
     lv_anim_t a;
+
+    /* SIZE */
 
     lv_anim_init(&a);
 
@@ -34,7 +39,15 @@ static void startRipple(lv_obj_t* obj, uint32_t delay) {
 
     lv_anim_set_delay(&a, delay);
 
+    lv_anim_set_repeat_delay(&a, RIPPLE_REPEAT_DELAY);
+
+    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+
+    lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
+
     lv_anim_start(&a);
+
+    /* OPACITY */
 
     lv_anim_init(&a);
 
@@ -48,7 +61,41 @@ static void startRipple(lv_obj_t* obj, uint32_t delay) {
 
     lv_anim_set_delay(&a, delay);
 
+    lv_anim_set_repeat_delay(&a, RIPPLE_REPEAT_DELAY);
+
+    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+
+    lv_anim_set_path_cb(&a, lv_anim_path_bounce);
+
     lv_anim_start(&a);
+}
+
+static void startRippleLoop(StatusIndicator* si) {
+    lv_anim_del(si->ripple1, NULL);
+
+    lv_anim_del(si->ripple2, NULL);
+
+    LV_SET_SIZE(si->ripple1, RIPPLE_START, RIPPLE_START);
+
+    LV_SET_SIZE(si->ripple2, RIPPLE_START, RIPPLE_START);
+
+    LV_SET_BORDER_OPA(si->ripple1, LV_OPA_COVER);
+
+    LV_SET_BORDER_OPA(si->ripple2, LV_OPA_COVER);
+
+    startRippleAnim(si->ripple1, 0);
+
+    startRippleAnim(si->ripple2, RIPPLE_DELAY);
+}
+
+static void stopRipple(StatusIndicator* si) {
+    lv_anim_del(si->ripple1, NULL);
+
+    lv_anim_del(si->ripple2, NULL);
+
+    LV_HIDE(si->ripple1);
+
+    LV_HIDE(si->ripple2);
 }
 
 static void waitTimerCb(lv_timer_t* timer) {
@@ -168,14 +215,16 @@ void statusIndicatorShow(StatusIndicator* si, StatusIndicatorState state) {
     case STATUS_INDICATOR_SUCCESS:
         setColor(si, MAIN_THEME_COLOR);
         LV_SET_TEXT(si->icon, LV_SYMBOL_OK);
-        startRipple(si->ripple1, 0);
-        startRipple(si->ripple2, RIPPLE_DELAY);
+        LV_SHOW(si->ripple1);
+        LV_SHOW(si->ripple2);
+        startRippleLoop(si);
         break;
     case STATUS_INDICATOR_ERROR:
         setColor(si, MAIN_THEME_COLOR);
         LV_SET_TEXT(si->icon, LV_SYMBOL_CLOSE);
-        startRipple(si->ripple1, 0);
-        startRipple(si->ripple2, RIPPLE_DELAY);
+        LV_SHOW(si->ripple1);
+        LV_SHOW(si->ripple2);
+        startRippleLoop(si);
         break;
     case STATUS_INDICATOR_WARNING:
         setColor(si, MAIN_THEME_COLOR);
@@ -186,14 +235,18 @@ void statusIndicatorShow(StatusIndicator* si, StatusIndicatorState state) {
 }
 
 void statusIndicatorHide(StatusIndicator* si) {
-    lv_anim_del(si->ripple1, NULL);
-
-    lv_anim_del(si->ripple2, NULL);
+    stopRipple(si);
 
     if (si->waitTimer) {
         lv_timer_del(si->waitTimer);
+
         si->waitTimer = NULL;
     }
+
+    for (int i = 0; i < DOT_COUNT; i++) {
+        LV_HIDE(si->dots[i]);
+    }
+
     LV_HIDE(si->root);
 
     si->state = STATUS_INDICATOR_HIDDEN;

@@ -135,6 +135,21 @@ static bool timeValidate(const char* in) {
     return true;
 }
 
+static bool amountValidate(const char* in) {
+    char digits[6];
+    int  len = 0;
+
+    if (!in) {
+        return false;
+    }
+    if (in[0] == 0) {
+        return false;
+    }
+    if (strlen(in) < AMOUNT_MIN_CNT) {
+        return false;
+    }
+}
+
 static void dateFormat(const char* in, char* out) {
     char digits[8] = {0};
     int  dcount    = 0;
@@ -251,6 +266,10 @@ static void handleInput(State* state, KeypadEvent* ev) {
     }
 
     if (isAmount) {
+        if (input[0] == '0') {
+            deleteChar(input);
+            return;
+        }
         amountSeparator(input, amountStr, INPUT_MAX_LEN);
         LV_SET_TEXT(inputBox.textBox, amountStr);
     } else if (isIp) {
@@ -318,6 +337,13 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
                               phraseGetDef(PHRASE_INVALID_TIME));
                     return;
                 }
+            } else if (inMode == IN_MODE_AMOUNT) {
+                if (!amountValidate(input)) {
+                    GOTO_INFO(state, state, INFO_ERROR,
+                              phraseGetDef(PHRASE_ERROR),
+                              phraseGetDef(PHRASE_INVALID_AMOUNT));
+                    return;
+                }
             }
             SM_GOTO(state->next);
         } else
@@ -337,24 +363,28 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
 static void createUi() {
     title = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(title, FONT_20);
-    LV_SET_TEXT_COLOR(title, 0xFF4E4E);
+    LV_SET_TEXT_COLOR(title, COLOR_TEXT_PRIMARY);
     LV_SET_SIZE(title, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_ALIGN(title, LV_ALIGN_CENTER, 0, -70);
 
     info = lv_label_create(disp()->screen);
     LV_SET_TEXT_FONT(info, FONT_16);
-    LV_SET_TEXT_COLOR(info, 0x333333);
+    LV_SET_TEXT_COLOR(info, COLOR_TEXT_SECONDARY);
     LV_SET_SIZE(info, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_ALIGN(info, LV_ALIGN_CENTER, 0, -30);
 
     ui_inBox_create(&inputBox, disp()->screen);
     LV_ALIGN(inputBox.main, LV_ALIGN_CENTER, 0, 10);
-    ui_button_create(&confirmBut, disp()->screen, 0x68DD40,
-                     phraseGetDef(PHRASE_CONFIRM));
-    LV_ALIGN(confirmBut.main, LV_ALIGN_BOTTOM_RIGHT, -5, -10);
-    ui_button_create(&cancelBut, disp()->screen, 0xFF4E4E,
-                     phraseGetDef(PHRASE_CANCEL));
-    LV_ALIGN(cancelBut.main, LV_ALIGN_BOTTOM_LEFT, 5, -10);
+    ui_button_create(&confirmBut, disp()->screen);
+    ui_button_set_text(&confirmBut, phraseGetDef(PHRASE_CONFIRM));
+    ui_button_set_icon(&confirmBut, LV_SYMBOL_OK);
+    ui_button_set_color(&confirmBut, lv_color_hex(0x68DD40));
+    LV_ALIGN(ui_button_obj(&confirmBut), LV_ALIGN_BOTTOM_RIGHT, -5, -10);
+    ui_button_create(&cancelBut, disp()->screen);
+    ui_button_set_text(&cancelBut, phraseGetDef(PHRASE_CANCEL));
+    ui_button_set_icon(&cancelBut, LV_SYMBOL_CLOSE);
+    ui_button_set_color(&cancelBut, lv_color_hex(0xFF4E4E));
+    LV_ALIGN(ui_button_obj(&cancelBut), LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(inputBox.textBox, "");
 }
@@ -386,8 +416,8 @@ static void reset() {
 
 STATE_DEF_ENTER(Input) {
     LV_SHOW(inputBox.main);
-    LV_SHOW(confirmBut.main);
-    LV_SHOW(cancelBut.main);
+    LV_SHOW(ui_button_obj(&confirmBut));
+    LV_SHOW(ui_button_obj(&cancelBut));
     LV_SHOW(title);
     LV_SHOW(info);
     if (inMode == IN_MODE_IP) {
@@ -416,8 +446,8 @@ STATE_DEF_EXIT(Input) {
         snprintf(in->out, maxIn + 1, "%s", in->input);
     }
     LV_HIDE(inputBox.main);
-    LV_HIDE(confirmBut.main);
-    LV_HIDE(cancelBut.main);
+    LV_HIDE(ui_button_obj(&confirmBut));
+    LV_HIDE(ui_button_obj(&cancelBut));
     LV_HIDE(title);
     LV_HIDE(info);
 }

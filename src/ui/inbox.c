@@ -24,6 +24,6 @@ void ui_inBox_create(InputBox* inBox, lv_obj_t* parent) {
     inBox->textBox = lv_label_create(inBox->main);
     LV_SET_SIZE(inBox->textBox, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     LV_SET_TEXT_FONT(inBox->textBox, FONT_20);
-    LV_SET_TEXT_COLOR(inBox->textBox, COLOR_BLACK);
+    LV_SET_TEXT_COLOR(inBox->textBox, COLOR_TEXT_ACCENT);
     LV_ALIGN(inBox->textBox, LV_ALIGN_CENTER, 0, 0);
 }

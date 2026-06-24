@@ -41,6 +41,7 @@ typedef int8_t (*ErrCallBack_t)(void* arg);
 #define MAX_AMOUNT_LIST 13
 
 #define AMOUNT_MAX_CNT 12
+#define AMOUNT_MIN_CNT 4
 
 #define PHRASES_JSON_ADDR   ""
 #define BANK_NAME_JSON_ADDR ""

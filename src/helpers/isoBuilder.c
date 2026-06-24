@@ -8,11 +8,9 @@
 
 #define MTI_VAL_LOG_ON "0800"
 #define MTI_VAL_CFG    "0100"
-
-#define PRC_LOG_ON "920000"
-#define PRC_CFG    "930000"
-
-#define STAN_SIZE 6
+#define PRC_LOG_ON     "920000"
+#define PRC_CFG        "930000"
+#define STAN_SIZE      6
 
 enum {
     TAG_MERCHANT_NAME      = 31,
@@ -302,7 +300,6 @@ static Error_t isoParseLogOnResponse(ByteArray* buf) {
 Error_t isoBuildCfg(ByteArray* buf) {
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
-    LOG_DEBUG("dn = %s", sn);
     DEFINE_STRING(privateData, 128);
     setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
     /* set ISO message fields */
