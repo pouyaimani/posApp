@@ -24,7 +24,7 @@ OOP_CTOR(Event) { self->vtable.dispatch = dispatch; }
 
 Event* createEvent(SmEventType_t type) {
     Event* event;
-    LOG_TRACE("Creating Event. type = %d", type);
+    STM_LOG("Creating Event. type = %d", type);
     switch (type) {
     case SM_EVENT_TIME_OUT:
         CREATE_EVENT(TimeOutEvent, event);
@@ -70,12 +70,12 @@ OOP_CTOR(TimeOutEvent) { self->base.vtable.dispatchTo = TimeOut_dispatchTo; }
 /* ================= Keypad ================= */
 
 static void Keypad_dispatchTo(Event* self, State* state) {
-    LOG_TRACE("Keypad event dispatch to is called ...");
+    STM_LOG("Keypad event dispatch to is called ...");
     OOP_CALL(state, handleKeypad, self);
 }
 
 OOP_CTOR(KeypadEvent) {
-    LOG_TRACE("Keypad event is constructing ...");
+    STM_LOG("Keypad event is constructing ...");
     self->base.vtable.dispatchTo = Keypad_dispatchTo;
 }
 

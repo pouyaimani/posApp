@@ -6,6 +6,19 @@
 
 #if USE_LOG
 
+#define LOG_COLOR_RESET "\x1b[0m"
+
+#define LOG_COLOR_TRACE "\x1b[90m" // Gray
+#define LOG_COLOR_DEBUG "\x1b[36m" // Cyan
+#define LOG_COLOR_INFO  "\x1b[32m" // Green
+#define LOG_COLOR_WARN  "\x1b[33m" // Yellow
+#define LOG_COLOR_ERROR "\x1b[31m" // Red
+#define LOG_COLOR_FATAL "\x1b[91m" // Bright Red
+
+static const char* level_color[] = {LOG_COLOR_TRACE, LOG_COLOR_DEBUG,
+                                    LOG_COLOR_INFO,  LOG_COLOR_WARN,
+                                    LOG_COLOR_ERROR, LOG_COLOR_FATAL};
+
 #define LOG_BUFFER_SIZE 256
 
 static Logger __logger;
@@ -37,7 +50,8 @@ static size_t format_log_line(char* buf, size_t buf_size, const char* file,
         n += snprintf(buf + n, buf_size - n, "[no-time]");
     }
 
-    n += snprintf(buf + n, buf_size - n, "[%s][%s:%d] ", level_str[logLevel],
+    n += snprintf(buf + n, buf_size - n, "[%s%s%s][%s:%d] ",
+                  level_color[logLevel], level_str[logLevel], LOG_COLOR_RESET,
                   file, line);
 
     n += vsnprintf(buf + n, buf_size - n, fmt, ap);

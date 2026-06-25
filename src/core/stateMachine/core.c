@@ -9,21 +9,21 @@
 Core __core;
 
 static void init(State* initial) {
-    LOG_TRACE("SM: initialization starts.");
+    STM_LOG("SM: initialization starts.");
     RETURN_IF_NULL(initial, ;);
     __core.current        = initial;
     __core.current->inner = STATE_ENTRY;
 }
 
 static void raiseEvent(Event* ev) {
-    LOG_TRACE("SM: Event is going to raise.");
+    STM_LOG("SM: Event is going to raise.");
     RETURN_IF_NULL(ev, ;);
     if (!ev->target) {
-        LOG_TRACE("SM: Event target is null, setting it to current state.");
+        STM_LOG("SM: Event target is null, setting it to current state.");
         ev->target = __core.current;
     }
     __core.queue[__core.qsize++] = ev;
-    LOG_TRACE("SM: raising event fnished.");
+    STM_LOG("SM: raising event fnished.");
 }
 
 static void goTo(State* next) {
@@ -55,7 +55,7 @@ static void runCycle() {
 
     switch (s->inner) {
     case STATE_ENTRY:
-        LOG_TRACE("SM: on entry to %s %s", s->name, " state.");
+        STM_LOG("SM: on entry to %s %s", s->name, " state.");
         s->inner = STATE_EVENT;
         OOP_CALL(s, enter);
         break;
@@ -64,11 +64,11 @@ static void runCycle() {
         for (size_t i = 0; i < __core.qsize;) {
             Event* ev = __core.queue[i];
             if (ev->target == s) {
-                LOG_TRACE("SM: Event came to %s %s", s->name, " state.");
+                STM_LOG("SM: Event came to %s %s", s->name, " state.");
                 OOP_CALL(ev, dispatchTo, s);
                 OOP_CALL(sys(), freeMemory, ev);
                 __core.queue[i] = __core.queue[--__core.qsize];
-                LOG_TRACE("SM: Event dispatched to %s %s", s->name, " state.");
+                STM_LOG("SM: Event dispatched to %s %s", s->name, " state.");
             } else {
                 i++;
             }
@@ -76,7 +76,7 @@ static void runCycle() {
         break;
 
     case STATE_EXIT:
-        LOG_TRACE("SM: on exit from %s %s", s->name, " state.");
+        STM_LOG("SM: on exit from %s %s", s->name, " state.");
         OOP_CALL(s, exit);
         freeQ();
         s->inner       = STATE_ENTRY;
@@ -84,7 +84,7 @@ static void runCycle() {
         break;
 
     case STATE_SUBSTATE:
-        LOG_TRACE("SM: on substate to ", s->name, " state.");
+        STM_LOG("SM: on substate to ", s->name, " state.");
         OOP_CALL(s, exit);
         freeQ();
         s->inner       = STATE_EVENT;
@@ -94,7 +94,7 @@ static void runCycle() {
 }
 
 static void exec() {
-    LOG_TRACE("SM: starts execution.");
+    STM_LOG("SM: starts execution.");
     while (1) {
         runCycle();
         for (size_t i = 0; i < __core.cbSize; ++i) {
@@ -104,9 +104,9 @@ static void exec() {
 }
 
 void registerCallback(CoreCallback cb) {
-    LOG_TRACE("SM: new callback is registring, cb adress = %d", cb);
+    STM_LOG("SM: new callback is registring, cb adress = %d", cb);
     if (__core.cbSize < 16) {
-        LOG_TRACE("SM: new callback is registered.");
+        STM_LOG("SM: new callback is registered.");
         __core.callbacks[__core.cbSize++] = cb;
     } else {
         LOG_FATAL("SM: registering callback failed: queue is full.");
@@ -114,7 +114,7 @@ void registerCallback(CoreCallback cb) {
 }
 
 OOP_CTOR(Core) {
-    LOG_TRACE("SM: core constructor, core address = %d", &__core);
+    STM_LOG("SM: core constructor, core address = %d", &__core);
     __core.init             = init;
     __core.exec             = exec;
     __core.goTo             = goTo;

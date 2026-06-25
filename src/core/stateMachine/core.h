@@ -4,6 +4,12 @@
 #include "oop.h"
 #include <stddef.h>
 
+#ifdef STM_LOG_ENABLE
+#define STM_LOG(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define STM_LOG(...) ;
+#endif
+
 OOP_DECLARE_CLASS(State);
 OOP_DECLARE_CLASS(Event);
 
