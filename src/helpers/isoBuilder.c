@@ -6,11 +6,14 @@
 #include "utility/utility.h"
 #include "utility/arith.h"
 
-#define MTI_VAL_LOG_ON "0800"
-#define MTI_VAL_CFG    "0100"
-#define PRC_LOG_ON     "920000"
-#define PRC_CFG        "930000"
-#define STAN_SIZE      6
+#define MTI_VAL_LOG_ON  "0800"
+#define MTI_VAL_CFG     "0100"
+#define MTI_VAL_SETTLE  "0220"
+#define MTI_VAL_REVERSE "0420"
+
+#define PRC_LOG_ON "920000"
+#define PRC_CFG    "930000"
+#define STAN_SIZE  6
 
 enum {
     TAG_MERCHANT_NAME      = 31,
@@ -158,7 +161,6 @@ static void handleMerchantUniqueId(LtvStructInfo* tag) {
                      (unsigned char*)settings()->terminal.merchantUniqueId);
     LOG_DEBUG("settings()->terminal.merchantUniqueId [%s]",
               settings()->terminal.merchantUniqueId);
-    // settings()->save();
 }
 
 static void decodeMerchantDesc(char* buffer) {
@@ -318,7 +320,7 @@ static Error_t isoParseLogOnResponse(ByteArray* buf) {
              sizeof(settings()->terminal.terminalNo), "%s", feild);
     LOG_DEBUG("terminal number = %s", feild);
     RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
-    settings()->save();
+    RETURN_VALUE_IF_NOT(settings()->save(), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -365,9 +367,17 @@ static Error_t isoParseCfgResponse(ByteArray* buf) {
     decodeMerchantDesc(feild);
     // compareMac(TAK_INDEX, buf);
     settings()->terminal.isCfgDone = true;
-    settings()->save();
+    RETURN_VALUE_IF_NOT(settings()->save(), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
+
+static Error_t isoBuildSettle(ByteArray* buf) {}
+
+static Error_t isoParseSettle(ByteArray* buf) {}
+
+static Error_t isoBuildReverse(ByteArray* buf) {}
+
+static Error_t isoParseReverse(ByteArray* buf) {}
 
 static Error_t isoBuildPurchase(ByteArray* buf) {}
 
@@ -411,8 +421,10 @@ Error_t isoBuild(MTI_t mti, ByteArray* buf) {
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
     iso8583()->reset();
     setMti(txn->mtiStr);
-    setPrCode(txn->prcode);
-    setStan();
+    if (mti != MTI_SETTLEMENT && mti != MTI_REVERSAL) {
+        setPrCode(txn->prcode);
+        setStan();
+    }
     setDateTime();
     setNii();
     RETURN_VALUE_IF_NOT(txn->builder(buf), ERR_OK, ;, ERR_NOK);
@@ -448,6 +460,16 @@ static const IsoTransaction templates[] = {
      .parser  = isoParseCfgResponse,
      .prcode  = PRC_CFG,
      .mtiStr  = MTI_VAL_CFG},
+    {.mti     = MTI_SETTLEMENT,
+     .builder = isoBuildSettle,
+     .parser  = isoParseSettle,
+     .prcode  = NULL,
+     .mtiStr  = MTI_VAL_SETTLE},
+    {.mti     = MTI_REVERSAL,
+     .builder = isoBuildReverse,
+     .parser  = isoParseReverse,
+     .prcode  = NULL,
+     .mtiStr  = MTI_VAL_REVERSE},
     {.mti     = MTI_PURCHASE,
      .builder = isoBuildPurchase,
      .parser  = isoParsePurchaseResponse},

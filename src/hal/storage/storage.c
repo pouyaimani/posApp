@@ -17,7 +17,7 @@ typedef struct {
     uint32_t        count;
 } StorageCtx;
 
-int storageTlvHandler(const TlvItem* item, void* user) {
+Error_t storageTlvHandler(const TlvItem* item, void* user) {
     RETURN_VALUE_IF_NULL(item, ;, ERR_NULL_PARAMETER);
     RETURN_VALUE_IF_NULL(user, ;, ERR_NULL_PARAMETER);
     StorageCtx* ctx = (StorageCtx*)user;
@@ -110,9 +110,11 @@ static int32_t readSettingsFileHeadInfo(char* addr, uint32_t* fileSize,
     int32_t     ret                                     = 0;
     FileHandle* fp = OOP_CALL(file(), open, addr, "rb");
     if (!fp) {
+        LOG_ERROR("Storage: opening file failed.");
         return ERR_NOK;
     }
     if (OOP_CALL(file(), seek, fp, 0, FILE_SEEK_ORG_SET) != 0) {
+        LOG_ERROR("Storage: seeking file failed.");
         OOP_CALL(file(), close, fp);
         return ERR_NOK;
     }
@@ -134,6 +136,7 @@ static int32_t readSettingsFileHeadInfo(char* addr, uint32_t* fileSize,
     }
     *fileCrc = (uint32_t)(fileSizeBytes[2] * 256 + fileSizeBytes[3]);
     OOP_CALL(file(), close, fp);
+    LOG_TRACE("Storage: reading file head is done.");
     return ERR_OK;
 }
 
@@ -154,8 +157,8 @@ static DataDescriptor* getDataDescriptor(char* name, DataDescriptor* dsc,
     return item;
 }
 
-static int8_t saveStorage(DataDescriptor* dsc, size_t itemsCount,
-                          const char* addr) {
+static Error_t saveStorage(DataDescriptor* dsc, size_t itemsCount,
+                           const char* addr) {
     RETURN_VALUE_IF_NULL(dsc, ;, ERR_NULL_PARAMETER);
     RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
     uint8_t* fileWriteBuf = NULL;
@@ -164,6 +167,7 @@ static int8_t saveStorage(DataDescriptor* dsc, size_t itemsCount,
     uint32_t i            = 0;
     uint16_t writeBufLen  = 0;
     int32_t  ret          = 0;
+    LOG_TRACE("Storage: saving file started.");
 
     if (addr == NULL || strlen(addr) == 0) {
         LOG_ERROR("Address format err ...");
@@ -223,16 +227,14 @@ static int8_t saveStorage(DataDescriptor* dsc, size_t itemsCount,
     }
     ret = OOP_CALL(file(), write, fileWriteBuf, writeBufLen, 1, fp);
     OOP_CALL(file(), close, fp);
-    if (ret < 0) {
-        return ERR_NOK;
-    }
-    LOG_TRACE("Saving storage is successfully done.");
+    RETURN_VALUE_IF_NOT(ret, writeBufLen, ;, ERR_NOK);
     MEM_FREE(fileWriteBuf);
+    LOG_TRACE("Storage: saving file is done.");
     return ERR_OK;
 }
 
-static int8_t loadStorage(DataDescriptor* dsc, size_t itemsCount,
-                          const char* addr) {
+static Error_t loadStorage(DataDescriptor* dsc, size_t itemsCount,
+                           const char* addr) {
     RETURN_VALUE_IF_NULL(dsc, ;, ERR_NULL_PARAMETER);
     RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
     uint8_t* fileCaches = NULL;
@@ -292,8 +294,8 @@ static int8_t loadStorage(DataDescriptor* dsc, size_t itemsCount,
         goto init_storage_file;
     }
 
-    LOG_TRACE("parse settings tlv data success ... ");
     MEM_FREE(fileCaches);
+    LOG_TRACE("Storage: loading storage is successfuly done.");
     return ERR_OK;
 
 init_storage_file:

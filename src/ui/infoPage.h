@@ -29,6 +29,7 @@ OOP_CLASS(InfoPage) {
     lv_obj_t*  body;
     lv_obj_t*  img;
     lv_obj_t*  line;
+    bool*      forceUpdate;
 };
 
 InfoPage* infoPage();

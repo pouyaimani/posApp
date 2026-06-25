@@ -48,7 +48,7 @@ typedef struct __attribute__((packed)) {
     int      fixedAmountCoef;
     uint8_t  shiftEnable;
     uint8_t  shiftActive;
-    bool     isCfgDone;
+    uint8_t  isCfgDone;
 } TerminalSettings;
 
 typedef struct __attribute__((packed)) {
@@ -72,9 +72,9 @@ OOP_CLASS(TxnSettings){
 };
 
 typedef struct __attribute__((packed)) {
-    OOP_METHOD(int, save);
-    OOP_METHOD(int, load);
-    OOP_METHOD(int, reset);
+    OOP_METHOD(Error_t, save);
+    OOP_METHOD(Error_t, load);
+    OOP_METHOD(Error_t, reset);
     TerminalSettings terminal;
     ServerSettings   server;
     TxnSettings      txn;
@@ -83,8 +83,8 @@ typedef struct __attribute__((packed)) {
 DevSettings* settings();
 
 typedef struct __attribute__((packed)) {
-    OOP_METHOD(int, inc);
-    OOP_METHOD(int, load);
+    OOP_METHOD(Error_t, inc);
+    OOP_METHOD(Error_t, load);
     uint32_t stan;
     uint32_t batch;
 } TxnTraceInfo;

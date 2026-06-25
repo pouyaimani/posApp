@@ -81,6 +81,8 @@ STATE_DEF_ENTER(Idle) {
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
     getEventloop()->registerChecker(magreader()->ioRead);
+    LOG_DEBUG("settings()->terminal.isCfgDone  = %d",
+              settings()->terminal.isCfgDone);
     setTextIfChanged(merchantName,
                      settings()->terminal.isCfgDone
                          ? settings()->terminal.merchantName
@@ -198,6 +200,9 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_3) {
         OOP_CALL(file(), remove, "/mtd0/txn_t_info");
     } else if (ev->key == KEY_4) {
+        settings()->terminal.isCfgDone = true;
+        settings()->save();
+
     } else if (ev->key == KEY_5) {
     } else if (ev->key == KEY_6) {
         insertTxn();

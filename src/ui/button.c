@@ -24,10 +24,6 @@ void ui_button_create(Button* btn, lv_obj_t* parent) {
 
     lv_obj_clear_flag(btn->root, LV_OBJ_FLAG_SCROLLABLE);
 
-    /*
-     * White base
-     */
-
     btn->bg = lv_obj_create(btn->root);
 
     lv_obj_remove_style_all(btn->bg);
@@ -39,6 +35,8 @@ void ui_button_create(Button* btn, lv_obj_t* parent) {
     lv_obj_set_style_radius(btn->bg, LV_RADIUS_CIRCLE, 0);
 
     lv_obj_set_style_bg_color(btn->bg, lv_color_hex(MAIN_THEME_COLOR), 0);
+
+    lv_obj_set_style_border_color(btn->bg, lv_color_hex(MAIN_THEME_COLOR), 0);
 
     lv_obj_set_style_border_width(btn->bg, 1, 0);
 

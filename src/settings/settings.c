@@ -35,28 +35,27 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_PRINT_GREY_SCALE   "1"
 #define DEFAULT_UPDATE_FLAG        "0"
 #define DEFAULT_CONNECT_MODE       "1"
-
-#define DEFAULT_TOUCH_ENABLE "0"
-
-#define DEFAULT_SHIFT_S_DATE    "0"
-#define DEFAULT_SHIFT_S_TIME    "0"
-#define DEFAULT_SHIFT_E_DATE    "0"
-#define DEFAULT_SHIFT_E_TIME    "0"
-#define DEFAULT_SHIFT_LATEST    "0"
-#define DEFAULT_SHIFT_ENABLE    "0"
-#define DEFAULT_SHIFT_ACTIVE    "0"
-#define DEFAULT_MAX_AMNT_EN     "0"
-#define DEFAULT_MAX_AMNT        "999999999999/0"
-#define DEFAULT_DIRECT_SALE_EN  "0"
-#define DEFAULT_SERVICES_EN     "0"
-#define DEFAULT_FIXED_AMNT_ITEM "0"
-#define DEFAULT_FIXED_AMNT_LIST "0"
-#define DEFAULT_FIXED_AMNT_COEF "0"
-#define DEFAULT_AMNT_LIST_CNT   "0"
-#define DEFAULT_SSL_EN          "0"
-#define DEFAULT_MAIN_SERVER_ID  "0"
-#define DEFAULT_TMS_ID          "0"
-#define DEFAULT_MERCHANT_PIN    MERCHANT_DEFAULT_PIN
+#define DEFAULT_TOUCH_ENABLE       "0"
+#define DEFAULT_CFG_DONE           "0"
+#define DEFAULT_SHIFT_S_DATE       "0"
+#define DEFAULT_SHIFT_S_TIME       "0"
+#define DEFAULT_SHIFT_E_DATE       "0"
+#define DEFAULT_SHIFT_E_TIME       "0"
+#define DEFAULT_SHIFT_LATEST       "0"
+#define DEFAULT_SHIFT_ENABLE       "0"
+#define DEFAULT_SHIFT_ACTIVE       "0"
+#define DEFAULT_MAX_AMNT_EN        "0"
+#define DEFAULT_MAX_AMNT           "999999999999/0"
+#define DEFAULT_DIRECT_SALE_EN     "0"
+#define DEFAULT_SERVICES_EN        "0"
+#define DEFAULT_FIXED_AMNT_ITEM    "0"
+#define DEFAULT_FIXED_AMNT_LIST    "0"
+#define DEFAULT_FIXED_AMNT_COEF    "0"
+#define DEFAULT_AMNT_LIST_CNT      "0"
+#define DEFAULT_SSL_EN             "0"
+#define DEFAULT_MAIN_SERVER_ID     "0"
+#define DEFAULT_TMS_ID             "0"
+#define DEFAULT_MERCHANT_PIN       MERCHANT_DEFAULT_PIN
 
 static const DataDescriptor txnTraceInfoDsc[] = {
     {"stan", T_INT, (0), (sizeof(__txnTraceInfo.stan)), ("1"),
@@ -69,7 +68,7 @@ static const DataDescriptor settingsDsc[] = {
 
     // 🔹 Terminal - basic
     DSC_BYTE(__settings.terminal.touchEnable, DEFAULT_TOUCH_ENABLE),
-    DSC_BYTE(__settings.terminal.isCfgDone, DEFAULT_TOUCH_ENABLE),
+    DSC_INT(__settings.terminal.isCfgDone, DEFAULT_CFG_DONE),
     DSC_BYTE(__settings.terminal.netRoute, DEFAULT_COMM_MODE),
     DSC_BYTE(__settings.terminal.devVolume, DEFAULT_KEY_VOLUME),
     DSC_BYTE(__settings.terminal.sleepTimeout, DEFAULT_TIMEOUT_SLEEP),
@@ -145,20 +144,22 @@ static const DataDescriptor settingsDsc[] = {
     DSC_INT(__settings.terminal.amountListCnt, DEFAULT_AMNT_LIST_CNT),
 };
 
-static int saveSettings() {
-    storage()->save(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor),
-                    SETTINGS_FILE_ADDR);
+static Error_t saveSettings() {
+    return storage()->save(settingsDsc,
+                           sizeof(settingsDsc) / sizeof(DataDescriptor),
+                           SETTINGS_FILE_ADDR);
 }
 
-static int loadSettings() {
-    storage()->load(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor),
-                    SETTINGS_FILE_ADDR);
-    LOG_DEBUG("merchant pin = %s", __settings.terminal.merchantPin);
+static Error_t loadSettings() {
+    return storage()->load(settingsDsc,
+                           sizeof(settingsDsc) / sizeof(DataDescriptor),
+                           SETTINGS_FILE_ADDR);
 }
 
-static int resetSettings() {
-    storage()->reset(settingsDsc, sizeof(settingsDsc) / sizeof(DataDescriptor),
-                     SETTINGS_FILE_ADDR);
+static Error_t resetSettings() {
+    return storage()->reset(settingsDsc,
+                            sizeof(settingsDsc) / sizeof(DataDescriptor),
+                            SETTINGS_FILE_ADDR);
 }
 
 OOP_CTOR(DevSettings) {
@@ -172,13 +173,13 @@ DevSettings* settings() {
     return &__settings;
 }
 
-static int loadTxnTraceInfo() {
+static Error_t loadTxnTraceInfo() {
     storage()->load(txnTraceInfoDsc,
                     sizeof(txnTraceInfoDsc) / sizeof(DataDescriptor),
                     TXN_TRACE_FILE_ADDR);
 }
 
-static int incTxnTraceInfo() {
+static Error_t incTxnTraceInfo() {
     loadTxnTraceInfo();
     __txnTraceInfo.stan++;
     if (__txnTraceInfo.stan >= 999999) {

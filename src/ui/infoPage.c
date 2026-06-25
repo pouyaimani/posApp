@@ -9,6 +9,8 @@
 
 static StatusIndicator indicator;
 
+static bool forceUpdate = false;
+
 static void createInfoPage(InfoPage* pinfo) {
     RETURN_IF_NULL(pinfo, ;);
     pinfo->parent = disp()->screen;
@@ -95,6 +97,10 @@ static void infoShow(InfoPage* pinfo) {
     }
 
     statusIndicatorShow(&indicator, st);
+    if (forceUpdate) {
+        lv_refr_now(NULL);
+        forceUpdate = false;
+    }
 }
 
 static void infoSetData(InfoPage* pinfo, InfoType_t type, const char* data,
@@ -124,6 +130,7 @@ InfoPage* infoPage() {
     CALL_ONCE(createInfoPage(&info); info.vtable.hide = infoHide;
               info.vtable.show = infoShow; info.vtable.setData = infoSetData;
               infoHide(&info););
+    info.forceUpdate = &forceUpdate;
     return &info;
 }
 

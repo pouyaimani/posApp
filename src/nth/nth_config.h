@@ -17,7 +17,7 @@
 #define NTH_USE_LOG 1
 
 #ifdef NTH_USE_LOG
-#define NTH_LOG(...) LOG_ERROR(__VA_ARGS__)
+#define NTH_LOG(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define NTH_LOG(log)                                                           \
     do {                                                                       \

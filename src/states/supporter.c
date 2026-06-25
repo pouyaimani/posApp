@@ -44,6 +44,7 @@ STATE_DEF_HANDLE(Supporter, TimeOutEvent) {}
 /******************** Power off sub state **********************/
 
 STATE_DEF_ENTER(PowerOff) {
+    infoPage()->forceUpdate = true;
     GOTO_INFO(NULL, NULL, INFO_WARNING, phraseGetDef(PHRASE_POWERING_OFF), "");
     OOP_CALL(sys(), powerOff);
 }
