@@ -219,15 +219,17 @@ static Error_t saveStorage(DataDescriptor* dsc, size_t itemsCount,
     fileWriteBuf[3] = (uint8_t)(crc16 & 0xFFu);
     FileHandle* fp  = OOP_CALL(file(), open, addr, "wb");
     if (!fp) {
+        MEM_FREE(fileWriteBuf);
         return ERR_NOK;
     }
     if (OOP_CALL(file(), seek, fp, 0, FILE_SEEK_ORG_SET) != 0) {
         OOP_CALL(file(), close, fp);
+        MEM_FREE(fileWriteBuf);
         return ERR_NOK;
     }
-    ret = OOP_CALL(file(), write, fileWriteBuf, writeBufLen, 1, fp);
+    ret = OOP_CALL(file(), overwrite, fileWriteBuf, writeBufLen, 1, fp);
     OOP_CALL(file(), close, fp);
-    RETURN_VALUE_IF_NOT(ret, writeBufLen, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(ret, writeBufLen, MEM_FREE(fileWriteBuf);, ERR_NOK);
     MEM_FREE(fileWriteBuf);
     LOG_TRACE("Storage: saving file is done.");
     return ERR_OK;
@@ -265,11 +267,13 @@ static Error_t loadStorage(DataDescriptor* dsc, size_t itemsCount,
     readSize       = fileSize;
     FileHandle* fp = OOP_CALL(file(), open, addr, "rb");
     if (!fp) {
+        MEM_FREE(fileCaches);
         return ERR_NOK;
     }
     if (OOP_CALL(file(), seek, fp, SETTINGS_FILE_HEADER_LEN,
                  FILE_SEEK_ORG_SET) != 0) {
         OOP_CALL(file(), close, fp);
+        MEM_FREE(fileCaches);
         return ERR_NOK;
     }
     readSize = OOP_CALL(file(), read, fileCaches, fileSize, 1, fp);
@@ -300,9 +304,7 @@ static Error_t loadStorage(DataDescriptor* dsc, size_t itemsCount,
 
 init_storage_file:
 
-    if (fileCaches != NULL)
-        MEM_FREE(fileCaches);
-
+    MEM_FREE(fileCaches);
     init(dsc, itemsCount);
     return saveStorage(dsc, itemsCount, addr);
 }

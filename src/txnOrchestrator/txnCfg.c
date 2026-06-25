@@ -1,8 +1,20 @@
 #include "txnFLow.h"
+#include "settings/settings.h"
 
-static int buildLogOn(ByteArray* ba) { return isoBuild(MTI_CFG, ba); }
+static int buildLogOn(TxnCore* txn, ByteArray* ba) {
+    return isoBuild(MTI_CFG, txn, ba);
+}
 
-static int parseLogOn(ByteArray* ba) { return isoParse(MTI_CFG, ba); }
+static int parseLogOn(TxnCore* txn, ByteArray* ba) {
+    return isoParse(MTI_CFG, txn, ba);
+}
+
+static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+        settings()->save();
+    }
+    commonDone(flow, st);
+}
 
 const TxnFlowConfig cfgTxn = {
 
@@ -10,7 +22,7 @@ const TxnFlowConfig cfgTxn = {
 
     .parse = parseLogOn,
 
-    .done = commonDone,
+    .done = cfgDone,
 
     .onConnecting = showConnecting,
 

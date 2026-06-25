@@ -100,6 +100,16 @@ void nth_releaseTransaction(NthTransaction* tx) {
     tx->socketFd = -1;
 }
 
+void nth_disconnect(NthTransaction* tx) {
+    RETURN_IF_NULL(tx, ;);
+
+    if (tx->socketFd >= 0) {
+        NTH_LOG("NTH: closing socekt = %d", tx->socketFd);
+        g_transport->close(tx->socketFd);
+    }
+    tx->socketFd = -1;
+}
+
 NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(host, ;, NTH_ERR_INVALID_ARG);
@@ -381,6 +391,7 @@ OOP_CTOR(Nth) {
     self->tick           = nth_tick;
     self->setTx          = nth_setTx;
     self->sendProvidedTx = nth_sendProvidedTx;
+    self->disconnect     = nth_disconnect;
 }
 
 Nth* nth() {

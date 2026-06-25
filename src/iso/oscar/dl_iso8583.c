@@ -29,6 +29,13 @@
 #include "dl_iso8583.h"
 #include "logger.h"
 
+// #define ISO_LOG_ENABLE  1
+
+#ifdef ISO_LOG_ENABLE
+#define ISO_LOG(...) LOG_DEBUG(__VA_ARGS__)
+#else
+#define ISO_LOG(...) ;
+#endif
 /******************************************************************************/
 
 void DL_ISO8583_MSG_Init(DL_UINT8* _iStaticBuf, DL_UINT16 _iStaticBufSize,

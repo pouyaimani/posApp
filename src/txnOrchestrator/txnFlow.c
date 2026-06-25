@@ -13,6 +13,16 @@ static int8_t onFailure(NthTransaction* tx, void* ctx);
 
 static int8_t onTimeout(NthTransaction* tx, void* ctx);
 
+void txnFlowRelease(TxnFlow* flow) {
+    RETURN_VALUE_IF_NULL(flow, ;, false);
+    LOG_DEBUG("Txn flow: rleasing flow ...");
+    if (flow && flow->tx) {
+        nth()->release(flow->tx);
+        flow->tx = NULL;
+    }
+    flow->stage = TXN_STAGE_IDLE;
+}
+
 static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     RETURN_VALUE_IF_NULL(flow, ;, false);
     LOG_DEBUG("Txn flow: complete. result = %d, code = %d", result, code);
@@ -26,7 +36,6 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
         LOG_DEBUG("Txn flow: calling config done.");
         flow->cfg->done(flow, &st);
     }
-    LOG_DEBUG("Txn flow: releasing txn");
     txnFlowRelease(flow);
 }
 
@@ -77,7 +86,6 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
     if (cfg && cfg->onConnecting) {
         cfg->onConnecting(flow);
     }
-
     NthResult res = nth()->connect(flow->tx, host, port);
     if (res != NTH_OK) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_CONNECT);
@@ -85,22 +93,12 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
     }
 }
 
-void txnFlowRelease(TxnFlow* flow) {
-    RETURN_VALUE_IF_NULL(flow, ;, false);
-    LOG_DEBUG("Txn flow: rleasing flow ...");
-    if (flow && flow->tx) {
-        nth()->release(flow->tx);
-        flow->tx = NULL;
-    }
-    flow->stage = TXN_STAGE_IDLE;
-}
-
 static int8_t onConnect(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_DEBUG("Txn flow: on connect ...");
     TxnFlow* flow = ctx;
     ByteArray(ba, NT_TX_BUFFER_SIZE);
-    if (flow->cfg->build(&ba) != ERR_OK) {
+    if (flow->cfg->build(&flow->data, &ba) != ERR_OK) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_INTERNAL);
         return -1;
     }
@@ -138,7 +136,8 @@ static int8_t onReceive(NthTransaction* tx, void* ctx) {
     LOG_DEBUG("Txn flow: on receive ...");
     TxnFlow* flow = ctx;
     flow->stage   = TXN_STAGE_PARSING;
-    int rc        = flow->cfg->parse(&tx->rxBuffer);
+    nth()->disconnect(flow->tx);
+    int rc = flow->cfg->parse(&tx->rxBuffer);
     complete(flow, rc == ERR_NOK ? TXN_FLOW_FAILED : TXN_FLOW_SUCCESS, rc);
     return 0;
 }

@@ -52,7 +52,7 @@ OOP_VTABLE(System) {
     OOP_IMETHOD(int8_t, System, setDateTimeBcd, const char*);
     OOP_IMETHOD(void, System, logOut, const char*, size_t, void*);
     OOP_IMETHOD(BatteryStat*, System, getBatteryStatus);
-    OOP_IMETHOD(void, System, sleep);
+    OOP_IMETHOD(void, System, sleep, uint32_t ms);
     OOP_IMETHOD(void, System, reboot);
     OOP_IMETHOD(void, System, powerOff);
     OOP_IMETHOD(int8_t, System, getSN, char* out, size_t len);

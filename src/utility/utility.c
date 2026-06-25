@@ -7,6 +7,7 @@
 #include "sys/sys.h"
 #include "common.h"
 #include "phrases/phrases.h"
+#include <inttypes.h>
 
 int libAtoi(const char* str) {
     int  s    = 0;
@@ -749,6 +750,11 @@ void leftPadZero(const char* src, char* dst, size_t dstSize, int width) {
 void prependZerosInt(int number, int totalWidth, char* output,
                      size_t outputSize) {
     snprintf(output, outputSize, "%0*d", totalWidth, number);
+}
+
+void prependZerosUInt64(uint64_t number, int totalWidth, char* output,
+                        size_t outputSize) {
+    snprintf(output, outputSize, "%0*" PRIu64, totalWidth, number);
 }
 
 bool ipFormatLeftAligned(const char* in, char* out) {

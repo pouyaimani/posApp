@@ -85,17 +85,29 @@ static size_t write(File* self, const void* buffer, size_t size, size_t count,
     return bytesToWrite;
 }
 
+static int removeFile(File* self, const char* path) {
+    int ret = sdkFileDel(path);
+    return ret == SDK_FILE_OK ? 0 : -1;
+}
+
+static size_t overwrite(File* self, const void* buffer, size_t size,
+                        size_t count, FileHandle* handle) {
+    size_t bytesToWrite = size * count;
+    LOG_DEBUG("path = %s, size = %u", handle->path, bytesToWrite);
+    // removeFile(self, handle->path);
+    s32 r = sdkFileWrite(handle->path, (u8*)buffer, (u32)bytesToWrite);
+    if (r != SDK_FILE_OK)
+        return 0; // Error
+    handle->pos += (u32)bytesToWrite;
+    return bytesToWrite;
+}
+
 static long tell(File* self, FileHandle* handle) { return handle->pos; }
 
 static int flush(File* self, FileHandle* handle) { return 0; }
 
 static long size(File* self, FileHandle* handle) {
     return sdkFileGetSize(handle->path);
-}
-
-static int removeFile(File* self, const char* path) {
-    int ret = sdkFileDel(path);
-    return ret == SDK_FILE_OK ? 0 : -1;
 }
 
 static int sync(File* self, FileHandle* handle) { return 0; }
@@ -123,6 +135,7 @@ OOP_CTOR(FileT3Rtos) {
     self->base.vtable.sync         = sync;
     self->base.vtable.tell         = tell;
     self->base.vtable.write        = write;
+    self->base.vtable.overwrite    = overwrite;
 }
 
 #endif

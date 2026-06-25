@@ -71,6 +71,16 @@ OOP_VTABLE(File) {
     OOP_IMETHOD(size_t, File, write, const void* buffer, size_t size,
                 size_t count, FileHandle* handle);
 
+    /* Overwrite data to file.
+     * Parameters:
+     *   buffer: source buffer
+     *   size: size of each element
+     *   count: number of elements
+     *   handle: file handle from open()
+     * Returns: number of elements successfully written */
+    OOP_IMETHOD(size_t, File, overwrite, const void* buffer, size_t size,
+                size_t count, FileHandle* handle);
+
     /* Seek to position in file.
      * Parameters:
      *   handle: file handle from open()

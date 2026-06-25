@@ -1,8 +1,8 @@
 #include "txnFlow.h"
 #include "isoBuilder.h"
 
-static int buildSettlement(ByteArray* ba) {
-    return isoBuild(MTI_SETTLEMENT, ba);
+static int buildSettlement(TxnCore* txn, ByteArray* ba) {
+    return isoBuild(MTI_SETTLEMENT, NULL, ba);
 }
 
 static int parseSettlement(ByteArray* ba) {

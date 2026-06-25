@@ -15,8 +15,6 @@ static TxnTraceInfo __txnTraceInfo;
 
 #define TXN_TRACE_FILE_ADDR "/mtd0/txn_t_info"
 
-#define SETTINGS_FILE_MAX_SIZE 4096
-
 #define SETTINGS_FILE_HEADER_LEN 4
 
 // default property value

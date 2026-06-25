@@ -14,7 +14,8 @@ int8_t byteArrayInit(ByteArray* ba, size_t size);
 int8_t byteArrayDestroy(ByteArray* ba);
 
 #define ByteArray(name, size)                                                  \
-    uint8_t   data_##name[size] = {0};                                         \
+    uint8_t data_##name[size];                                                 \
+    memset(data_##name, 0, size);                                              \
     ByteArray name;                                                            \
     name.data     = data_##name;                                               \
     name.capacity = size;

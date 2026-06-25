@@ -53,7 +53,7 @@ typedef struct {
 
 /* ================= Callbacks ================= */
 
-typedef int (*TxnBuildFn)(ByteArray* ba);
+typedef int (*TxnBuildFn)(TxnCore* txn, ByteArray* ba);
 
 typedef int (*TxnParseFn)(ByteArray* ba);
 
@@ -90,6 +90,8 @@ struct TxnFlow {
     const TxnFlowConfig* cfg;
 
     TxnFlowStage stage;
+
+    TxnCore data;
 
     void* userData;
 };

@@ -6,15 +6,6 @@
 #include "utility/utility.h"
 #include "utility/arith.h"
 
-#define MTI_VAL_LOG_ON  "0800"
-#define MTI_VAL_CFG     "0100"
-#define MTI_VAL_SETTLE  "0220"
-#define MTI_VAL_REVERSE "0420"
-
-#define PRC_LOG_ON "920000"
-#define PRC_CFG    "930000"
-#define STAN_SIZE  6
-
 enum {
     TAG_MERCHANT_NAME      = 31,
     TAG_MERCHANT_PHONE     = 34,
@@ -114,8 +105,8 @@ static void handleMerchantPhone(LtvStructInfo* tag) {
 }
 
 static void handleSwitchDateTime(LtvStructInfo* tag) {
-    int           dateTime[6]  = {0};
-    unsigned char tempBuf[512] = {0};
+    int           dateTime[6] = {0};
+    unsigned char tempBuf[64] = {0};
 
     LOG_DEBUG("dateTime(%d) [%s]", tag->len, tag->data);
 
@@ -212,12 +203,11 @@ static inline Error_t setDateTime() {
     return ERR_OK;
 }
 
-static inline Error_t setStan() {
-    // txnTraceInfo()->inc();
+static inline Error_t setStan(uint32_t istan) {
     DEFINE_STRING(stan, (STAN_SIZE + 1));
-    prependZerosInt(txnTraceInfo()->stan, STAN_SIZE, stan, sizeof(stan));
+    prependZerosInt(istan, STAN_SIZE, stan, sizeof(stan));
     stan[STAN_SIZE] = 0;
-    LOG_DEBUG("stan = %d, stan string = %s", txnTraceInfo()->stan, stan);
+    LOG_DEBUG("stan = %d, stan string = %s", istan, stan);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
     return ERR_OK;
 }
@@ -241,13 +231,20 @@ static inline Error_t setSecRelCtrlInfo() {
     return ERR_OK;
 }
 
-static inline Error_t setPrCode(const char* code) {
-    iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)code);
+static inline Error_t setPrCode(uint32_t code) {
+    DEFINE_STRING(prcode, (PRCODE_SIZE + 1));
+    prependZerosInt(code, PRCODE_SIZE, prcode, sizeof(prcode));
+    prcode[STAN_SIZE] = 0;
+    LOG_DEBUG("stan = %d, stan string = %s", code, prcode);
+    iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)prcode);
     return ERR_OK;
 }
 
-static inline Error_t setMti(const char* mti) {
-    iso8583()->setMTI((const DL_UINT8*)mti);
+static inline Error_t setMti(uint16_t mti) {
+    DEFINE_STRING(mtistr, (MTI_SIZE + 1));
+    prependZerosInt(mti, MTI_SIZE, mtistr, sizeof(mtistr));
+    mtistr[MTI_SIZE] = 0;
+    iso8583()->setMTI((const DL_UINT8*)mtistr);
     return ERR_OK;
 }
 
@@ -280,7 +277,7 @@ static Error_t setWorkingKeys() {
  *                                                                                           *
  ********************************************************************************************/
 
-Error_t isoBuildLogOn(ByteArray* buf) {
+Error_t isoBuildLogOn(TxnCore* txn, ByteArray* buf) {
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     LOG_DEBUG("dn = %s", sn);
@@ -314,17 +311,15 @@ static Error_t isoParseLogOnResponse(ByteArray* buf) {
     decodeMerchantDesc(feild);
     memset(feild, 0, sizeof(feild));
     iso8583()->getStr(ELEMENT_TERMINAL_ID, feild);
-    memset(settings()->terminal.terminalNo, 0,
-           sizeof(settings()->terminal.terminalNo));
-    snprintf(settings()->terminal.terminalNo,
-             sizeof(settings()->terminal.terminalNo), "%s", feild);
+    size_t terminalNumSize = sizeof(settings()->terminal.terminalNo);
+    memset(settings()->terminal.terminalNo, 0, terminalNumSize);
+    snprintf(settings()->terminal.terminalNo, terminalNumSize - 1, "%s", feild);
     LOG_DEBUG("terminal number = %s", feild);
     RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(settings()->save(), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
-Error_t isoBuildCfg(ByteArray* buf) {
+Error_t isoBuildCfg(TxnCore* txn, ByteArray* buf) {
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     DEFINE_STRING(privateData, 128);
@@ -367,31 +362,34 @@ static Error_t isoParseCfgResponse(ByteArray* buf) {
     decodeMerchantDesc(feild);
     // compareMac(TAK_INDEX, buf);
     settings()->terminal.isCfgDone = true;
-    RETURN_VALUE_IF_NOT(settings()->save(), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
-static Error_t isoBuildSettle(ByteArray* buf) {}
+static Error_t isoBuildSettle(TxnCore* txn, ByteArray* buf) {
+    DEFINE_STRING(amountstr, SIZE_AMOUNT + 1);
+    prependZerosUInt64(txn->amount, SIZE_AMOUNT, amountstr, sizeof(amountstr));
+    iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, amountstr);
+}
 
 static Error_t isoParseSettle(ByteArray* buf) {}
 
-static Error_t isoBuildReverse(ByteArray* buf) {}
+static Error_t isoBuildReverse(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParseReverse(ByteArray* buf) {}
 
-static Error_t isoBuildPurchase(ByteArray* buf) {}
+static Error_t isoBuildPurchase(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParsePurchaseResponse(ByteArray* buf) {}
 
-static Error_t isoBuildBill(ByteArray* buf) {}
+static Error_t isoBuildBill(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParseBillResponse(ByteArray* buf) {}
 
-static Error_t isoBuildBalance(ByteArray* buf) {}
+static Error_t isoBuildBalance(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParseBalanceResponse(ByteArray* buf) {}
 
-static Error_t isoBuildPay(ByteArray* buf) {}
+static Error_t isoBuildPay(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParsePayResponse(ByteArray* buf) {}
 
@@ -416,22 +414,25 @@ static Error_t isoBuildMac(ByteArray* buf) {
     return ERR_OK;
 }
 
-Error_t isoBuild(MTI_t mti, ByteArray* buf) {
-    IsoTransaction* txn = isoFindTransaction(mti);
-    RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
+Error_t isoBuild(Mti_t mti, TxnCore* txn, ByteArray* buf) {
+    IsoTransaction* itxn = isoFindTransaction(mti);
+    RETURN_VALUE_IF_NULL(itxn, ;, ERR_NOK);
     iso8583()->reset();
-    setMti(txn->mtiStr);
+    setMti(mti);
     if (mti != MTI_SETTLEMENT && mti != MTI_REVERSAL) {
-        setPrCode(txn->prcode);
-        setStan();
+        setPrCode(itxn->prcode);
+        setStan(txnTraceInfo()->stan);
+    } else {
+        setPrCode(txn->processCode);
+        setStan(txn->RRN);
     }
     setDateTime();
     setNii();
-    RETURN_VALUE_IF_NOT(txn->builder(buf), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(itxn->builder(txn, buf), ERR_OK, ;, ERR_NOK);
     return isoBuildMac(buf);
 }
 
-RespCode_t isoParse(MTI_t mti, ByteArray* buf) {
+RespCode_t isoParse(Mti_t mti, ByteArray* buf) {
     RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
     IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
     RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
@@ -453,23 +454,19 @@ static const IsoTransaction templates[] = {
     {.mti     = MTI_LOG_ON,
      .builder = isoBuildLogOn,
      .parser  = isoParseLogOnResponse,
-     .prcode  = PRC_LOG_ON,
-     .mtiStr  = MTI_VAL_LOG_ON},
+     .prcode  = PRC_LOG_ON},
     {.mti     = MTI_CFG,
      .builder = isoBuildCfg,
      .parser  = isoParseCfgResponse,
-     .prcode  = PRC_CFG,
-     .mtiStr  = MTI_VAL_CFG},
+     .prcode  = PRC_CFG},
     {.mti     = MTI_SETTLEMENT,
      .builder = isoBuildSettle,
      .parser  = isoParseSettle,
-     .prcode  = NULL,
-     .mtiStr  = MTI_VAL_SETTLE},
+     .prcode  = NULL},
     {.mti     = MTI_REVERSAL,
      .builder = isoBuildReverse,
      .parser  = isoParseReverse,
-     .prcode  = NULL,
-     .mtiStr  = MTI_VAL_REVERSE},
+     .prcode  = NULL},
     {.mti     = MTI_PURCHASE,
      .builder = isoBuildPurchase,
      .parser  = isoParsePurchaseResponse},
@@ -479,7 +476,7 @@ static const IsoTransaction templates[] = {
      .parser  = isoParseBalanceResponse},
     {.mti = MTI_PAY, .builder = isoBuildPay, .parser = isoParsePayResponse}};
 
-const IsoTransaction* isoFindTransaction(MTI_t mti) {
+const IsoTransaction* isoFindTransaction(Mti_t mti) {
     for (size_t i = 0; i < ARRAY_SIZE(templates); i++) {
         if (templates[i].mti == mti) {
             return &templates[i];

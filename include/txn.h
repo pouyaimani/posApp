@@ -4,25 +4,37 @@
 #include <stdint.h>
 #include "oop.h"
 
+#define STAN_SIZE   6
+#define PRCODE_SIZE 6
+#define MTI_SIZE    4
+#define SIZE_AMOUNT 12
+
 /**********************************************************/
 //                         MTI
 /**********************************************************/
 
 typedef enum {
-    MTI_LOG_ON = 0,
-    MTI_CFG,
-    MTI_SETTLEMENT,
-    MTI_REVERSAL,
+    MTI_LOG_ON     = 800,
+    MTI_CFG        = 100,
+    MTI_SETTLEMENT = 220,
+    MTI_REVERSAL   = 420,
     MTI_PURCHASE,
     MTI_BALANCE,
     MTI_PAY,
     MTI_BILL,
-    MTI_TOPUP
-} MTI_t;
+    Mti_tOPUP
+} Mti_t;
 
 /**********************************************************/
 //                    PROCESS CODE
 /**********************************************************/
+
+typedef enum {
+    PRC_LOG_ON = 920000,
+    PRC_CFG    = 930000,
+    PRC_SALE,
+    PRC_BALANCE,
+} PrCode_t;
 
 #define SecRelControlInfo "0800050202031500"
 
@@ -65,6 +77,7 @@ typedef enum {
 
 typedef struct {
     TxnType  txnType;
+    Mti_t    mti;
     uint16_t processCode;
     char     pan[16 + 1];
     uint64_t amount;

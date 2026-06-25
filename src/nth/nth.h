@@ -59,6 +59,7 @@ OOP_CLASS(Nth) {
     OOP_METHOD(NthResult, sendProvidedTx, NthTransaction * tx);
     OOP_METHOD(NthResult, setTx, NthTransaction * tx, ByteArray * ba);
     OOP_METHOD(void, release, NthTransaction* tx);
+    OOP_METHOD(void, disconnect, NthTransaction* tx);
     OOP_METHOD(void, tick);
 };
 

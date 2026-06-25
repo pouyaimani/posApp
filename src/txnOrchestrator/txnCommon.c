@@ -2,6 +2,7 @@
 #include "phrases/phrases.h"
 #include "states/states.h"
 #include "ui/infoPage.h"
+#include "settings/settings.h"
 
 void showConnecting(TxnFlow* f) {
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
@@ -19,6 +20,7 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st) {
     State* state = flow->owner;
     LOG_DEBUG("st->result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
+        txnTraceInfo()->inc();
         DEFINE_STRING(dsc, 128);
         if (st->code != 0) {
             getResponseCode(st->code, dsc, sizeof(dsc));
@@ -47,6 +49,9 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st) {
 
     default:
         break;
+    }
+    if (st->stage != TXN_STAGE_CONNECTING) {
+        txnTraceInfo()->inc();
     }
     GOTO_INFO(state->parent, state->parent, INFO_ERROR,
               phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
