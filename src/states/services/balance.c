@@ -3,26 +3,39 @@
 #include "sys/sys.h"
 #include "ui/menu.h"
 #include "phrases/phrases.h"
+#include "common.h"
+#include "utility/utility.h"
+#include "settings/settings.h"
+#include "txnOrchestrator/txnFLow.h"
 
 static SubState* enterPass;
 static SubState* commu;
 static SubState* result;
-
-#define INFO_WAGE "کارمزد 1,800 ریال"
 
 STATE_DEF_ENTER(Balance) { SM_GOTO(enterPass); }
 
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
-    GOTO_INPUT(STATE_IDLE, commu, phraseGetDef(PHRASE_CARD_PIN), INFO_WAGE,
+    DEFINE_STRING(wage, 56);
+    DEFINE_STRING(amnt, 16);
+    DEFINE_STRING(amntSep, 32);
+    intToStr(settings()->txn.balanceInqWage, amnt, sizeof(amnt));
+    amountSeparator(amnt, amntSep, sizeof(amntSep));
+    snprintf(wage, sizeof(wage), "%s %s %s", phraseGetDef(PHRASE_RIAL), amntSep,
+             phraseGetDef(PHRASE_WAGE));
+    GOTO_INPUT(STATE_IDLE, commu, phraseGetDef(PHRASE_CARD_PIN), wage,
                PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Communication) {
-    // GOTO_ISO_TRANSMITTER(STATE_IDLE, result);
+    // DEFINE_STRING(ip, 32);
+    // normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+    // txnRun(&((LogOn*)state)->flow, state, ip,
+    // settings()->server.mainServerPort,
+    //        &cfgTxn);
 }
 
 /*********************** Result sub state *************************/

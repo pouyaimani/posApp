@@ -39,7 +39,7 @@ static int txnInsert(TxnData* txn) {
     }
     LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, refNum = %s, rrn = %s, "
               "amount = %s",
-              date, time, txn->core.trace, txn->core.refNum, txn->core.RRN,
+              date, time, txn->core.trace, txn->core.refNum, txn->core.rrn,
               txn->core.amount);
     return 0;
 }
@@ -56,7 +56,7 @@ static int8_t iterateThrough() {
         unpackDateTime(timeStamp, &date, &time);
         LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, refNum = %s, rrn = "
                   "%s, amount = %s",
-                  date, time, rec.core.trace, rec.core.refNum, rec.core.RRN,
+                  date, time, rec.core.trace, rec.core.refNum, rec.core.rrn,
                   rec.core.amount);
     }
     return ERR_OK;
@@ -139,7 +139,7 @@ static int8_t init(TxnRecord* self) {
         sizeof(sizeof(((TxnData*)0)->core.amount)),      // amount
         sizeof(sizeof(((TxnData*)0)->core.refNum)),      // refNum
         sizeof(sizeof(((TxnData*)0)->core.trace)),       // trace
-        sizeof(sizeof(((TxnData*)0)->core.RRN)),         // RRN
+        sizeof(sizeof(((TxnData*)0)->core.rrn)),         // RRN
         sizeof(sizeof(((TxnData*)0)->core.respCode)),    // responseCode
         sizeof(sizeof(((TxnData*)0)->extention))         // extention
     };

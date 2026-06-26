@@ -18,9 +18,9 @@ static int8_t receiptSectionPsp(Receipt* rec) {
 static int8_t receiptSectionTerminalInfo(Receipt* rec) {
     DEFINE_STRING(terminal, 64);
     snprintf(terminal, sizeof(terminal), "%s:%s",
-             settings()->terminal.terminalNo, phraseGetDef(PHRASE_TERMINAL));
+             settings()->terminal.terminalId, phraseGetDef(PHRASE_TERMINAL));
     DEFINE_STRING(code, 64);
-    snprintf(code, sizeof(code), "%s:%s", settings()->terminal.terminalNo,
+    snprintf(code, sizeof(code), "%s:%s", settings()->terminal.terminalId,
              phraseGetDef(PHRASE_DEVICE_CODE));
     RecColumn_t row[] = {{code, LV_TEXT_ALIGN_LEFT, 1},
                          {terminal, LV_TEXT_ALIGN_RIGHT, 1}};

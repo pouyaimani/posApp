@@ -4,6 +4,14 @@
 #include "ui/infoPage.h"
 #include "settings/settings.h"
 
+int buildCommon(TxnFlow* flow, ByteArray* ba) {
+    return isoBuild(flow->cfg->mti, flow->cfg->prcode, &flow->data, ba);
+}
+
+int parseCommon(TxnFlow* flow, ByteArray* ba) {
+    return isoParse(flow->cfg->mti, flow->cfg->prcode, ba);
+}
+
 void showConnecting(TxnFlow* f) {
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
 }

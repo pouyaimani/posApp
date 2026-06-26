@@ -39,11 +39,7 @@ STATE_DEF_ENTER(EnterPassword) {
 
 /******************** Connection sub state **********************/
 
-STATE_DEF_ENTER(Communication) {
-    Input* in = getState(STATE_ID_INPUT);
-    // OOP_CALL(packer(), setCardPwd, in->input);
-    // GOTO_ISO_TRANSMITTER(STATE_IDLE, result);
-}
+STATE_DEF_ENTER(Communication) { Input* in = getState(STATE_ID_INPUT); }
 
 /*********************** Result sub state *************************/
 

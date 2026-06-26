@@ -19,11 +19,11 @@ static TxnTraceInfo __txnTraceInfo;
 
 // default property value
 #define DEFAULT_SERVER_IP          ""
-#define DEFAULT_SERVER_PORT        "0"
+#define DEFAULT_SERVER_PORT        ""
 #define DEFAULT_BACKUP_SERVER_IP   ""
-#define DEFAULT_BACKUP_SERVER_PORT "0"
+#define DEFAULT_BACKUP_SERVER_PORT ""
 #define DEFAULT_TMS_IP             ""
-#define DEFAULT_TMS_PORT           "0"
+#define DEFAULT_TMS_PORT           ""
 #define DEFAULT_TMS_FORCE          "0"
 #define DEFAULT_COMM_MODE          "0"
 #define DEFAULT_KEY_VOLUME         "5"
@@ -35,10 +35,6 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_CONNECT_MODE       "1"
 #define DEFAULT_TOUCH_ENABLE       "0"
 #define DEFAULT_CFG_DONE           "0"
-#define DEFAULT_SHIFT_S_DATE       "0"
-#define DEFAULT_SHIFT_S_TIME       "0"
-#define DEFAULT_SHIFT_E_DATE       "0"
-#define DEFAULT_SHIFT_E_TIME       "0"
 #define DEFAULT_SHIFT_LATEST       "0"
 #define DEFAULT_SHIFT_ENABLE       "0"
 #define DEFAULT_SHIFT_ACTIVE       "0"
@@ -54,6 +50,7 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_MAIN_SERVER_ID     "0"
 #define DEFAULT_TMS_ID             "0"
 #define DEFAULT_MERCHANT_PIN       MERCHANT_DEFAULT_PIN
+#define DEFAULT_BALANCE_INQ_WAGE   "1800"
 
 static const DataDescriptor txnTraceInfoDsc[] = {
     {"stan", T_INT, (0), (sizeof(__txnTraceInfo.stan)), ("1"),
@@ -76,8 +73,8 @@ static const DataDescriptor settingsDsc[] = {
     DSC_BYTE(__settings.terminal.loginOperator, "101"),
     DSC_STR_BUF(__settings.terminal.loginDate, ""),
     DSC_STR_BUF(__settings.terminal.merchantPin, DEFAULT_MERCHANT_PIN),
-    DSC_STR_BUF(__settings.terminal.merchantNo, ""),
-    DSC_STR_BUF(__settings.terminal.terminalNo, ""),
+    DSC_STR_BUF(__settings.terminal.merchantId, ""),
+    DSC_STR_BUF(__settings.terminal.terminalId, ""),
     DSC_STR_BUF(__settings.terminal.merchantName, ""),
     DSC_STR_BUF(__settings.terminal.merchantAddress, ""),
     DSC_STR_BUF(__settings.terminal.merchantPostalCode, ""),
@@ -140,6 +137,8 @@ static const DataDescriptor settingsDsc[] = {
     DSC_STR_BUF(__settings.terminal.amountList, DEFAULT_FIXED_AMNT_LIST),
     DSC_INT(__settings.terminal.fixedAmountCoef, DEFAULT_FIXED_AMNT_COEF),
     DSC_INT(__settings.terminal.amountListCnt, DEFAULT_AMNT_LIST_CNT),
+
+    DSC_INT(__settings.txn.balanceInqWage, DEFAULT_BALANCE_INQ_WAGE),
 };
 
 static Error_t saveSettings() {

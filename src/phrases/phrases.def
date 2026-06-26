@@ -216,6 +216,8 @@ X(PHRASE_PARSE_ERROR           ,   "خطا در تفسیر داده دریافت
 )
 X(PHRASE_DEV_IS_NOT_CONFIGURED ,   "دستگاه پیکربندی نشده است"                 , "device is not configured"
 )
+X(PHRASE_WAGE                  ,   "کارمزد"                                     ,   "wage"
+)  
 
 /**********************************************************************
  *

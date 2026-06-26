@@ -117,7 +117,7 @@ static void print() {
     txn.core.processCode = 12;
     txn.core.refNum      = 1399;
     txn.core.trace       = 6419;
-    txn.core.RRN         = 19000;
+    txn.core.rrn         = 19000;
     txn.core.txnType     = TXN_SALE;
     txn.dateTime         = OOP_CALL(sys(), getPackedDateTime);
     Receipt rec;
@@ -166,7 +166,7 @@ void generate_random_txn(TxnData* t) {
     getDateTimeUint(&date, &time);
     LOG_DEBUG("date = %u, time = %u", date, time);
     t->dateTime = packDateTime(date, time);
-    rand_digits(t->core.RRN, 12);
+    rand_digits(t->core.rrn, 12);
     rand_digits(t->core.respCode, 2);
 }
 
@@ -181,7 +181,7 @@ static bool txnHand(const TxnData* txn, void* userData) {
     unpackDateTime(txn->dateTime, &date, &time);
     LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, refNum = %s, rrn = %s, "
               "amount = %s",
-              date, time, txn->core.trace, txn->core.refNum, txn->core.RRN,
+              date, time, txn->core.trace, txn->core.refNum, txn->core.rrn,
               txn->core.amount);
 }
 
@@ -232,6 +232,11 @@ STATE_DEF_HANDLE(Idle, SocketConnectEvent) {
 }
 
 STATE_DEF_HANDLE(Idle, MagEvent) {
+    if (!settings()->terminal.isCfgDone) {
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
+                  phraseGetDef(PHRASE_DEV_IS_NOT_CONFIGURED), "");
+        return;
+    }
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = true;
     if (settings()->terminal.fixedAmountItem == FIXED_AMNT_DIS) {

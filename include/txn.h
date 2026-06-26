@@ -14,15 +14,69 @@
 /**********************************************************/
 
 typedef enum {
-    MTI_LOG_ON     = 800,
-    MTI_CFG        = 100,
-    MTI_SETTLEMENT = 220,
-    MTI_REVERSAL   = 420,
-    MTI_PURCHASE,
-    MTI_BALANCE,
-    MTI_PAY,
-    MTI_BILL,
-    Mti_tOPUP
+    /*=====================================================
+     * AUTHORIZATION (01xx)
+     *=====================================================*/
+    MTI_AUTH_REQ         = 100,
+    MTI_AUTH_RESP        = 110,
+    MTI_AUTH_ADVICE      = 120,
+    MTI_AUTH_ADVICE_RESP = 130,
+
+    /*=====================================================
+     * FINANCIAL (02xx)
+     *=====================================================*/
+    MTI_FIN_REQ          = 200,
+    MTI_FIN_RESP         = 210,
+    MTI_FIN_ADVICE       = 220,
+    MTI_FIN_ADVICE_RESP  = 230,
+    MTI_FIN_NOTIFICATION = 240,
+
+    /*=====================================================
+     * FILE ACTIONS (03xx)
+     *=====================================================*/
+    MTI_FILE_REQ         = 300,
+    MTI_FILE_RESP        = 310,
+    MTI_FILE_ADVICE      = 320,
+    MTI_FILE_ADVICE_RESP = 330,
+
+    /*=====================================================
+     * REVERSAL (04xx)
+     *=====================================================*/
+    MTI_REV_REQ         = 400,
+    MTI_REV_RESP        = 410,
+    MTI_REV_ADVICE      = 420,
+    MTI_REV_ADVICE_RESP = 430,
+
+    /*=====================================================
+     * RECONCILIATION / SETTLEMENT (05xx)
+     *=====================================================*/
+    MTI_RECON_REQ         = 500,
+    MTI_RECON_RESP        = 510,
+    MTI_RECON_ADVICE      = 520,
+    MTI_RECON_ADVICE_RESP = 530,
+
+    /*=====================================================
+     * ADMINISTRATIVE (06xx)
+     *=====================================================*/
+    MTI_ADMIN_REQ         = 600,
+    MTI_ADMIN_RESP        = 610,
+    MTI_ADMIN_ADVICE      = 620,
+    MTI_ADMIN_ADVICE_RESP = 630,
+
+    /*=====================================================
+     * FEE COLLECTION (07xx)
+     *=====================================================*/
+    MTI_FEE_REQ  = 700,
+    MTI_FEE_RESP = 710,
+
+    /*=====================================================
+     * NETWORK MANAGEMENT (08xx)
+     *=====================================================*/
+    MTI_NET_REQ         = 800,
+    MTI_NET_RESP        = 810,
+    MTI_NET_ADVICE      = 820,
+    MTI_NET_ADVICE_RESP = 830,
+
 } Mti_t;
 
 /**********************************************************/
@@ -30,10 +84,16 @@ typedef enum {
 /**********************************************************/
 
 typedef enum {
-    PRC_LOG_ON = 920000,
-    PRC_CFG    = 930000,
-    PRC_SALE,
-    PRC_BALANCE,
+    PRC_LOG_ON       = 920000,
+    PRC_CFG          = 930000,
+    PRC_PURCHASE     = 0,
+    PRC_BALANCE      = 310000,
+    PRC_BILL_PAYMENT = 170000,
+    PRC_VOUCHER      = 180000,
+    PRC_TOPUP        = 220000,
+
+    PRC_SETTLE  = -1,
+    PRC_REVERSE = -1,
 } PrCode_t;
 
 #define SecRelControlInfo "0800050202031500"
@@ -83,7 +143,7 @@ typedef struct {
     uint64_t amount;
     uint32_t refNum;
     uint32_t trace;
-    uint32_t RRN;
+    uint32_t rrn;
     uint16_t respCode; // responce code
 } TxnCore;
 

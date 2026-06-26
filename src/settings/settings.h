@@ -11,28 +11,26 @@
 typedef struct __attribute__((packed)) {
     bool touchEnable;
 
-    uint8_t netRoute;
-    uint8_t devVolume;
-    uint8_t sleepTimeout;
-    uint8_t brightness;
-    char    loginOperator;
-    char    loginDate[6 + 1];
-
+    uint8_t  netRoute;
+    uint8_t  devVolume;
+    uint8_t  sleepTimeout;
+    uint8_t  brightness;
+    char     loginOperator;
+    char     loginDate[6 + 1];
     char     merchantPin[4 + 1];
-    char     merchantNo[15 + 1];
+    char     merchantId[15 + 1];
     char     merchantAddress[64];
     char     merchantPostalCode[16];
     char     merchantUniqueId[32];
     char     merchantName[40 + 1];
     char     merchantPhone[32];
-    char     terminalNo[15 + 1];
+    char     terminalId[15 + 1];
     char     mSafePwd[8 + 1];
     char     wfiSSID[32];
     char     wifiMac[32];
     uint32_t wifiEnc;
     char     wifiPwd[63 + 1];
     char     acquirerIIN[12];
-
     uint32_t appID;
     uint8_t  language;
     uint8_t  printGreyScale;
@@ -67,9 +65,7 @@ typedef struct __attribute__((packed)) {
     uint8_t  forceTMS;
 } ServerSettings;
 
-OOP_CLASS(TxnSettings){
-
-};
+OOP_CLASS(TxnSettings) { uint64_t balanceInqWage; };
 
 typedef struct __attribute__((packed)) {
     OOP_METHOD(Error_t, save);

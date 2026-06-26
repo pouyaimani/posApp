@@ -53,9 +53,9 @@ typedef struct {
 
 /* ================= Callbacks ================= */
 
-typedef int (*TxnBuildFn)(TxnCore* txn, ByteArray* ba);
+typedef int (*TxnBuildFn)(TxnFlow* flow, ByteArray* ba);
 
-typedef int (*TxnParseFn)(ByteArray* ba);
+typedef int (*TxnParseFn)(TxnFlow* flow, ByteArray* ba);
 
 typedef void (*TxnFlowDone)(TxnFlow* flow, const TxnFlowStatus* status);
 
@@ -64,6 +64,10 @@ typedef void (*TxnFlowStageCb)(TxnFlow* flow);
 /* ================= Config ================= */
 
 typedef struct {
+
+    Mti_t mti;
+
+    PrCode_t prcode;
 
     TxnBuildFn build;
 
@@ -117,7 +121,8 @@ extern const TxnFlowConfig cfgTxn;
  *                               Transactions common              *
  *                                                                                           *
  ********************************************************************************************/
-
+int  buildCommon(TxnFlow* flow, ByteArray* ba);
+int  parseCommon(TxnFlow* flow, ByteArray* ba);
 void showConnecting(TxnFlow* f);
 void showSending(TxnFlow* f);
 void showReceiving(TxnFlow* f);

@@ -10,15 +10,15 @@ typedef struct {
 
 } ReverseCtx;
 
-static int buildReverse(ByteArray* ba) { return isoBuild(MTI_REVERSAL, ba); }
-
-static int parseReverse(ByteArray* ba) { return isoParse(MTI_REVERSAL, ba); }
-
 const TxnFlowConfig reverseTxn = {
 
-    .build = buildReverse,
+    .mti = MTI_REV_ADVICE,
 
-    .parse = parseReverse,
+    .prcode = PRC_REVERSE,
+
+    .build = buildCommon,
+
+    .parse = parseCommon,
 
     .done = commonDone,
 

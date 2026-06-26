@@ -1,24 +1,24 @@
 #include "txnFLow.h"
 #include "settings/settings.h"
 
-static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
+static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         settings()->save();
     }
     commonDone(flow, st);
 }
 
-const TxnFlowConfig cfgTxn = {
+const TxnFlowConfig balanceTxn = {
 
     .mti = MTI_AUTH_REQ,
 
-    .prcode = PRC_CFG,
+    .prcode = PRC_BALANCE,
 
     .build = buildCommon,
 
     .parse = parseCommon,
 
-    .done = cfgDone,
+    .done = balanceDone,
 
     .onConnecting = showConnecting,
 

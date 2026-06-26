@@ -221,7 +221,7 @@ static inline Error_t setNii() {
 
 static inline Error_t setTerminalNum() {
     iso8583()->setStr(ELEMENT_TERMINAL_ID,
-                      (const DL_UINT8*)settings()->terminal.terminalNo);
+                      (const DL_UINT8*)settings()->terminal.terminalId);
     return ERR_OK;
 }
 
@@ -311,9 +311,9 @@ static Error_t isoParseLogOnResponse(ByteArray* buf) {
     decodeMerchantDesc(feild);
     memset(feild, 0, sizeof(feild));
     iso8583()->getStr(ELEMENT_TERMINAL_ID, feild);
-    size_t terminalNumSize = sizeof(settings()->terminal.terminalNo);
-    memset(settings()->terminal.terminalNo, 0, terminalNumSize);
-    snprintf(settings()->terminal.terminalNo, terminalNumSize - 1, "%s", feild);
+    size_t terminalNumSize = sizeof(settings()->terminal.terminalId);
+    memset(settings()->terminal.terminalId, 0, terminalNumSize);
+    snprintf(settings()->terminal.terminalId, terminalNumSize - 1, "%s", feild);
     LOG_DEBUG("terminal number = %s", feild);
     RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
@@ -369,13 +369,54 @@ static Error_t isoBuildSettle(TxnCore* txn, ByteArray* buf) {
     DEFINE_STRING(amountstr, SIZE_AMOUNT + 1);
     prependZerosUInt64(txn->amount, SIZE_AMOUNT, amountstr, sizeof(amountstr));
     iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, amountstr);
+
+#if defined REMOTE_KEY_INJECTION
+    (void)SIPA_ISO8583_MSG_SetField_Str(
+        32, (const ISO_UINT8*)setting.AcquireIIN, &isoMsg); // IIN
+#else
+    char* acquirerIin = strlen(settings()->terminal.acquirerIIN) != 0
+                            ? settings()->terminal.acquirerIIN
+                            : "000000000";
+    iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, acquirerIin);
+#endif
+    iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->rrn);
+    iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
+    iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
+                      settings()->terminal.merchantId);
+    iso8583()->setStr(ELEMENT_CURRENCY_CODE_TRANSACTION, "364");
+    setSecRelCtrlInfo();
 }
 
-static Error_t isoParseSettle(ByteArray* buf) {}
+static Error_t isoParseSettle(ByteArray* buf) {
+    // check mac
+}
 
-static Error_t isoBuildReverse(TxnCore* txn, ByteArray* buf) {}
+static Error_t isoBuildReverse(TxnCore* txn, ByteArray* buf) {
+    DEFINE_STRING(amountstr, SIZE_AMOUNT + 1);
+    prependZerosUInt64(txn->amount, SIZE_AMOUNT, amountstr, sizeof(amountstr));
+    iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, amountstr);
 
-static Error_t isoParseReverse(ByteArray* buf) {}
+#if defined REMOTE_KEY_INJECTION
+    (void)SIPA_ISO8583_MSG_SetField_Str(
+        32, (const ISO_UINT8*)setting.AcquireIIN, &isoMsg); // IIN
+#else
+    char* acquirerIin = strlen(settings()->terminal.acquirerIIN) != 0
+                            ? settings()->terminal.acquirerIIN
+                            : "000000000";
+    iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, acquirerIin);
+#endif
+    iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->rrn);
+    iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
+    iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
+                      settings()->terminal.merchantId);
+    iso8583()->setStr(ELEMENT_CURRENCY_CODE_TRANSACTION, "364");
+    setSecRelCtrlInfo();
+    iso8583()->setStr(ELEMENT_ORIGINAL_DATA_ELEMENTS, "");
+}
+
+static Error_t isoParseReverse(ByteArray* buf) {
+    // check mac
+}
 
 static Error_t isoBuildPurchase(TxnCore* txn, ByteArray* buf) {}
 
@@ -393,9 +434,10 @@ static Error_t isoBuildPay(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParsePayResponse(ByteArray* buf) {}
 
-static Error_t isoBuildMac(ByteArray* buf) {
+static Error_t isoBuildMac(Mti_t mti, ByteArray* buf) {
+    uint8_t field = mti == MTI_REV_ADVICE ? ELEMENT_MAC_2 : ELEMENT_MAC;
     DEFINE_BYTE_ARRAY(mac, 8 + 1);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)mac, 8);
+    iso8583()->setBin(field, (const DL_UINT8*)mac, 8);
     DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
     size_t packedLen;
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
@@ -403,7 +445,7 @@ static Error_t isoBuildMac(ByteArray* buf) {
     if (packedLen < 8)
         return ERR_NOK;
     ped()->getMac(16, tmpBuf, packedLen - 8, mac);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)mac, 8);
+    iso8583()->setBin(field, (const DL_UINT8*)mac, 8);
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
                         , ERR_NOK);
     IsoHeaderData_t hd = {.nii = settings()->server.mainServerNii};
@@ -414,71 +456,94 @@ static Error_t isoBuildMac(ByteArray* buf) {
     return ERR_OK;
 }
 
-Error_t isoBuild(Mti_t mti, TxnCore* txn, ByteArray* buf) {
-    IsoTransaction* itxn = isoFindTransaction(mti);
+Error_t isoBuild(Mti_t mti, PrCode_t prcode, TxnCore* txn, ByteArray* buf) {
+    IsoTransaction* itxn = isoFindTransaction(mti, prcode);
     RETURN_VALUE_IF_NULL(itxn, ;, ERR_NOK);
     iso8583()->reset();
     setMti(mti);
-    if (mti != MTI_SETTLEMENT && mti != MTI_REVERSAL) {
+    if (mti != MTI_FIN_ADVICE && mti != MTI_REV_ADVICE) {
         setPrCode(itxn->prcode);
-        setStan(txnTraceInfo()->stan);
     } else {
         setPrCode(txn->processCode);
-        setStan(txn->RRN);
     }
+    setStan(txnTraceInfo()->stan);
     setDateTime();
     setNii();
     RETURN_VALUE_IF_NOT(itxn->builder(txn, buf), ERR_OK, ;, ERR_NOK);
-    return isoBuildMac(buf);
+    return isoBuildMac(mti, buf);
 }
 
-RespCode_t isoParse(Mti_t mti, ByteArray* buf) {
+RespCode_t isoParse(Mti_t mti, PrCode_t prcode, ByteArray* buf) {
     RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
     IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
     RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
     // Check responce code
     DEFINE_STRING(f39, 8);
     iso8583()->getStr(ELEMENT_RESPONSE_CODE, f39);
-    LOG_DEBUG("f39 = %s", f39);
     RespCode_t respCode = libAtoi(f39);
-    LOG_DEBUG("Txn responce code = %d", respCode);
+    LOG_TRACE("Parser: txn responce code = %d", respCode);
     RETURN_VALUE_IF_NOT(respCode, 0, ;, respCode);
 
-    IsoTransaction* txn = isoFindTransaction(mti);
+    IsoTransaction* txn = isoFindTransaction(mti, prcode);
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(txn->parser(buf), ERR_OK, ;, ERR_NOK);
     return respCode;
 }
 
 static const IsoTransaction templates[] = {
-    {.mti     = MTI_LOG_ON,
+    /******************************************************************/
+    /*LOG ON*/
+    /******************************************************************/
+    {.mti     = MTI_NET_REQ,
+     .prcode  = PRC_LOG_ON,
      .builder = isoBuildLogOn,
-     .parser  = isoParseLogOnResponse,
-     .prcode  = PRC_LOG_ON},
-    {.mti     = MTI_CFG,
+     .parser  = isoParseLogOnResponse},
+    /******************************************************************/
+    /*Configuration*/
+    /******************************************************************/
+    {.mti     = MTI_AUTH_REQ,
+     .prcode  = PRC_CFG,
      .builder = isoBuildCfg,
-     .parser  = isoParseCfgResponse,
-     .prcode  = PRC_CFG},
-    {.mti     = MTI_SETTLEMENT,
+     .parser  = isoParseCfgResponse},
+    /******************************************************************/
+    /*Settle*/
+    /******************************************************************/
+    {.mti     = MTI_FIN_ADVICE,
+     .prcode  = PRC_SETTLE,
      .builder = isoBuildSettle,
-     .parser  = isoParseSettle,
-     .prcode  = NULL},
-    {.mti     = MTI_REVERSAL,
+     .parser  = isoParseSettle},
+    /******************************************************************/
+    /*Reverse*/
+    /******************************************************************/
+    {.mti     = MTI_REV_ADVICE,
      .builder = isoBuildReverse,
      .parser  = isoParseReverse,
-     .prcode  = NULL},
-    {.mti     = MTI_PURCHASE,
+     .prcode  = PRC_REVERSE},
+    /******************************************************************/
+    /*Purchase*/
+    /******************************************************************/
+    {.mti     = MTI_FIN_REQ,
+     .prcode  = PRC_PURCHASE,
      .builder = isoBuildPurchase,
      .parser  = isoParsePurchaseResponse},
-    {.mti = MTI_BILL, .builder = isoBuildBill, .parser = isoParseBillResponse},
-    {.mti     = MTI_BALANCE,
+    /******************************************************************/
+    /*Bill Payment*/
+    /******************************************************************/
+    {.mti     = MTI_FIN_REQ,
+     .prcode  = PRC_BILL_PAYMENT,
+     .builder = isoBuildBill,
+     .parser  = isoParseBillResponse},
+    /******************************************************************/
+    /*Balance Inquiry*/
+    /******************************************************************/
+    {.mti     = MTI_AUTH_REQ,
+     .prcode  = PRC_BALANCE,
      .builder = isoBuildBalance,
-     .parser  = isoParseBalanceResponse},
-    {.mti = MTI_PAY, .builder = isoBuildPay, .parser = isoParsePayResponse}};
+     .parser  = isoParseBalanceResponse}};
 
-const IsoTransaction* isoFindTransaction(Mti_t mti) {
+const IsoTransaction* isoFindTransaction(Mti_t mti, PrCode_t prcode) {
     for (size_t i = 0; i < ARRAY_SIZE(templates); i++) {
-        if (templates[i].mti == mti) {
+        if (templates[i].mti == mti && templates[i].prcode == prcode) {
             return &templates[i];
         }
     }

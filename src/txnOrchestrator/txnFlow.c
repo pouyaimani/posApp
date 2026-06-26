@@ -98,7 +98,7 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
     LOG_DEBUG("Txn flow: on connect ...");
     TxnFlow* flow = ctx;
     ByteArray(ba, NT_TX_BUFFER_SIZE);
-    if (flow->cfg->build(&flow->data, &ba) != ERR_OK) {
+    if (flow->cfg->build(flow, &ba) != ERR_OK) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_INTERNAL);
         return -1;
     }
@@ -137,7 +137,7 @@ static int8_t onReceive(NthTransaction* tx, void* ctx) {
     TxnFlow* flow = ctx;
     flow->stage   = TXN_STAGE_PARSING;
     nth()->disconnect(flow->tx);
-    int rc = flow->cfg->parse(&tx->rxBuffer);
+    int rc = flow->cfg->parse(flow, &tx->rxBuffer);
     complete(flow, rc == ERR_NOK ? TXN_FLOW_FAILED : TXN_FLOW_SUCCESS, rc);
     return 0;
 }
