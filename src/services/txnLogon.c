@@ -1,24 +1,25 @@
-#include "txnFLow.h"
+#include "txnOrchestrator/txnFLow.h"
 #include "settings/settings.h"
+#include "sys/sys.h"
 
-static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
+static void logOnDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         settings()->save();
     }
     commonDone(flow, st);
 }
 
-const TxnFlowConfig cfgTxn = {
+const TxnFlowConfig logOnTxn = {
 
-    .mti = MTI_AUTH_REQ,
+    .mti = MTI_NET_REQ,
 
-    .prcode = PRC_CFG,
+    .prcode = PRC_LOG_ON,
 
     .build = buildCommon,
 
     .parse = parseCommon,
 
-    .done = cfgDone,
+    .done = logOnDone,
 
     .onConnecting = showConnecting,
 

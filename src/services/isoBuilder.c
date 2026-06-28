@@ -5,6 +5,7 @@
 #include "utility/ltv.h"
 #include "utility/utility.h"
 #include "utility/arith.h"
+#include "magReader/magReader.h"
 
 enum {
     TAG_MERCHANT_NAME      = 31,
@@ -426,7 +427,25 @@ static Error_t isoBuildBill(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParseBillResponse(ByteArray* buf) {}
 
-static Error_t isoBuildBalance(TxnCore* txn, ByteArray* buf) {}
+static Error_t isoBuildBalance(TxnCore* txn, ByteArray* buf) {
+    DEFINE_STRING(pan, 24);
+    DEFINE_STRING(pinblock, 24);
+    magreader()->getPan(pan, sizeof(pan));
+    TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
+    PedErr_t    pederr = OOP_CALL(ped(), getPinBlock, pan, pinblock);
+    LOG_DEBUG("pan = %s", pan);
+    iso8583()->setStr(ELEMENT_PAN, pan);
+    iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, "021");
+    iso8583()->setStr(ELEMENT_POS_CONDITION_CODE, "14");
+    iso8583()->setStr(ELEMENT_TRACK2, track2.data);
+    iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
+    iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
+                      settings()->terminal.merchantId);
+    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
+                      settings()->terminal.merchantId);
+    iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, 0);
+    setSecRelCtrlInfo();
+}
 
 static Error_t isoParseBalanceResponse(ByteArray* buf) {}
 

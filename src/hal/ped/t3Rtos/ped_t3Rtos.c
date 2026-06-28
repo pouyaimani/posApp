@@ -100,10 +100,6 @@ static PedErr_t enterPinEntryMode(Ped* self) {
     u32              keyGroup   = 0;
     SDK_PED_KEY_TYPE pedKeyType = PED_KEY_TDES_TPK;
     SDK_PED_PIN_MODE pedPinMode = PED_PIN_ISO_9564_0;
-    int              x0         = 31;
-    int              y0         = 133;
-    int              width      = 262;
-    int              height     = 41;
 
     ret = sdkPedEnterPinInputMode(keyGroup, pedKeyType, TPK_INDEX, pedPinMode,
                                   0, PIN_MIN_LEN, PIN_MAX_LEN,

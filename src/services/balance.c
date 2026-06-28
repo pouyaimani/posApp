@@ -7,16 +7,46 @@
 #include "utility/utility.h"
 #include "settings/settings.h"
 #include "txnOrchestrator/txnFLow.h"
+#include "ped/ped.h"
 
-static SubState* enterPass;
+static SubState* enterPin;
+static SubState* checkPin;
 static SubState* commu;
 static SubState* result;
 
-STATE_DEF_ENTER(Balance) { SM_GOTO(enterPass); }
+static TxnFlow* flow;
+
+static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+        settings()->save();
+    }
+    commonDone(flow, st);
+    SM_GOTO(result);
+}
+
+const TxnFlowConfig balanceTxn = {
+
+    .mti = MTI_AUTH_REQ,
+
+    .prcode = PRC_BALANCE,
+
+    .build = buildCommon,
+
+    .parse = parseCommon,
+
+    .done = balanceDone,
+
+    .onConnecting = showConnecting,
+
+    .onSending = showSending,
+
+    .onReceiving = showReceiving};
+
+STATE_DEF_ENTER(Balance) { SM_GOTO(enterPin); }
 
 /******************** Enter pass sub state **********************/
 
-STATE_DEF_ENTER(EnterPassword) {
+STATE_DEF_ENTER(EnterPin) {
     DEFINE_STRING(wage, 56);
     DEFINE_STRING(amnt, 16);
     DEFINE_STRING(amntSep, 32);
@@ -24,6 +54,7 @@ STATE_DEF_ENTER(EnterPassword) {
     amountSeparator(amnt, amntSep, sizeof(amntSep));
     snprintf(wage, sizeof(wage), "%s %s %s", phraseGetDef(PHRASE_RIAL), amntSep,
              phraseGetDef(PHRASE_WAGE));
+    PedErr_t err = OOP_CALL(ped(), enterPinEntryMode);
     GOTO_INPUT(STATE_IDLE, commu, phraseGetDef(PHRASE_CARD_PIN), wage,
                PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
@@ -31,11 +62,9 @@ STATE_DEF_ENTER(EnterPassword) {
 /******************** Connection sub state **********************/
 
 STATE_DEF_ENTER(Communication) {
-    // DEFINE_STRING(ip, 32);
-    // normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    // txnRun(&((LogOn*)state)->flow, state, ip,
-    // settings()->server.mainServerPort,
-    //        &cfgTxn);
+    DEFINE_STRING(ip, 32);
+    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+    txnRun(flow, state, ip, settings()->server.mainServerPort, &balanceTxn);
 }
 
 /*********************** Result sub state *************************/
@@ -48,9 +77,9 @@ OOP_CTOR(Balance, State* parent, const char* name) {
     OOP_CALL_CTOR(Service, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(Balance);
 
-    enterPass = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, enterPass, &self->base.state, "enter password");
-    enterPass->vtable.enter = STATE_ENTER(EnterPassword);
+    enterPin = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, enterPin, &self->base.state, "enter password");
+    enterPin->vtable.enter = STATE_ENTER(EnterPin);
 
     commu = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, commu, &self->base.state, "communication");
@@ -59,4 +88,6 @@ OOP_CTOR(Balance, State* parent, const char* name) {
     result = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, result, &self->base.state, "result");
     result->vtable.enter = STATE_ENTER(Result);
+
+    flow = &self->base.flow;
 }

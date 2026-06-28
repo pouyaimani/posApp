@@ -4,6 +4,7 @@
 #include "state.h"
 #include "dcfg.h"
 #include "common.h"
+#include "txnOrchestrator/txnFLow.h"
 
 #define PASSWORD_MAX_LEN 4
 
@@ -17,9 +18,10 @@ OOP_VTABLE(Service) { OOP_IMETHOD(void, Service, makeReceipt); };
 
 OOP_CLASS(Service) {
     OOP_IMPLEMENTS(Service);
-    State state;
-    bool  enable;
-    char  name[24];
+    State   state;
+    bool    enable;
+    char    name[24];
+    TxnFlow flow;
 };
 
 OOP_CTOR(Service, State* parent, const char* name);

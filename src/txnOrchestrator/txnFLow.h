@@ -115,6 +115,7 @@ void txnFlowRelease(TxnFlow* flow);
 
 extern const TxnFlowConfig logOnTxn;
 extern const TxnFlowConfig cfgTxn;
+extern const TxnFlowConfig balanceTxn;
 
 /*********************************************************************************************
  *                                                                                           *
