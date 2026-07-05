@@ -26,10 +26,10 @@ State* getState(StateId_t id) {
         CALL_ONCE(idle = MEM_ALLOC(sizeof(Idle));
                   OOP_CALL_CTOR(Idle, idle, startup, "idle"););
         return (State*)idle;
-    case STATE_ID_INPUT:
-        CALL_ONCE(input = MEM_ALLOC(sizeof(Input));
-                  OOP_CALL_CTOR(Input, input, idle, "input"););
-        return (State*)input;
+    // case STATE_ID_INPUT:
+    //     CALL_ONCE(input = MEM_ALLOC(sizeof(Input));
+    //               OOP_CALL_CTOR(Input, input, idle, "input"););
+    //     return (State*)input;
     case STATE_ID_CARD_HOLDER:
         CALL_ONCE(cardHolder = MEM_ALLOC(sizeof(CardHolder));
                   OOP_CALL_CTOR(CardHolder, cardHolder, idle, "card holder"););
@@ -75,20 +75,21 @@ State* getState(StateId_t id) {
     }
 }
 
-void GOTO_INPUT(State* prev, State* next, const char* title, const char* body,
-                int max, InputMode_t mode, char* out) {
-    RETURN_IF_NULL(prev, ;);
-    RETURN_IF_NULL(next, ;);
-    Input* in = (Input*)getState(STATE_ID_INPUT);
-    in->reset();
-    in->out = out;
-    in->setData(title, body);
-    in->setMax(max);
-    in->setMode(mode);
-    OOP_CALL(getState(STATE_ID_INPUT), setPrev, prev);
-    OOP_CALL(getState(STATE_ID_INPUT), setNext, next);
-    SM_GOTO(getState(STATE_ID_INPUT));
-}
+// void GOTO_INPUT(State* prev, State* next, const char* title, const char*
+// body,
+//                 int max, InputMode_t mode, char* out) {
+//     RETURN_IF_NULL(prev, ;);
+//     RETURN_IF_NULL(next, ;);
+//     Input* in = (Input*)getState(STATE_ID_INPUT);
+//     in->reset();
+//     in->out = out;
+//     in->setData(title, body);
+//     in->setMax(max);
+//     in->setMode(mode);
+//     OOP_CALL(getState(STATE_ID_INPUT), setPrev, prev);
+//     OOP_CALL(getState(STATE_ID_INPUT), setNext, next);
+//     SM_GOTO(getState(STATE_ID_INPUT));
+// }
 
 void GOTO_INFO(State* prev, State* next, uint8_t type, const char* title,
                const char* body) {

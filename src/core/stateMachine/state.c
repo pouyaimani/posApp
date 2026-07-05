@@ -17,49 +17,54 @@ static void goTo(State* s, State* nextState) { smCore()->goTo(nextState); }
 
 static void default_timeout(State* s, TimeOutEvent* ev) {
     (void)ev;
-    STM_LOG("Timeout event hadler is not defined for %s state.", s->name);
+    STM_LOG("Timeout event handler is not defined for %s state.", s->name);
 }
 
 static void default_keypad(State* s, KeypadEvent* ev) {
     (void)ev;
-    STM_LOG("Keypad event hadler is not defined for %s state.", s->name);
+    STM_LOG("Keypad event handler is not defined for %s state.", s->name);
 }
 
 static void default_mag(State* s, MagEvent* ev) {
     (void)ev;
-    STM_LOG("Mag event hadler is not defined for %s state.", s->name);
+    STM_LOG("Mag event handler is not defined for %s state.", s->name);
 }
 
 static void default_wifi(State* s, WifiEvent* ev) {
     (void)ev;
-    STM_LOG("Wifi event hadler is not defined for %s state.", s->name);
+    STM_LOG("Wifi event handler is not defined for %s state.", s->name);
 }
 
 static void default_cell(State* s, CellEvent* ev) {
     (void)ev;
-    STM_LOG("Cellular event hadler is not defined for %s state.", s->name);
+    STM_LOG("Cellular event handler is not defined for %s state.", s->name);
 }
 
 static void default_sock_connect(State* s, SocketConnectEvent* ev) {
     (void)ev;
-    STM_LOG("Socket connect event hadler is not defined for %s state.",
+    STM_LOG("Socket connect event handler is not defined for %s state.",
             s->name);
 }
 
 static void default_sock_sent(State* s, SocketSentEvent* ev) {
     (void)ev;
-    STM_LOG("Socket sent event hadler is not defined for %s state.", s->name);
+    STM_LOG("Socket sent event handler is not defined for %s state.", s->name);
 }
 
 static void default_sock_read(State* s, SocketReadyReadEvent* ev) {
     (void)ev;
-    STM_LOG("Socket read event hadler is not defined for %s state.", s->name);
+    STM_LOG("Socket read event handler is not defined for %s state.", s->name);
 }
 
 static void default_sock_timeout(State* s, SocketTimeOutEvent* ev) {
     (void)ev;
-    STM_LOG("Socket timeout event hadler is not defined for %s state.",
+    STM_LOG("Socket timeout event handler is not defined for %s state.",
             s->name);
+}
+
+static void default_ped(State* s, PedEvent* ev) {
+    (void)ev;
+    STM_LOG("Ped event handler is not defined for %s state.", s->name);
 }
 
 static void setNext(State* current, State* next) { current->next = next; }
@@ -79,6 +84,7 @@ OOP_CTOR(State, State* parent, const char* name) {
     self->vtable.onSocketSent      = default_sock_sent;
     self->vtable.onSocketReadyRead = default_sock_read;
     self->vtable.onSocketTimeOut   = default_sock_timeout;
+    self->vtable.handlePed         = default_ped;
     self->vtable.goTo              = goTo;
     self->vtable.setNext           = setNext;
     self->vtable.setPrev           = setPrev;

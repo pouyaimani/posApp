@@ -29,7 +29,7 @@ static bool isPressed(Keypad* self) { return self->key != KEY_NONE; }
 static void ioRead() {
     OOP_CALL(__keypad, readKey);
     if (isPressed(__keypad)) {
-        KeypadEvent* ev = (KeypadEvent**)createEvent(SM_EVENT_KEYPAD);
+        KeypadEvent* ev = (KeypadEvent*)createEvent(SM_EVENT_KEYPAD);
         ev->key         = getKey(__keypad);
         switch (ev->key) {
         case KEY_0:
@@ -69,12 +69,18 @@ static void ioRead() {
     }
 }
 
+static void registerIo() { getEventloop()->registerChecker(ioRead); }
+
+static void unregisterIo() { getEventloop()->unregisterChecker(ioRead); }
+
 OOP_CTOR(Keypad) {
     LOG_TRACE("Constructing keypad ...");
     self->key              = KEY_NONE;
+    self->registerIo       = registerIo;
+    self->unregisterIo     = unregisterIo;
     self->vtable.getKey    = getKey;
     self->vtable.isPressed = isPressed;
-    getEventloop()->registerChecker(ioRead);
+    registerIo();
 }
 
 Keypad* keypad() {

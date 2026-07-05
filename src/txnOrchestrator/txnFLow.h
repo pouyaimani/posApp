@@ -127,6 +127,7 @@ int  parseCommon(TxnFlow* flow, ByteArray* ba);
 void showConnecting(TxnFlow* f);
 void showSending(TxnFlow* f);
 void showReceiving(TxnFlow* f);
-void commonDone(TxnFlow* flow, const TxnFlowStatus* st);
+void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
+                State* onFail, bool showSucMsg);
 
 #endif

@@ -10,6 +10,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "input/inputMgr.h"
 
 typedef enum {
     SET_ITEM_SOUND = 0,
@@ -95,18 +96,30 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         idx = energyMenu->idx;
         if (energyMenu->idx == 0) {
-            GOTO_INPUT(state, getValue, "ورود بازه ذخیره انرژی", "", 2,
-                       IN_MODE_NUMBERS, NULL);
+            inmgr()->run(
+                &(InputCfg){
+                    .type   = INPUT_TYPE_KEYPAD,
+                    .mode   = INMD_ENTER_NUMBERS,
+                    .title  = PHRASE_ENTER_ENERGY_SAVER_RANGE,
+                    .info   = PHRASE_NONE,
+                    .maxLen = 2,
+                },
+                state, getValue);
         } else if (energyMenu->idx == 1) {
-            GOTO_INPUT(state, getValue, "ورود بازه خاموشی", "", 2,
-                       IN_MODE_NUMBERS, NULL);
+            inmgr()->run(
+                &(InputCfg){
+                    .type   = INPUT_TYPE_KEYPAD,
+                    .mode   = INMD_ENTER_NUMBERS,
+                    .title  = PHRASE_ENTER_SLEEP_TIME_RANGE,
+                    .info   = PHRASE_NONE,
+                    .maxLen = 2,
+                },
+                state, getValue);
         }
     }
 }
 
 STATE_DEF_ENTER(GetValue) {
-    Input* in = (Input*)getState(STATE_ID_INPUT);
-    in->input;
     if (idx == 0) {
 
     } else if (idx == 2) {
@@ -177,8 +190,17 @@ STATE_DEF_HANDLE(AutoPrint, KeypadEvent) {
 static SubState* secPrintSuc;
 
 STATE_DEF_ENTER(SecPrintTime) {
-    GOTO_INPUT(state->parent, secPrintSuc, "زمان رسید دوم", "", 2,
-               IN_MODE_NUMBERS, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_NUMBERS,
+            .title  = phraseGetDef(PHRASE_SEC_REC_TIME),
+            .info   = "",
+            .maxLen = 2,
+        },
+        state->parent, secPrintSuc);
+    // GOTO_INPUT(state->parent, secPrintSuc, "زمان رسید دوم", "", 2,
+    //            IN_MODE_NUMBERS, NULL);
 }
 
 STATE_DEF_ENTER(SecPrintTimeSuc) {

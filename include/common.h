@@ -27,24 +27,23 @@ typedef int8_t (*ErrCallBack_t)(void* arg);
 #define MERCHANT_PIN_LEN     4
 #define MERCHANT_DEFAULT_PIN "1111"
 #define SYS_PWD_LEN          8
-
-#define MAX_REF_NUM_IN_LEN 12
-#define MAX_TRACE_IN_LEN   6
-
-#define MAX_DATE_IN_LEN 8
-#define MAX_TIME_IN_LEN 6
-
-#define WIFI_AP_LIST_SIZE 50
-
-#define MAX_SERVICE_NUM 10
-
-#define MAX_AMOUNT_LIST 13
-
-#define AMOUNT_MAX_CNT 12
-#define AMOUNT_MIN_CNT 4
-
-#define PHRASES_JSON_ADDR   ""
-#define BANK_NAME_JSON_ADDR ""
+#define MAX_REF_NUM_IN_LEN   12
+#define MAX_TRACE_IN_LEN     6
+#define MAX_DATE_IN_LEN      8
+#define MAX_TIME_IN_LEN      6
+#define WIFI_AP_LIST_SIZE    50
+#define MAX_SERVICE_NUM      10
+#define MAX_AMOUNT_LIST      13
+#define AMOUNT_MAX_CNT       12
+#define AMOUNT_MIN_CNT       4
+#define PASSWORD_MAX_LEN     4
+#define IP_MAX_LEN           12
+#define SHIFT_NUM_MAX_LEN    3
+#define PHRASES_JSON_ADDR    ""
+#define BANK_NAME_JSON_ADDR  ""
+#define CARD_PIN_LEN         4
+#define ISO_MAC_LEN          8
+#define PIN_BLOCK_LEN        8
 
 /**********************************************************/
 //                         TMS

@@ -12,6 +12,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "input/inputMgr.h"
 
 static Cellular* cel;
 static Network*  net;
@@ -55,15 +56,13 @@ static void saveWifiInfo(WifiApInfo_t* ap, const char* pwd) {
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
     if (connectState == WIFI_DISCONNECT_STATE) {
-        Input* in = (Input*)getState(STATE_ID_INPUT);
-        wifi()->connect(selectedAp, in->input);
+        wifi()->connect(selectedAp, inmgr()->input);
         connectState = WIFI_CONNECT_STATE;
     } else {
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
             GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
                       phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
-            Input* in = (Input*)getState(STATE_ID_INPUT);
-            saveWifiInfo(selectedAp, in->input);
+            saveWifiInfo(selectedAp, inmgr()->input);
         } else {
             GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                       phraseGetDef(PHRASE_CONNECTION_ERR), "");
@@ -82,14 +81,15 @@ static void WifiConnect(State* parent) {
 /******************** Wifi Enter pass sub state **********************/
 
 STATE_DEF_ENTER(WifiEnterPass) {
-    Input* in = (Input*)getState(STATE_ID_INPUT);
-    OOP_CALL(getState(STATE_ID_INPUT), setPrev, state->parent);
-    OOP_CALL(getState(STATE_ID_INPUT), setNext, wifiConnect);
-    in->reset();
-    in->setMode(IN_MODE_ALPHAB);
-    in->setData(phraseGetDef(PHRASE_WIFI_PIN), "");
-    in->setMax(32);
-    SM_GOTO(getState(STATE_ID_INPUT));
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_ALPHAB,
+            .title  = phraseGetDef(PHRASE_WIFI_PIN),
+            .info   = "",
+            .maxLen = 32,
+        },
+        state->parent, wifiConnect);
 }
 
 STATE_DEF_EXIT(WifiEnterPass) {}

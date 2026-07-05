@@ -11,6 +11,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "input/inputMgr.h"
 
 static TerminalSettings* termStorage;
 
@@ -49,111 +50,157 @@ STATE_DEF_ENTER(EnterFixedAmount) {
     Input* in = STATE_INPUT;
     if (termStorage->fixedAmountItem == FIXED_AMNT_LISTS) {
         if (listCnt > 0) {
-            Input* in = getState(STATE_ID_INPUT);
-            snprintf(termStorage->amountList[listCnt - 1], 13, "%s", in->input);
+            snprintf(termStorage->amountList[listCnt - 1], 13, "%s",
+                     inmgr()->input);
             termStorage->amountListCnt = listCnt;
         }
+        Phrases_t phrase;
         switch (listCnt) {
         case 0: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FIRST_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_FIRST_AMNT;
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FIRST_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 1: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SEC_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_SEC_AMNT;
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SEC_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 2: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_THIRD_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_THIRD_AMNT;
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_THIRD_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 3: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FOURTH_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_FOURTH_AMNT;
+            // GOTO_INPUT(state->parent, state,
+            // phraseGetDef(PHRASE_FOURTH_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 4: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FIFTH_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_FIFTH_AMNT;
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_FIFTH_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 5: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SIXTH_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_SIXTH_AMNT;
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SIXTH_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 6: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_SEVENTH_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_SEVENTH_AMNT;
+            // GOTO_INPUT(state->parent, state,
+            // phraseGetDef(PHRASE_SEVENTH_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 7: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_EIGHTH_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_EIGHTH_AMNT;
+            // GOTO_INPUT(state->parent, state,
+            // phraseGetDef(PHRASE_EIGHTH_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 8: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_NINTH_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_NINTH_AMNT;
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_NINTH_AMNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 9: {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_TENTH_AMNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[listCnt]);
+            phrase = PHRASE_TENTH_AMNT;
+            // GOTO_INPUT(state->parent, state, phraseGetDef(phrase),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[listCnt]);
             break;
         }
         case 10: {
             SM_GOTO(state->parent);
-            break;
+            return;
         }
         default:
-            break;
+            return;
         }
+        inmgr()->run(
+            &(InputCfg){
+                .type   = INPUT_TYPE_KEYPAD,
+                .mode   = INMD_ENTER_AMOUNT,
+                .title  = phraseGetDef(phrase),
+                .info   = phraseGetDef(PHRASE_RIAL),
+                .maxLen = AMOUNT_MAX_CNT,
+            },
+            state->parent, state);
+        inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[listCnt]);
+        // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_TENTH_AMNT),
+        //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+        //            IN_MODE_AMOUNT, NULL);
+        // in->setInput(termStorage->amountList[listCnt]);
         listCnt++;
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_SINGLE) {
         if (listCnt == 0) {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[10]);
+            inmgr()->run(
+                &(InputCfg){
+                    .type   = INPUT_TYPE_KEYPAD,
+                    .mode   = INMD_ENTER_AMOUNT,
+                    .title  = phraseGetDef(PHRASE_AMOUNT),
+                    .info   = phraseGetDef(PHRASE_RIAL),
+                    .maxLen = AMOUNT_MAX_CNT,
+                },
+                state->parent, state);
+            inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[10]);
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[10]);
             listCnt++;
         } else {
-            Input* in = getState(STATE_ID_INPUT);
-            snprintf(termStorage->amountList[10], 13, "%s", in->input);
+            snprintf(termStorage->amountList[10], 13, "%s", inmgr()->input);
             SM_GOTO(state->parent);
         }
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_VARIANT) {
         if (listCnt == 0) {
-            GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
-                       phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
-                       IN_MODE_AMOUNT, NULL);
-            in->setInput(termStorage->amountList[11]);
+            inmgr()->run(
+                &(InputCfg){
+                    .type   = INPUT_TYPE_KEYPAD,
+                    .mode   = INMD_ENTER_AMOUNT,
+                    .title  = phraseGetDef(PHRASE_AMOUNT),
+                    .info   = "",
+                    .maxLen = AMOUNT_MAX_CNT,
+                },
+                state->parent, state);
+            inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[11]);
+            // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
+            //            phraseGetDef(PHRASE_RIAL), AMOUNT_MAX_CNT,
+            //            IN_MODE_AMOUNT, NULL);
+            // in->setInput(termStorage->amountList[11]);
             listCnt++;
         } else {
-            Input* in = getState(STATE_ID_INPUT);
-            snprintf(termStorage->amountList[11], 13, "%s", in->input);
+            snprintf(termStorage->amountList[11], 13, "%s", inmgr()->input);
             SM_GOTO(state->parent);
         }
     }
@@ -183,20 +230,28 @@ static SubState* getMaxAmnt;
 static void disMaxAmnt() { termStorage->maxAmntEnable = false; }
 
 STATE_DEF_ENTER(GetMaxAmnt) {
-    Input* in = getState(STATE_ID_INPUT);
     GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
               phraseGetDef(PHRASE_ACTIVATE_SUC), "");
     termStorage->maxAmntEnable = true;
-    snprintf(termStorage->maxAmnt, 13, "%s", in->input);
+    snprintf(termStorage->maxAmnt, 13, "%s", inmgr()->input);
 }
 
 STATE_DEF_ENTER(EnterMaxAmnt) {
     DEFINE_STRING(rial, 16);
     snprintf(rial, sizeof(rial), "(%s)", phraseGetDef(PHRASE_RIAL));
-    GOTO_INPUT(state->parent, getMaxAmnt, phraseGetDef(PHRASE_AMNT_CEIL), rial,
-               12, IN_MODE_AMOUNT, NULL);
-    Input* in = STATE_INPUT;
-    in->setInput(termStorage->maxAmnt);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_AMOUNT,
+            .title  = phraseGetDef(PHRASE_AMNT_CEIL),
+            .info   = rial,
+            .maxLen = AMOUNT_MAX_CNT,
+        },
+        state->parent, getMaxAmnt);
+    // GOTO_INPUT(state->parent, getMaxAmnt, phraseGetDef(PHRASE_AMNT_CEIL),
+    // rial,
+    //            12, IN_MODE_AMOUNT, NULL);
+    inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->maxAmnt);
 }
 
 STATE_DEF_ENTER(MaxAmount) {

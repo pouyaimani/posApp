@@ -12,6 +12,7 @@
 #include "printer/printer.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "input/inputMgr.h"
 
 static ReceiptDocType docType;
 
@@ -105,15 +106,35 @@ void setReprintItem(void* arg) {
     switch (pItem) {
     case REPRINT_TRACE:
         QUERY_FILTER_TRACE(rquery.filter);
-        GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-                   phraseGetDef(PHRASE_ENTER_TRACE), "", MAX_TRACE_IN_LEN,
-                   IN_MODE_NUMBERS, rquery.trace);
+        inmgr()->run(
+            &(InputCfg){
+                .type   = INPUT_TYPE_KEYPAD,
+                .mode   = INMD_ENTER_NUMBERS,
+                .title  = phraseGetDef(PHRASE_ENTER_TRACE),
+                .info   = "",
+                .maxLen = MAX_TRACE_IN_LEN,
+            },
+            subReports[REP_ITEM_REPRINT], extractData);
+        inmgr()->setOut(rquery.trace, NULL, sizeof(rquery.trace));
+        // GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
+        //            phraseGetDef(PHRASE_ENTER_TRACE), "", MAX_TRACE_IN_LEN,
+        //            IN_MODE_NUMBERS, rquery.trace);
         break;
     case REPRINT_REF:
         QUERY_FILTER_REF_NUM(rquery.filter);
-        GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-                   phraseGetDef(PHRASE_ENTER_REF_NUM), "", MAX_REF_NUM_IN_LEN,
-                   IN_MODE_NUMBERS, rquery.refNum);
+        inmgr()->run(
+            &(InputCfg){
+                .type   = INPUT_TYPE_KEYPAD,
+                .mode   = INMD_ENTER_NUMBERS,
+                .title  = phraseGetDef(PHRASE_ENTER_REF_NUM),
+                .info   = "",
+                .maxLen = MAX_REF_NUM_IN_LEN,
+            },
+            subReports[REP_ITEM_REPRINT], extractData);
+        inmgr()->setOut(rquery.refNum, NULL, sizeof(rquery.refNum));
+        // GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
+        //            phraseGetDef(PHRASE_ENTER_REF_NUM), "",
+        //            MAX_REF_NUM_IN_LEN, IN_MODE_NUMBERS, rquery.refNum);
         break;
     case REPRINT_BILL:
     case REPRINT_CHARGE:
@@ -212,29 +233,69 @@ static void DetailsReport(State* parent) {
 /******************** Get Start Date sub state **********************/
 
 STATE_DEF_ENTER(GetStartDate) {
-    GOTO_INPUT(mainMenu, getStartTime, phraseGetDef(PHRASE_FROM_DATE), "",
-               MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.startDate);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_DATE,
+            .title  = phraseGetDef(PHRASE_FROM_DATE),
+            .info   = "",
+            .maxLen = MAX_DATE_IN_LEN,
+        },
+        mainMenu, getStartTime);
+    inmgr()->setOut(rquery.startDate, NULL, sizeof(rquery.startDate));
+    // GOTO_INPUT(mainMenu, getStartTime, phraseGetDef(PHRASE_FROM_DATE), "",
+    //            MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.startDate);
 }
 
 /******************** Get End Date sub state **********************/
 
 STATE_DEF_ENTER(GetEndDate) {
-    GOTO_INPUT(mainMenu, getEndTime, phraseGetDef(PHRASE_TO_DATE), "",
-               MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.endDate);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_DATE,
+            .title  = phraseGetDef(PHRASE_TO_DATE),
+            .info   = "",
+            .maxLen = MAX_DATE_IN_LEN,
+        },
+        mainMenu, getEndTime);
+    inmgr()->setOut(rquery.endDate, NULL, sizeof(rquery.endDate));
+    // GOTO_INPUT(mainMenu, getEndTime, phraseGetDef(PHRASE_TO_DATE), "",
+    //            MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.endDate);
 }
 
 /******************** Get Start Time sub state **********************/
 
 STATE_DEF_ENTER(GetStartTime) {
-    GOTO_INPUT(mainMenu, getEndDate, phraseGetDef(PHRASE_FROM_TIME), "",
-               MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.startTime);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_TIME,
+            .title  = phraseGetDef(PHRASE_FROM_TIME),
+            .info   = "",
+            .maxLen = MAX_TIME_IN_LEN,
+        },
+        mainMenu, getEndDate);
+    inmgr()->setOut(rquery.startTime, NULL, sizeof(rquery.startTime));
+    // GOTO_INPUT(mainMenu, getEndDate, phraseGetDef(PHRASE_FROM_TIME), "",
+    //            MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.startTime);
 }
 
 /******************** Get End Time sub state **********************/
 
 STATE_DEF_ENTER(GetEndTime) {
-    GOTO_INPUT(mainMenu, extractData, phraseGetDef(PHRASE_TO_TIME), "",
-               MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.endTime);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_TIME,
+            .title  = phraseGetDef(PHRASE_TO_TIME),
+            .info   = "",
+            .maxLen = MAX_TIME_IN_LEN,
+        },
+        mainMenu, extractData);
+    inmgr()->setOut(rquery.endTime, NULL, sizeof(rquery.endTime));
+    // GOTO_INPUT(mainMenu, extractData, phraseGetDef(PHRASE_TO_TIME), "",
+    //            MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.endTime);
 }
 
 /******************** extract data sub state **********************/

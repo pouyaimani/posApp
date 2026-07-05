@@ -8,6 +8,7 @@
 #include "settings/settings.h"
 #include "txnOrchestrator/txnFLow.h"
 #include "ped/ped.h"
+#include "input/inputMgr.h"
 
 static SubState* enterPin;
 static SubState* checkPin;
@@ -20,8 +21,8 @@ static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         settings()->save();
     }
-    commonDone(flow, st);
-    SM_GOTO(result);
+    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    // SM_GOTO(result);
 }
 
 const TxnFlowConfig balanceTxn = {
@@ -47,16 +48,22 @@ STATE_DEF_ENTER(Balance) { SM_GOTO(enterPin); }
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPin) {
-    DEFINE_STRING(wage, 56);
+    static DEFINE_STRING(wage, 56);
     DEFINE_STRING(amnt, 16);
     DEFINE_STRING(amntSep, 32);
     intToStr(settings()->txn.balanceInqWage, amnt, sizeof(amnt));
     amountSeparator(amnt, amntSep, sizeof(amntSep));
-    snprintf(wage, sizeof(wage), "%s %s %s", phraseGetDef(PHRASE_RIAL), amntSep,
-             phraseGetDef(PHRASE_WAGE));
-    PedErr_t err = OOP_CALL(ped(), enterPinEntryMode);
-    GOTO_INPUT(STATE_IDLE, commu, phraseGetDef(PHRASE_CARD_PIN), wage,
-               PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+    snprintf(wage, sizeof(wage), "%s %s %s", phraseGetDef(PHRASE_WAGE), amntSep,
+             phraseGetDef(PHRASE_RIAL));
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_PED,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_CARD_PIN),
+            .info   = wage,
+            .maxLen = CARD_PIN_LEN,
+        },
+        STATE_IDLE, commu);
 }
 
 /******************** Connection sub state **********************/
@@ -69,7 +76,10 @@ STATE_DEF_ENTER(Communication) {
 
 /*********************** Result sub state *************************/
 
-STATE_DEF_ENTER(Result) { GOTO_TXN_RES(STATE_IDLE, STATE_IDLE); }
+STATE_DEF_ENTER(Result) {
+    // GOTO_TXN_RES(STATE_IDLE, STATE_IDLE);
+    SM_GOTO(STATE_IDLE);
+}
 
 /******************************************************************/
 

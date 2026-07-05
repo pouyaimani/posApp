@@ -6,7 +6,7 @@ static void logOnDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         settings()->save();
     }
-    commonDone(flow, st);
+    commonDone(flow, st, flow->owner->parent, flow->owner->parent, true);
 }
 
 const TxnFlowConfig logOnTxn = {

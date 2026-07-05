@@ -7,6 +7,7 @@
 #include "utility/utility.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
+#include "input/inputMgr.h"
 
 static int*              fixedAmountItem;
 static TerminalSettings* termStorage;
@@ -31,8 +32,18 @@ STATE_DEF_ENTER(AmountList) {
 }
 
 STATE_DEF_ENTER(SingleAmount) {
-    GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", AMOUNT_MAX_CNT, IN_MODE_AMOUNT,
-               NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_AMOUNT,
+            .title  = "",
+            .info   = "",
+            .maxLen = AMOUNT_MAX_CNT,
+        },
+        STATE_IDLE, STATE_IDLE);
+    // GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", AMOUNT_MAX_CNT,
+    // IN_MODE_AMOUNT,
+    //            NULL);
 }
 
 STATE_DEF_ENTER(VariantAmount) {
@@ -40,8 +51,18 @@ STATE_DEF_ENTER(VariantAmount) {
     char amount[AMOUNT_MAX_CNT] = {0};
     amountSeparator(termStorage->amountList[11], amount, AMOUNT_MAX_CNT);
     snprintf(str, sizeof(str), "(%s) %s", phraseGetDef(PHRASE_RIAL), amount);
-    GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, phraseGetDef(PHRASE_ENTER_COUNT), 4,
-               IN_MODE_NUMBERS, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_NUMBERS,
+            .title  = str,
+            .info   = phraseGetDef(PHRASE_ENTER_COUNT),
+            .maxLen = 4,
+        },
+        STATE_IDLE, STATE_IDLE);
+    // GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, phraseGetDef(PHRASE_ENTER_COUNT),
+    // 4,
+    //            IN_MODE_NUMBERS, NULL);
 }
 
 STATE_DEF_ENTER(FixedAmount) {

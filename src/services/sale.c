@@ -8,6 +8,7 @@
 #include "txn.h"
 #include "utility/utility.h"
 #include "phrases/phrases.h"
+#include "input/inputMgr.h"
 
 static SubState* enterAmount;
 static SubState* enterPass;
@@ -24,22 +25,38 @@ STATE_DEF_ENTER(Sale) {
 static char* amount;
 
 STATE_DEF_ENTER(EnterAmount) {
-    GOTO_INPUT(STATE_IDLE, enterPass, phraseGetDef(PHRASE_AMOUNT), "",
-               AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .mode   = INMD_ENTER_AMOUNT,
+            .title  = phraseGetDef(PHRASE_AMOUNT),
+            .info   = "",
+            .maxLen = AMOUNT_MAX_CNT,
+        },
+        STATE_IDLE, commu);
+    // GOTO_INPUT(STATE_IDLE, enterPass, phraseGetDef(PHRASE_AMOUNT), "",
+    //            AMOUNT_MAX_CNT, IN_MODE_AMOUNT, NULL);
 }
 
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
-    Input* in = getState(STATE_ID_INPUT);
+    // Input* in = getState(STATE_ID_INPUT);
     // OOP_CALL(packer(), setAmount, in->input);
-    GOTO_INPUT(STATE_IDLE, commu, phraseGetDef(PHRASE_CARD_PIN), "",
-               PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_CARD_PIN),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        STATE_IDLE, commu);
+    // GOTO_INPUT(STATE_IDLE, commu, phraseGetDef(PHRASE_CARD_PIN), "",
+    //            PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 /******************** Connection sub state **********************/
 
-STATE_DEF_ENTER(Communication) { Input* in = getState(STATE_ID_INPUT); }
+STATE_DEF_ENTER(Communication) {}
 
 /*********************** Result sub state *************************/
 

@@ -56,16 +56,8 @@ typedef enum {
     IN_MODE_ALPHAB,
     IN_MODE_TIME,
     IN_MODE_DATE,
-    IN_MODE_IP
+    IN_MODE_IP,
 } InputMode_t;
-
-OOP_CLASS(InputCfg) {
-    const char* title;
-    uint8_t     maxLen;
-    InputMode_t mode;
-    State*      next;
-    State*      prev;
-};
 
 OOP_CLASS(Input) {
     OOP_EXTENDS(State);

@@ -54,6 +54,7 @@ OOP_VTABLE(State) {
     OOP_IMETHOD(void, State, handleMag, MagEvent* ev);
     OOP_IMETHOD(void, State, handleWifi, WifiEvent* ev);
     OOP_IMETHOD(void, State, handleCell, CellEvent* ev);
+    OOP_IMETHOD(void, State, handlePed, CellEvent* ev);
     OOP_IMETHOD(void, State, onSocketConnect, SocketConnectEvent* ev);
     OOP_IMETHOD(void, State, onSocketSent, SocketSentEvent* ev);
     OOP_IMETHOD(void, State, onSocketReadyRead, SocketReadyReadEvent* ev);

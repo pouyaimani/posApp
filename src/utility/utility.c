@@ -1050,3 +1050,173 @@ int hex2data(unsigned char* data, const unsigned char* hexstring,
 
     return 0;
 }
+
+void dateFormat(const char* in, char* out) {
+    char digits[8] = {0};
+    int  dcount    = 0;
+
+    // Extract digits (max 8)
+    for (int i = 0; in[i] && dcount < 8; i++) {
+        if (isDigit((unsigned char)in[i])) {
+            digits[dcount++] = in[i];
+        }
+    }
+
+    int pos = 0;
+    int di  = 0;
+
+    // YYYY
+    for (int i = 0; i < 4; i++) {
+        out[pos++] = (di < dcount) ? digits[di++] : '-';
+    }
+
+    out[pos++] = '/';
+
+    // MM
+    for (int i = 0; i < 2; i++) {
+        out[pos++] = (di < dcount) ? digits[di++] : '-';
+    }
+
+    out[pos++] = '/';
+
+    // DD
+    for (int i = 0; i < 2; i++) {
+        out[pos++] = (di < dcount) ? digits[di++] : '-';
+    }
+
+    out[pos] = '\0';
+}
+
+bool dateValidate(const char* in) {
+    char digits[8];
+    int  len = 0;
+
+    for (int i = 0; in[i] && len < 8; i++) {
+        if (isDigit((unsigned char)in[i])) {
+            digits[len++] = in[i];
+        }
+    }
+
+    if (len != 8)
+        return false;
+
+    int year = 0, month = 0, day = 0;
+
+    // YYYY
+    for (int i = 0; i < 4; i++)
+        year = year * 10 + (digits[i] - '0');
+
+    // MM
+    for (int i = 4; i < 6; i++)
+        month = month * 10 + (digits[i] - '0');
+
+    // DD
+    for (int i = 6; i < 8; i++)
+        day = day * 10 + (digits[i] - '0');
+
+    if (month < 1 || month > 12)
+        return false;
+    if (day < 1 || day > 31)
+        return false;
+
+    // Optional: better day validation per month
+    int maxDay = 31;
+    if (month == 2) {
+        bool leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        maxDay    = leap ? 29 : 28;
+    } else if (month == 4 || month == 6 || month == 9 || month == 11) {
+        maxDay = 30;
+    }
+
+    return day <= maxDay;
+}
+
+void timeFormat(const char* in, char* out) {
+    char digits[6] = {0};
+    int  dcount    = 0;
+
+    // Extract digits (max 6)
+    for (int i = 0; in[i] && dcount < 6; i++) {
+        if (isDigit((unsigned char)in[i])) {
+            digits[dcount++] = in[i];
+        }
+    }
+
+    int pos = 0;
+    int di  = 0;
+
+    // HH
+    for (int i = 0; i < 2; i++) {
+        out[pos++] = (di < dcount) ? digits[di++] : '-';
+    }
+
+    out[pos++] = ':';
+
+    // MM
+    for (int i = 0; i < 2; i++) {
+        out[pos++] = (di < dcount) ? digits[di++] : '-';
+    }
+
+    out[pos++] = ':';
+
+    // SS
+    for (int i = 0; i < 2; i++) {
+        out[pos++] = (di < dcount) ? digits[di++] : '-';
+    }
+
+    out[pos] = '\0';
+}
+
+bool timeValidate(const char* in) {
+    char digits[6];
+    int  len = 0;
+
+    for (int i = 0; in[i] && len < 6; i++) {
+        if (isDigit((unsigned char)in[i])) {
+            digits[len++] = in[i];
+        }
+    }
+
+    if (len != 6)
+        return false;
+
+    int hh = (digits[0] - '0') * 10 + (digits[1] - '0');
+    int mm = (digits[2] - '0') * 10 + (digits[3] - '0');
+    int ss = (digits[4] - '0') * 10 + (digits[5] - '0');
+
+    if (hh > 23)
+        return false;
+    if (mm > 59)
+        return false;
+    if (ss > 59)
+        return false;
+
+    return true;
+}
+
+char* skipLeadingZeros(char* str) {
+    if (str == NULL)
+        return NULL;
+
+    while (*str == '0' && *(str + 1) != '\0')
+        str++;
+
+    return str;
+}
+
+bool removeLeadingZeros(const char* input, char* output, size_t outputSize) {
+    if (input == NULL || output == NULL || outputSize == 0)
+        return false;
+
+    while (*input == '0' && *(input + 1) != '\0')
+        input++;
+
+    size_t len = strlen(input);
+
+    if (len + 1 > outputSize)
+        return false;
+
+    memcpy(output, input, len + 1);
+
+    return true;
+}

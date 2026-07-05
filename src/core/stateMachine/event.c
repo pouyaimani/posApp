@@ -53,6 +53,9 @@ Event* createEvent(SmEventType_t type) {
     case SM_EVENT_SOCKET_TIME_OUT:
         CREATE_EVENT(SocketTimeOutEvent, event);
         break;
+    case SM_EVENT_PED:
+        CREATE_EVENT(PedEvent, event);
+        break;
     default:
         break;
     }
@@ -136,3 +139,11 @@ static void socket_timeout__dispatchTo(Event* self, State* state) {
 OOP_CTOR(SocketTimeOutEvent) {
     self->base.vtable.dispatchTo = socket_timeout__dispatchTo;
 }
+
+/* =================== Ped ================== */
+
+static void ped_dispatchTo(Event* self, State* state) {
+    OOP_CALL(state, handlePed, self);
+}
+
+OOP_CTOR(PedEvent) { self->base.vtable.dispatchTo = ped_dispatchTo; }

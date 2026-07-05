@@ -155,8 +155,6 @@
 #define ELEMENT_RESERVED_PRIVATE_127                127
 #define ELEMENT_MAC_2                               128
 
-// #define USE_DUMP 1
-
 typedef int RespCode_t;
 
 /* Field format types */

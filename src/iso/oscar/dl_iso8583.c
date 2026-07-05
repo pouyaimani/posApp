@@ -29,7 +29,7 @@
 #include "dl_iso8583.h"
 #include "logger.h"
 
-// #define ISO_LOG_ENABLE  1
+#define ISO_LOG_ENABLE 1
 
 #ifdef ISO_LOG_ENABLE
 #define ISO_LOG(...) LOG_DEBUG(__VA_ARGS__)
@@ -194,9 +194,9 @@ DL_ERR DL_ISO8583_MSG_Pack(const DL_ISO8583_HANDLER* iHandler,
         {
             /* pack field */
             err = _DL_ISO8583_FIELD_Pack(fieldIdx, iMsg, iHandler, &curPtr);
+            // if (err)
+            ISO_LOG("ISO8583: feild = %d, pack error = %d", fieldIdx, err);
         }
-        if (err)
-            LOG_DEBUG("ISO8583: feild = %d, pack error = %d", fieldIdx, err);
     } /* end-for(i) */
 
     if (!err) {
@@ -224,8 +224,8 @@ DL_ERR DL_ISO8583_MSG_Unpack(const DL_ISO8583_HANDLER* iHandler,
     while (!err && (curFieldIdx < maxFieldIdx) && (curPtr < endPtr) &&
            !haveBitmap) {
         err = _DL_ISO8583_FIELD_Unpack(curFieldIdx, ioMsg, iHandler, &curPtr);
-        // if (err)
-        LOG_DEBUG("ISO8583: feild = %d, pack error = %d", curFieldIdx, err);
+        if (err)
+            ISO_LOG("ISO8583: feild = %d, unpack error = %d", curFieldIdx, err);
         if (DL_ISO8583_IS_BITMAP(iHandler->fieldArr[curFieldIdx].fieldType))
             haveBitmap = 1;
 
@@ -239,8 +239,9 @@ DL_ERR DL_ISO8583_MSG_Unpack(const DL_ISO8583_HANDLER* iHandler,
         {
             err =
                 _DL_ISO8583_FIELD_Unpack(curFieldIdx, ioMsg, iHandler, &curPtr);
-            // if (err)
-            LOG_DEBUG("ISO8583: feild = %d, pack error = %d", curFieldIdx, err);
+            if (err)
+                ISO_LOG("ISO8583: feild = %d, unpack error = %d", curFieldIdx,
+                        err);
         }
 
         curFieldIdx++;
@@ -248,8 +249,8 @@ DL_ERR DL_ISO8583_MSG_Unpack(const DL_ISO8583_HANDLER* iHandler,
 
     /* check for under/over read condition */
     if (!err && (curPtr != endPtr)) {
-        LOG_DEBUG("ISO8583: err = %d, curPtr = %u, endPtr = %u", err, curPtr,
-                  endPtr);
+        ISO_LOG("ISO8583: err = %d, curPtr = %u, endPtr = %u", err, curPtr,
+                endPtr);
         err = kDL_ERR_OTHER;
     }
 

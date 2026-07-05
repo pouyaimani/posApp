@@ -254,7 +254,7 @@ static void setInfo(const char* data) {
     LV_SET_TEXT(info, data);
     LV_HIDE(ldate);
     LV_HIDE(ltime);
-    LV_HIDE(ltime);
+    LV_HIDE(lday);
     LV_SHOW(info);
 }
 

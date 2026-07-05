@@ -396,13 +396,18 @@ X(PHRASE_OPERATOR                       ,   "اپراتور"                    
 )
 X(PHRASE_REPORT                         ,   "گزارش"                         ,   "report"
 )
-
 X(PHRASE_KEY_INJ_SUCCEED                ,   "کلیدگذاری با موفقیت انجام شد"                  ,   "key injection is successfuly done"
 )
-
 X(PHRASE_KEY_INJ_FAILED                ,   "خطا در کلیدگذاری"              ,   "key injection is failed"
 )
-
+X(PHRASE_NONE                           ,   ""              ,   ""
+)
+X(PHRASE_ENTER_ENERGY_SAVER_RANGE      ,   "ورود بازه ذخیره انرژی"         ,   ""
+)
+X(PHRASE_ENTER_SLEEP_TIME_RANGE        ,   "ورود بازه خاموشی"              ,   ""
+)
+X(PHRASE_SEC_REC_TIME                  ,   "زمان رسید دوم"              ,   ""
+)
 /**********************************************************************
  *
  *                  Report and Transaction Types

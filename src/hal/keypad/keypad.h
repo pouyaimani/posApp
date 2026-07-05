@@ -17,6 +17,8 @@ OOP_VTABLE(Keypad) {
 OOP_CLASS(Keypad) {
     OOP_IMPLEMENTS(Keypad);
     Key_t key;
+    OOP_METHOD(void, registerIo);
+    OOP_METHOD(void, unregisterIo);
 };
 
 OOP_CTOR(Keypad);

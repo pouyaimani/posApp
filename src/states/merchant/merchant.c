@@ -10,6 +10,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "input/inputMgr.h"
 
 static bool validatePass(char* pass0, char* pass1, uint8_t len) {
     for (size_t i = 0; i < len; i++) {
@@ -37,8 +38,6 @@ static SubState* enterPass;
 static SubState* merchantMenu;
 static SubState* changeMerPin;
 
-#define PASSWORD_MAX_LEN 4
-
 STATE_DEF_ENTER(Merchant) { SM_GOTO(enterPass); }
 
 STATE_DEF_EXIT(Merchant) {}
@@ -47,9 +46,8 @@ STATE_DEF_EXIT(Merchant) {}
 static SubState* checkPass;
 
 STATE_DEF_ENTER(CheckPassword) {
-    Input* in = getState(STATE_ID_INPUT);
-    bool   isPassVlaid =
-        validatePass(settings()->terminal.merchantPin, in->password, 4);
+    bool isPassVlaid =
+        validatePass(settings()->terminal.merchantPin, inmgr()->input, 4);
     if (isPassVlaid) {
         SM_GOTO(merchantMenu);
     } else {
@@ -59,8 +57,17 @@ STATE_DEF_ENTER(CheckPassword) {
 }
 
 STATE_DEF_ENTER(EnterPassword) {
-    GOTO_INPUT(STATE_IDLE, checkPass, phraseGetDef(PHRASE_PASS_ENTRY), "",
-               PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_PASS_ENTRY),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        STATE_IDLE, checkPass);
+    // GOTO_INPUT(STATE_IDLE, checkPass, phraseGetDef(PHRASE_PASS_ENTRY), "",
+    //            PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
 }
 
 static void EnterPassword(State* parent) {
@@ -84,9 +91,8 @@ static SubState* checkNewPin;
 static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
-    Input* in = getState(STATE_ID_INPUT);
-    bool   isPassVlaid =
-        validatePass(settings()->terminal.merchantPin, in->password, 4);
+    bool isPassVlaid =
+        validatePass(settings()->terminal.merchantPin, inmgr()->input, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
     } else {
@@ -96,22 +102,40 @@ STATE_DEF_ENTER(CheckPin) {
 }
 
 STATE_DEF_ENTER(EnterNewPin) {
-    GOTO_INPUT(state->parent, reEnterNewPin, phraseGetDef(PHRASE_NEW_PIN), "",
-               4, IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_NEW_PIN),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        state->parent, reEnterNewPin);
+    // GOTO_INPUT(state->parent, reEnterNewPin, phraseGetDef(PHRASE_NEW_PIN),
+    // "",
+    //            4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(ReEnterNewPin) {
-    Input* inp = getState(STATE_ID_INPUT);
     for (size_t i = 0; i < 4; i++) {
-        newPin[i] = inp->password[i];
+        newPin[i] = inmgr()->input[i];
     }
-    GOTO_INPUT(merchantMenu, checkNewPin, phraseGetDef(PHRASE_REPEAT_NEW_PIN),
-               "", 4, IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_REPEAT_NEW_PIN),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        merchantMenu, checkNewPin);
+    // GOTO_INPUT(merchantMenu, checkNewPin,
+    // phraseGetDef(PHRASE_REPEAT_NEW_PIN),
+    //            "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(CheckNewPin) {
-    Input* in          = getState(STATE_ID_INPUT);
-    bool   isPassVlaid = validatePass(newPin, in->password, 4);
+    bool isPassVlaid = validatePass(newPin, inmgr()->input, 4);
     if (isPassVlaid) {
         snprintf(settings()->terminal.merchantPin, MERCHANT_PIN_LEN + 1, "%s",
                  newPin);
@@ -125,8 +149,18 @@ STATE_DEF_ENTER(CheckNewPin) {
 }
 
 STATE_DEF_ENTER(ChangeMerPin) {
-    GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "", 4,
-               IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_CURRENT_PIN),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        state->parent, checkPin);
+    // GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "",
+    // 4,
+    //            IN_MODE_PASSWORD, NULL);
 }
 
 static void ChangeMerPin(State* parent) {

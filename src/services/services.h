@@ -6,8 +6,6 @@
 #include "common.h"
 #include "txnOrchestrator/txnFLow.h"
 
-#define PASSWORD_MAX_LEN 4
-
 extern int serviceCount;
 
 /*********************Service*********************/

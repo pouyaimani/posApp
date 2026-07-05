@@ -5,6 +5,7 @@
 #include "utility/arith.h"
 #include "common.h"
 #include "sdkLog.h"
+#include <sdkKey.h>
 
 #define KEY_INDEX_MASTER 0
 
@@ -52,14 +53,12 @@ static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t* key,
     PedKeyCheckValue checkValue = {0};
     switch (type) {
     case PED_MASTER_KEY:
-        LOG_DEBUG("Ped: ======================================");
         keyInfo.mSrcKeyType   = 0; // Plain
         keyInfo.mDestKeyType  = PED_KEY_TDES_TMK;
         keyInfo.mSrcKeyIndex  = 0;
         keyInfo.mDestKeyIndex = KEY_INDEX_MASTER;
         break;
     case PED_PIN_KEY:
-        LOG_DEBUG("Ped: ======================================");
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType   = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType  = PED_KEY_TDES_TPK;
@@ -67,7 +66,6 @@ static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t* key,
         keyInfo.mDestKeyIndex = TPK_INDEX;
         break;
     case PED_DATA_KEY:
-        LOG_DEBUG("Ped: ======================================");
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType   = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType  = PED_KEY_TDK;
@@ -75,7 +73,6 @@ static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t* key,
         keyInfo.mDestKeyIndex = TDK_INDEX;
         break;
     case PED_MAC_KEY:
-        LOG_DEBUG("Ped: ======================================");
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType   = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType  = PED_KEY_TAK;
@@ -112,20 +109,21 @@ static PedErr_t exitPinEntryMode(Ped* self) {
     return translateSdkErr(sdkPedExitPinInputMode());
 }
 
-static PedErr_t getPinBlock(Ped* self, char* pan, char* out) {
+static PedErr_t getPinBlock(Ped* self, char* pan, char* out, size_t len) {
     RETURN_VALUE_IF_NULL(self, ;, PED_ERR_INPUT);
     RETURN_VALUE_IF_NULL(pan, ;, PED_ERR_INPUT);
     RETURN_VALUE_IF_NULL(out, ;, PED_ERR_INPUT);
-    u8              dataIn[300] = {0};
+    u8              dataIn[8] = {0};
     PedPinBlockData pinBlockData;
     ascToBcd(dataIn + 2, (pan + strlen(pan) - 13), 12);
-    int ret = sdkPedGetPinBlock(0, PED_KEY_TDES_TPK, 0, PED_PIN_ISO_9564_0, 0,
-                                dataIn, 8, &pinBlockData);
-    if (out != NULL) {
-        out[0] = pinBlockData.mPinBlockDataLen;
-        memcpy(out + 1, pinBlockData.mPinbBockData,
-               pinBlockData.mPinBlockDataLen);
+    int ret =
+        sdkPedGetPinBlock(0, PED_KEY_TDES_TPK, TPK_INDEX, PED_PIN_ISO_9564_0, 0,
+                          dataIn, 8, &pinBlockData);
+    RETURN_VALUE_IF_NOT(ret, SDK_PED_OK, ;, PED_ERR_INPUT);
+    if (pinBlockData.mPinBlockDataLen > len) {
+        return PED_ERR_INPUT;
     }
+    memcpy(out, pinBlockData.mPinbBockData, pinBlockData.mPinBlockDataLen);
     return PED_ERR_OK;
 }
 
@@ -134,16 +132,41 @@ static PedErr_t getMac(Ped* self, size_t keyLen, uint8_t* in, size_t inLen,
     RETURN_VALUE_IF_NULL(self, ;, PED_ERR_INPUT);
     RETURN_VALUE_IF_NULL(in, ;, PED_ERR_INPUT);
     RETURN_VALUE_IF_NULL(out, ;, PED_ERR_INPUT);
-    PedErr_t         result   = 0;
+    int              result   = 0;
     u32              keyGroup = 0;
     PedMacData       macData  = {0};
     SDK_PED_MAC_MODE mode     = (keyLen == 8) ? PED_MAC_X99 : PED_MAC_X919;
 
-    result = sdkPedGetMac(keyGroup, PED_KEY_TAK, KEY_INDEX_MASTER, mode, 0, 0,
-                          in, inLen, &macData); // PED_MAC_X99, PED_MAC_X919
+    result = sdkPedGetMac(keyGroup, PED_KEY_TAK, TAK_INDEX, mode, 0, 0, in,
+                          inLen, &macData); // PED_MAC_X99, PED_MAC_X919
+    LOG_TRACE("T3Rtos: mac = %s .... mac len = %d", macData.mMacBlockData,
+              macData.mMacDataLen);
     memcpy(out, macData.mMacBlockData, macData.mMacDataLen);
 
-    return result;
+    return translateSdkErr(result);
+}
+
+static PedKeyEv_t poll(Ped* self) {
+    PedKeyEv_t    pkey;
+    SDK_KEY_VALUE key = sdkKeyGet();
+    switch (key) {
+    case KEY_VALUE_CLEAR:
+        pkey = PED_KEY_EV_CLEAR;
+        break;
+    case KEY_VALUE_UP:
+        pkey = PED_KEY_EV_DIGIT;
+        break;
+    case KEY_VALUE_ENTER:
+        pkey = PED_KEY_EV_ENTER;
+        break;
+    case KEY_VALUE_ESC:
+        pkey = PED_KEY_EV_CANCEL;
+        break;
+    default:
+        pkey = PED_KEY_EV_NONE;
+        break;
+    }
+    return pkey;
 }
 
 OOP_CTOR(PedT3Rtos) {
@@ -153,6 +176,7 @@ OOP_CTOR(PedT3Rtos) {
     self->base.vtable.exitPinEntryMode  = exitPinEntryMode;
     self->base.vtable.getPinBlock       = getPinBlock;
     self->base.vtable.getMac            = getMac;
+    self->base.vtable.poll              = poll;
 }
 
 #endif

@@ -38,6 +38,25 @@ PedErr_t getMac(size_t keyLen, uint8_t* in, size_t inLen, void* out) {
     return OOP_CALL(__ped, getMac, keyLen, in, inLen, out);
 }
 
+static void pedPoll() {
+    PedKeyEv_t key = OOP_CALL(__ped, poll);
+    if (key == PED_KEY_EV_NONE) {
+        return;
+    }
+    PedEvent* ev = (PedEvent*)createEvent(SM_EVENT_PED);
+    ev->type     = (PedEventType_t)key;
+    DISPATCH_EVENT(ev);
+}
+
+static PedErr_t enterPinEntryMode() {
+    getEventloop()->registerChecker(pedPoll);
+    return OOP_CALL(__ped, enterPinEntryMode);
+}
+static PedErr_t exitPinEntryMode() {
+    getEventloop()->unregisterChecker(pedPoll);
+    return OOP_CALL(__ped, exitPinEntryMode);
+}
+
 OOP_CTOR(Ped) {
     LOG_TRACE("Constructing ped ...");
     self->vtable.init              = NULL;
@@ -49,6 +68,8 @@ OOP_CTOR(Ped) {
     self->injectDataKey            = injectDataKey;
     self->injectMacKey             = injectMacKey;
     self->getMac                   = getMac;
+    self->enterPinEntryMode        = enterPinEntryMode;
+    self->exitPinEntryMode         = exitPinEntryMode;
 }
 
 Ped* ped() {

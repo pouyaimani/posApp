@@ -11,6 +11,7 @@
 #include "logger.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "input/inputMgr.h"
 
 static Menu*     shiftItemMenu;
 static lv_obj_t* shiftMenu;
@@ -273,8 +274,7 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
 static SubState* handleReports;
 
 STATE_DEF_ENTER(HandleReports) {
-    Input* in       = getState(STATE_ID_INPUT);
-    int    shiftNum = libAtoi(in->input);
+    int shiftNum = libAtoi(inmgr()->input);
     LOG_DEBUG("shiftNum = %d", shiftNum);
     ShiftData data;
     if (shifts()->get(shiftNum, &data) != 0) {
@@ -308,8 +308,18 @@ STATE_DEF_HANDLE(HandleReports, KeypadEvent) {
 }
 
 STATE_DEF_ENTER(ShiftReports) {
-    GOTO_INPUT(state->parent, handleReports, phraseGetDef(PHRASE_SHIFT_SELECT),
-               "", 3, IN_MODE_NUMBERS, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_NUMBERS,
+            .title  = phraseGetDef(PHRASE_SHIFT_SELECT),
+            .info   = "",
+            .maxLen = SHIFT_NUM_MAX_LEN,
+        },
+        state->parent, handleReports);
+    // GOTO_INPUT(state->parent, handleReports,
+    // phraseGetDef(PHRASE_SHIFT_SELECT),
+    //            "", 3, IN_MODE_NUMBERS, NULL);
 }
 
 /******************** Shift settings state **********************/

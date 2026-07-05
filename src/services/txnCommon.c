@@ -5,11 +5,12 @@
 #include "settings/settings.h"
 
 int buildCommon(TxnFlow* flow, ByteArray* ba) {
+    flow->data.processCode = flow->cfg->prcode;
     return isoBuild(flow->cfg->mti, flow->cfg->prcode, &flow->data, ba);
 }
 
 int parseCommon(TxnFlow* flow, ByteArray* ba) {
-    return isoParse(flow->cfg->mti, flow->cfg->prcode, ba);
+    return isoParse(flow->cfg->mti, flow->cfg->prcode, &flow->data, ba);
 }
 
 void showConnecting(TxnFlow* f) {
@@ -24,7 +25,8 @@ void showReceiving(TxnFlow* f) {
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_RECEIVING_DATA), "");
 }
 
-void commonDone(TxnFlow* flow, const TxnFlowStatus* st) {
+void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
+                State* onFail, bool showSucMsg) {
     State* state = flow->owner;
     LOG_DEBUG("st->result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
@@ -33,7 +35,16 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st) {
         if (st->code != 0) {
             getResponseCode(st->code, dsc, sizeof(dsc));
         }
-        GOTO_INFO(state->parent, state->parent,
+        if (st->code == 0) {
+            if (showSucMsg)
+                GOTO_INFO(onSuc, onSuc, INFO_SUCCESS,
+                          phraseGetDef(PHRASE_SUC_DONME), dsc);
+        } else {
+            GOTO_INFO(onFail, onFail, INFO_ERROR,
+                      phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
+        }
+        GOTO_INFO(st->code == 0 ? onSuc : onFail,
+                  st->code == 0 ? onSuc : onFail,
                   st->code == 0 ? INFO_SUCCESS : INFO_ERROR,
                   phraseGetDef(st->code == 0 ? PHRASE_SUC_DONME
                                              : PHRASE_UNSUCCESSFUL_OPERATION),
@@ -61,7 +72,7 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->stage != TXN_STAGE_CONNECTING) {
         txnTraceInfo()->inc();
     }
-    GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+    GOTO_INFO(onFail, onFail, INFO_ERROR,
               phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
               st->result == TXN_FLOW_TIMEOUT ? phraseGetDef(PHRASE_TIME_OUT)
                                              : phraseGetDef(body));

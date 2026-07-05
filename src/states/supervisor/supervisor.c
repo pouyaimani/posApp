@@ -12,9 +12,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
-
-#define PASSWORD_MAX_LEN 4
-#define IP_MAX_LEN       12
+#include "input/inputMgr.h"
 
 typedef enum {
     SUBS_NET_SETTINGS = 0,
@@ -51,8 +49,7 @@ static bool validatePass(char* pass0, char* pass1, uint8_t len) {
 static SubState* checkPass;
 
 STATE_DEF_ENTER(CheckPassword) {
-    Input* in          = getState(STATE_ID_INPUT);
-    bool   isPassVlaid = validatePass("123456789", in->password, 4);
+    bool isPassVlaid = validatePass("123456789", inmgr()->input, 4);
     if (isPassVlaid) {
         SM_GOTO(supervisorMenu);
     } else {
@@ -62,8 +59,15 @@ STATE_DEF_ENTER(CheckPassword) {
 }
 
 STATE_DEF_ENTER(EnterPassword) {
-    GOTO_INPUT(STATE_IDLE, checkPass, phraseGetDef(PHRASE_ENTER_PIN), "",
-               PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_ENTER_PIN),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        STATE_IDLE, checkPass);
 }
 
 static void EnterPassword(State* parent) {
@@ -87,9 +91,8 @@ static SubState* checkNewPin;
 static char newPin[4 + 1];
 
 STATE_DEF_ENTER(CheckPin) {
-    Input* in = getState(STATE_ID_INPUT);
-    bool   isPassVlaid =
-        validatePass(settings()->terminal.merchantPin, in->password, 4);
+    bool isPassVlaid =
+        validatePass(settings()->terminal.merchantPin, inmgr()->input, 4);
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
     } else {
@@ -99,22 +102,37 @@ STATE_DEF_ENTER(CheckPin) {
 }
 
 STATE_DEF_ENTER(EnterNewPin) {
-    GOTO_INPUT(state->parent, reEnterNewPin, phraseGetDef(PHRASE_NEW_PIN), "",
-               4, IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = PHRASE_NEW_PIN,
+            .info   = PHRASE_NONE,
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        state->parent, reEnterNewPin);
 }
 
 STATE_DEF_ENTER(ReEnterNewPin) {
-    Input* inp = getState(STATE_ID_INPUT);
     for (size_t i = 0; i < 4; i++) {
-        newPin[i] = inp->password[i];
+        newPin[i] = inmgr()->input[i];
     }
-    GOTO_INPUT(supervisorMenu, checkNewPin, phraseGetDef(PHRASE_REPEAT_NEW_PIN),
-               "", 4, IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_REPEAT_NEW_PIN),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        supervisorMenu, checkNewPin);
+    // GOTO_INPUT(supervisorMenu, checkNewPin,
+    // phraseGetDef(PHRASE_REPEAT_NEW_PIN),
+    //            "", 4, IN_MODE_PASSWORD, NULL);
 }
 
 STATE_DEF_ENTER(CheckNewPin) {
-    Input* in          = getState(STATE_ID_INPUT);
-    bool   isPassVlaid = validatePass(newPin, in->password, 4);
+    bool isPassVlaid = validatePass(newPin, inmgr()->input, 4);
     if (isPassVlaid) {
         for (size_t i = 0; i < 4; i++) {
             settings()->terminal.merchantPin[i] = newPin[i];
@@ -129,8 +147,18 @@ STATE_DEF_ENTER(CheckNewPin) {
 }
 
 STATE_DEF_ENTER(ChangeMerPin) {
-    GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "", 4,
-               IN_MODE_PASSWORD, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_CURRENT_PIN),
+            .info   = "",
+            .maxLen = PASSWORD_MAX_LEN,
+        },
+        state->parent, checkPin);
+    // GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "",
+    // 4,
+    //            IN_MODE_PASSWORD, NULL);
 }
 
 static void ChangeMerPin(State* parent) {
@@ -184,8 +212,18 @@ static uint16_t         port;
 static uint16_t         serverId;
 
 STATE_DEF_ENTER(EnterIp) {
-    GOTO_INPUT(state->parent, enterPort, phraseGetDef(PHRASE_ENTER_SERV_IP), "",
-               IP_MAX_LEN, IN_MODE_IP, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_ENTER_SERV_IP),
+            .info   = "",
+            .maxLen = IP_MAX_LEN,
+        },
+        state->parent, enterPort);
+    // GOTO_INPUT(state->parent, enterPort, phraseGetDef(PHRASE_ENTER_SERV_IP),
+    // "",
+    //            IP_MAX_LEN, IN_MODE_IP, NULL);
     Input* in = STATE_INPUT;
     if (serverItem == SERV_SET_MAIN) {
         in->setInput(settings()->server.mainServerIp);
@@ -197,9 +235,18 @@ STATE_DEF_ENTER(EnterIp) {
 STATE_DEF_ENTER(EnterPort) {
     Input* in = STATE_INPUT;
     snprintf(ip, sizeof(ip), "%s", in->input);
-    GOTO_INPUT(state->parent, enterServerId,
-               phraseGetDef(PHRASE_ENTER_SERV_PORT), "", 4, IN_MODE_NUMBERS,
-               NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_NUMBERS,
+            .title  = phraseGetDef(PHRASE_ENTER_SERV_PORT),
+            .info   = "",
+            .maxLen = 4,
+        },
+        state->parent, enterServerId);
+    // GOTO_INPUT(state->parent, enterServerId,
+    //            phraseGetDef(PHRASE_ENTER_SERV_PORT), "", 4, IN_MODE_NUMBERS,
+    //            NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(settings()->server.mainServerPort, str, sizeof(str));
@@ -212,8 +259,18 @@ STATE_DEF_ENTER(EnterPort) {
 STATE_DEF_ENTER(EnterServerId) {
     Input* in = STATE_INPUT;
     port      = toInt(in->input);
-    GOTO_INPUT(state->parent, getServerId, phraseGetDef(PHRASE_ENTER_SERV_ID),
-               "", 4, IN_MODE_NUMBERS, NULL);
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_NUMBERS,
+            .title  = phraseGetDef(PHRASE_ENTER_SERV_ID),
+            .info   = "",
+            .maxLen = 4,
+        },
+        state->parent, getServerId);
+    // GOTO_INPUT(state->parent, getServerId,
+    // phraseGetDef(PHRASE_ENTER_SERV_ID),
+    //            "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(settings()->server.mainServerNii, str, sizeof(str));

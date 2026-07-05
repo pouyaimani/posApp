@@ -6,6 +6,8 @@
 #include "error.h"
 #include "utility/utility.h"
 
+#define USE_DUMP 1
+
 static Iso8583* __iso8583;
 
 #define SELF Iso8583* self = __iso8583
@@ -79,8 +81,8 @@ IsoStatus_t getStr(uint16_t field, void* out) {
     RETURN_VALUE_IF_NULL(out, ;, ISO_ERR_INPUT);
     SELF;
 
-    if (DL_ISO8583_MSG_HaveField(field, &self->msg) == 0)
-        return ISO_ERR_FIELD_NOT_EXIST;
+    int res = DL_ISO8583_MSG_HaveField(field, &self->msg);
+    RETURN_VALUE_IF_NOT((res == 0), false, ;, ISO_ERR_FIELD_NOT_EXIST);
 
     uint8_t* ptr  = NULL;
     uint16_t flen = 0;
@@ -90,8 +92,7 @@ IsoStatus_t getStr(uint16_t field, void* out) {
     rc   = DL_ISO8583_MSG_GetField_Str(field, &self->msg, &ptr);
     flen = strlen((char*)ptr);
 
-    if (rc != 0)
-        return ISO_ERR_INVALID_FIELD;
+    RETURN_VALUE_IF_NOT(rc, 0, ;, ISO_ERR_INVALID_FIELD);
 
     memcpy(out, ptr, flen);
     return ISO_OK;
@@ -107,11 +108,11 @@ IsoStatus_t getBin(uint16_t field, void* out, size_t* len) {
 
     rc = DL_ISO8583_MSG_GetField_Bin(field, &self->msg, &ptr, &flen);
 
-    if (rc != 0)
-        return ISO_ERR_INVALID_FIELD;
-
-    if (*len < flen)
-        return ISO_ERR_BUFFER_TOO_SMALL;
+    RETURN_VALUE_IF_NOT(rc, 0, ;, ISO_ERR_INVALID_FIELD);
+    RETURN_VALUE_IF_NOT(
+        (*len > flen), true,
+        LOG_ERROR("expcted length = %u, provided length = %u", flen, *len),
+        ISO_ERR_BUFFER_TOO_SMALL);
 
     memcpy(out, ptr, flen);
     *len = flen;

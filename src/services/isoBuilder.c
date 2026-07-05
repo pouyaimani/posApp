@@ -38,7 +38,7 @@ static int8_t compareMac(int keyIndex, char* data) {
 
     DEFINE_BYTE_ARRAY(mac, 9);
     DEFINE_BYTE_ARRAY(asciiMac, 9);
-    size_t length;
+    size_t length = sizeof(mac);
     if (iso8583()->getBin(ELEMENT_MAC_2, mac, &length) == ISO_OK) {
     } else if (iso8583()->getBin(ELEMENT_MAC, mac, &length) == ISO_OK) {
     } else {
@@ -151,7 +151,7 @@ static void handleMerchantUniqueId(LtvStructInfo* tag) {
            sizeof(settings()->terminal.merchantUniqueId));
     hexStringToBytes(tag->data, tag->len - 1,
                      (unsigned char*)settings()->terminal.merchantUniqueId);
-    LOG_DEBUG("settings()->terminal.merchantUniqueId [%s]",
+    LOG_DEBUG("settings()->terminal.merchantUniqueId = %s",
               settings()->terminal.merchantUniqueId);
 }
 
@@ -251,7 +251,7 @@ static inline Error_t setMti(uint16_t mti) {
 
 static Error_t setWorkingKeys() {
     DEFINE_BYTE_ARRAY(keys, 512);
-    size_t      size;
+    size_t      size = sizeof(keys);
     IsoStatus_t ret =
         iso8583()->getBin(ELEMENT_RESERVED_PRIVATE_62, keys, &size);
     RETURN_VALUE_IF_NOT(ret, ISO_OK, ;, ERR_NOK);
@@ -272,25 +272,77 @@ static Error_t setWorkingKeys() {
     return ERR_OK;
 }
 
-/*********************************************************************************************
- *                                                                                           *
- *                                   Builder/Parsers              *
- *                                                                                           *
- ********************************************************************************************/
-
-Error_t isoBuildLogOn(TxnCore* txn, ByteArray* buf) {
+static inline Error_t setBit48() {
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     LOG_DEBUG("dn = %s", sn);
     DEFINE_STRING(privateData, 128);
     setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
+    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
+                      (const DL_UINT8*)privateData);
+    return ERR_OK;
+}
+
+static void decodeBalanceValue(char* str, char* out, size_t len) {
+    int  index          = 0;
+    char accountType[3] = {0};
+    char balanceType[3] = {0};
+    char currency[5]    = {0};
+    char debitType[2]   = {0};
+    char balance[13]    = {0};
+
+    LOG_TRACE("decodeBalanceValue::str[%s]", str);
+
+    memcpy(accountType, str + index, 2);
+    index += 2;
+    memcpy(balanceType, str + index, 2);
+    index += 2;
+    memcpy(currency, str + index, 3);
+    index += 3;
+    memcpy(debitType, str + index, 1);
+    index += 1;
+    memcpy(balance, str + index, 12);
+    index += 12;
+    memset(out, 0, len);
+    removeLeadingZeros(balance, out, len);
+}
+
+static Error_t checkIinData() {
+    DEFINE_BYTE_ARRAY(feild, 128);
+    size_t      size = sizeof(feild);
+    IsoStatus_t ret =
+        iso8583()->getBin(ELEMENT_ACQUIRING_INSTITUTION_ID, feild, &size);
+    RETURN_VALUE_IF_NOT(ret, ISO_OK, ;, ERR_NOK);
+    memset(settings()->terminal.acquirerIIN, 0,
+           sizeof(settings()->terminal.acquirerIIN));
+    memcpy(settings()->terminal.acquirerIIN, feild, size);
+    return ERR_OK;
+}
+
+static Error_t setIIN() {
+    if (strlen(settings()->terminal.acquirerIIN) != 0) {
+        iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID,
+                          (const DL_UINT8*)settings()->terminal.acquirerIIN);
+    } else {
+        iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID,
+                          (const DL_UINT8*)"000000000");
+    }
+    return ERR_OK;
+}
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                   Builder/Parsers
+ *                                                                                           *
+ ********************************************************************************************/
+
+Error_t isoBuildLogOn(TxnCore* txn, ByteArray* buf) {
+    setBit48();
     /* set ISO message fields */
 #if defined REMOTE_KEY_INJECTION
     (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
                                         &isoMsg); // IIN
 #endif
-    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
-                      (const DL_UINT8*)privateData);
     setSecRelCtrlInfo();
     return ERR_OK;
 }
@@ -321,18 +373,13 @@ static Error_t isoParseLogOnResponse(ByteArray* buf) {
 }
 
 Error_t isoBuildCfg(TxnCore* txn, ByteArray* buf) {
-    DEFINE_STRING(sn, 32);
-    OOP_CALL(sys(), getSN, sn, sizeof(sn));
-    DEFINE_STRING(privateData, 128);
-    setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
     /* set ISO message fields */
 #if defined REMOTE_KEY_INJECTION
     (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
                                         &isoMsg); // IIN
 #endif
     setTerminalNum();
-    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
-                      (const DL_UINT8*)privateData);
+    setBit48();
     setSecRelCtrlInfo();
     return ERR_OK;
 }
@@ -351,13 +398,7 @@ static Error_t isoParseCfgResponse(ByteArray* buf) {
 #endif
     DEFINE_STRING(feild, 1028);
     size_t length;
-    iso8583()->getBin(ELEMENT_ACQUIRING_INSTITUTION_ID, feild, &length);
-    LOG_DEBUG("[[ acquirerIIN (%d)(%s) ]]", length, feild);
-    memcpy(settings()->terminal.acquirerIIN, feild, length);
-    settings()->terminal.acquirerIIN[length] = '\0';
-    LOG_DEBUG("[[ setting.AcquireIIN (%d)(%s) ]]",
-              strlen(settings()->terminal.acquirerIIN),
-              settings()->terminal.acquirerIIN);
+    checkIinData();
     RESET_STRING(feild);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
     decodeMerchantDesc(feild);
@@ -383,9 +424,10 @@ static Error_t isoBuildSettle(TxnCore* txn, ByteArray* buf) {
     iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->rrn);
     iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
-                      settings()->terminal.merchantId);
+                      settings()->terminal.merchantUniqueId);
     iso8583()->setStr(ELEMENT_CURRENCY_CODE_TRANSACTION, "364");
     setSecRelCtrlInfo();
+    return ERR_OK;
 }
 
 static Error_t isoParseSettle(ByteArray* buf) {
@@ -409,10 +451,11 @@ static Error_t isoBuildReverse(TxnCore* txn, ByteArray* buf) {
     iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->rrn);
     iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
-                      settings()->terminal.merchantId);
+                      settings()->terminal.merchantUniqueId);
     iso8583()->setStr(ELEMENT_CURRENCY_CODE_TRANSACTION, "364");
     setSecRelCtrlInfo();
     iso8583()->setStr(ELEMENT_ORIGINAL_DATA_ELEMENTS, "");
+    return ERR_OK;
 }
 
 static Error_t isoParseReverse(ByteArray* buf) {
@@ -431,40 +474,79 @@ static Error_t isoBuildBalance(TxnCore* txn, ByteArray* buf) {
     DEFINE_STRING(pan, 24);
     DEFINE_STRING(pinblock, 24);
     magreader()->getPan(pan, sizeof(pan));
-    TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
-    PedErr_t    pederr = OOP_CALL(ped(), getPinBlock, pan, pinblock);
     LOG_DEBUG("pan = %s", pan);
+    TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
+    LOG_DEBUG("track2 = %s", track2.data);
+    PedErr_t pederr =
+        OOP_CALL(ped(), getPinBlock, pan, pinblock, sizeof(pinblock));
+    RETURN_VALUE_IF_NOT(pederr, PED_ERR_OK, ;, ERR_NOK);
     iso8583()->setStr(ELEMENT_PAN, pan);
     iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, "021");
     iso8583()->setStr(ELEMENT_POS_CONDITION_CODE, "14");
+    setIIN();
     iso8583()->setStr(ELEMENT_TRACK2, track2.data);
     iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
-                      settings()->terminal.merchantId);
-    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
-                      settings()->terminal.merchantId);
-    iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, 0);
+                      settings()->terminal.merchantUniqueId);
+    setBit48();
+    iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, PIN_BLOCK_LEN);
     setSecRelCtrlInfo();
+    return ERR_OK;
 }
 
-static Error_t isoParseBalanceResponse(ByteArray* buf) {}
+static Error_t isoParseBalanceResponse(ByteArray* buf) {
+    DEFINE_STRING(feild, 1028);
+    iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
+    decodeMerchantDesc(feild);
+    RESET_STRING(feild);
+    DEFINE_STRING(balance, 16);
+    DEFINE_STRING(ledger, 16);
+    if (iso8583()->getStr(ELEMENT_ADDITIONAL_AMOUNTS, feild) == ISO_OK) {
+        decodeBalanceValue(feild, balance, sizeof(balance));
+        decodeBalanceValue(feild + 20, ledger, sizeof(ledger));
+        LOG_TRACE("Parser: balance txn amount is in Bit 54. balance = %s, "
+                  "ledger = %s",
+                  balance, ledger);
+    } else if (iso8583()->getStr(ELEMENT_AMOUNT_TRANSACTION, feild) == ISO_OK) {
+        removeLeadingZeros(feild, balance, sizeof(balance));
+        LOG_TRACE("Parser: balance txn amount is in Bit 4. balance = %s",
+                  balance);
+    }
+    return ERR_OK;
+}
 
 static Error_t isoBuildPay(TxnCore* txn, ByteArray* buf) {}
 
 static Error_t isoParsePayResponse(ByteArray* buf) {}
 
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Common
+ *                                                                                           *
+ ********************************************************************************************/
+
 static Error_t isoBuildMac(Mti_t mti, ByteArray* buf) {
+    DEFINE_BYTE_ARRAY(mac, ISO_MAC_LEN + 1);
+    DEFINE_BYTE_ARRAY(macHex, ISO_MAC_LEN + 1);
     uint8_t field = mti == MTI_REV_ADVICE ? ELEMENT_MAC_2 : ELEMENT_MAC;
-    DEFINE_BYTE_ARRAY(mac, 8 + 1);
-    iso8583()->setBin(field, (const DL_UINT8*)mac, 8);
+    iso8583()->setBin(field, (const DL_UINT8*)mac, ISO_MAC_LEN);
     DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
     size_t packedLen;
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
                         , ERR_NOK);
-    if (packedLen < 8)
-        return ERR_NOK;
-    ped()->getMac(16, tmpBuf, packedLen - 8, mac);
-    iso8583()->setBin(field, (const DL_UINT8*)mac, 8);
+    RETURN_VALUE_IF_NOT((packedLen < ISO_MAC_LEN), false, ;, ERR_NOK);
+    LOG_TRACE("ISO Build mac: packed len = %u", packedLen);
+    PedErr_t pedErr = ped()->getMac(16, tmpBuf, packedLen - ISO_MAC_LEN, mac);
+    RETURN_VALUE_IF_NOT(pedErr, PED_ERR_OK, ;, ERR_NOK);
+    bytesToHex(mac, 4, macHex, sizeof(macHex));
+    LOG_TRACE("ISO Build mac: mac hex = %s", macHex);
+    iso8583()->setBin(field, (const DL_UINT8*)macHex, ISO_MAC_LEN);
+    return ERR_OK;
+}
+
+static Error_t isoPack(ByteArray* buf) {
+    DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
+    size_t packedLen;
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
                         , ERR_NOK);
     IsoHeaderData_t hd = {.nii = settings()->server.mainServerNii};
@@ -489,13 +571,38 @@ Error_t isoBuild(Mti_t mti, PrCode_t prcode, TxnCore* txn, ByteArray* buf) {
     setDateTime();
     setNii();
     RETURN_VALUE_IF_NOT(itxn->builder(txn, buf), ERR_OK, ;, ERR_NOK);
-    return isoBuildMac(mti, buf);
+    RETURN_VALUE_IF_NOT(isoBuildMac(mti, buf), ERR_OK, ;, ERR_NOK);
+    return isoPack(buf);
+}
+
+static Error_t checkMac(const char* data, size_t len) {
+    DEFINE_BYTE_ARRAY(isoMac, 128);
+    DEFINE_BYTE_ARRAY(mac, ISO_MAC_LEN);
+    ped()->getMac(16, data, len, mac);
+    bool   isMacRetrived = false;
+    size_t size          = sizeof(isoMac);
+    if (iso8583()->getBin(ELEMENT_MAC_2, isoMac, &size) == ISO_OK) {
+        isMacRetrived = true;
+        LOG_TRACE("Parser: mac is availabe in Bit 128.");
+    } else if (iso8583()->getBin(ELEMENT_MAC, isoMac, &size) == ISO_OK) {
+        isMacRetrived = true;
+        LOG_TRACE("Parser: mac is availabe in Bit 64.");
+    }
+    RETURN_VALUE_IF_NOT(isMacRetrived, true, ;, ERR_NOK);
+    int res = memcmp(isoMac, mac, ISO_MAC_LEN);
+    RETURN_VALUE_IF_NOT(res, 0, ;, ERR_NOK);
+    return ERR_OK;
 }
 
 RespCode_t isoParse(Mti_t mti, PrCode_t prcode, ByteArray* buf) {
     RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
     IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
     RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
+    // Check mac
+    // uint16_t packedSize = buf->data[0] * 256 + buf->data[1];
+    // packedSize          = packedSize - 5; // without header
+    // Error_t res         = checkMac(buf->data + 7, packedSize - ISO_MAC_LEN);
+    // RETURN_VALUE_IF_NOT(res, ERR_OK, ;, ERR_NOK);
     // Check responce code
     DEFINE_STRING(f39, 8);
     iso8583()->getStr(ELEMENT_RESPONSE_CODE, f39);

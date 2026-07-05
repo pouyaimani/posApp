@@ -94,4 +94,16 @@ void convertStrNoNumber(char* source, int len, unsigned char hex,
 int hex2data(unsigned char* data, const unsigned char* hexstring,
              unsigned int len);
 
+void dateFormat(const char* in, char* out);
+
+bool dateValidate(const char* in);
+
+bool timeValidate(const char* in);
+
+void timeFormat(const char* in, char* out);
+
+char* skipLeadingZeros(char* str);
+
+bool removeLeadingZeros(const char* input, char* output, size_t outputSize);
+
 #endif

@@ -15,7 +15,8 @@ typedef enum SmEventType_t {
     SM_EVENT_SOCKET_CONNECT,
     SM_EVENT_SOCKET_SENT,
     SM_EVENT_SOCKET_READY_READ,
-    SM_EVENT_SOCKET_TIME_OUT
+    SM_EVENT_SOCKET_TIME_OUT,
+    SM_EVENT_PED
 } SmEventType_t;
 
 /* Forward declarations */
@@ -181,5 +182,23 @@ OOP_CTOR(SocketReadyReadEvent);
 OOP_CLASS(SocketTimeOutEvent) { OOP_EXTENDS(Event); };
 /* ctor */
 OOP_CTOR(SocketTimeOutEvent);
+
+/* ====== Ped ==+=== */
+
+typedef enum PedEventType_t {
+    PED_DIGIT = 0,
+    PED_ENTER,
+    PED_CANCEL,
+    PED_CLEAR,
+    PED_DUMMY
+} PedEventType_t;
+
+OOP_CLASS(PedEvent) {
+    OOP_EXTENDS(Event);
+    PedEventType_t type;
+};
+
+/* ctor */
+OOP_CTOR(PedEvent);
 
 #endif
