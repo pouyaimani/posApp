@@ -76,7 +76,7 @@ void unpackDateTime(const uint64_t* dateTime, uint32_t* date, uint32_t* time);
 
 void leftPadZero(const char* src, char* dst, size_t dstSize, int width);
 
-void prependZerosInt(int number, int totalWidth, char* output,
+void prependZerosInt(uint64_t number, int totalWidth, char* output,
                      size_t outputSize);
 void prependZerosUInt64(uint64_t number, int totalWidth, char* output,
                         size_t outputSize);

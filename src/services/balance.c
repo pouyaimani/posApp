@@ -9,6 +9,7 @@
 #include "txnOrchestrator/txnFLow.h"
 #include "ped/ped.h"
 #include "input/inputMgr.h"
+#include "iso/iso8583.h"
 
 static SubState* enterPin;
 static SubState* checkPin;
@@ -16,32 +17,6 @@ static SubState* commu;
 static SubState* result;
 
 static TxnFlow* flow;
-
-static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        settings()->save();
-    }
-    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    // SM_GOTO(result);
-}
-
-const TxnFlowConfig balanceTxn = {
-
-    .mti = MTI_AUTH_REQ,
-
-    .prcode = PRC_BALANCE,
-
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
-    .done = balanceDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
 
 STATE_DEF_ENTER(Balance) { SM_GOTO(enterPin); }
 
@@ -76,10 +51,69 @@ STATE_DEF_ENTER(Communication) {
 
 /*********************** Result sub state *************************/
 
-STATE_DEF_ENTER(Result) {
-    // GOTO_TXN_RES(STATE_IDLE, STATE_IDLE);
-    SM_GOTO(STATE_IDLE);
+// int8_t makeReceipt(TxnData* txn) {
+//     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
+//     Receipt rec;
+//     int8_t  ret = buildReceipt(&rec, txn);
+//     RETURN_VALUE_IF_NOT(
+//         ret, ERR_OK,
+//         {
+//             RECEIPT_CREATE_ERROR();
+//             OOP_CALL(&rec, destroy);
+//         },
+//         ret);
+//     OOP_CALL(&rec, flush);
+//     OOP_CALL(&rec, destroy);
+//     return ERR_OK;
+// }
+
+static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+        settings()->save();
+    }
+    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    // SM_GOTO(result);
+    // &flow->data
 }
+
+static const uint8_t isoFeilds[] = {ELEMENT_PAN,
+                                    ELEMENT_PROCESSING_CODE,
+                                    ELEMENT_STAN,
+                                    ELEMENT_TIME_LOCAL_TRANSACTION,
+                                    ELEMENT_DATE_LOCAL_TRANSACTION,
+                                    ELEMENT_POS_ENTRY_MODE,
+                                    ELEMENT_NETWORK_INTL_ID,
+                                    ELEMENT_POS_CONDITION_CODE,
+                                    ELEMENT_ACQUIRING_INSTITUTION_ID,
+                                    ELEMENT_TRACK2,
+                                    ELEMENT_TERMINAL_ID,
+                                    ELEMENT_CARD_ACCEPTOR_ID,
+                                    ELEMENT_ADDITIONAL_DATA_PRIVATE,
+                                    ELEMENT_PIN_DATA,
+                                    ELEMENT_SECURITY_CONTROL_INFO,
+                                    ELEMENT_MAC};
+
+const TxnFlowConfig balanceTxn = {
+
+    .mti = MTI_AUTH_REQ,
+
+    .prcode = PRC_BALANCE,
+
+    .feilds = isoFeilds,
+
+    .feildsCnt = sizeof(isoFeilds),
+
+    .build = buildCommon,
+
+    .parse = parseCommon,
+
+    .done = balanceDone,
+
+    .onConnecting = showConnecting,
+
+    .onSending = showSending,
+
+    .onReceiving = showReceiving};
 
 /******************************************************************/
 
@@ -94,10 +128,6 @@ OOP_CTOR(Balance, State* parent, const char* name) {
     commu = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, commu, &self->base.state, "communication");
     commu->vtable.enter = STATE_ENTER(Communication);
-
-    result = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, result, &self->base.state, "result");
-    result->vtable.enter = STATE_ENTER(Result);
 
     flow = &self->base.flow;
 }

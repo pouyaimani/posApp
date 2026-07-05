@@ -3,41 +3,42 @@
 #include "sys/sys.h"
 #include "iso/iso8583.h"
 
-static SubState* enterBillId;
-static SubState* enterPayId;
+static SubState* selectOperator;
+static SubState* selectAmount;
 static SubState* enterPass;
 static SubState* communication;
 static SubState* result;
 
-STATE_DEF_ENTER(Bill) { SM_GOTO(enterPass); }
+STATE_DEF_ENTER(Voucher) { SM_GOTO(enterPass); }
 
-STATE_DEF_EXIT(Bill) {}
-/******************** Enter Bill id sub state **********************/
+STATE_DEF_EXIT(Voucher) {}
+/******************** Select Operator sub state **********************/
 
-STATE_DEF_ENTER(EnterBillId) {}
+STATE_DEF_ENTER(SelectOperator) {}
 
-STATE_DEF_EXIT(EnterBillId) {}
+STATE_DEF_EXIT(SelectOperator) {}
 
-static void EnterBillId(Sale* parent) {
-    enterBillId = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, enterBillId, &parent->base.state, "enter bill id");
-    enterBillId->vtable.enter = STATE_ENTER(EnterBillId);
-    enterBillId->vtable.exit  = STATE_EXIT(EnterBillId);
+static void SelectOperator(Sale* parent) {
+    selectOperator = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, selectOperator, &parent->base.state,
+                  "select operator");
+    selectOperator->vtable.enter = STATE_ENTER(SelectOperator);
+    selectOperator->vtable.exit  = STATE_EXIT(SelectOperator);
 }
 
 /******************************************************************/
 
-/******************** Enter pay id sub state **********************/
+/******************** Select amount sub state **********************/
 
-STATE_DEF_ENTER(EnterPayId) {}
+STATE_DEF_ENTER(SelectAmount) {}
 
-STATE_DEF_EXIT(EnterPayId) {}
+STATE_DEF_EXIT(SelectAmount) {}
 
-static void EnterPayId(Sale* parent) {
-    enterPayId = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, enterPayId, &parent->base.state, "enter pay id");
-    enterPayId->vtable.enter = STATE_ENTER(EnterPayId);
-    enterPayId->vtable.exit  = STATE_EXIT(EnterPayId);
+static void SelectAmount(Sale* parent) {
+    selectAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, selectAmount, &parent->base.state, "select amount");
+    selectAmount->vtable.enter = STATE_ENTER(SelectAmount);
+    selectAmount->vtable.exit  = STATE_EXIT(SelectAmount);
 }
 
 /******************************************************************/
@@ -70,7 +71,7 @@ static void Result(Sale* parent) {
     result->vtable.exit  = STATE_EXIT(Result);
 }
 
-static void billDone(TxnFlow* flow, const TxnFlowStatus* st) {
+static void voucherDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         // settings()->save();
     }
@@ -98,7 +99,7 @@ static const uint8_t isoFeilds[] = {ELEMENT_PAN,
                                     ELEMENT_SECURITY_CONTROL_INFO,
                                     ELEMENT_MAC};
 
-const TxnFlowConfig billTxn = {
+const TxnFlowConfig voucherTxn = {
 
     .mti = MTI_FIN_REQ,
 
@@ -112,7 +113,7 @@ const TxnFlowConfig billTxn = {
 
     .parse = parseCommon,
 
-    .done = billDone,
+    .done = voucherDone,
 
     .onConnecting = showConnecting,
 
@@ -122,13 +123,13 @@ const TxnFlowConfig billTxn = {
 
 /******************************************************************/
 
-OOP_CTOR(Bill, State* parent, const char* name) {
+OOP_CTOR(Voucher, State* parent, const char* name) {
     OOP_CALL_CTOR(Service, self, parent, name);
-    self->base.state.vtable.enter = STATE_ENTER(Bill);
-    self->base.state.vtable.exit  = STATE_EXIT(Bill);
+    self->base.state.vtable.enter = STATE_ENTER(Voucher);
+    self->base.state.vtable.exit  = STATE_EXIT(Voucher);
 
-    EnterBillId(self);
-    EnterPayId(self);
+    SelectOperator(self);
+    SelectAmount(self);
     EnterPassword(self);
     Result(self);
 }

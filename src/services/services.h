@@ -59,10 +59,16 @@ OOP_CLASS(Pay) { OOP_EXTENDS(Service); };
 
 OOP_CTOR(Pay, State* parent, const char* name);
 
-/********************SimCharge**********************/
+/********************Voucher**********************/
 
-OOP_CLASS(SimCharge) { OOP_EXTENDS(Service); };
+OOP_CLASS(Voucher) { OOP_EXTENDS(Service); };
 
-OOP_CTOR(SimCharge, State* parent, const char* name);
+OOP_CTOR(Voucher, State* parent, const char* name);
+
+/********************Topup**********************/
+
+OOP_CLASS(TopUp) { OOP_EXTENDS(Service); };
+
+OOP_CTOR(TopUp, State* parent, const char* name);
 
 #endif

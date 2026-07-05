@@ -30,7 +30,7 @@ static void createServices() {
     services[SERVICE_ID_BILL]       = (Bill*)MEM_ALLOC(sizeof(Bill));
     services[SERVICE_ID_BALANCE]    = (Balance*)MEM_ALLOC(sizeof(Balance));
     services[SERVICE_ID_PAY]        = (Pay*)MEM_ALLOC(sizeof(Pay));
-    services[SERVICE_ID_SIM_CHARGE] = (SimCharge*)MEM_ALLOC(sizeof(SimCharge));
+    services[SERVICE_ID_SIM_CHARGE] = (Voucher*)MEM_ALLOC(sizeof(Voucher));
 
     OOP_CALL_CTOR(Service, parent, getState(STATE_ID_CARD_HOLDER), "parent");
     OOP_CALL_CTOR(Sale, services[SERVICE_ID_SALE], parent,
@@ -41,7 +41,7 @@ static void createServices() {
                   phraseGetDef(PHRASE_TXN_BALANCE));
     OOP_CALL_CTOR(Pay, services[SERVICE_ID_PAY], parent,
                   phraseGetDef(PHRASE_TXN_PAY));
-    OOP_CALL_CTOR(SimCharge, services[SERVICE_ID_SIM_CHARGE], parent,
+    OOP_CALL_CTOR(Voucher, services[SERVICE_ID_SIM_CHARGE], parent,
                   phraseGetDef(PHRASE_TXN_SIM_CHARGE));
 
     for (uint8_t i = 0; i < SERVICE_ID_ALL; i++) {

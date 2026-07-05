@@ -747,7 +747,7 @@ void leftPadZero(const char* src, char* dst, size_t dstSize, int width) {
     snprintf(dst, dstSize, "%0*s", width, src);
 }
 
-void prependZerosInt(int number, int totalWidth, char* output,
+void prependZerosInt(uint64_t number, int totalWidth, char* output,
                      size_t outputSize) {
     snprintf(output, outputSize, "%0*d", totalWidth, number);
 }

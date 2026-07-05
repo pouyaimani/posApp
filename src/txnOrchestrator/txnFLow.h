@@ -69,6 +69,10 @@ typedef struct {
 
     PrCode_t prcode;
 
+    uint8_t* feilds;
+
+    uint16_t feildsCnt;
+
     TxnBuildFn build;
 
     TxnParseFn parse;
@@ -95,7 +99,7 @@ struct TxnFlow {
 
     TxnFlowStage stage;
 
-    TxnCore data;
+    TxnData data;
 
     void* userData;
 };

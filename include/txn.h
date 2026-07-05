@@ -138,7 +138,7 @@ typedef enum {
 typedef struct {
     TxnType  txnType;
     Mti_t    mti;
-    uint16_t processCode;
+    uint32_t processCode;
     char     pan[16 + 1];
     uint64_t amount;
     uint32_t refNum;

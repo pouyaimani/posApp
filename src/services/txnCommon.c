@@ -5,8 +5,9 @@
 #include "settings/settings.h"
 
 int buildCommon(TxnFlow* flow, ByteArray* ba) {
-    flow->data.processCode = flow->cfg->prcode;
-    return isoBuild(flow->cfg->mti, flow->cfg->prcode, &flow->data, ba);
+    flow->data.core.processCode = flow->cfg->prcode;
+    return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
+                    flow->cfg->feildsCnt, &flow->data, ba);
 }
 
 int parseCommon(TxnFlow* flow, ByteArray* ba) {

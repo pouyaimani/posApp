@@ -272,17 +272,6 @@ static Error_t setWorkingKeys() {
     return ERR_OK;
 }
 
-static inline Error_t setBit48() {
-    DEFINE_STRING(sn, 32);
-    OOP_CALL(sys(), getSN, sn, sizeof(sn));
-    LOG_DEBUG("dn = %s", sn);
-    DEFINE_STRING(privateData, 128);
-    setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
-    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
-                      (const DL_UINT8*)privateData);
-    return ERR_OK;
-}
-
 static void decodeBalanceValue(char* str, char* out, size_t len) {
     int  index          = 0;
     char accountType[3] = {0};
@@ -336,17 +325,6 @@ static Error_t setIIN() {
  *                                                                                           *
  ********************************************************************************************/
 
-Error_t isoBuildLogOn(TxnCore* txn, ByteArray* buf) {
-    setBit48();
-    /* set ISO message fields */
-#if defined REMOTE_KEY_INJECTION
-    (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
-                                        &isoMsg); // IIN
-#endif
-    setSecRelCtrlInfo();
-    return ERR_OK;
-}
-
 static Error_t isoParseLogOnResponse(ByteArray* buf) {
     /*
      MASTER		917862ab54de7c916091b5c9a7de0189
@@ -369,18 +347,6 @@ static Error_t isoParseLogOnResponse(ByteArray* buf) {
     snprintf(settings()->terminal.terminalId, terminalNumSize - 1, "%s", feild);
     LOG_DEBUG("terminal number = %s", feild);
     RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
-    return ERR_OK;
-}
-
-Error_t isoBuildCfg(TxnCore* txn, ByteArray* buf) {
-    /* set ISO message fields */
-#if defined REMOTE_KEY_INJECTION
-    (void)SIPA_ISO8583_MSG_SetField_Str(32, (const DL_UINT8*)setting.AcquireIIN,
-                                        &isoMsg); // IIN
-#endif
-    setTerminalNum();
-    setBit48();
-    setSecRelCtrlInfo();
     return ERR_OK;
 }
 
@@ -462,37 +428,9 @@ static Error_t isoParseReverse(ByteArray* buf) {
     // check mac
 }
 
-static Error_t isoBuildPurchase(TxnCore* txn, ByteArray* buf) {}
-
 static Error_t isoParsePurchaseResponse(ByteArray* buf) {}
 
-static Error_t isoBuildBill(TxnCore* txn, ByteArray* buf) {}
-
 static Error_t isoParseBillResponse(ByteArray* buf) {}
-
-static Error_t isoBuildBalance(TxnCore* txn, ByteArray* buf) {
-    DEFINE_STRING(pan, 24);
-    DEFINE_STRING(pinblock, 24);
-    magreader()->getPan(pan, sizeof(pan));
-    LOG_DEBUG("pan = %s", pan);
-    TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
-    LOG_DEBUG("track2 = %s", track2.data);
-    PedErr_t pederr =
-        OOP_CALL(ped(), getPinBlock, pan, pinblock, sizeof(pinblock));
-    RETURN_VALUE_IF_NOT(pederr, PED_ERR_OK, ;, ERR_NOK);
-    iso8583()->setStr(ELEMENT_PAN, pan);
-    iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, "021");
-    iso8583()->setStr(ELEMENT_POS_CONDITION_CODE, "14");
-    setIIN();
-    iso8583()->setStr(ELEMENT_TRACK2, track2.data);
-    iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
-    iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
-                      settings()->terminal.merchantUniqueId);
-    setBit48();
-    iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, PIN_BLOCK_LEN);
-    setSecRelCtrlInfo();
-    return ERR_OK;
-}
 
 static Error_t isoParseBalanceResponse(ByteArray* buf) {
     DEFINE_STRING(feild, 1028);
@@ -525,25 +463,6 @@ static Error_t isoParsePayResponse(ByteArray* buf) {}
  *                                                                                           *
  ********************************************************************************************/
 
-static Error_t isoBuildMac(Mti_t mti, ByteArray* buf) {
-    DEFINE_BYTE_ARRAY(mac, ISO_MAC_LEN + 1);
-    DEFINE_BYTE_ARRAY(macHex, ISO_MAC_LEN + 1);
-    uint8_t field = mti == MTI_REV_ADVICE ? ELEMENT_MAC_2 : ELEMENT_MAC;
-    iso8583()->setBin(field, (const DL_UINT8*)mac, ISO_MAC_LEN);
-    DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
-    size_t packedLen;
-    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
-                        , ERR_NOK);
-    RETURN_VALUE_IF_NOT((packedLen < ISO_MAC_LEN), false, ;, ERR_NOK);
-    LOG_TRACE("ISO Build mac: packed len = %u", packedLen);
-    PedErr_t pedErr = ped()->getMac(16, tmpBuf, packedLen - ISO_MAC_LEN, mac);
-    RETURN_VALUE_IF_NOT(pedErr, PED_ERR_OK, ;, ERR_NOK);
-    bytesToHex(mac, 4, macHex, sizeof(macHex));
-    LOG_TRACE("ISO Build mac: mac hex = %s", macHex);
-    iso8583()->setBin(field, (const DL_UINT8*)macHex, ISO_MAC_LEN);
-    return ERR_OK;
-}
-
 static Error_t isoPack(ByteArray* buf) {
     DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
     size_t packedLen;
@@ -555,24 +474,6 @@ static Error_t isoPack(ByteArray* buf) {
         , ERR_NOK);
     buf->len = packedLen;
     return ERR_OK;
-}
-
-Error_t isoBuild(Mti_t mti, PrCode_t prcode, TxnCore* txn, ByteArray* buf) {
-    IsoTransaction* itxn = isoFindTransaction(mti, prcode);
-    RETURN_VALUE_IF_NULL(itxn, ;, ERR_NOK);
-    iso8583()->reset();
-    setMti(mti);
-    if (mti != MTI_FIN_ADVICE && mti != MTI_REV_ADVICE) {
-        setPrCode(itxn->prcode);
-    } else {
-        setPrCode(txn->processCode);
-    }
-    setStan(txnTraceInfo()->stan);
-    setDateTime();
-    setNii();
-    RETURN_VALUE_IF_NOT(itxn->builder(txn, buf), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(isoBuildMac(mti, buf), ERR_OK, ;, ERR_NOK);
-    return isoPack(buf);
 }
 
 static Error_t checkMac(const char* data, size_t len) {
@@ -594,55 +495,33 @@ static Error_t checkMac(const char* data, size_t len) {
     return ERR_OK;
 }
 
-RespCode_t isoParse(Mti_t mti, PrCode_t prcode, ByteArray* buf) {
-    RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
-    IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
-    RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
-    // Check mac
-    // uint16_t packedSize = buf->data[0] * 256 + buf->data[1];
-    // packedSize          = packedSize - 5; // without header
-    // Error_t res         = checkMac(buf->data + 7, packedSize - ISO_MAC_LEN);
-    // RETURN_VALUE_IF_NOT(res, ERR_OK, ;, ERR_NOK);
-    // Check responce code
-    DEFINE_STRING(f39, 8);
-    iso8583()->getStr(ELEMENT_RESPONSE_CODE, f39);
-    RespCode_t respCode = libAtoi(f39);
-    LOG_TRACE("Parser: txn responce code = %d", respCode);
-    RETURN_VALUE_IF_NOT(respCode, 0, ;, respCode);
-
-    IsoTransaction* txn = isoFindTransaction(mti, prcode);
-    RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(txn->parser(buf), ERR_OK, ;, ERR_NOK);
-    return respCode;
-}
-
 static const IsoTransaction templates[] = {
     /******************************************************************/
     /*LOG ON*/
     /******************************************************************/
     {.mti     = MTI_NET_REQ,
      .prcode  = PRC_LOG_ON,
-     .builder = isoBuildLogOn,
+     .builder = NULL,
      .parser  = isoParseLogOnResponse},
     /******************************************************************/
     /*Configuration*/
     /******************************************************************/
     {.mti     = MTI_AUTH_REQ,
      .prcode  = PRC_CFG,
-     .builder = isoBuildCfg,
+     .builder = NULL,
      .parser  = isoParseCfgResponse},
     /******************************************************************/
     /*Settle*/
     /******************************************************************/
     {.mti     = MTI_FIN_ADVICE,
      .prcode  = PRC_SETTLE,
-     .builder = isoBuildSettle,
+     .builder = NULL,
      .parser  = isoParseSettle},
     /******************************************************************/
     /*Reverse*/
     /******************************************************************/
     {.mti     = MTI_REV_ADVICE,
-     .builder = isoBuildReverse,
+     .builder = NULL,
      .parser  = isoParseReverse,
      .prcode  = PRC_REVERSE},
     /******************************************************************/
@@ -650,21 +529,21 @@ static const IsoTransaction templates[] = {
     /******************************************************************/
     {.mti     = MTI_FIN_REQ,
      .prcode  = PRC_PURCHASE,
-     .builder = isoBuildPurchase,
+     .builder = NULL,
      .parser  = isoParsePurchaseResponse},
     /******************************************************************/
     /*Bill Payment*/
     /******************************************************************/
     {.mti     = MTI_FIN_REQ,
      .prcode  = PRC_BILL_PAYMENT,
-     .builder = isoBuildBill,
+     .builder = NULL,
      .parser  = isoParseBillResponse},
     /******************************************************************/
     /*Balance Inquiry*/
     /******************************************************************/
     {.mti     = MTI_AUTH_REQ,
      .prcode  = PRC_BALANCE,
-     .builder = isoBuildBalance,
+     .builder = NULL,
      .parser  = isoParseBalanceResponse}};
 
 const IsoTransaction* isoFindTransaction(Mti_t mti, PrCode_t prcode) {
@@ -674,4 +553,302 @@ const IsoTransaction* isoFindTransaction(Mti_t mti, PrCode_t prcode) {
         }
     }
     return NULL;
+}
+
+static int8_t setBit2(TxnData* data) {
+    (void)data;
+    DEFINE_STRING(pan, 24);
+    magreader()->getPan(pan, sizeof(pan));
+    LOG_TRACE("| Bit 2 - (Pan) | -> %s", pan);
+    iso8583()->setStr(ELEMENT_PAN, pan);
+    return ERR_OK;
+}
+
+static int8_t setBit3(TxnData* data) {
+    uint32_t code = data->core.processCode;
+    DEFINE_STRING(prcode, (PRCODE_SIZE + 1));
+    prependZerosInt(code, PRCODE_SIZE, prcode, sizeof(prcode));
+    prcode[STAN_SIZE] = 0;
+    LOG_TRACE("| Bit 3 - (Process Code) | -> %s", prcode);
+    iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)prcode);
+    return ERR_OK;
+}
+
+static int8_t setBit4(TxnData* data) {
+    DEFINE_STRING(amount, (SIZE_AMOUNT + 1));
+    prependZerosInt(data->core.amount, SIZE_AMOUNT, amount, sizeof(amount));
+    LOG_TRACE("| Bit 4 - (Txn Amount) | -> %s", amount);
+    iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, (const DL_UINT8*)amount);
+    return ERR_OK;
+}
+
+static int8_t setBit11(TxnData* data) {
+    (void)data;
+    uint16_t istan = data->core.rrn;
+    DEFINE_STRING(stan, (STAN_SIZE + 1));
+    prependZerosInt(istan, STAN_SIZE, stan, sizeof(stan));
+    stan[STAN_SIZE] = 0;
+    LOG_TRACE("| Bit 11 - (Stan) | -> %s", stan);
+    iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
+    return ERR_OK;
+}
+static int8_t setBit12(TxnData* data) {
+    (void)data;
+    DateTime* dt = OOP_CALL(sys(), getDateTime);
+    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION,
+                      (const DL_UINT8*)dt->time);
+    LOG_TRACE("| Bit 12 - (Time) | -> %s", dt->time);
+    return ERR_OK;
+}
+static int8_t setBit13(TxnData* data) {
+    (void)data;
+    DateTime* dt = OOP_CALL(sys(), getDateTime);
+    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION,
+                      (const DL_UINT8*)dt->date + 2);
+    LOG_TRACE("| Bit 13 - (Date) | -> %s", dt->date + 2);
+    return ERR_OK;
+}
+static int8_t setBit22(TxnData* data) {
+    (void)data;
+    iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, "021");
+    LOG_TRACE("| Bit 22 - (Pos Entry Mode) | -> %s", "021");
+    return ERR_OK;
+}
+static int8_t setBit24(TxnData* data) {
+    (void)data;
+    char* IIN = strlen(settings()->terminal.acquirerIIN) != 0
+                    ? settings()->terminal.acquirerIIN
+                    : "000000000";
+    iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, (const DL_UINT8*)IIN);
+    LOG_TRACE("| Bit 24 - (IIN) | -> %s", IIN);
+    return ERR_OK;
+}
+static int8_t setBit25(TxnData* data) {
+    (void)data;
+    iso8583()->setStr(ELEMENT_POS_CONDITION_CODE, "14");
+    LOG_TRACE("| Bit 25 - (PCC) | -> %s", "14");
+    return ERR_OK;
+}
+static int8_t setBit35(TxnData* data) {
+    (void)data;
+    TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
+    iso8583()->setStr(ELEMENT_TRACK2, track2.data);
+    LOG_TRACE("| Bit 35 - (Track2) | -> %s", track2.data);
+    return ERR_OK;
+}
+
+static int8_t setBit41(TxnData* data) {
+    (void)data;
+    iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
+    LOG_TRACE("| Bit 41 - (Terminal ID) | -> %s",
+              settings()->terminal.terminalId);
+    return ERR_OK;
+}
+static int8_t setBit42(TxnData* data) {
+    (void)data;
+    iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
+                      settings()->terminal.merchantUniqueId);
+    LOG_TRACE("| Bit 42 - (Merchant ID) | -> %s",
+              settings()->terminal.merchantUniqueId);
+    return ERR_OK;
+}
+
+static int8_t setBit48(TxnData* data) {
+    (void)data;
+    DEFINE_STRING(sn, 32);
+    OOP_CALL(sys(), getSN, sn, sizeof(sn));
+    DEFINE_STRING(privateData, 128);
+    if (data->core.processCode == PRC_BILL_PAYMENT) {
+    } else if (data->core.processCode == PRC_VOUCHER) {
+    } else if (data->core.processCode == PRC_TOPUP) {
+    } else {
+        setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
+    }
+    iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
+                      (const DL_UINT8*)privateData);
+    LOG_TRACE("Bit 48 | (Private Data): %s", privateData);
+    return ERR_OK;
+}
+
+static int8_t setBit49(TxnData* data) {
+    (void)data;
+    char* currency = "364";
+    iso8583()->setStr(ELEMENT_CURRENCY_CODE_TRANSACTION,
+                      (const DL_UINT8*)currency);
+    LOG_TRACE("Bit 49 | (Currency Code): %s", currency);
+    return ERR_OK;
+}
+
+static int8_t setBit52(TxnData* data) {
+    (void)data;
+    DEFINE_STRING(pan, 24);
+    DEFINE_STRING(pinblock, 24);
+    magreader()->getPan(pan, sizeof(pan));
+    PedErr_t pederr =
+        OOP_CALL(ped(), getPinBlock, pan, pinblock, sizeof(pinblock));
+    RETURN_VALUE_IF_NOT(pederr, PED_ERR_OK, ;, ERR_NOK);
+    iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, PIN_BLOCK_LEN);
+    LOG_TRACE("Bit 52 | (Pin Block): %s", pinblock);
+    return ERR_OK;
+}
+static int8_t setBit53(TxnData* data) {
+    (void)data;
+    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO,
+                      (const DL_UINT8*)SecRelControlInfo);
+    LOG_TRACE("Bit 52 | (Security Control Info): %s", SecRelControlInfo);
+    return ERR_OK;
+}
+static int8_t setBit64(TxnData* data) {
+    (void)data;
+    DEFINE_BYTE_ARRAY(mac, ISO_MAC_LEN + 1);
+    DEFINE_BYTE_ARRAY(macHex, ISO_MAC_LEN + 1);
+    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)mac, ISO_MAC_LEN);
+    DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
+    size_t packedLen;
+    RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
+                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT((packedLen < ISO_MAC_LEN), false, ;, ERR_NOK);
+    LOG_TRACE("ISO Build mac: packed len = %u", packedLen);
+    PedErr_t pedErr = ped()->getMac(16, tmpBuf, packedLen - ISO_MAC_LEN, mac);
+    RETURN_VALUE_IF_NOT(pedErr, PED_ERR_OK, ;, ERR_NOK);
+    bytesToHex(mac, 4, macHex, sizeof(macHex));
+    LOG_TRACE("ISO Build mac: mac hex = %s", macHex);
+    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)macHex, ISO_MAC_LEN);
+    return ERR_OK;
+}
+
+static int8_t getBit48(TxnData* data) {
+    DEFINE_STRING(feild, 1028);
+    iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
+    decodeMerchantDesc(feild);
+    return ERR_OK;
+}
+
+static const IsoFeildsFunc isoFeild[] = {
+    /******************************************************************/
+    /*BIT 2: ELEMENT_PAN */
+    /******************************************************************/
+    {.feild = 2, .set = setBit2, .get = NULL},
+    /******************************************************************/
+    /*BIT 3: ELEMENT_PROCESSING_CODE */
+    /******************************************************************/
+    {.feild = 3, .set = setBit3, .get = NULL},
+    /******************************************************************/
+    /*BIT 4: ELEMENT_AMOUNT_TRANSACTION */
+    /******************************************************************/
+    {.feild = 4, .set = setBit4, .get = NULL},
+    /******************************************************************/
+    /*BIT 11: ELEMENT_STAN */
+    /******************************************************************/
+    {.feild = 11, .set = setBit11, .get = NULL},
+    /******************************************************************/
+    /*BIT 12: ELEMENT_TIME_LOCAL_TRANSACTION */
+    /******************************************************************/
+    {.feild = 12, .set = setBit12, .get = NULL},
+    /******************************************************************/
+    /*BIT 13: ELEMENT_DATE_LOCAL_TRANSACTION */
+    /******************************************************************/
+    {.feild = 13, .set = setBit13, .get = NULL},
+    /******************************************************************/
+    /*BIT 22: ELEMENT_POS_ENTRY_MODE */
+    /******************************************************************/
+    {.feild = 22, .set = setBit22, .get = NULL},
+    /******************************************************************/
+    /*BIT 24: ELEMENT_NETWORK_INTL_ID */
+    /******************************************************************/
+    {.feild = 24, .set = setBit24, .get = NULL},
+    /******************************************************************/
+    /*BIT 25: ELEMENT_POS_CONDITION_CODE */
+    /******************************************************************/
+    {.feild = 25, .set = setBit25, .get = NULL},
+    /******************************************************************/
+    /*BIT 35: ELEMENT_TRACK2 */
+    /******************************************************************/
+    {.feild = 35, .set = setBit35, .get = NULL},
+    /******************************************************************/
+    /*BIT 41: ELEMENT_TERMINAL_ID */
+    /******************************************************************/
+    {.feild = 41, .set = setBit41, .get = NULL},
+    /******************************************************************/
+    /*BIT 42: ELEMENT_CARD_ACCEPTOR_ID */
+    /******************************************************************/
+    {.feild = 42, .set = setBit42, .get = NULL},
+    /******************************************************************/
+    /*BIT 48: ELEMENT_ADDITIONAL_DATA_PRIVATE */
+    /******************************************************************/
+    {.feild = 48, .set = setBit48, .get = NULL},
+    /******************************************************************/
+    /*BIT 49: ELEMENT_CURRENCY_CODE_TRANSACTION */
+    /******************************************************************/
+    {.feild = 49, .set = setBit49, .get = NULL},
+    /******************************************************************/
+    /*BIT 52: ELEMENT_PIN_DATA */
+    /******************************************************************/
+    {.feild = 52, .set = setBit52, .get = NULL},
+    /******************************************************************/
+    /*BIT 53: ELEMENT_SECURITY_CONTROL_INFO */
+    /******************************************************************/
+    {.feild = 53, .set = setBit53, .get = NULL},
+    /******************************************************************/
+    /*BIT 64: ELEMENT_MAC */
+    /******************************************************************/
+    {.feild = 64, .set = setBit64, .get = NULL},
+};
+
+Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* feild, uint16_t feildsCnt,
+                 TxnData* txn, ByteArray* buf) {
+    LOG_TRACE("ISO Buider: mti = %u, process code = %u", mti, prcode);
+    IsoTransaction* itxn = isoFindTransaction(mti, prcode);
+    RETURN_VALUE_IF_NULL(itxn, ;, ERR_NOK);
+    iso8583()->reset();
+    setMti(mti);
+    LOG_TRACE("ISO Buider: feilds count = %u", feildsCnt);
+    for (size_t i = 0; i < feildsCnt; i++) {
+        for (size_t j = 0; j < sizeof(isoFeild); j++) {
+            if (isoFeild[j].feild == feild[i]) {
+                if (isoFeild[j].set) {
+                    isoFeild[j].set(txn);
+                    break;
+                }
+            }
+        }
+    }
+    if (itxn->builder) {
+        RETURN_VALUE_IF_NOT(itxn->builder(txn, buf), ERR_OK, ;, ERR_NOK);
+    }
+    return isoPack(buf);
+}
+
+RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
+    RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
+    IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
+    RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
+    // Check mac
+    // uint16_t packedSize = buf->data[0] * 256 + buf->data[1];
+    // packedSize          = packedSize - 5; // without header
+    // Error_t res         = checkMac(buf->data + 7, packedSize -
+    // ISO_MAC_LEN);
+    // RETURN_VALUE_IF_NOT(res, ERR_OK, ;, ERR_NOK);
+    // Check responce code
+    DEFINE_STRING(f39, 8);
+    iso8583()->getStr(ELEMENT_RESPONSE_CODE, f39);
+    RespCode_t respCode = libAtoi(f39);
+    LOG_TRACE("Parser: txn responce code = %d", respCode);
+    RETURN_VALUE_IF_NOT(respCode, 0, ;, respCode);
+    // for (int i = 0; i < iso8583()->handler.fieldItems; i++) {
+    //     if (iso8583()->msg.field[i].ptr != NULL) {
+    //         for (size_t j = 0; j < sizeof(isoFeild); j++) {
+    //             if (isoFeild[j].feild == i) {
+    //                 if (isoFeild[j].get) {
+    //                     isoFeild[j].get(txn);
+    //                 }
+    //                 break;
+    //             }
+    //         }
+    //     }
+    // }
+    IsoTransaction* itxn = isoFindTransaction(mti, prcode);
+    RETURN_VALUE_IF_NULL(itxn, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(itxn->parser(buf), ERR_OK, ;, ERR_NOK);
+    return respCode;
 }
