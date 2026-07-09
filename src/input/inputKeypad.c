@@ -40,7 +40,7 @@ static InputResult handleKeypadEv(InputEvent* ev, InputCfg cfg) {
     if (ev->keypad.key == KEY_CLEAR) {
         deleteChar(input);
     }
-    if (isNumeric(ev->keypad.key)) {
+    if (isNumeric(ev->keypad.key) && cfg.mode != INMD_ENTER_ALPHAB) {
         appendChar(input, maxLen() + 1, ev->keypad.keyStr);
     }
     KeypadHandler* handler = findHandler(cfg.mode);
@@ -71,8 +71,8 @@ static void handleAlphaB(KeypadEvent* ev) {
     if (ev->key == KEY_CLEAR) {
         return;
     }
-    deleteChar(input);
     alphebatic()->addKey(input, maxLen(), ev->key);
+    strcpy(finput, input);
 }
 
 static void handleTime(KeypadEvent* ev) { timeFormat(input, finput); }
