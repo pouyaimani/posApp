@@ -6,6 +6,8 @@
 
 #if USE_LOG
 
+#define LOG_LOCATION_WIDTH 24
+
 #define LOG_COLOR_RESET "\x1b[0m"
 
 #define LOG_COLOR_TRACE "\x1b[90m" // Gray
@@ -25,36 +27,61 @@ static Logger __logger;
 
 static LogConfig_t g_cfg;
 
-static const char* level_str[] = {"TRACE", "DEBUG", "INFO",
-                                  "WARN",  "ERROR", "FATAL"};
-
+static const char level_char[] = {
+    'T', // TRACE
+    'D', // DEBUG
+    'I', // INFO
+    'W', // WARN
+    'E', // ERROR
+    'F'  // FATAL
+};
 static void initLogger(const LogConfig_t* cfg) { g_cfg = *cfg; }
 
+static const char* log_basename(const char* path) {
+    const char* slash1 = strrchr(path, '/');
+    const char* slash2 = strrchr(path, '\\');
+
+    if (slash1 && slash2)
+        return (slash1 > slash2) ? slash1 + 1 : slash2 + 1;
+
+    if (slash1)
+        return slash1 + 1;
+
+    if (slash2)
+        return slash2 + 1;
+
+    return path;
+}
+
 static size_t format_log_line(char* buf, size_t buf_size, const char* file,
-                              int logLevel, int line, const char* fmt,
+                              int level, int line, const char* fmt,
                               va_list ap) {
-    size_t    n  = 0;
+    size_t n = 0;
+
+    const char* name = log_basename(file);
+
+    char location[64];
+    snprintf(location, sizeof(location), "%s:%d", name, line);
+
     DateTime* dt = NULL;
 
-    if (g_cfg.getDateTime) {
+    if (g_cfg.getDateTime)
         dt = g_cfg.getDateTime(sys());
-    }
 
     if (dt) {
-        /* date = YYMMDD, time = HHMMSS */
-        n += snprintf(buf + n, buf_size - n, "[%c%c-%c%c-%c%c %c%c:%c%c:%c%c]",
-                      dt->date[0], dt->date[1], dt->date[2], dt->date[3],
-                      dt->date[4], dt->date[5], dt->time[0], dt->time[1],
-                      dt->time[2], dt->time[3], dt->time[4], dt->time[5]);
+        n += snprintf(buf + n, buf_size - n, "[%c%c:%c%c:%c%c]  ", dt->time[0],
+                      dt->time[1], dt->time[2], dt->time[3], dt->time[4],
+                      dt->time[5]); // optional
     } else {
-        n += snprintf(buf + n, buf_size - n, "[no-time]");
+        n += snprintf(buf + n, buf_size - n, "--:--:--.---  ");
     }
 
-    n += snprintf(buf + n, buf_size - n, "[%s%s%s][%s:%d] ",
-                  level_color[logLevel], level_str[logLevel], LOG_COLOR_RESET,
-                  file, line);
+    n += snprintf(buf + n, buf_size - n, "%s[%c]%s [%-*s]  ",
+                  level_color[level], level_char[level], LOG_COLOR_RESET,
+                  LOG_LOCATION_WIDTH, location);
 
     n += vsnprintf(buf + n, buf_size - n, fmt, ap);
+
     n += snprintf(buf + n, buf_size - n, "\r\n");
 
     return n;
