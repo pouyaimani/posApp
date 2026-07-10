@@ -18,7 +18,10 @@ static SubState* result;
 
 static TxnFlow* flow;
 
-STATE_DEF_ENTER(Balance) { SM_GOTO(enterPin); }
+STATE_DEF_ENTER(Balance) {
+    memset(flow, 0, sizeof(*flow));
+    SM_GOTO(enterPin);
+}
 
 /******************** Enter pass sub state **********************/
 
@@ -129,5 +132,5 @@ OOP_CTOR(Balance, State* parent, const char* name) {
     OOP_CALL_CTOR(State, commu, &self->base.state, "communication");
     commu->vtable.enter = STATE_ENTER(Communication);
 
-    flow = &self->base.flow;
+    flow = self->base.flow;
 }

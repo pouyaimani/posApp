@@ -9,7 +9,12 @@ static SubState* enterPass;
 static SubState* communication;
 static SubState* result;
 
-STATE_DEF_ENTER(Bill) { SM_GOTO(enterPass); }
+static TxnFlow* flow;
+
+STATE_DEF_ENTER(Bill) {
+    memset(flow, 0, sizeof(*flow));
+    SM_GOTO(enterPass);
+}
 
 STATE_DEF_EXIT(Bill) {}
 /******************** Enter Bill id sub state **********************/
@@ -131,4 +136,6 @@ OOP_CTOR(Bill, State* parent, const char* name) {
     EnterPayId(self);
     EnterPassword(self);
     Result(self);
+
+    flow = self->base.flow;
 }

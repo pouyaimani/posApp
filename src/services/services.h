@@ -16,10 +16,10 @@ OOP_VTABLE(Service) { OOP_IMETHOD(void, Service, makeReceipt); };
 
 OOP_CLASS(Service) {
     OOP_IMPLEMENTS(Service);
-    State   state;
-    bool    enable;
-    char    name[24];
-    TxnFlow flow;
+    State    state;
+    bool     enable;
+    char     name[24];
+    TxnFlow* flow;
 };
 
 OOP_CTOR(Service, State* parent, const char* name);

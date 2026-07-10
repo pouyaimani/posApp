@@ -47,7 +47,6 @@ static setFixedItemToVariant() {
 }
 
 STATE_DEF_ENTER(EnterFixedAmount) {
-    Input* in = STATE_INPUT;
     if (termStorage->fixedAmountItem == FIXED_AMNT_LISTS) {
         if (listCnt > 0) {
             snprintf(termStorage->amountList[listCnt - 1], 13, "%s",

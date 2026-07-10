@@ -215,26 +215,21 @@ STATE_DEF_ENTER(EnterIp) {
     inmgr()->run(
         &(InputCfg){
             .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_PIN,
+            .mode   = INMD_ENTER_IP,
             .title  = phraseGetDef(PHRASE_ENTER_SERV_IP),
             .info   = "",
             .maxLen = IP_MAX_LEN,
         },
         state->parent, enterPort);
-    // GOTO_INPUT(state->parent, enterPort, phraseGetDef(PHRASE_ENTER_SERV_IP),
-    // "",
-    //            IP_MAX_LEN, IN_MODE_IP, NULL);
-    Input* in = STATE_INPUT;
     if (serverItem == SERV_SET_MAIN) {
-        in->setInput(settings()->server.mainServerIp);
+        inmgr()->set(INPUT_TYPE_KEYPAD, settings()->server.mainServerIp);
     } else if (serverItem == SERV_SET_TMS) {
-        in->setInput(settings()->server.tmsIp);
+        inmgr()->set(INPUT_TYPE_KEYPAD, settings()->server.tmsIp);
     }
 }
 
 STATE_DEF_ENTER(EnterPort) {
-    Input* in = STATE_INPUT;
-    snprintf(ip, sizeof(ip), "%s", in->input);
+    snprintf(ip, sizeof(ip), "%s", inmgr()->input);
     inmgr()->run(
         &(InputCfg){
             .type   = INPUT_TYPE_KEYPAD,
@@ -244,21 +239,17 @@ STATE_DEF_ENTER(EnterPort) {
             .maxLen = 4,
         },
         state->parent, enterServerId);
-    // GOTO_INPUT(state->parent, enterServerId,
-    //            phraseGetDef(PHRASE_ENTER_SERV_PORT), "", 4, IN_MODE_NUMBERS,
-    //            NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(settings()->server.mainServerPort, str, sizeof(str));
     } else if (serverItem == SERV_SET_TMS) {
         intToStr(settings()->server.tmsPort, str, sizeof(str));
     }
-    in->setInput(str);
+    inmgr()->set(INPUT_TYPE_KEYPAD, str);
 }
 
 STATE_DEF_ENTER(EnterServerId) {
-    Input* in = STATE_INPUT;
-    port      = toInt(in->input);
+    port = toInt(inmgr()->input);
     inmgr()->run(
         &(InputCfg){
             .type   = INPUT_TYPE_KEYPAD,
@@ -268,21 +259,17 @@ STATE_DEF_ENTER(EnterServerId) {
             .maxLen = 4,
         },
         state->parent, getServerId);
-    // GOTO_INPUT(state->parent, getServerId,
-    // phraseGetDef(PHRASE_ENTER_SERV_ID),
-    //            "", 4, IN_MODE_NUMBERS, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(settings()->server.mainServerNii, str, sizeof(str));
     } else if (serverItem == SERV_SET_TMS) {
         intToStr(settings()->server.tmsId, str, sizeof(str));
     }
-    in->setInput(str);
+    inmgr()->set(INPUT_TYPE_KEYPAD, str);
 }
 
 STATE_DEF_ENTER(GetServerId) {
-    Input* in = STATE_INPUT;
-    serverId  = toInt(in->input);
+    serverId = toInt(inmgr()->input);
     SM_GOTO(success);
 }
 
@@ -301,6 +288,7 @@ STATE_DEF_ENTER(EnableSsl) {
 }
 
 STATE_DEF_ENTER(Success) {
+    LOG_DEBUG("ip = %s, port = %d", ip, port);
     if (serverItem == SERV_SET_MAIN) {
         snprintf(settings()->server.mainServerIp,
                  sizeof(settings()->server.mainServerIp), "%s", ip);

@@ -106,4 +106,7 @@ char* skipLeadingZeros(char* str);
 
 bool removeLeadingZeros(const char* input, char* output, size_t outputSize);
 
+bool str2u64(const char* str, uint64_t* value);
+bool u64toStr(uint64_t value, char* str, size_t size);
+
 #endif

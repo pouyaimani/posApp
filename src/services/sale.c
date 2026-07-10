@@ -13,10 +13,14 @@
 
 static SubState* enterAmount;
 static SubState* enterPass;
-static SubState* commu;
 static SubState* result;
 
-STATE_DEF_ENTER(Sale) { SM_GOTO(enterAmount); }
+static TxnFlow* flow;
+
+STATE_DEF_ENTER(Sale) {
+    memset(flow, 0, sizeof(*flow));
+    SM_GOTO(enterAmount);
+}
 
 /******************** Enter amount sub state **********************/
 
@@ -30,14 +34,15 @@ STATE_DEF_ENTER(EnterAmount) {
             .info   = "",
             .maxLen = AMOUNT_MAX_CNT,
         },
-        STATE_IDLE, commu);
+        STATE_IDLE, enterPass);
 }
 
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
-    // Input* in = getState(STATE_ID_INPUT);
-    // OOP_CALL(packer(), setAmount, in->input);
+    if (!str2u64(inmgr()->input, &flow->data.core.amount)) {
+        LOG_FATAL("Converting amount form string to u64 failed.");
+    }
     inmgr()->run(
         &(InputCfg){
             .mode   = INMD_ENTER_PIN,
@@ -45,16 +50,8 @@ STATE_DEF_ENTER(EnterPassword) {
             .info   = "",
             .maxLen = PASSWORD_MAX_LEN,
         },
-        STATE_IDLE, commu);
+        STATE_IDLE, STATE_IDLE);
 }
-
-/******************** Connection sub state **********************/
-
-STATE_DEF_ENTER(Communication) {}
-
-/*********************** Result sub state *************************/
-
-STATE_DEF_ENTER(Result) { GOTO_TXN_RES(STATE_IDLE, STATE_IDLE); }
 
 /******************************************************************/
 
@@ -137,11 +134,5 @@ OOP_CTOR(Sale, State* parent, const char* name) {
     OOP_CALL_CTOR(State, enterPass, &self->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
 
-    commu = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, commu, &self->base.state, "communication");
-    commu->vtable.enter = STATE_ENTER(Communication);
-
-    result = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, result, &self->base.state, "result");
-    result->vtable.enter = STATE_ENTER(Result);
+    flow = self->base.flow;
 }

@@ -9,6 +9,7 @@
 
 static Service* services[MAX_SERVICE_NUM];
 static Service* parent;
+static TxnFlow  flow;
 
 static const char* TxnTypeStr[] = {
     [TXN_SALE] = "خرید",         [TXN_BILL] = "پرداخت قبض",
@@ -56,5 +57,6 @@ Service* getService(ServiceId_t id) {
 
 OOP_CTOR(Service, State* parent, const char* name) {
     OOP_CALL_CTOR(State, &self->state, parent, name);
+    self->flow = &flow;
     snprintf(self->name, sizeof(self->name), "%s", name);
 }

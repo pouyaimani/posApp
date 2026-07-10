@@ -67,7 +67,17 @@ static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
         sdkst = SOCKET_RAW;
         break;
     }
-    return sdkNetCreateSocket(addr, sdkst);
+    SockAddr sadrr;
+    if (sdkNetAddrSet(&sadrr, addr->ip, addr->port) != SDK_NET_OK) {
+        LOG_ERROR(
+            "T3Rtos: setting socket address is failed. ip = %s, port = %d",
+            addr->ip, addr->port);
+        return -1;
+    }
+    LOG_TRACE("T3Rtos: creating socket ...");
+    int32_t fd = sdkNetCreateSocket(&sadrr, sdkst);
+    LOG_TRACE("T3Rtos: fd = %d", fd);
+    return fd;
 }
 
 static NetError_t close(Network* self, int32_t id) {

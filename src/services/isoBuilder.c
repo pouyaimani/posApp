@@ -699,6 +699,7 @@ static int8_t setBit53(TxnData* data) {
     return ERR_OK;
 }
 static int8_t setBit64(TxnData* data) {
+    LOG_DEBUG("-----------------");
     (void)data;
     DEFINE_BYTE_ARRAY(mac, ISO_MAC_LEN + 1);
     DEFINE_BYTE_ARRAY(macHex, ISO_MAC_LEN + 1);

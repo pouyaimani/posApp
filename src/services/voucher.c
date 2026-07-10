@@ -9,7 +9,12 @@ static SubState* enterPass;
 static SubState* communication;
 static SubState* result;
 
-STATE_DEF_ENTER(Voucher) { SM_GOTO(enterPass); }
+static TxnFlow* flow;
+
+STATE_DEF_ENTER(Voucher) {
+    memset(flow, 0, sizeof(*flow));
+    SM_GOTO(enterPass);
+}
 
 STATE_DEF_EXIT(Voucher) {}
 /******************** Select Operator sub state **********************/
@@ -132,4 +137,6 @@ OOP_CTOR(Voucher, State* parent, const char* name) {
     SelectAmount(self);
     EnterPassword(self);
     Result(self);
+
+    flow = self->base.flow;
 }

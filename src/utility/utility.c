@@ -32,6 +32,64 @@ int libAtoi(const char* str) {
     return s * (falg ? -1 : 1);
 }
 
+bool str2u64(const char* str, uint64_t* value) {
+    uint64_t result = 0;
+
+    if (str == NULL || value == NULL)
+        return false;
+
+    if (*str == '\0')
+        return false;
+
+    while (*str) {
+        if (*str < '0' || *str > '9')
+            return false;
+
+        uint64_t digit = (uint64_t)(*str - '0');
+
+        /* Overflow check */
+        if (result > (UINT64_MAX - digit) / 10)
+            return false;
+
+        result = result * 10 + digit;
+        ++str;
+    }
+
+    *value = result;
+    return true;
+}
+
+bool u64toStr(uint64_t value, char* str, size_t size) {
+    char   tmp[20];
+    size_t len = 0;
+
+    if (str == NULL || size == 0)
+        return false;
+
+    if (value == 0) {
+        if (size < 2)
+            return false;
+
+        str[0] = '0';
+        str[1] = '\0';
+        return true;
+    }
+
+    while (value) {
+        tmp[len++] = (char)('0' + (value % 10));
+        value /= 10;
+    }
+
+    if (len + 1 > size)
+        return false;
+
+    for (size_t i = 0; i < len; ++i)
+        str[i] = tmp[len - i - 1];
+
+    str[len] = '\0';
+    return true;
+}
+
 int intToStr(int val, char* out, size_t size) {
     memset(out, 0, size);
     return sprintf(out, "%d", val);

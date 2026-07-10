@@ -177,9 +177,7 @@ static Error_t saveStorage(DataDescriptor* dsc, size_t itemsCount,
     writeBufLen += SETTINGS_FILE_HEADER_LEN;
 
     fileWriteBuf = (uint8_t*)MEM_ALLOC(SETTINGS_FILE_MAX_SIZE);
-    if (fileWriteBuf == NULL) {
-        return ERR_NOK;
-    }
+    RETURN_VALUE_IF_NULL(fileWriteBuf, ;, ERR_NOK);
 
     memset(fileWriteBuf, 0, SETTINGS_FILE_MAX_SIZE);
     for (i = 0; i < itemsCount; i++) {

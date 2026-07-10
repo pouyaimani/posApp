@@ -143,10 +143,10 @@ static int8_t onReceive(NthTransaction* tx, void* ctx) {
 }
 
 static int8_t onFailure(NthTransaction* tx, void* ctx) {
-
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_DEBUG("Txn flow: on failure ...");
-    (void)tx;
+    TxnFlow* flow = ctx;
+    nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_FAILED, 0);
     return 0;
 }
@@ -154,7 +154,8 @@ static int8_t onFailure(NthTransaction* tx, void* ctx) {
 static int8_t onTimeout(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_DEBUG("Txn flow: on timeout ...");
-    (void)tx;
+    TxnFlow* flow = ctx;
+    nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_TIMEOUT, 0);
     return 0;
 }

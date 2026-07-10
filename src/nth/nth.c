@@ -238,7 +238,7 @@ static void nth_handleConnecting(NthTransaction* tx) {
         }
         nth_emitConnectEvent(tx, true);
     } else if (ret < 0) {
-        NTH_LOG("nth: socket can not connect.");
+        NTH_LOG("nth: socket couldn't stablish connection.");
         tx->state     = NTH_TX_FAILED;
         tx->lastError = NTH_ERR_CONNECT;
         if (tx->onFailure) {
