@@ -1,3 +1,4 @@
+#ifdef 0
 /*
   Copyright (c) 2009 Dave Gamble
 
@@ -152,7 +153,7 @@ static const char* parse_number(cJSON* item, const char* num) {
     n = sign * n *
         pow(10.0,
             (scale + subscale * signsubscale)); /* number = +/- number.fraction
-                                                   * 10^+/- exponent */
+                                                 * 10^+/- exponent */
 
     item->valuedouble = n;
     item->valueint    = (int)n;
@@ -1431,3 +1432,5 @@ void cJSON_Minify(char* json) {
     }
     *into = 0; /* and null-terminate. */
 }
+
+#endif

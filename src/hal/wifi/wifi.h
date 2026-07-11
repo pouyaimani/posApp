@@ -7,20 +7,14 @@
 #include "dcfg.h"
 #include "event.h"
 #include "common.h"
+#include "error.h"
+#include "len.h"
 
-#ifndef WIFI_AP_LIST_SIZE
+#ifndef LEN_WIFI_AP_LIST
 #error Wifi AP info list size is undefined.
 #endif
 
 #define WIFI_PASS_SIZE 32
-
-typedef enum WifiErr_t {
-    WIFI_ERR_OK,
-    WIFI_ERR_NOK,
-    WIFI_ERR_INPUT,
-    WIFI_ERR_TIME_OUT,
-    WIFI_ERR_CONNECT_FAILED
-} WifiErr_t;
 
 typedef enum WifiSigStrenght_t {
     WIFI_SIGNAL_STRENGTH_0,
@@ -38,7 +32,7 @@ typedef struct WifiApInfo_t {
 } WifiApInfo_t;
 
 typedef struct WifiApList_t {
-    WifiApInfo_t list[WIFI_AP_LIST_SIZE];
+    WifiApInfo_t list[LEN_WIFI_AP_LIST];
     uint16_t     size;
 } WifiApList_t;
 

@@ -4,6 +4,7 @@
 #include "oop.h"
 #include <stdint.h>
 #include "event.h"
+#include "error.h"
 
 typedef enum CellSigStrength_t {
     CELL_SIGNAL_STRENGTH_0,
@@ -12,8 +13,6 @@ typedef enum CellSigStrength_t {
     CELL_SIGNAL_STRENGTH_3,
     CELL_SIGNAL_STRENGTH_INVALID
 } CellSigStrength_t;
-
-typedef enum CellErr_t { CELL_ERR_OK, CELL_ERR_SIM_ERROR } CellErr_t;
 
 typedef enum CellNeyType_t {
     CELL_NET_TYPE_2G,

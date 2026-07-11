@@ -112,12 +112,12 @@ void setReprintItem(void* arg) {
                 .mode   = INMD_ENTER_NUMBERS,
                 .title  = phraseGetDef(PHRASE_ENTER_TRACE),
                 .info   = "",
-                .maxLen = MAX_TRACE_IN_LEN,
+                .maxLen = LEN_MAX_TRACE_IN,
             },
             subReports[REP_ITEM_REPRINT], extractData);
         inmgr()->setOut(rquery.trace, NULL, sizeof(rquery.trace));
         // GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-        //            phraseGetDef(PHRASE_ENTER_TRACE), "", MAX_TRACE_IN_LEN,
+        //            phraseGetDef(PHRASE_ENTER_TRACE), "", LEN_MAX_TRACE_IN,
         //            IN_MODE_NUMBERS, rquery.trace);
         break;
     case REPRINT_REF:
@@ -128,13 +128,13 @@ void setReprintItem(void* arg) {
                 .mode   = INMD_ENTER_NUMBERS,
                 .title  = phraseGetDef(PHRASE_ENTER_REF_NUM),
                 .info   = "",
-                .maxLen = MAX_REF_NUM_IN_LEN,
+                .maxLen = LEN_MAX_REF_NUM_IN,
             },
             subReports[REP_ITEM_REPRINT], extractData);
         inmgr()->setOut(rquery.refNum, NULL, sizeof(rquery.refNum));
         // GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
         //            phraseGetDef(PHRASE_ENTER_REF_NUM), "",
-        //            MAX_REF_NUM_IN_LEN, IN_MODE_NUMBERS, rquery.refNum);
+        //            LEN_MAX_REF_NUM_IN, IN_MODE_NUMBERS, rquery.refNum);
         break;
     case REPRINT_BILL:
     case REPRINT_CHARGE:
@@ -239,12 +239,12 @@ STATE_DEF_ENTER(GetStartDate) {
             .mode   = INMD_ENTER_DATE,
             .title  = phraseGetDef(PHRASE_FROM_DATE),
             .info   = "",
-            .maxLen = MAX_DATE_IN_LEN,
+            .maxLen = LEN_MAX_DATE_IN,
         },
         mainMenu, getStartTime);
     inmgr()->setOut(rquery.startDate, NULL, sizeof(rquery.startDate));
     // GOTO_INPUT(mainMenu, getStartTime, phraseGetDef(PHRASE_FROM_DATE), "",
-    //            MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.startDate);
+    //            LEN_MAX_DATE_IN, IN_MODE_DATE, rquery.startDate);
 }
 
 /******************** Get End Date sub state **********************/
@@ -256,12 +256,12 @@ STATE_DEF_ENTER(GetEndDate) {
             .mode   = INMD_ENTER_DATE,
             .title  = phraseGetDef(PHRASE_TO_DATE),
             .info   = "",
-            .maxLen = MAX_DATE_IN_LEN,
+            .maxLen = LEN_MAX_DATE_IN,
         },
         mainMenu, getEndTime);
     inmgr()->setOut(rquery.endDate, NULL, sizeof(rquery.endDate));
     // GOTO_INPUT(mainMenu, getEndTime, phraseGetDef(PHRASE_TO_DATE), "",
-    //            MAX_DATE_IN_LEN, IN_MODE_DATE, rquery.endDate);
+    //            LEN_MAX_DATE_IN, IN_MODE_DATE, rquery.endDate);
 }
 
 /******************** Get Start Time sub state **********************/
@@ -273,12 +273,12 @@ STATE_DEF_ENTER(GetStartTime) {
             .mode   = INMD_ENTER_TIME,
             .title  = phraseGetDef(PHRASE_FROM_TIME),
             .info   = "",
-            .maxLen = MAX_TIME_IN_LEN,
+            .maxLen = LEN_MAX_TIME_IN,
         },
         mainMenu, getEndDate);
     inmgr()->setOut(rquery.startTime, NULL, sizeof(rquery.startTime));
     // GOTO_INPUT(mainMenu, getEndDate, phraseGetDef(PHRASE_FROM_TIME), "",
-    //            MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.startTime);
+    //            LEN_MAX_TIME_IN, IN_MODE_TIME, rquery.startTime);
 }
 
 /******************** Get End Time sub state **********************/
@@ -290,12 +290,12 @@ STATE_DEF_ENTER(GetEndTime) {
             .mode   = INMD_ENTER_TIME,
             .title  = phraseGetDef(PHRASE_TO_TIME),
             .info   = "",
-            .maxLen = MAX_TIME_IN_LEN,
+            .maxLen = LEN_MAX_TIME_IN,
         },
         mainMenu, extractData);
     inmgr()->setOut(rquery.endTime, NULL, sizeof(rquery.endTime));
     // GOTO_INPUT(mainMenu, extractData, phraseGetDef(PHRASE_TO_TIME), "",
-    //            MAX_TIME_IN_LEN, IN_MODE_TIME, rquery.endTime);
+    //            LEN_MAX_TIME_IN, IN_MODE_TIME, rquery.endTime);
 }
 
 /******************** extract data sub state **********************/
@@ -303,9 +303,11 @@ STATE_DEF_ENTER(GetEndTime) {
 static bool handleExtractedData(const TxnData* txn, void* userData) {
     ReceiptData* data = (ReceiptData*)userData;
     data->txn         = txn;
-    Receipt rec;
-    RETURN_VALUE_IF_NOT(buildReceipt(&rec, data), ERR_OK, ;, false);
-    RETURN_VALUE_IF_NOT(OOP_CALL(&rec, flush), ERR_OK, ;, false);
+    Receipt  rec;
+    Result_t res = buildReceipt(&rec, data);
+    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    res = OOP_CALL(&rec, flush);
+    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
     OOP_CALL(&rec, destroy);
     return true;
 }

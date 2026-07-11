@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "oop.h"
+#include "len.h"
 
 #define STAN_SIZE   6
 #define PRCODE_SIZE 6
@@ -139,7 +140,7 @@ typedef struct {
     TxnType  txnType;
     Mti_t    mti;
     uint32_t processCode;
-    char     pan[16 + 1];
+    char     pan[LEN_MAX_PAN + 1];
     uint64_t amount;
     uint32_t refNum;
     uint32_t trace;

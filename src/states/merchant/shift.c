@@ -314,7 +314,7 @@ STATE_DEF_ENTER(ShiftReports) {
             .mode   = INMD_ENTER_NUMBERS,
             .title  = phraseGetDef(PHRASE_SHIFT_SELECT),
             .info   = "",
-            .maxLen = SHIFT_NUM_MAX_LEN,
+            .maxLen = LEN_MAX_SHIFT_NUM,
         },
         state->parent, handleReports);
     // GOTO_INPUT(state->parent, handleReports,

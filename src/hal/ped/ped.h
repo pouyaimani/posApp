@@ -4,12 +4,11 @@
 #include "oop.h"
 #include <stdbool.h>
 #include "event.h"
+#include "error.h"
 
 #define PIN_MAX_LEN            4
 #define PIN_MIN_LEN            4
 #define PED_PIN_ENTRY_TIME_OUT SECS(10)
-
-typedef enum PedErr_t { PED_ERR_OK, PED_ERR_INPUT } PedErr_t;
 
 typedef enum PedKeyType_t {
     PED_MASTER_KEY,

@@ -5,16 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "event.h"
-
-typedef enum MagReaderErr_t {
-    MAG_ERR_SWIPED,
-    MAG_ERR_OPEN_FAILED,
-    MAG_ERR_NO_SWIPE,
-    MAG_ERR_DATA_ERR,
-    MAG_ERR_TIME_OUT,
-    MAG_ERR_OTHER
-
-} MagReaderErr_t;
+#include "error.h"
 
 OOP_DECLARE_CLASS(MagReader)
 

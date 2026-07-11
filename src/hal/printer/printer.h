@@ -3,21 +3,13 @@
 
 #include "oop.h"
 #include <stdint.h>
+#include "error.h"
 
 typedef enum PrinterGrayLevel_t {
     PRNT_GRAY_LVL_LOW,
     PRNT_GRAY_LVL_MEDIUM,
     PRNT_GRAY_LVL_HIGH
 } PrinterGrayLevel_t;
-
-typedef enum PrinterErr_t {
-    PRNT_ERR_OK,
-    PRNT_ERR_NOK,
-    PRNT_ERR_INPUT,
-    PRNT_ERR_OVER_HEAT,
-    PRNT_ERR_NO_PAPER,
-    PRNT_ERR_TIME_OUT
-} PrinterErr_t;
 
 typedef enum PrinterStatus_t {
     PRNT_STAT_READY,

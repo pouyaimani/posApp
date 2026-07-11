@@ -62,4 +62,153 @@ typedef int8_t Error_t;
         }                                                                      \
     } while (0)
 
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      General Errors
+ *                                                                                           *
+ ********************************************************************************************/
+
+typedef enum {
+    ERR_DSC_OK = 0,
+
+    /* Generic */
+    ERR_DSC_UNKNOWN,
+    ERR_DSC_INVALID_ARG,
+    ERR_DSC_INVALID_STATE,
+    ERR_DSC_NOT_SUPPORTED,
+    ERR_DSC_TIMEOUT,
+    ERR_DSC_CANCELLED,
+
+    /* Device */
+    ERR_DSC_DEVICE,
+    ERR_DSC_BUSY,
+
+    /* Communication */
+    ERR_DSC_COMMUNICATION,
+    ERR_DSC_NETWORK,
+    ERR_DSC_HOST,
+
+    /* Payment */
+    ERR_DSC_CARD,
+    ERR_DSC_PIN,
+    ERR_DSC_EMV,
+    ERR_DSC_TRANSACTION_DECLINED,
+
+    /* Security */
+    ERR_DSC_SECURITY,
+    ERR_DSC_AUTH,
+
+    /* Storage */
+    ERR_DSC_STORAGE,
+    ERR_DSC_MEMORY,
+
+    /* Hardware */
+    ERR_DSC_PRINTER,
+    ERR_DSC_DISPLAY,
+    ERR_DSC_PED,
+    ERR_DSC_SCANNER,
+
+    /* System */
+    ERR_DSC_SYSTEM,
+    ERR_DSC_FATAL
+
+} ErrorDsc_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Printer Errors
+ *                                                                                           *
+ ********************************************************************************************/
+typedef enum PrinterErr_t {
+    PRNT_ERR_OK,
+    PRNT_ERR_NOK,
+    PRNT_ERR_INPUT,
+    PRNT_ERR_OVER_HEAT,
+    PRNT_ERR_NO_PAPER,
+    PRNT_ERR_TIME_OUT
+} PrinterErr_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Ped Errors
+ *                                                                                           *
+ ********************************************************************************************/
+typedef enum PedErr_t { PED_ERR_OK, PED_ERR_INPUT } PedErr_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Magreader Errors
+ *                                                                                           *
+ ********************************************************************************************/
+typedef enum MagReaderErr_t {
+    MAG_ERR_SWIPED,
+    MAG_ERR_OPEN_FAILED,
+    MAG_ERR_NO_SWIPE,
+    MAG_ERR_DATA_ERR,
+    MAG_ERR_TIME_OUT,
+    MAG_ERR_OTHER
+
+} MagReaderErr_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Cellular Errors
+ *                                                                                           *
+ ********************************************************************************************/
+typedef enum CellErr_t { CELL_ERR_OK, CELL_ERR_SIM_ERROR } CellErr_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Network Errors
+ *                                                                                           *
+ ********************************************************************************************/
+typedef enum { NET_ERR_OK = 0, NET_ERR_NOK, NET_ERR_INPUT_ERR } NetError_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      File Errors
+ *                                                                                           *
+ ********************************************************************************************/
+typedef enum {
+    FILE_ERR_NONE,
+    FILE_ERR_CRCERR,
+    FILE_ERROR,
+    FILE_SEEK_ERROR,
+    FILE_ERR_EOF,
+    FILE_ERR_OK
+} FileErr_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Wifi Errors
+ *                                                                                           *
+ ********************************************************************************************/
+
+typedef enum WifiErr_t {
+    WIFI_ERR_OK,
+    WIFI_ERR_NOK,
+    WIFI_ERR_INPUT,
+    WIFI_ERR_TIME_OUT,
+    WIFI_ERR_CONNECT_FAILED
+} WifiErr_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                          Results
+ *                                                                                           *
+ ********************************************************************************************/
+
+typedef struct {
+    ErrorDsc_t err;
+    union {
+        PedErr_t       ped;
+        PrinterErr_t   printer;
+        FileErr_t      file;
+        NetError_t     net;
+        CellErr_t      cellular;
+        MagReaderErr_t mag;
+        int            raw;
+    } detail;
+} Result_t;
+
 #endif

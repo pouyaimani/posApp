@@ -28,9 +28,12 @@ static int8_t receiptSectionTerminalInfo(Receipt* rec) {
     return ERR_OK;
 }
 
-static int8_t receiptSectionBankName(Receipt* rec, const char* bin) {
-    // TODO: bank name
-    RecColumn_t row[] = {{"bank name", LV_TEXT_ALIGN_LEFT, 1},
+static int8_t receiptSectionBankName(Receipt* rec, const char* pan) {
+    RETURN_VALUE_IF_NULL(pan, ;, ERR_NOK);
+    LOG_TRACE("Receipt: extracting bank name for pan = %s", pan);
+    DEFINE_STRING(bin, LEN_MAX_BIN + 1);
+    extractBin(pan, bin, sizeof(bin), LEN_MAX_BIN);
+    RecColumn_t row[] = {{bankNameGetDef(bin), LV_TEXT_ALIGN_LEFT, 1},
                          {phraseGetDef(PHRASE_BANK), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
@@ -149,14 +152,15 @@ static int8_t buildSaleReceipt(Receipt* rec, const ReceiptData* data) {
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, "bin"), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
         ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
                         , ERR_NOK);
-    // RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ; , ERR_NOK);
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -177,7 +181,8 @@ static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, "bin"), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
         ERR_OK,
@@ -200,7 +205,8 @@ static int8_t buildBalanceReceipt(Receipt* rec, const ReceiptData* data) {
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, "bin"), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
         ERR_OK,
@@ -230,7 +236,8 @@ static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, "bin"), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
         ERR_OK,
@@ -274,7 +281,8 @@ static int8_t buildDailyRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     RecColumn_t row[] = {{title, LV_TEXT_ALIGN_CENTER, 1}};
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
                         , ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, "bin"), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
         ERR_OK,
@@ -420,11 +428,34 @@ static int8_t buildDailyRepReceipt(Receipt* rec, const ReceiptData* data) {}
 
 static int8_t buildSumRepReceipt(Receipt* rec, const ReceiptData* data) {}
 
-int8_t buildReceipt(Receipt* rec, const ReceiptData* data) {
-    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NOT(createReceipt(rec), ERR_OK, RECEIPT_CREATE_ERROR(),
-                        ERR_MEMORY_ALLOCATION);
+static void handleError(Result_t res) {
+    if (res.err == ERR_DSC_PRINTER) {
+        switch (res.detail.printer) {
+        case PRNT_ERR_NO_PAPER:
+            LOG_FATAL("Receipt: Printer has no paper.");
+            break;
+        case PRNT_ERR_OVER_HEAT:
+            LOG_FATAL("Receipt: Printer pverheat.");
+            break;
+        case PRNT_ERR_TIME_OUT:
+            LOG_FATAL("Receipt: Printer timeout.");
+            break;
+        case PRNT_ERR_NOK:
+            LOG_FATAL("Receipt: Printer unknown error.");
+            break;
+
+        default:
+            break;
+        }
+    }
+}
+
+Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
+    Result_t res;
+    RETURN_VALUE_IF_NULL(rec, res.err = ERR_DSC_INVALID_ARG;, res);
+    RETURN_VALUE_IF_NULL(data, res.err = ERR_DSC_INVALID_ARG;, res);
+    RETURN_VALUE_IF_NOT(createReceipt(rec), ERR_OK, res.err = ERR_DSC_MEMORY;
+                        , res);
     ReceiptBuilder builder = NULL;
     if (data->type == DOC_TXN) {
         switch (data->txn->core.txnType) {
@@ -465,6 +496,12 @@ int8_t buildReceipt(Receipt* rec, const ReceiptData* data) {
         }
     }
 
-    RETURN_VALUE_IF_NULL(builder, ;, ERR_NOT_SUPPORTED);
-    return builder(rec, data);
+    RETURN_VALUE_IF_NULL(builder, res.err = ERR_DSC_NOT_SUPPORTED;, res);
+    RETURN_VALUE_IF_NOT(builder(rec, data), ERR_OK, ;, res);
+    res = OOP_CALL(rec, flush);
+    if (res.err != ERR_DSC_OK) {
+        handleError(res);
+    }
+    OOP_CALL(rec, destroy);
+    return res;
 }

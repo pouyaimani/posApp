@@ -1,3 +1,5 @@
+#ifdef 0
+
 #include "bankName.h"
 #include "cJSON.h"
 #include "file/file.h"
@@ -60,3 +62,5 @@ BankName* bankName() {
               OOP_CALL_CTOR(BankName, __bankName););
     return __bankName;
 }
+
+#endif

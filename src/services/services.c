@@ -7,7 +7,7 @@
 #include "logger.h"
 #include "phrases/phrases.h"
 
-static Service* services[MAX_SERVICE_NUM];
+static Service* services[LEN_MAX_SERVICE_NUM];
 static Service* parent;
 static TxnFlow  flow;
 

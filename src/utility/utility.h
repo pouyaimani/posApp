@@ -109,4 +109,16 @@ bool removeLeadingZeros(const char* input, char* output, size_t outputSize);
 bool str2u64(const char* str, uint64_t* value);
 bool u64toStr(uint64_t value, char* str, size_t size);
 
+/**
+ * Extract BIN/IIN from PAN.
+ *
+ * @param pan      Null-terminated PAN string.
+ * @param bin      Output buffer.
+ * @param binSize  Size of output buffer.
+ * @param binLen   Number of digits to extract (typically 6 or 8).
+ *
+ * @return true on success, false on invalid input.
+ */
+bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen);
+
 #endif

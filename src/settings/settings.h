@@ -5,6 +5,7 @@
 #include "common.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include "len.h"
 
 #define MAX_SHIFT_CNT 100
 
@@ -39,9 +40,9 @@ typedef struct __attribute__((packed)) {
     bool     maxAmntEnable;
     char     maxAmnt[12 + 1];
     bool     directSaleEn;
-    bool     serviceEn[MAX_SERVICE_NUM];
+    bool     serviceEn[LEN_MAX_SERVICE_NUM];
     int      fixedAmountItem;
-    char     amountList[12 + 1][MAX_AMOUNT_LIST];
+    char     amountList[12 + 1][LEN_MAX_AMOUNT_LIST];
     int      amountListCnt;
     int      fixedAmountCoef;
     uint8_t  shiftEnable;

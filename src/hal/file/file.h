@@ -4,15 +4,7 @@
 #include "oop.h"
 #include <stdbool.h>
 #include <stdint.h>
-
-typedef enum {
-    FILE_ERR_NONE,
-    FILE_ERR_CRCERR,
-    FILE_ERROR,
-    FILE_SEEK_ERROR,
-    FILE_ERR_EOF,
-    FILE_ERR_OK
-} FileErr_t;
+#include "error.h"
 
 typedef enum {
     FILE_OPEN_R,

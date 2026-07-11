@@ -63,11 +63,11 @@ STATE_DEF_ENTER(EnterPassword) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_PASS_ENTRY),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         STATE_IDLE, checkPass);
     // GOTO_INPUT(STATE_IDLE, checkPass, phraseGetDef(PHRASE_PASS_ENTRY), "",
-    //            PASSWORD_MAX_LEN, IN_MODE_PASSWORD, NULL);
+    //            LEN_MAX_PASSWORD, IN_MODE_PASSWORD, NULL);
 }
 
 static void EnterPassword(State* parent) {
@@ -108,7 +108,7 @@ STATE_DEF_ENTER(EnterNewPin) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_NEW_PIN),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         state->parent, reEnterNewPin);
     // GOTO_INPUT(state->parent, reEnterNewPin, phraseGetDef(PHRASE_NEW_PIN),
@@ -126,7 +126,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_REPEAT_NEW_PIN),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         merchantMenu, checkNewPin);
     // GOTO_INPUT(merchantMenu, checkNewPin,
@@ -137,7 +137,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
 STATE_DEF_ENTER(CheckNewPin) {
     bool isPassVlaid = validatePass(newPin, inmgr()->input, 4);
     if (isPassVlaid) {
-        snprintf(settings()->terminal.merchantPin, MERCHANT_PIN_LEN + 1, "%s",
+        snprintf(settings()->terminal.merchantPin, LEN_MERCHANT_PIN + 1, "%s",
                  newPin);
         settings()->save();
         GOTO_INFO(merchantMenu, merchantMenu, INFO_SUCCESS,
@@ -155,7 +155,7 @@ STATE_DEF_ENTER(ChangeMerPin) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_CURRENT_PIN),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         state->parent, checkPin);
     // GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "",

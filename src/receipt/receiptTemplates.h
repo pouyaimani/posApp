@@ -58,6 +58,6 @@ typedef struct {
 
 typedef int8_t (*ReceiptBuilder)(Receipt*, const ReceiptData*);
 
-int8_t buildReceipt(Receipt* rec, const ReceiptData* data);
+Result_t buildReceipt(Receipt* rec, const ReceiptData* data);
 
 #endif

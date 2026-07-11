@@ -32,7 +32,7 @@ STATE_DEF_ENTER(EnterAmount) {
             .mode   = INMD_ENTER_AMOUNT,
             .title  = phraseGetDef(PHRASE_AMOUNT),
             .info   = "",
-            .maxLen = AMOUNT_MAX_CNT,
+            .maxLen = LEN_AMOUNT_MAX,
         },
         STATE_IDLE, enterPass);
 }
@@ -48,7 +48,7 @@ STATE_DEF_ENTER(EnterPassword) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_CARD_PIN),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         STATE_IDLE, STATE_IDLE);
 }
@@ -57,17 +57,8 @@ STATE_DEF_ENTER(EnterPassword) {
 
 int8_t makeReceipt(TxnData* txn) {
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
-    Receipt rec;
-    int8_t  ret = buildReceipt(&rec, txn);
-    RETURN_VALUE_IF_NOT(
-        ret, ERR_OK,
-        {
-            RECEIPT_CREATE_ERROR();
-            OOP_CALL(&rec, destroy);
-        },
-        ret);
-    OOP_CALL(&rec, flush);
-    OOP_CALL(&rec, destroy);
+    Receipt  rec;
+    Result_t res = buildReceipt(&rec, txn);
     return ERR_OK;
 }
 

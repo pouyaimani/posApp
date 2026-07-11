@@ -23,4 +23,6 @@ const char* phraseGetDef(Phrases_t id);
 
 void getResponseCode(int code, char* message, size_t size);
 
+const char* bankNameGetDef(const char* iin);
+
 #endif

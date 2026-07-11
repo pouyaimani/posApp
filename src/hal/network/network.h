@@ -6,13 +6,12 @@
 #include <stdint.h>
 #include "dcfg.h"
 #include "event.h"
+#include "error.h"
 
 #define CONNECT_TIME_OUT 20000
 #define SEND_TIME_OUT    20000
 #define REC_TIME_OUT     20000
 #define REC_BUFF_LEN     1024
-
-typedef enum { NET_ERR_OK = 0, NET_ERR_NOK, NET_ERR_INPUT_ERR } NetError_t;
 
 typedef enum {
     NET_ROUTE_CELLUALR = 0,

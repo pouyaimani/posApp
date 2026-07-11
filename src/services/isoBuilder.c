@@ -478,7 +478,7 @@ static Error_t isoPack(ByteArray* buf) {
 
 static Error_t checkMac(const char* data, size_t len) {
     DEFINE_BYTE_ARRAY(isoMac, 128);
-    DEFINE_BYTE_ARRAY(mac, ISO_MAC_LEN);
+    DEFINE_BYTE_ARRAY(mac, LEN_MAX_ISO_MAC);
     ped()->getMac(16, data, len, mac);
     bool   isMacRetrived = false;
     size_t size          = sizeof(isoMac);
@@ -490,7 +490,7 @@ static Error_t checkMac(const char* data, size_t len) {
         LOG_TRACE("Parser: mac is availabe in Bit 64.");
     }
     RETURN_VALUE_IF_NOT(isMacRetrived, true, ;, ERR_NOK);
-    int res = memcmp(isoMac, mac, ISO_MAC_LEN);
+    int res = memcmp(isoMac, mac, LEN_MAX_ISO_MAC);
     RETURN_VALUE_IF_NOT(res, 0, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -687,7 +687,7 @@ static int8_t setBit52(TxnData* data) {
     PedErr_t pederr =
         OOP_CALL(ped(), getPinBlock, pan, pinblock, sizeof(pinblock));
     RETURN_VALUE_IF_NOT(pederr, PED_ERR_OK, ;, ERR_NOK);
-    iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, PIN_BLOCK_LEN);
+    iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, LEN_MAX_PIN_BLOCK);
     LOG_TRACE("Bit 52 | (Pin Block): %s", pinblock);
     return ERR_OK;
 }
@@ -701,20 +701,21 @@ static int8_t setBit53(TxnData* data) {
 static int8_t setBit64(TxnData* data) {
     LOG_DEBUG("-----------------");
     (void)data;
-    DEFINE_BYTE_ARRAY(mac, ISO_MAC_LEN + 1);
-    DEFINE_BYTE_ARRAY(macHex, ISO_MAC_LEN + 1);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)mac, ISO_MAC_LEN);
+    DEFINE_BYTE_ARRAY(mac, LEN_MAX_ISO_MAC + 1);
+    DEFINE_BYTE_ARRAY(macHex, LEN_MAX_ISO_MAC + 1);
+    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)mac, LEN_MAX_ISO_MAC);
     DEFINE_BYTE_ARRAY(tmpBuf, ISO_MAX_BUFFER);
     size_t packedLen;
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
                         , ERR_NOK);
-    RETURN_VALUE_IF_NOT((packedLen < ISO_MAC_LEN), false, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT((packedLen < LEN_MAX_ISO_MAC), false, ;, ERR_NOK);
     LOG_TRACE("ISO Build mac: packed len = %u", packedLen);
-    PedErr_t pedErr = ped()->getMac(16, tmpBuf, packedLen - ISO_MAC_LEN, mac);
+    PedErr_t pedErr =
+        ped()->getMac(16, tmpBuf, packedLen - LEN_MAX_ISO_MAC, mac);
     RETURN_VALUE_IF_NOT(pedErr, PED_ERR_OK, ;, ERR_NOK);
     bytesToHex(mac, 4, macHex, sizeof(macHex));
     LOG_TRACE("ISO Build mac: mac hex = %s", macHex);
-    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)macHex, ISO_MAC_LEN);
+    iso8583()->setBin(ELEMENT_MAC, (const DL_UINT8*)macHex, LEN_MAX_ISO_MAC);
     return ERR_OK;
 }
 
@@ -828,7 +829,7 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     // uint16_t packedSize = buf->data[0] * 256 + buf->data[1];
     // packedSize          = packedSize - 5; // without header
     // Error_t res         = checkMac(buf->data + 7, packedSize -
-    // ISO_MAC_LEN);
+    // LEN_MAX_ISO_MAC);
     // RETURN_VALUE_IF_NOT(res, ERR_OK, ;, ERR_NOK);
     // Check responce code
     DEFINE_STRING(f39, 8);

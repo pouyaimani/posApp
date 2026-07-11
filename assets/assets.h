@@ -35,7 +35,7 @@ void* getImgAddr(const char* name);
 #define ICON_SOUND_ON  getImgAddr("img_sound_on")
 #define ICON_SOUND_OFF getImgAddr("img_sound_off")
 
-#define ICON_SHAPARAK getImgAddr("img_shaprak")
+#define ICON_SHAPARAK getImgAddr("img_shaparak")
 #define ICON_BANK_REC getImgAddr("img_bankRecIcon")
 
 #endif

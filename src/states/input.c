@@ -82,7 +82,7 @@
 //     if (in[0] == 0) {
 //         return false;
 //     }
-//     if (strlen(in) < AMOUNT_MIN_CNT) {
+//     if (strlen(in) < LEN_AMOUNT_MIN) {
 //         return false;
 //     }
 // }

@@ -65,7 +65,7 @@ STATE_DEF_ENTER(EnterPassword) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_ENTER_PIN),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         STATE_IDLE, checkPass);
 }
@@ -108,7 +108,7 @@ STATE_DEF_ENTER(EnterNewPin) {
             .mode   = INMD_ENTER_PIN,
             .title  = PHRASE_NEW_PIN,
             .info   = PHRASE_NONE,
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         state->parent, reEnterNewPin);
 }
@@ -123,7 +123,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_REPEAT_NEW_PIN),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         supervisorMenu, checkNewPin);
     // GOTO_INPUT(supervisorMenu, checkNewPin,
@@ -153,7 +153,7 @@ STATE_DEF_ENTER(ChangeMerPin) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_CURRENT_PIN),
             .info   = "",
-            .maxLen = PASSWORD_MAX_LEN,
+            .maxLen = LEN_MAX_PASSWORD,
         },
         state->parent, checkPin);
     // GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "",
@@ -218,7 +218,7 @@ STATE_DEF_ENTER(EnterIp) {
             .mode   = INMD_ENTER_IP,
             .title  = phraseGetDef(PHRASE_ENTER_SERV_IP),
             .info   = "",
-            .maxLen = IP_MAX_LEN,
+            .maxLen = LEN_MAX_IP,
         },
         state->parent, enterPort);
     if (serverItem == SERV_SET_MAIN) {
@@ -352,7 +352,7 @@ OOP_CTOR(NetworkSettings, State* parent, const char* name) {
 /******************** Merchant pass reset sub state **********************/
 
 STATE_DEF_ENTER(MerchantPassReset) {
-    snprintf(settings()->terminal.merchantPin, MERCHANT_PIN_LEN + 1, "%s",
+    snprintf(settings()->terminal.merchantPin, LEN_MERCHANT_PIN + 1, "%s",
              MERCHANT_DEFAULT_PIN);
     settings()->save();
     GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,

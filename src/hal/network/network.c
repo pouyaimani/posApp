@@ -4,6 +4,7 @@
 #include "event.h"
 #include "logger.h"
 #include "settings/settings.h"
+#include "len.h"
 
 Network* __network;
 

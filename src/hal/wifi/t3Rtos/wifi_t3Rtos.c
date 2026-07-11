@@ -134,7 +134,7 @@ static void init(Wifi* wifi) { sdkWifiOpen(); }
 static WifiErr_t startScan(Wifi* wifi) {
     wifi->scanSt = WIFI_SCAN_FAILED;
     WifiErr_t err =
-        translateSdkErr(sdkWifiStartScanAP(apinfo, WIFI_AP_LIST_SIZE));
+        translateSdkErr(sdkWifiStartScanAP(apinfo, LEN_WIFI_AP_LIST));
     if (err == WIFI_ERR_OK) {
         wifi->scanSt = WIFI_SCAN_UNDER_PROCESS;
     }
@@ -219,7 +219,7 @@ OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.getConnectStatus  = getConnectStatus;
     self->base.vtable.getSignalStrength = getSignalStrength;
 
-    apinfo = MEM_ALLOC(sizeof(WifiAPInfo) * WIFI_AP_LIST_SIZE);
+    apinfo = MEM_ALLOC(sizeof(WifiAPInfo) * LEN_WIFI_AP_LIST);
 }
 
 #endif

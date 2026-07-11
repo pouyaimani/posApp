@@ -1278,3 +1278,24 @@ bool removeLeadingZeros(const char* input, char* output, size_t outputSize) {
 
     return true;
 }
+
+bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen) {
+    if (pan == NULL || bin == NULL)
+        return false;
+
+    if (binLen != 6 && binLen != 8)
+        return false;
+
+    size_t panLen = strlen(pan);
+
+    if (panLen < binLen)
+        return false;
+
+    if (binSize < (binLen + 1))
+        return false;
+
+    memcpy(bin, pan, binLen);
+    bin[binLen] = '\0';
+
+    return true;
+}

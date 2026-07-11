@@ -1,7 +1,6 @@
 #include "services.h"
 #include "states/states.h"
 #include "sys/sys.h"
-#include "ui/menu.h"
 #include "phrases/phrases.h"
 #include "common.h"
 #include "utility/utility.h"
@@ -10,6 +9,7 @@
 #include "ped/ped.h"
 #include "input/inputMgr.h"
 #include "iso/iso8583.h"
+#include "receipt/receiptTemplates.h"
 
 static SubState* enterPin;
 static SubState* checkPin;
@@ -39,7 +39,7 @@ STATE_DEF_ENTER(EnterPin) {
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_CARD_PIN),
             .info   = wage,
-            .maxLen = CARD_PIN_LEN,
+            .maxLen = LEN_MAX_CARD_PIN,
         },
         STATE_IDLE, commu);
 }
@@ -54,25 +54,14 @@ STATE_DEF_ENTER(Communication) {
 
 /*********************** Result sub state *************************/
 
-// int8_t makeReceipt(TxnData* txn) {
-//     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
-//     Receipt rec;
-//     int8_t  ret = buildReceipt(&rec, txn);
-//     RETURN_VALUE_IF_NOT(
-//         ret, ERR_OK,
-//         {
-//             RECEIPT_CREATE_ERROR();
-//             OOP_CALL(&rec, destroy);
-//         },
-//         ret);
-//     OOP_CALL(&rec, flush);
-//     OOP_CALL(&rec, destroy);
-//     return ERR_OK;
-// }
-
 static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    ReceiptData recData;
+    recData.type          = DOC_TXN;
+    recData.txn           = &flow->data;
+    recData.headerApplied = true;
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        settings()->save();
+        Receipt rec;
+        buildReceipt(&rec, &recData);
     }
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
     // SM_GOTO(result);
