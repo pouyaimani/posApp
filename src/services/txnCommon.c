@@ -6,6 +6,7 @@
 
 int buildCommon(TxnFlow* flow, ByteArray* ba) {
     flow->data.core.processCode = flow->cfg->prcode;
+    flow->data.core.stan        = txnTraceInfo()->stan;
     return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
                     flow->cfg->feildsCnt, &flow->data, ba);
 }

@@ -17,11 +17,11 @@ static int8_t receiptSectionPsp(Receipt* rec) {
 
 static int8_t receiptSectionTerminalInfo(Receipt* rec) {
     DEFINE_STRING(terminal, 64);
-    snprintf(terminal, sizeof(terminal), "%s:%s",
-             settings()->terminal.terminalId, phraseGetDef(PHRASE_TERMINAL));
+    snprintf(terminal, sizeof(terminal), "%s:%s", phraseGetDef(PHRASE_TERMINAL),
+             settings()->terminal.terminalId);
     DEFINE_STRING(code, 64);
-    snprintf(code, sizeof(code), "%s:%s", settings()->terminal.terminalId,
-             phraseGetDef(PHRASE_DEVICE_CODE));
+    snprintf(code, sizeof(code), "%s:%s", phraseGetDef(PHRASE_DEVICE_CODE),
+             settings()->terminal.terminalId);
     RecColumn_t row[] = {{code, LV_TEXT_ALIGN_LEFT, 1},
                          {terminal, LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
@@ -33,8 +33,10 @@ static int8_t receiptSectionBankName(Receipt* rec, const char* pan) {
     LOG_TRACE("Receipt: extracting bank name for pan = %s", pan);
     DEFINE_STRING(bin, LEN_MAX_BIN + 1);
     extractBin(pan, bin, sizeof(bin), LEN_MAX_BIN);
-    RecColumn_t row[] = {{bankNameGetDef(bin), LV_TEXT_ALIGN_LEFT, 1},
-                         {phraseGetDef(PHRASE_BANK), LV_TEXT_ALIGN_RIGHT, 1}};
+    DEFINE_STRING(maskedPan, LEN_MAX_PAN + 1);
+    maskPan(pan, maskedPan, sizeof(maskedPan));
+    RecColumn_t row[] = {{maskedPan, LV_TEXT_ALIGN_LEFT, 1},
+                         {bankNameGetDef(bin), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -244,6 +246,50 @@ static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
                         , ERR_NOK);
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
+}
+static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
+    TxnData* txn = data->txn;
+    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
+    DEFINE_STRING(txt, 256);
+    snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_GET_KEY),
+             phraseGetDef(PHRASE_SUC_DONME));
+    RecColumn_t row[] = {
+        {txt, LV_TEXT_ALIGN_CENTER, 1},
+    };
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
+                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
+}
+static int8_t buildCfgReceipt(Receipt* rec, const ReceiptData* data) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
+    TxnData* txn = data->txn;
+    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
+    DEFINE_STRING(txt, 256);
+    snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_GET_MERCHANT_DATA),
+             phraseGetDef(PHRASE_SUC_DONME));
+    RecColumn_t row[] = {
+        {txt, LV_TEXT_ALIGN_CENTER, 1},
+    };
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
+                        , ERR_NOK);
+    RecColumn_t row1[] = {
+        {"", LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_TERMINAL_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row1), ERR_OK, ;, ERR_NOK);
+    RecColumn_t row2[] = {
+        {"", LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_MERCHANT_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row2), ERR_OK, ;, ERR_NOK);
+    RecColumn_t row3[] = {
+        {"", LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_MERCHANT_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row3), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -459,6 +505,12 @@ Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
     ReceiptBuilder builder = NULL;
     if (data->type == DOC_TXN) {
         switch (data->txn->core.txnType) {
+        case TXN_LOGON:
+            builder = buildLogonReceipt;
+            break;
+        case TXN_CFG:
+            builder = buildCfgReceipt;
+            break;
         case TXN_SALE:
             builder = buildSaleReceipt;
             break;

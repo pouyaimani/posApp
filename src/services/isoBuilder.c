@@ -162,7 +162,8 @@ static void decodeMerchantDesc(char* buffer) {
 
     for (int i = 0; i < count; i++) {
         int tag = libAtoi(tags[i].tag);
-
+        LOG_DEBUG("decodeMerchantDesc: i = %d, tag = %s , itag = %d", i,
+                  tags[i].tag, tag);
         switch (tag) {
         case TAG_MERCHANT_NAME:
             handleMerchantName(&tags[i]);
@@ -201,28 +202,6 @@ static inline Error_t setDateTime() {
                       (const DL_UINT8*)dt->time);
     iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION,
                       (const DL_UINT8*)dt->date + 2);
-    return ERR_OK;
-}
-
-static inline Error_t setStan(uint32_t istan) {
-    DEFINE_STRING(stan, (STAN_SIZE + 1));
-    prependZerosInt(istan, STAN_SIZE, stan, sizeof(stan));
-    stan[STAN_SIZE] = 0;
-    LOG_DEBUG("stan = %d, stan string = %s", istan, stan);
-    iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
-    return ERR_OK;
-}
-
-static inline Error_t setNii() {
-    DEFINE_STRING(nni, 8);
-    prependZerosInt(settings()->server.mainServerNii, 4, nni, sizeof(nni));
-    iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nni);
-    return ERR_OK;
-}
-
-static inline Error_t setTerminalNum() {
-    iso8583()->setStr(ELEMENT_TERMINAL_ID,
-                      (const DL_UINT8*)settings()->terminal.terminalId);
     return ERR_OK;
 }
 
@@ -366,6 +345,11 @@ static Error_t isoParseCfgResponse(ByteArray* buf) {
     size_t length;
     checkIinData();
     RESET_STRING(feild);
+    iso8583()->getStr(ELEMENT_CARD_ACCEPTOR_ID, feild);
+    RESET_STRING(settings()->terminal.merchantId);
+    strcpy(settings()->terminal.merchantId, feild);
+    LOG_TRACE("Merchant Id = %s", settings()->terminal.merchantId);
+    RESET_STRING(feild);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
     decodeMerchantDesc(feild);
     // compareMac(TAK_INDEX, buf);
@@ -387,7 +371,7 @@ static Error_t isoBuildSettle(TxnCore* txn, ByteArray* buf) {
                             : "000000000";
     iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, acquirerIin);
 #endif
-    iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->rrn);
+    iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->stan);
     iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
                       settings()->terminal.merchantUniqueId);
@@ -414,7 +398,7 @@ static Error_t isoBuildReverse(TxnCore* txn, ByteArray* buf) {
                             : "000000000";
     iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, acquirerIin);
 #endif
-    iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->rrn);
+    iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, txn->stan);
     iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
                       settings()->terminal.merchantUniqueId);
@@ -584,7 +568,7 @@ static int8_t setBit4(TxnData* data) {
 
 static int8_t setBit11(TxnData* data) {
     (void)data;
-    uint16_t istan = data->core.rrn;
+    uint16_t istan = data->core.stan;
     DEFINE_STRING(stan, (STAN_SIZE + 1));
     prependZerosInt(istan, STAN_SIZE, stan, sizeof(stan));
     stan[STAN_SIZE] = 0;
@@ -616,11 +600,10 @@ static int8_t setBit22(TxnData* data) {
 }
 static int8_t setBit24(TxnData* data) {
     (void)data;
-    char* IIN = strlen(settings()->terminal.acquirerIIN) != 0
-                    ? settings()->terminal.acquirerIIN
-                    : "000000000";
-    iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, (const DL_UINT8*)IIN);
-    LOG_TRACE("| Bit 24 - (IIN) | -> %s", IIN);
+    DEFINE_STRING(nii, 8);
+    prependZerosInt(settings()->server.mainServerNii, 4, nii, sizeof(nii));
+    iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nii);
+    LOG_TRACE("| Bit 24 - (NII) | -> %s", nii);
     return ERR_OK;
 }
 static int8_t setBit25(TxnData* data) {
@@ -629,6 +612,17 @@ static int8_t setBit25(TxnData* data) {
     LOG_TRACE("| Bit 25 - (PCC) | -> %s", "14");
     return ERR_OK;
 }
+
+static int8_t setBit32(TxnData* data) {
+    (void)data;
+    char* IIN = strlen(settings()->terminal.acquirerIIN) != 0
+                    ? settings()->terminal.acquirerIIN
+                    : "000000000";
+    iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, (const DL_UINT8*)IIN);
+    LOG_TRACE("| Bit 32 - (IIN) | -> %s", IIN);
+    return ERR_OK;
+}
+
 static int8_t setBit35(TxnData* data) {
     (void)data;
     TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
@@ -647,9 +641,9 @@ static int8_t setBit41(TxnData* data) {
 static int8_t setBit42(TxnData* data) {
     (void)data;
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
-                      settings()->terminal.merchantUniqueId);
+                      settings()->terminal.merchantId);
     LOG_TRACE("| Bit 42 - (Merchant ID) | -> %s",
-              settings()->terminal.merchantUniqueId);
+              settings()->terminal.merchantId);
     return ERR_OK;
 }
 
@@ -763,6 +757,10 @@ static const IsoFeildsFunc isoFeild[] = {
     /*BIT 25: ELEMENT_POS_CONDITION_CODE */
     /******************************************************************/
     {.feild = 25, .set = setBit25, .get = NULL},
+    /******************************************************************/
+    /*BIT 32: ELEMENT_ACQUIRING_INSTITUTION_ID */
+    /******************************************************************/
+    {.feild = 32, .set = setBit32, .get = NULL},
     /******************************************************************/
     /*BIT 35: ELEMENT_TRACK2 */
     /******************************************************************/

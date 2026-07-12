@@ -88,6 +88,8 @@ X(PHRASE_INPUT                  ,   "ورودی"                          ,   "i
 )
 X(PHRASE_AMOUNT_EXCEED          ,   "مبلغ بیش از حد مجاز"           ,   "amount exceed"
 )
+X(PHRASE_AMOUNT_FLOOR_ER       ,   "مبلغ کمتر از حد مجاز"           ,   "amount exceed"
+)
 X(PHRASE_INPUT_EXCEED           ,   "ورودی بیش از حد مجاز"          ,   "input exceed"
 )
 X(PHRASE_INVALID_AMOUNT         ,   "مبلغ نامعتبر است"              ,   "invalid amount"
@@ -336,7 +338,7 @@ X(PHRASE_DEVICE_CODE                    ,   "کد کارتخوان"             
 )
 X(PHRASE_MERCHANT                       ,   "پذیرنده"                       ,  "merchant"
 )
-X(PHRASE_MERCHANT_ID                    ,   "merchantId"                    ,   ""
+X(PHRASE_MERCHANT_ID                    ,   "کد پذیرنده"                    ,   ""
 )
 X(PHRASE_APPLICATION_NAME               ,   "applicationName"               ,   ""
 )    

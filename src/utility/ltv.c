@@ -56,11 +56,13 @@ int unpackLtv(char* buffer, LtvStructInfo ltvStructInfo[]) {
     DEFINE_STRING(temp, 512);
 
     while (true) {
+        RESET_STRING(lenc);
         memcpy(lenc, buffer + c, 2);
         ltvStructInfo[i].len = libAtoi(lenc);
         c += 2;
         if (ltvStructInfo[i].len == 0)
             break;
+        RESET_STRING(temp);
         memcpy(temp, buffer + c, ltvStructInfo[i].len * 2);
         memcpy(ltvStructInfo[i].tag, temp, 2);
         memcpy(ltvStructInfo[i].data, temp + 2, (ltvStructInfo[i].len * 2) - 2);

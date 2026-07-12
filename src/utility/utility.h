@@ -121,4 +121,6 @@ bool u64toStr(uint64_t value, char* str, size_t size);
  */
 bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen);
 
+int maskPan(const char* pan, char* masked, size_t masked_size);
+
 #endif

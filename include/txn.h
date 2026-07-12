@@ -128,6 +128,8 @@ typedef enum {
     TXN_BALANCE,
     TXN_PAY,
     TXN_SIM_CHARGE,
+    TXN_LOGON,
+    TXN_CFG,
     TXN_ALL
 } TxnType;
 
@@ -144,7 +146,7 @@ typedef struct {
     uint64_t amount;
     uint32_t refNum;
     uint32_t trace;
-    uint32_t rrn;
+    uint32_t stan;
     uint16_t respCode; // responce code
 } TxnCore;
 

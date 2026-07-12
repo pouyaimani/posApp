@@ -10,12 +10,16 @@
 #include "phrases/phrases.h"
 #include "input/inputMgr.h"
 #include "iso/iso8583.h"
+#include "ui/infoPage.h"
 
 static SubState* enterAmount;
 static SubState* enterPass;
 static SubState* result;
+static SubState* commu;
 
 static TxnFlow* flow;
+
+extern const TxnFlowConfig purchaseTxn;
 
 STATE_DEF_ENTER(Sale) {
     memset(flow, 0, sizeof(*flow));
@@ -32,7 +36,7 @@ STATE_DEF_ENTER(EnterAmount) {
             .mode   = INMD_ENTER_AMOUNT,
             .title  = phraseGetDef(PHRASE_AMOUNT),
             .info   = "",
-            .maxLen = LEN_AMOUNT_MAX,
+            .maxLen = LEN_MAX_AMOUNT,
         },
         STATE_IDLE, enterPass);
 }
@@ -40,6 +44,11 @@ STATE_DEF_ENTER(EnterAmount) {
 /******************** Enter pass sub state **********************/
 
 STATE_DEF_ENTER(EnterPassword) {
+    if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
+        GOTO_INFO(enterAmount, enterAmount, INFO_ERROR,
+                  phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
+        return;
+    }
     if (!str2u64(inmgr()->input, &flow->data.core.amount)) {
         LOG_FATAL("Converting amount form string to u64 failed.");
     }
@@ -50,10 +59,16 @@ STATE_DEF_ENTER(EnterPassword) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        STATE_IDLE, STATE_IDLE);
+        STATE_IDLE, commu);
 }
 
 /******************************************************************/
+
+STATE_DEF_ENTER(Communication) {
+    DEFINE_STRING(ip, 32);
+    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+    txnRun(flow, state, ip, settings()->server.mainServerPort, &purchaseTxn);
+}
 
 int8_t makeReceipt(TxnData* txn) {
     RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
@@ -124,6 +139,10 @@ OOP_CTOR(Sale, State* parent, const char* name) {
     enterPass = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, &self->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
+
+    commu = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, commu, &self->base.state, "communication");
+    commu->vtable.enter = STATE_ENTER(Communication);
 
     flow = self->base.flow;
 }

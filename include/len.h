@@ -8,8 +8,8 @@
 #define LEN_WIFI_AP_LIST    50
 #define LEN_MAX_SERVICE_NUM 10
 #define LEN_MAX_AMOUNT_LIST 13
-#define LEN_AMOUNT_MAX      12
-#define LEN_AMOUNT_MIN      4
+#define LEN_MAX_AMOUNT      12
+#define LEN_MIN_AMOUNT      4
 #define LEN_MAX_PASSWORD    4
 #define LEN_MAX_IP          12
 #define LEN_MAX_SHIFT_NUM   3

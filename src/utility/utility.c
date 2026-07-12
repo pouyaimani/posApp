@@ -1299,3 +1299,30 @@ bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen) {
 
     return true;
 }
+
+#include <stdio.h>
+#include <string.h>
+
+int maskPan(const char* pan, char* masked, size_t masked_size) {
+    if (pan == NULL || masked == NULL)
+        return -1;
+
+    size_t len = strlen(pan);
+
+    /* PAN must contain at least 10 digits:
+       first 6 + last 4 */
+    if (len < 10)
+        return -2;
+
+    /* Ensure output buffer is large enough */
+    if (masked_size < len + 1)
+        return -3;
+
+    strcpy(masked, pan);
+
+    /* Replace everything between first 6 and last 4 */
+    for (size_t i = 6; i < len - 4; i++)
+        masked[i] = '*';
+
+    return 0;
+}

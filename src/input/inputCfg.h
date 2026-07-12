@@ -26,6 +26,7 @@ typedef struct {
     char*     title;
     char*     info;
     uint16_t  maxLen;
+    uint16_t  minLen;
 } InputCfg;
 
 #endif

@@ -23,8 +23,8 @@ STATE_DEF_ENTER(AmountList) {
     ui_menu_create(amountListMenu, disp()->screen);
     for (uint8_t i = 0; i < termStorage->amountListCnt; i++) {
         char str[32]                = {0};
-        char amount[LEN_AMOUNT_MAX] = {0};
-        amountSeparator(termStorage->amountList[i], amount, LEN_AMOUNT_MAX);
+        char amount[LEN_MAX_AMOUNT] = {0};
+        amountSeparator(termStorage->amountList[i], amount, LEN_MAX_AMOUNT);
         snprintf(str, sizeof(str), "[ %s ] [ %s ]", amount, "ریال");
         ui_menu_addItem(amountListMenu, str, NULL, NULL, NULL);
     }
@@ -38,18 +38,18 @@ STATE_DEF_ENTER(SingleAmount) {
             .mode   = INMD_ENTER_AMOUNT,
             .title  = "",
             .info   = "",
-            .maxLen = LEN_AMOUNT_MAX,
+            .maxLen = LEN_MAX_AMOUNT,
         },
         STATE_IDLE, STATE_IDLE);
-    // GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", LEN_AMOUNT_MAX,
+    // GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", LEN_MAX_AMOUNT,
     // IN_MODE_AMOUNT,
     //            NULL);
 }
 
 STATE_DEF_ENTER(VariantAmount) {
     char str[32]                = {0};
-    char amount[LEN_AMOUNT_MAX] = {0};
-    amountSeparator(termStorage->amountList[11], amount, LEN_AMOUNT_MAX);
+    char amount[LEN_MAX_AMOUNT] = {0};
+    amountSeparator(termStorage->amountList[11], amount, LEN_MAX_AMOUNT);
     snprintf(str, sizeof(str), "(%s) %s", phraseGetDef(PHRASE_RIAL), amount);
     inmgr()->run(
         &(InputCfg){

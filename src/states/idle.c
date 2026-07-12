@@ -113,11 +113,11 @@ static void print() {
     data.txn        = &txn;
     data.type       = DOC_TXN;
     txn.core.amount = 1240000;
-    snprintf(txn.core.pan, sizeof(txn.core.pan), "%s", "60379916111111");
+    snprintf(txn.core.pan, sizeof(txn.core.pan), "%s", "6037991622221111");
     txn.core.processCode = 12;
     txn.core.refNum      = 1399;
     txn.core.trace       = 6419;
-    txn.core.rrn         = 19000;
+    txn.core.stan        = 19000;
     txn.core.txnType     = TXN_SALE;
     txn.dateTime         = OOP_CALL(sys(), getPackedDateTime);
     Receipt rec;
@@ -166,7 +166,7 @@ void generate_random_txn(TxnData* t) {
     getDateTimeUint(&date, &time);
     LOG_DEBUG("date = %u, time = %u", date, time);
     t->dateTime = packDateTime(date, time);
-    rand_digits(t->core.rrn, 12);
+    rand_digits(t->core.stan, 12);
     rand_digits(t->core.respCode, 2);
 }
 
@@ -179,10 +179,11 @@ static void insertTxn() {
 static bool txnHand(const TxnData* txn, void* userData) {
     uint32_t date, time;
     unpackDateTime(txn->dateTime, &date, &time);
-    LOG_DEBUG("txn: date = %lu, time = %lu, trace = %s, refNum = %s, rrn = %s, "
-              "amount = %s",
-              date, time, txn->core.trace, txn->core.refNum, txn->core.rrn,
-              txn->core.amount);
+    LOG_DEBUG(
+        "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = %s, "
+        "amount = %s",
+        date, time, txn->core.trace, txn->core.refNum, txn->core.stan,
+        txn->core.amount);
 }
 
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
