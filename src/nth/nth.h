@@ -44,6 +44,7 @@ typedef struct NthTransaction {
     NthCallback onFailure;
     NthCallback onTimeout;
     NthCallback onSent;
+    NthCallback isComplete;
 
     int lastError;
 

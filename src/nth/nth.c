@@ -54,6 +54,16 @@ static bool isValidIPv4(const char* ip) {
     return (dots == 3 && digits > 0);
 }
 
+static void nth_resetRx(NthTransaction* tx) {
+    tx->rxOffset     = 0;
+    tx->rxBuffer.len = 0;
+}
+
+static void nth_resetTx(NthTransaction* tx) {
+    tx->txOffset     = 0;
+    tx->txBuffer.len = 0;
+}
+
 static uint32_t nth_getTick(void) { return NTH_GET_TICK(); }
 
 void nth_init() {
@@ -268,7 +278,7 @@ static void nth_handleSending(NthTransaction* tx) {
     tx->txOffset += ret;
 
     if (tx->txOffset >= tx->txBuffer.len) {
-
+        nth_resetRx(tx);
         tx->state     = NTH_TX_RECEIVING;
         tx->startTick = nth_getTick();
         if (tx->onSent) {
@@ -305,6 +315,10 @@ static void nth_handleReceiving(NthTransaction* tx) {
     tx->rxOffset += ret;
 
     tx->rxBuffer.len = tx->rxOffset;
+
+    if (!tx->isComplete(tx, NULL))
+        return;
+
     if (tx->onReceive) {
         tx->onReceive(tx, tx->userData);
     }

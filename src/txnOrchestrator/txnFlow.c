@@ -13,6 +13,8 @@ static int8_t onFailure(NthTransaction* tx, void* ctx);
 
 static int8_t onTimeout(NthTransaction* tx, void* ctx);
 
+static int8_t isComplete(NthTransaction* tx, void* ctx);
+
 void txnFlowRelease(TxnFlow* flow) {
     RETURN_VALUE_IF_NULL(flow, ;, false);
     LOG_DEBUG("Txn flow: rleasing flow ...");
@@ -83,6 +85,8 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
 
     flow->tx->onTimeout = onTimeout;
 
+    flow->tx->isComplete = isComplete;
+
     if (cfg && cfg->onConnecting) {
         cfg->onConnecting(flow);
     }
@@ -98,6 +102,12 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
     LOG_DEBUG("Txn flow: on connect ...");
     TxnFlow* flow = ctx;
     ByteArray(ba, NT_TX_BUFFER_SIZE);
+
+    /* Compose transaction related data */
+    if (flow->cfg->compose) {
+        flow->cfg->compose(&flow->data);
+    }
+
     if (flow->cfg->build(flow, &ba) != ERR_OK) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_INTERNAL);
         return -1;
@@ -158,4 +168,12 @@ static int8_t onTimeout(NthTransaction* tx, void* ctx) {
     nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_TIMEOUT, 0);
     return 0;
+}
+
+static int8_t isComplete(NthTransaction* tx, void* ctx) {
+    if (tx->rxBuffer.len < 2)
+        return false;
+    uint16_t len = (tx->rxBuffer.data[0] << 8) | tx->rxBuffer.data[1];
+
+    return tx->rxBuffer.len >= len + 2;
 }

@@ -61,6 +61,8 @@ typedef void (*TxnFlowDone)(TxnFlow* flow, const TxnFlowStatus* status);
 
 typedef void (*TxnFlowStageCb)(TxnFlow* flow);
 
+typedef int (*TxnComposeFn)(TxnData* data);
+
 /* ================= Config ================= */
 
 typedef struct {
@@ -84,6 +86,8 @@ typedef struct {
     TxnFlowStageCb onSending;
 
     TxnFlowStageCb onReceiving;
+
+    TxnComposeFn compose;
 
 } TxnFlowConfig;
 
