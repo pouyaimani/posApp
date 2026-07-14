@@ -1300,9 +1300,6 @@ bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen) {
     return true;
 }
 
-#include <stdio.h>
-#include <string.h>
-
 int maskPan(const char* pan, char* masked, size_t masked_size) {
     if (pan == NULL || masked == NULL)
         return -1;
@@ -1325,4 +1322,28 @@ int maskPan(const char* pan, char* masked, size_t masked_size) {
         masked[i] = '*';
 
     return 0;
+}
+
+void padRight(const char* unpadded, int unpadlength, int len, char* padded,
+              char p) {
+    int j = 0, i;
+    for (i = 0; i < unpadlength; i++) {
+        padded[i] = unpadded[j++];
+    }
+    for (i = unpadlength; i < len; i++) {
+        padded[i] = p;
+    }
+    padded[len] = '\0';
+}
+
+void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
+             char p) {
+    int j = 0, i;
+
+    for (i = 0; i < (len - unpadlength); i++)
+        padded[i] = p;
+    for (i = (len - unpadlength); i < len; i++) {
+        padded[i] = unpadded[j++];
+    }
+    padded[len] = '\0';
 }

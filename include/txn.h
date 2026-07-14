@@ -8,7 +8,6 @@
 #define STAN_SIZE   6
 #define PRCODE_SIZE 6
 #define MTI_SIZE    4
-#define SIZE_AMOUNT 12
 
 /**********************************************************/
 //                         MTI

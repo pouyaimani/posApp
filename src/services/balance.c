@@ -18,10 +18,7 @@ static SubState* result;
 
 static TxnFlow* flow;
 
-STATE_DEF_ENTER(Balance) {
-    memset(flow, 0, sizeof(*flow));
-    SM_GOTO(enterPin);
-}
+STATE_DEF_ENTER(Balance) { SM_GOTO(enterPin); }
 
 /******************** Enter pass sub state **********************/
 
@@ -60,8 +57,8 @@ static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
     recData.txn           = &flow->data;
     recData.headerApplied = true;
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        Receipt rec;
-        buildReceipt(&rec, &recData);
+        // Receipt rec;
+        // buildReceipt(&rec, &recData);
     }
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
     // SM_GOTO(result);
@@ -94,6 +91,8 @@ const TxnFlowConfig balanceTxn = {
     .feilds = isoFeilds,
 
     .feildsCnt = sizeof(isoFeilds),
+
+    .compose = NULL,
 
     .build = buildCommon,
 

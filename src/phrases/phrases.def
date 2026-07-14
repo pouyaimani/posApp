@@ -364,6 +364,8 @@ X(PHRASE_REFERENCE                      ,   "مرجع"                          
 )
 X(PHRASE_RIAL                           ,   "ریال"                          ,   "Rial"
 )
+X(PHRASE_TO_RIAL_1                      ,   "(به ریال)"                  ,   "Rial"
+)
 X(PHRASE_SERVICE_NAME                   ,   "نام سرویس"                     ,   "Service Name"
 )
 X(PHRASE_CUSTOMER_RECEIPT               ,   "رسید مشتری"                    ,   "Customer receipt"

@@ -358,8 +358,9 @@ static Error_t isoParseCfgResponse(ByteArray* buf) {
 }
 
 static Error_t isoBuildSettle(TxnCore* txn, ByteArray* buf) {
-    DEFINE_STRING(amountstr, SIZE_AMOUNT + 1);
-    prependZerosUInt64(txn->amount, SIZE_AMOUNT, amountstr, sizeof(amountstr));
+    DEFINE_STRING(amountstr, LEN_MAX_AMOUNT + 1);
+    prependZerosUInt64(txn->amount, LEN_MAX_AMOUNT, amountstr,
+                       sizeof(amountstr));
     iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, amountstr);
 
 #if defined REMOTE_KEY_INJECTION
@@ -385,8 +386,9 @@ static Error_t isoParseSettle(ByteArray* buf) {
 }
 
 static Error_t isoBuildReverse(TxnCore* txn, ByteArray* buf) {
-    DEFINE_STRING(amountstr, SIZE_AMOUNT + 1);
-    prependZerosUInt64(txn->amount, SIZE_AMOUNT, amountstr, sizeof(amountstr));
+    DEFINE_STRING(amountstr, LEN_MAX_AMOUNT + 1);
+    prependZerosUInt64(txn->amount, LEN_MAX_AMOUNT, amountstr,
+                       sizeof(amountstr));
     iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, amountstr);
 
 #if defined REMOTE_KEY_INJECTION
@@ -559,8 +561,9 @@ static int8_t setBit3(TxnData* data) {
 }
 
 static int8_t setBit4(TxnData* data) {
-    DEFINE_STRING(amount, (SIZE_AMOUNT + 1));
-    prependZerosInt(data->core.amount, SIZE_AMOUNT, amount, sizeof(amount));
+    DEFINE_STRING(amount, (LEN_MAX_AMOUNT + 1));
+    prependZerosInt(data->core.amount, LEN_MAX_AMOUNT, amount, sizeof(amount));
+    LOG_TRACE("| Bit 4 - (Txn Amount) | -> %lu", data->core.amount);
     LOG_TRACE("| Bit 4 - (Txn Amount) | -> %s", amount);
     iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, (const DL_UINT8*)amount);
     return ERR_OK;
@@ -626,8 +629,13 @@ static int8_t setBit32(TxnData* data) {
 static int8_t setBit35(TxnData* data) {
     (void)data;
     TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
-    iso8583()->setStr(ELEMENT_TRACK2, track2.data);
-    LOG_TRACE("| Bit 35 - (Track2) | -> %s", track2.data);
+    DEFINE_STRING(t2, (LEN_MAX_TRACK2 + 10));
+
+    LOG_DEBUG("track2 len = %d", track2.len);
+    padRight(track2.data, track2.len, LEN_MAX_TRACK2, t2, '0');
+    strcat(t2, "F");
+    iso8583()->setStr(ELEMENT_TRACK2, t2);
+    LOG_TRACE("| Bit 35 - (Track2) | -> %s", t2);
     return ERR_OK;
 }
 
@@ -689,11 +697,10 @@ static int8_t setBit53(TxnData* data) {
     (void)data;
     iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO,
                       (const DL_UINT8*)SecRelControlInfo);
-    LOG_TRACE("Bit 52 | (Security Control Info): %s", SecRelControlInfo);
+    LOG_TRACE("Bit 53 | (Security Control Info): %s", SecRelControlInfo);
     return ERR_OK;
 }
 static int8_t setBit64(TxnData* data) {
-    LOG_DEBUG("-----------------");
     (void)data;
     DEFINE_BYTE_ARRAY(mac, LEN_MAX_ISO_MAC + 1);
     DEFINE_BYTE_ARRAY(macHex, LEN_MAX_ISO_MAC + 1);

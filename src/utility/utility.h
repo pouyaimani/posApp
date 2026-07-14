@@ -123,4 +123,9 @@ bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen);
 
 int maskPan(const char* pan, char* masked, size_t masked_size);
 
+void padRight(const char* unpadded, int unpadlength, int len, char* padded,
+              char p);
+
+void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
+             char p);
 #endif

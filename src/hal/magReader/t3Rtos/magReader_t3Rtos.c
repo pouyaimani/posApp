@@ -74,6 +74,9 @@ static void read(MagReader* mag) {
         ret =
             libTransAdjustTrack((s8*)data.asTrack1Data, (s8*)data.asTrack2Data,
                                 (s8*)data.asTrack3Data);
+        mag->data.track1.len = data.ucTrack1Len;
+        mag->data.track2.len = data.ucTrack2Len;
+        mag->data.track3.len = data.ucTrack3Len;
         if (ret != SDK_OK) {
             mag->error = MAG_ERR_DATA_ERR;
             return;

@@ -82,7 +82,7 @@ IsoStatus_t getStr(uint16_t field, void* out) {
     SELF;
 
     int res = DL_ISO8583_MSG_HaveField(field, &self->msg);
-    RETURN_VALUE_IF_NOT((res == 0), false, ;, ISO_ERR_FIELD_NOT_EXIST);
+    RETURN_VALUE_IF_NOT((res == 1), true, ;, ISO_ERR_FIELD_NOT_EXIST);
 
     uint8_t* ptr  = NULL;
     uint16_t flen = 0;

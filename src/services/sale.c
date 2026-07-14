@@ -16,8 +16,8 @@ static SubState* enterAmount;
 static SubState* enterPass;
 static SubState* result;
 static SubState* commu;
-
-static TxnFlow* flow;
+static uint64_t  amount;
+static TxnFlow*  flow;
 
 extern const TxnFlowConfig purchaseTxn;
 
@@ -28,36 +28,36 @@ STATE_DEF_ENTER(Sale) {
 
 /******************** Enter amount sub state **********************/
 
-static char* amount;
-
 STATE_DEF_ENTER(EnterAmount) {
     inmgr()->run(
         &(InputCfg){
             .mode   = INMD_ENTER_AMOUNT,
             .title  = phraseGetDef(PHRASE_AMOUNT),
-            .info   = "",
+            .info   = phraseGetDef(PHRASE_TO_RIAL_1),
             .maxLen = LEN_MAX_AMOUNT,
         },
         STATE_IDLE, enterPass);
 }
 
 /******************** Enter pass sub state **********************/
-
 STATE_DEF_ENTER(EnterPassword) {
+    amount = 0;
     if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
         GOTO_INFO(enterAmount, enterAmount, INFO_ERROR,
                   phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
         return;
     }
-    if (!str2u64(inmgr()->input, &flow->data.core.amount)) {
+
+    if (!str2u64(inmgr()->input, &amount)) {
         LOG_FATAL("Converting amount form string to u64 failed.");
     }
     inmgr()->run(
         &(InputCfg){
+            .type   = INPUT_TYPE_PED,
             .mode   = INMD_ENTER_PIN,
             .title  = phraseGetDef(PHRASE_CARD_PIN),
-            .info   = "",
-            .maxLen = LEN_MAX_PASSWORD,
+            .info   = phraseGetDef(PHRASE_BY_CUSTOMER),
+            .maxLen = LEN_MAX_CARD_PIN,
         },
         STATE_IDLE, commu);
 }
@@ -70,21 +70,21 @@ STATE_DEF_ENTER(Communication) {
     txnRun(flow, state, ip, settings()->server.mainServerPort, &purchaseTxn);
 }
 
-int8_t makeReceipt(TxnData* txn) {
-    RETURN_VALUE_IF_NULL(txn, ;, ERR_NOK);
-    Receipt  rec;
-    Result_t res = buildReceipt(&rec, txn);
-    return ERR_OK;
-}
-
 static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    ReceiptData recData;
+    recData.type          = DOC_TXN;
+    recData.txn           = &flow->data;
+    recData.headerApplied = true;
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        settings()->save();
+        Receipt rec;
+        buildReceipt(&rec, &recData);
     }
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
     // SM_GOTO(result);
     // &flow->data
 }
+
+static int compose(TxnData* data) { data->core.amount = amount; }
 
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,
                                     ELEMENT_PROCESSING_CODE,
@@ -115,6 +115,8 @@ const TxnFlowConfig purchaseTxn = {
 
     .feildsCnt = sizeof(isoFeilds),
 
+    .compose = compose,
+
     .build = buildCommon,
 
     .parse = parseCommon,
@@ -130,7 +132,6 @@ const TxnFlowConfig purchaseTxn = {
 OOP_CTOR(Sale, State* parent, const char* name) {
     OOP_CALL_CTOR(Service, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(Sale);
-    self->base.vtable.makeReceipt = makeReceipt;
 
     enterAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, &self->base.state, "enter Amount");
