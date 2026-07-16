@@ -485,6 +485,8 @@ X(PHRASE_GET_KEY            ,   "دریافت کلید"                   ,  "ge
 
 X(PHRASE_GET_MERCHANT_DATA  ,   "دریافت اطلاعات پذیرنده"        ,  "get merchant info"
 )
+X(PHRASE_BY_CUSTOMER       ,   "(توسط مشتری)"                  ,  "get merchant info"
+)
 
 /**********************************************************************
  *

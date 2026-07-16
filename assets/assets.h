@@ -38,4 +38,14 @@ void* getImgAddr(const char* name);
 #define ICON_SHAPARAK getImgAddr("img_shaparak")
 #define ICON_BANK_REC getImgAddr("img_bankRecIcon")
 
+#define ICON_CALENDAR getImgAddr("img_calander")
+#define ICON_CLOCK    getImgAddr("img_clock")
+#define ICON_BANK     getImgAddr("img_bank")
+#define ICON_DOC1     getImgAddr("img_doc1")
+#define ICON_DOC2     getImgAddr("img_doc2")
+#define ICON_MAGCARD  getImgAddr("img_magCard")
+#define ICON_SUCCEED  getImgAddr("img_succeed")
+#define ICON_FAILED   getImgAddr("img_failed")
+#define ICON_TERMINAL getImgAddr("img_terminal")
+
 #endif
