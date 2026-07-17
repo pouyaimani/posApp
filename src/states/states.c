@@ -118,6 +118,7 @@ void GOTO_TXN_RES(State* prev, State* next) {
     RETURN_IF_NULL(next, ;);
     OOP_CALL(getState(STATE_ID_TXN_RES), setNext, next);
     OOP_CALL(getState(STATE_ID_TXN_RES), setPrev, prev);
+    TxnResult* res = getState(STATE_ID_TXN_RES);
     SM_GOTO(getState(STATE_ID_TXN_RES));
 }
 

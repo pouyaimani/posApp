@@ -171,9 +171,14 @@ OOP_CTOR(FixedAmount, State* parent, const char* name);
 
 /*************************** Txn Result ***********************/
 
-OOP_CLASS(TxnResult) { OOP_EXTENDS(State); };
+OOP_CLASS(TxnResult) {
+    OOP_EXTENDS(State);
+    void* data;
+};
 
 OOP_CTOR(TxnResult, State* parent, const char* name);
+
+#define STATE_TXN_RES getState(STATE_ID_TXN_RES)
 
 /*************************** Network ***********************/
 

@@ -46,7 +46,7 @@ typedef struct {
 
 typedef struct {
     ReceiptDocType type;
-    TxnData*       txn;
+    TxnData        txn;
     bool           headerApplied;
     union {
         DailyReportHeader    dailyHeader;
@@ -58,6 +58,11 @@ typedef struct {
 
 typedef int8_t (*ReceiptBuilder)(Receipt*, const ReceiptData*);
 
+typedef int8_t (*DigitalReceiptBuilder)(const ReceiptData*);
+
 Result_t buildReceipt(Receipt* rec, const ReceiptData* data);
+
+Result_t showDigitalRec(const ReceiptData* data);
+void     hideDigitalRec();
 
 #endif

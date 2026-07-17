@@ -5,6 +5,9 @@
 #include "sys/sys.h"
 #include "phrases/phrases.h"
 #include "logger.h"
+#include "ui/digitalReceipt.h"
+#include "assets.h"
+#include "mylvgl.h"
 
 static int8_t receiptSectionPsp(Receipt* rec) {
     // TODO: left side value?
@@ -148,18 +151,17 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
 static int8_t buildSaleReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
+                        ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
-        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
-        ERR_OK,
-        ;, ERR_NOK);
+        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
+        , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
                         , ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
@@ -177,18 +179,17 @@ static int8_t buildBillReceipt(Receipt* rec, const ReceiptData* data) {
 static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
+                        ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
-        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
-        ERR_OK,
-        ;, ERR_NOK);
+        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
+        , ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionOperatorPhone(rec, "phone num", SIM_OP_IRANCELL), ERR_OK,
         ;, ERR_NOK);
@@ -201,20 +202,19 @@ static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
 static int8_t buildBalanceReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
+                        ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
-        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
-        ERR_OK,
-        ;, ERR_NOK);
+        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
+        , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionBalance(rec,
-                                              &txn->extention.balance.balance,
+                                              &txn->extention.balance.available,
                                               &txn->extention.balance.ledger),
                         ERR_OK,
                         ;, ERR_NOK);
@@ -232,18 +232,17 @@ static int8_t buildPaymentReceipt(Receipt* rec, const ReceiptData* data) {
 static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
         receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
+                        ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
-        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
-        ERR_OK,
-        ;, ERR_NOK);
+        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
+        , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
                         , ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
@@ -252,7 +251,7 @@ static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
 static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     DEFINE_STRING(txt, 256);
     snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_GET_KEY),
@@ -268,7 +267,7 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
 static int8_t buildCfgReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     DEFINE_STRING(txt, 256);
     snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_GET_MERCHANT_DATA),
@@ -315,7 +314,7 @@ static int8_t buildDailyRepHeaderReceipt(Receipt*           rec,
 static int8_t buildDailyRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     uint32_t date, time;
     DEFINE_STRING(dtStr, 24);
     unpackDateTime(txn->dateTime, &date, &time);
@@ -327,12 +326,11 @@ static int8_t buildDailyRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     RecColumn_t row[] = {{title, LV_TEXT_ALIGN_CENTER, 1}};
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
                         , ERR_NOK);
+    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
+                        ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
-        receiptSectionBankName(rec, data->txn->core.pan), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.refNum),
-        ERR_OK,
-        ;, ERR_NOK);
+        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
+        , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
                         , ERR_NOK);
     return ERR_OK;
@@ -445,7 +443,7 @@ static int8_t buildDetailtRepHeaderReceipt(Receipt*           rec,
 static int8_t buildDetailRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    TxnData* txn = data->txn;
+    TxnData* txn = &data->txn;
     DATE_TIME_STR(dt);
     uint16_t date, time;
     unpackDateTime(txn->dateTime, &date, &time);
@@ -504,7 +502,7 @@ Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
                         , res);
     ReceiptBuilder builder = NULL;
     if (data->type == DOC_TXN) {
-        switch (data->txn->core.txnType) {
+        switch (data->txn.core.txnType) {
         case TXN_LOGON:
             builder = buildLogonReceipt;
             break;
@@ -557,3 +555,203 @@ Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
     OOP_CALL(rec, destroy);
     return res;
 }
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Digital Receipt
+ *                                                                                           *
+ ********************************************************************************************/
+
+static ReceiptPage digitalReceipt;
+
+static ReceiptHeader  header;
+static ReceiptDetails details;
+static ReceiptButtons buttons;
+
+static void home_cb(lv_event_t* e) {
+    LV_UNUSED(e);
+    printf("Home clicked\n");
+}
+
+static void print_cb(lv_event_t* e) {
+    LV_UNUSED(e);
+    printf("Print clicked\n");
+}
+
+void createDigitalRec() {
+    header  = (ReceiptHeader){.dateTitle = "تاریخ",
+                              .date      = "",
+
+                              .timeTitle = "ساعت",
+                              .time      = "",
+
+                              .amount   = "",
+                              .currency = "ریال",
+
+                              .statusTitle       = "تراکنش موفق",
+                              .statusDescription = "",
+
+                              .statusIcon = ICON_SUCCEED};
+    details = (ReceiptDetails){
+        .count = 4,
+
+        .details = {{.icon       = ICON_TERMINAL,
+                     .title      = "کد کارتخوان",
+                     .value      = "",
+                     .valueColor = lv_palette_main(LV_PALETTE_RED)},
+
+                    {.icon       = ICON_DOC1,
+                     .title      = " پیگیری/مرجع",
+                     .value      = "",
+                     .valueColor = lv_color_black()},
+
+                    {.icon       = ICON_BANK,
+                     .title      = "",
+                     .value      = "",
+                     .valueColor = lv_palette_main(LV_PALETTE_RED)},
+
+                    {.icon       = ICON_DOC2,
+                     .title      = "پیگیری",
+                     .value      = "",
+                     .valueColor = lv_color_black()}}};
+
+    buttons = (ReceiptButtons){.left = {.text     = "صفحه اصلی",
+                                        .icon     = "",
+                                        .callback = home_cb,
+                                        .primary  = false},
+
+                               .right = {.text     = "چاپ رسید",
+                                         .icon     = "",
+                                         .callback = print_cb,
+                                         .primary  = true}};
+    ui_receipt_create(&digitalReceipt, &header, &details, &buttons);
+}
+
+static void DigRecfillCommon(const ReceiptData* data) {
+    uint32_t idate, itime;
+    unpackDateTime(&data->txn.dateTime, &idate, &itime);
+    DEFINE_STRING(dtStr, 24);
+    dateTimeToStr(idate, itime, dtStr, sizeof(dtStr));
+    char time[9 + 1];  // HH:MM:SS
+    char date[10 + 1]; // DD/MM/YYYY
+
+    sscanf(dtStr, "%8[^-]-%10s", time, date);
+    header.date = date;
+    header.time = time;
+
+    lv_palette_t palette =
+        data->txn.core.respCode == 0 ? LV_PALETTE_GREEN : LV_PALETTE_RED;
+    header.statusIcon =
+        data->txn.core.respCode == 0 ? ICON_SUCCEED : ICON_FAILED;
+    header.statusTitle =
+        phraseGetDef(data->txn.core.respCode == 0 ? PHRASE_SUCCESSFUL_TXN
+                                                  : PHRASE_UNSUCCESSFUL_TXN);
+
+    details.count = 3;
+    DEFINE_STRING(bin, LEN_MAX_BIN + 1);
+    extractBin(data->txn.core.pan, bin, sizeof(bin), LEN_MAX_BIN);
+    DEFINE_STRING(maskedPan, LEN_MAX_PAN + 1);
+    maskPan(data->txn.core.pan, maskedPan, sizeof(maskedPan));
+
+    DEFINE_STRING(refStan, 64);
+    snprintf(refStan, sizeof(refStan), "%s - %s", data->txn.core.rrn,
+             data->txn.core.stan);
+
+    // Header
+    lv_label_set_text(digitalReceipt.date, header.date);
+    lv_label_set_text(digitalReceipt.time, header.time);
+    if (data->txn.core.respCode != 0) {
+        DEFINE_STRING(dsc, 128);
+        getResponseCode(data->txn.core.respCode, dsc, sizeof(dsc));
+        lv_label_set_text(digitalReceipt.amount, dsc);
+    }
+
+    lv_obj_set_style_text_color(digitalReceipt.statusTitle,
+                                lv_palette_main(palette), 0);
+    lv_obj_set_style_text_color(digitalReceipt.amount, lv_palette_main(palette),
+                                0);
+    lv_label_set_text(digitalReceipt.statusTitle, header.statusTitle);
+    lv_img_set_src(digitalReceipt.statusIcon, header.statusIcon);
+
+    lv_label_set_text(digitalReceipt.detailValue[0],
+                      settings()->terminal.terminalId);
+    lv_label_set_text(digitalReceipt.detailValue[1], refStan);
+    lv_label_set_text(digitalReceipt.detailTitle[2], bankNameGetDef(bin));
+    lv_label_set_text(digitalReceipt.detailValue[2], maskedPan);
+}
+
+static int8_t digRecBuildPurchase(const ReceiptData* data) {
+    // header.amount            = data->txn.core.amount;
+    // details.details[3].value = "";
+    // data->txn.extention.balance.available = 0;
+}
+
+static int8_t digRecBuildBalance(const ReceiptData* data) {
+    details.count++;
+    // details.details[3].value = "";
+    DEFINE_STRING(availableStr, 36);
+    DEFINE_STRING(availableSep, 24);
+    snprintf(availableStr, sizeof(availableStr), "%llu",
+             data->txn.extention.balance.available);
+    amountSeparator(availableStr, availableSep, sizeof(availableSep));
+    DEFINE_STRING(ledgerStr, 36);
+    DEFINE_STRING(ledgerSep, 24);
+    snprintf(ledgerStr, sizeof(ledgerStr), "%llu",
+             data->txn.extention.balance.ledger);
+    amountSeparator(ledgerStr, ledgerSep, sizeof(ledgerSep));
+
+    lv_label_set_text_fmt(digitalReceipt.amount, "%s %s", availableSep,
+                          header.currency);
+    lv_label_set_text(digitalReceipt.statusTitle,
+                      phraseGetDef(PHRASE_AVAILABLE));
+    lv_label_set_text(digitalReceipt.detailTitle[3],
+                      phraseGetDef(PHRASE_LEDGER));
+    lv_label_set_text(digitalReceipt.detailValue[3], ledgerSep);
+}
+
+Result_t showDigitalRec(const ReceiptData* data) {
+    CALL_ONCE(createDigitalRec(););
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    DigRecfillCommon(data);
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    DigitalReceiptBuilder builder = NULL;
+    switch (data->txn.core.txnType) {
+    case TXN_SALE:
+        builder = digRecBuildPurchase;
+        break;
+    case TXN_BILL:
+        break;
+    case TXN_TOPUP:
+        break;
+    case TXN_BALANCE:
+        builder = digRecBuildBalance;
+        break;
+    case TXN_PAY:
+        break;
+    case TXN_SIM_CHARGE:
+        break;
+    default:
+        break;
+    }
+    if (builder) {
+        builder(data);
+    }
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    ui_receipt_update(&digitalReceipt, &header, &details, &buttons);
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LOG_DEBUG("-------------------------------------");
+    LV_SHOW(digitalReceipt.root);
+}
+
+void hideDigitalRec() { LV_HIDE(digitalReceipt.root); }

@@ -143,7 +143,7 @@ typedef struct {
     uint32_t processCode;
     char     pan[LEN_MAX_PAN + 1];
     uint64_t amount;
-    uint32_t refNum;
+    uint32_t rrn;
     uint32_t trace;
     uint32_t stan;
     uint16_t respCode; // responce code
@@ -169,7 +169,7 @@ typedef union {
     } kahroba;
 
     struct {
-        uint64_t balance;
+        uint64_t available;
         uint64_t ledger;
     } balance;
 

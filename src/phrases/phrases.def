@@ -282,6 +282,10 @@ X(PHRASE_AUTHENTICATION_TYPE            ,   "authenticationType"            ,   
 )
 X(PHRASE_SUCCESSFUL_OPERATION           ,   "عملیات موفق"                  ,   "Successfull Operation"
 )
+X(PHRASE_UNSUCCESSFUL_TXN             ,   "تراکنش ناموفق"                ,   "unsuccessfull operation"
+)
+X(PHRASE_SUCCESSFUL_TXN                ,   "تراکنش موفق"                  ,   "Successfull Operation"
+)
 X(PHRASE_UNSUCCESSFUL_OPERATION         ,   "عملیات ناموفق"                ,   "unsuccessfull operation"
 )
 X(PHRASE_INSUFFICIENT_FUND              ,   "insufficientFund"              ,   ""

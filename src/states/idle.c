@@ -23,6 +23,8 @@
 #include "ui/infoPage.h"
 #include "file/file.h"
 #include "ui/swipeHint.h"
+#include "ui/digitalReceipt.h"
+#include "assets.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -110,12 +112,12 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {}
 TxnData     txn;
 ReceiptData data;
 static void print() {
-    data.txn        = &txn;
+    data.txn        = txn;
     data.type       = DOC_TXN;
     txn.core.amount = 1240000;
     snprintf(txn.core.pan, sizeof(txn.core.pan), "%s", "6037991622221111");
     txn.core.processCode = 12;
-    txn.core.refNum      = 1399;
+    txn.core.rrn         = 1399;
     txn.core.trace       = 6419;
     txn.core.stan        = 19000;
     txn.core.txnType     = TXN_SALE;
@@ -160,7 +162,7 @@ void generate_random_txn(TxnData* t) {
 
     rand_digits(t->core.processCode, 6);
     rand_digits(t->core.amount, 12);
-    rand_digits(t->core.refNum, 6);
+    rand_digits(t->core.rrn, 6);
     rand_digits(t->core.trace, 6);
     uint32_t date, time;
     getDateTimeUint(&date, &time);
@@ -182,8 +184,71 @@ static bool txnHand(const TxnData* txn, void* userData) {
     LOG_DEBUG(
         "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = %s, "
         "amount = %s",
-        date, time, txn->core.trace, txn->core.refNum, txn->core.stan,
+        date, time, txn->core.trace, txn->core.rrn, txn->core.stan,
         txn->core.amount);
+}
+
+static void home_cb(lv_event_t* e) {
+    LV_UNUSED(e);
+    printf("Home clicked\n");
+}
+
+static void print_cb(lv_event_t* e) {
+    LV_UNUSED(e);
+    printf("Print clicked\n");
+}
+
+void show_receipt_page(void) {
+    static ReceiptPage page;
+    ReceiptHeader header = {.dateTitle = "تاریخ",
+                            .date      = "1405/04/23",
+
+                            .timeTitle = "ساعت",
+                            .time      = "21:13:52",
+
+                            .amount   = "17,210,816",
+                            .currency = "ریال",
+
+                            .statusTitle       = "انتقال موفق",
+                            .statusDescription = "تراکنش با موفقیت انجام شد",
+
+                            .statusIcon = ICON_SUCCEED};
+
+    ReceiptDetails details = {
+        .count = 3,
+
+        .details = {{.icon       = ICON_TERMINAL,
+                     .title      = "کد کارتخوان",
+                     .value      = "17210864",
+                     .valueColor = lv_palette_main(LV_PALETTE_RED)},
+
+                    {.icon       = ICON_DOC1,
+                     .title      = "مرجع",
+                     .value      = "51724693300412121212121212121212",
+                     .valueColor = lv_color_black()},
+
+                    {.icon       = ICON_BANK,
+                     .title      = "بانک",
+                     .value      = "بانک سامان",
+                     .valueColor = lv_palette_main(LV_PALETTE_RED)},
+
+                    {.icon       = ICON_DOC2,
+                     .title      = "پیگیری",
+                     .value      = "621986-X-1315",
+                     .valueColor = lv_color_black()}}};
+
+    ReceiptButtons buttons = {.left = {.text     = "صفحه اصلی",
+                                       .icon     = "",
+                                       .callback = home_cb,
+                                       .primary  = false},
+
+                              .right = {.text     = "چاپ رسید",
+                                        .icon     = "",
+                                        .callback = print_cb,
+                                        .primary  = true}};
+
+    lv_obj_t* receipt = ui_receipt_create(&page, &header, &details, &buttons);
+    LV_SHOW(receipt);
 }
 
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
@@ -205,6 +270,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         settings()->save();
 
     } else if (ev->key == KEY_5) {
+        show_receipt_page();
     } else if (ev->key == KEY_6) {
         insertTxn();
     } else if (ev->key == KEY_7) {

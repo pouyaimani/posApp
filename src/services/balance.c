@@ -52,17 +52,16 @@ STATE_DEF_ENTER(Communication) {
 /*********************** Result sub state *************************/
 
 static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    ReceiptData recData;
-    recData.type          = DOC_TXN;
-    recData.txn           = &flow->data;
-    recData.headerApplied = true;
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        // Receipt rec;
-        // buildReceipt(&rec, &recData);
-    }
+    TxnResult*   res      = STATE_TXN_RES;
+    ReceiptData* rec      = (ReceiptData*)res->data;
+    rec->type             = DOC_TXN;
+    rec->txn              = flow->data;
+    rec->txn.core.txnType = TXN_BALANCE;
+    rec->headerApplied    = true;
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    // SM_GOTO(result);
-    // &flow->data
+    if (st->result == TXN_FLOW_SUCCESS) {
+        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE);
+    }
 }
 
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,

@@ -3,8 +3,6 @@
 
 #include "mylvgl.h"
 
-#define RECEIPT_MAX_ROWS 8
-
 typedef struct {
     const char* dateTitle;
     const char* date;
@@ -31,7 +29,7 @@ typedef struct {
     lv_color_t valueColor;
 } ReceiptDetail;
 
-#define RECEIPT_MAX_DETAILS 8
+#define RECEIPT_MAX_DETAILS 4
 
 typedef struct {
     ReceiptDetail details[RECEIPT_MAX_DETAILS];
@@ -52,8 +50,39 @@ typedef struct {
     ReceiptButton right;
 } ReceiptButtons;
 
-lv_obj_t* ui_receipt_create(const ReceiptHeader*  header,
+typedef struct {
+    lv_obj_t* root;
+
+    /* Header */
+    lv_obj_t* header;
+    lv_obj_t* date;
+    lv_obj_t* time;
+    lv_obj_t* amount;
+    lv_obj_t* statusTitle;
+    lv_obj_t* statusDescription;
+    lv_obj_t* statusIcon;
+
+    /* Details */
+    lv_obj_t* detailRow[RECEIPT_MAX_DETAILS];
+    lv_obj_t* detailLine[RECEIPT_MAX_DETAILS];
+    lv_obj_t* detailTitle[RECEIPT_MAX_DETAILS];
+    lv_obj_t* detailValue[RECEIPT_MAX_DETAILS];
+    lv_obj_t* detailIcon[RECEIPT_MAX_DETAILS];
+
+    /* Buttons */
+    lv_obj_t* leftButton;
+    lv_obj_t* rightButton;
+    lv_obj_t* btnPrimary;
+    lv_obj_t* btnSecondary;
+} ReceiptPage;
+
+lv_obj_t* ui_receipt_create(ReceiptPage* page, const ReceiptHeader* header,
                             const ReceiptDetails* details,
                             const ReceiptButtons* buttons);
+
+void ui_receipt_update(ReceiptPage* page, const ReceiptHeader* header,
+                       const ReceiptDetails* details,
+                       const ReceiptButtons* buttons);
+void ui_receipt_hide(ReceiptPage* page);
 
 #endif

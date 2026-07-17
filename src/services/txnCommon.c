@@ -33,14 +33,16 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
     LOG_DEBUG("st->result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
         txnTraceInfo()->inc();
+        if (!showSucMsg) {
+            return;
+        }
         DEFINE_STRING(dsc, 128);
         if (st->code != 0) {
             getResponseCode(st->code, dsc, sizeof(dsc));
         }
         if (st->code == 0) {
-            if (showSucMsg)
-                GOTO_INFO(onSuc, onSuc, INFO_SUCCESS,
-                          phraseGetDef(PHRASE_SUC_DONME), dsc);
+            GOTO_INFO(onSuc, onSuc, INFO_SUCCESS,
+                      phraseGetDef(PHRASE_SUC_DONME), dsc);
         } else {
             GOTO_INFO(onFail, onFail, INFO_ERROR,
                       phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);

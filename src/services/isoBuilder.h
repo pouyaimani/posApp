@@ -11,7 +11,7 @@ Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* feild, uint16_t feildsCnt,
 RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf);
 
 typedef int8_t (*TxnIsoBuilder)(TxnData* txn, ByteArray*);
-typedef int8_t (*TxnIsoParser)(ByteArray*);
+typedef int8_t (*TxnIsoParser)(TxnData* txn, ByteArray*);
 
 typedef int8_t (*FeildSetter)(TxnData* txn);
 typedef int8_t (*FeildGetter)(TxnData* txn);

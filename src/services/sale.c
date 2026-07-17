@@ -73,7 +73,7 @@ STATE_DEF_ENTER(Communication) {
 static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
     ReceiptData recData;
     recData.type          = DOC_TXN;
-    recData.txn           = &flow->data;
+    recData.txn           = flow->data;
     recData.headerApplied = true;
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         Receipt rec;

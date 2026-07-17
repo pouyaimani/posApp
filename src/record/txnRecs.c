@@ -40,7 +40,7 @@ static int txnInsert(TxnData* txn) {
     LOG_DEBUG(
         "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = %s, "
         "amount = %s",
-        date, time, txn->core.trace, txn->core.refNum, txn->core.stan,
+        date, time, txn->core.trace, txn->core.rrn, txn->core.stan,
         txn->core.amount);
     return 0;
 }
@@ -58,7 +58,7 @@ static int8_t iterateThrough() {
         LOG_DEBUG(
             "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = "
             "%s, amount = %s",
-            date, time, rec.core.trace, rec.core.refNum, rec.core.stan,
+            date, time, rec.core.trace, rec.core.rrn, rec.core.stan,
             rec.core.amount);
     }
     return ERR_OK;
@@ -139,7 +139,7 @@ static int8_t init(TxnRecord* self) {
         sizeof(sizeof(((TxnData*)0)->core.processCode)), // processCode
         sizeof(sizeof(((TxnData*)0)->core.pan)),         // maskedPan
         sizeof(sizeof(((TxnData*)0)->core.amount)),      // amount
-        sizeof(sizeof(((TxnData*)0)->core.refNum)),      // refNum
+        sizeof(sizeof(((TxnData*)0)->core.rrn)),         // refNum
         sizeof(sizeof(((TxnData*)0)->core.trace)),       // trace
         sizeof(sizeof(((TxnData*)0)->core.stan)),        // RRN
         sizeof(sizeof(((TxnData*)0)->core.respCode)),    // responseCode

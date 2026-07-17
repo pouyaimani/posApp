@@ -302,7 +302,7 @@ STATE_DEF_ENTER(GetEndTime) {
 
 static bool handleExtractedData(const TxnData* txn, void* userData) {
     ReceiptData* data = (ReceiptData*)userData;
-    data->txn         = txn;
+    data->txn         = *txn;
     Receipt  rec;
     Result_t res = buildReceipt(&rec, data);
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);

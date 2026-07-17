@@ -9,11 +9,13 @@
 #define BUTTON_HEIGHT   40
 #define HEADER_DT_WIDTH 120
 
-static lv_obj_t* create_header(lv_obj_t* parent, const ReceiptHeader* cfg) {
+#define HEADER_TEXT_WIDTH 106
+
+static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
     /*----------------------------------------------------------
      * Root
      *---------------------------------------------------------*/
-    lv_obj_t* root = lv_obj_create(parent);
+    lv_obj_t* root = lv_obj_create(page->root);
     lv_obj_remove_style_all(root);
 
     lv_obj_set_width(root, LV_PCT(100));
@@ -61,6 +63,8 @@ static lv_obj_t* create_header(lv_obj_t* parent, const ReceiptHeader* cfg) {
         lv_obj_set_style_text_font(label, &FONT_16, 0);
 
         lv_obj_align_to(label, icon, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
+
+        page->date = label;
     }
 
     /* Separator */
@@ -96,6 +100,7 @@ static lv_obj_t* create_header(lv_obj_t* parent, const ReceiptHeader* cfg) {
         lv_obj_set_style_text_font(label, &FONT_16, 0);
 
         lv_obj_align_to(label, icon, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
+        page->time = label;
     }
 
     /*----------------------------------------------------------
@@ -129,6 +134,8 @@ static lv_obj_t* create_header(lv_obj_t* parent, const ReceiptHeader* cfg) {
 
     lv_obj_align(icon, LV_ALIGN_TOP_RIGHT, 4, 0);
 
+    page->statusIcon = icon;
+
     /*----------------------------------------------------------
      * Amount
      *---------------------------------------------------------*/
@@ -142,6 +149,12 @@ static lv_obj_t* create_header(lv_obj_t* parent, const ReceiptHeader* cfg) {
 
     lv_obj_align(amount, LV_ALIGN_TOP_LEFT, 0, 0);
 
+    lv_obj_set_width(amount, HEADER_TEXT_WIDTH);
+
+    lv_label_set_long_mode(amount, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    page->amount = amount;
+
     /*----------------------------------------------------------
      * Status title
      *---------------------------------------------------------*/
@@ -153,70 +166,86 @@ static lv_obj_t* create_header(lv_obj_t* parent, const ReceiptHeader* cfg) {
 
     lv_obj_set_style_text_color(title, lv_palette_main(LV_PALETTE_GREEN), 0);
     lv_obj_align_to(title, amount, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 6);
+    lv_obj_set_width(title, HEADER_TEXT_WIDTH);
+
+    lv_label_set_long_mode(title, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    page->statusTitle = title;
 
     return root;
 }
 
-static lv_obj_t* create_detail_row(lv_obj_t*            parent,
+static lv_obj_t* create_detail_row(lv_obj_t* parent, lv_obj_t** title,
+                                   lv_obj_t** value, lv_obj_t** icon,
                                    const ReceiptDetail* detail) {
     lv_obj_t* row = lv_obj_create(parent);
 
     lv_obj_remove_style_all(row);
 
     lv_obj_set_width(row, LV_PCT(100));
-    lv_obj_set_height(row, 24); // fixed row height for 16px font
-
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW_REVERSE);
-    lv_obj_set_flex_align(row, LV_FLEX_ALIGN_SPACE_BETWEEN,
-                          LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_height(row, 24);
 
     lv_obj_set_style_pad_left(row, 4, 0);
     lv_obj_set_style_pad_right(row, 4, 0);
 
     /*
-     * Right side
+     * Icon
      */
-    lv_obj_t* right = lv_obj_create(row);
+    *icon = lv_image_create(row);
+    lv_image_set_src(*icon, detail->icon);
 
-    lv_obj_remove_style_all(right);
-
-    lv_obj_set_width(right, LV_SIZE_CONTENT);
-    lv_obj_set_height(right, LV_SIZE_CONTENT);
-
-    lv_obj_set_flex_flow(right, LV_FLEX_FLOW_ROW_REVERSE);
-
-    lv_obj_set_flex_align(right, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
-                          LV_FLEX_ALIGN_CENTER);
-
-    lv_obj_set_style_pad_column(right, 8, 0);
-
-    lv_obj_t* icon = lv_image_create(right);
-    lv_image_set_src(icon, detail->icon);
-
-    lv_obj_t* title = lv_label_create(right);
-
-    lv_label_set_text(title, detail->title);
-
-    lv_obj_set_style_text_font(title, &FONT_16, 0);
-
-    lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_align(*icon, LV_ALIGN_RIGHT_MID, 0, 0);
 
     /*
-     * Left value
+     * Title
      */
-    lv_obj_t* value = lv_label_create(row);
+    *title = lv_label_create(row);
 
-    lv_label_set_text(value, detail->value);
+    lv_label_set_text(*title, detail->title);
 
-    lv_obj_set_style_text_font(value, &FONT_16, 0);
+    lv_obj_set_style_text_font(*title, &FONT_16, 0);
 
-    lv_obj_set_style_text_color(value, detail->valueColor, 0);
+    lv_obj_align_to(*title, *icon, LV_ALIGN_OUT_LEFT_MID, -8, 0);
+
+    /*
+     * Compute remaining width for value.
+     */
+    lv_obj_update_layout(row);
+
+    int32_t row_w   = lv_obj_get_content_width(row);
+    int32_t icon_x  = lv_obj_get_x(*icon);
+    int32_t title_w = lv_obj_get_width(*title);
+
+    int32_t value_w = icon_x - title_w - 16; /* title gap + safety */
+
+    if (value_w < 20) {
+        value_w = 20;
+    }
+
+    /*
+     * Value
+     */
+    *value = lv_label_create(row);
+
+    lv_obj_set_width(*value, value_w);
+
+    lv_label_set_long_mode(*value, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    lv_label_set_text(*value, detail->value);
+
+    lv_obj_set_style_text_font(*value, &FONT_16, 0);
+
+    lv_obj_set_style_text_color(*value, detail->valueColor, 0);
+
+    lv_obj_set_style_text_align(*value, LV_TEXT_ALIGN_LEFT, 0);
+
+    lv_obj_align(*value, LV_ALIGN_LEFT_MID, 0, 0);
 
     return row;
 }
 
-static lv_obj_t* create_details(lv_obj_t* parent, const ReceiptDetails* cfg) {
-    lv_obj_t* card = lv_obj_create(parent);
+static lv_obj_t* create_details(ReceiptPage* page, const ReceiptDetails* cfg) {
+    lv_obj_t* card = lv_obj_create(page->root);
 
     lv_obj_remove_style_all(card);
 
@@ -237,7 +266,9 @@ static lv_obj_t* create_details(lv_obj_t* parent, const ReceiptDetails* cfg) {
                           LV_FLEX_ALIGN_CENTER);
 
     for (uint32_t i = 0; i < cfg->count; i++) {
-        create_detail_row(card, &cfg->details[i]);
+        page->detailRow[i] = create_detail_row(
+            card, &page->detailTitle[i], &page->detailValue[i],
+            &page->detailIcon[i], &cfg->details[i]);
 
         if (i != (cfg->count - 1)) {
             lv_obj_t* line = lv_line_create(card);
@@ -258,14 +289,15 @@ static lv_obj_t* create_details(lv_obj_t* parent, const ReceiptDetails* cfg) {
 
             lv_obj_set_style_line_dash_width(line, 4, 0);
             lv_obj_set_style_line_dash_gap(line, 4, 0);
+            page->detailLine[i] = line;
         }
     }
 
     return card;
 }
 
-static lv_obj_t* create_buttons(lv_obj_t* parent, const ReceiptButtons* cfg) {
-    lv_obj_t* root = lv_obj_create(parent);
+static lv_obj_t* create_buttons(ReceiptPage* page, const ReceiptButtons* cfg) {
+    lv_obj_t* root = lv_obj_create(page->root);
     lv_obj_remove_style_all(root);
 
     lv_obj_set_width(root, LV_PCT(100));
@@ -334,17 +366,22 @@ static lv_obj_t* create_buttons(lv_obj_t* parent, const ReceiptButtons* cfg) {
                 lv_obj_set_style_image_recolor_opa(img, LV_OPA_COVER, 0);
             }
         }
-
         lv_obj_t* label = lv_label_create(btn);
         lv_label_set_text(label, btnCfg->text);
 
         lv_obj_set_style_text_font(label, &FONT_16, 0);
+
+        if (btnCfg->primary) {
+            page->btnPrimary = label;
+        } else {
+            page->btnSecondary = label;
+        }
     }
 
     return root;
 }
 
-lv_obj_t* ui_receipt_create(const ReceiptHeader*  header,
+lv_obj_t* ui_receipt_create(ReceiptPage* page, const ReceiptHeader* header,
                             const ReceiptDetails* details,
                             const ReceiptButtons* buttons) {
     RETURN_VALUE_IF_NULL(header, ;, NULL);
@@ -375,15 +412,17 @@ lv_obj_t* ui_receipt_create(const ReceiptHeader*  header,
 
     lv_obj_set_style_pad_row(root, 4, 0);
 
+    page->root = root;
+
     /*----------------------------------------------------------
      * Header
      *---------------------------------------------------------*/
-    create_header(root, header);
+    create_header(page, header);
 
     /*----------------------------------------------------------
      * Details
      *---------------------------------------------------------*/
-    create_details(root, details);
+    create_details(page, details);
 
     /*----------------------------------------------------------
      * Spacer
@@ -397,7 +436,43 @@ lv_obj_t* ui_receipt_create(const ReceiptHeader*  header,
     /*----------------------------------------------------------
      * Buttons
      *---------------------------------------------------------*/
-    create_buttons(root, buttons);
+    create_buttons(page, buttons);
 
     return root;
 }
+
+void ui_receipt_update(ReceiptPage* page, const ReceiptHeader* header,
+                       const ReceiptDetails* details,
+                       const ReceiptButtons* buttons) {
+    RETURN_IF_NULL(page, ;);
+    RETURN_IF_NULL(header, ;);
+    RETURN_IF_NULL(details, ;);
+    RETURN_IF_NULL(buttons, ;);
+
+    // // Header
+    // lv_label_set_text(page->date, header->date);
+    // lv_label_set_text(page->time, header->time);
+    // lv_label_set_text_fmt(page->amount, "%s %s", header->amount,
+    //                       header->currency);
+    // lv_label_set_text(page->statusTitle, header->statusTitle);
+    // lv_img_set_src(page->statusIcon, header->statusIcon);
+
+    // // Details
+    // for (uint32_t i = 0; i < details->count; i++) {
+
+    //     lv_label_set_text(page->detailTitle[i], details->details[i].title);
+    //     lv_label_set_text(page->detailValue[i], details->details[i].value);
+    //     lv_label_set_text(page->detailIcon[i], details->details[i].icon);
+    // }
+
+    // // Buttons
+    // lv_label_set_text(page->btnPrimary, buttons->right.text);
+    // lv_label_set_text(page->btnSecondary, buttons->left.text);
+    // // Details
+    for (uint32_t i = details->count; i < RECEIPT_MAX_DETAILS; i++) {
+        LV_HIDE(page->detailRow[i]);
+        LV_HIDE(page->detailLine[i - 1]);
+    }
+}
+
+void ui_receipt_hide(ReceiptPage* page) { LV_HIDE(page->root); }
