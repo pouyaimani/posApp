@@ -839,7 +839,8 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     if (iso8583()->getStr(ELEMENT_AUTH_ID_RESPONSE, feild) == ISO_OK) {
         txn->core.trace = libAtoi(feild);
     }
-
+    LOG_TRACE("Iso Parser: txn rrn = %u", txn->core.rrn);
+    LOG_TRACE("Iso Parser: txn trace = %u", txn->core.trace);
     RETURN_VALUE_IF_NOT(respCode, 0, ;, respCode);
     // for (int i = 0; i < iso8583()->handler.fieldItems; i++) {
     //     if (iso8583()->msg.field[i].ptr != NULL) {

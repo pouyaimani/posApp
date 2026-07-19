@@ -70,6 +70,10 @@ State* getState(StateId_t id) {
         CALL_ONCE(netReceive = MEM_ALLOC(sizeof(NetReceive));
                   OOP_CALL_CTOR(NetReceive, netReceive, idle, "net receive"););
         return (State*)netReceive;
+    case STATE_ID_TXN_RES:
+        CALL_ONCE(txnRes = MEM_ALLOC(sizeof(TxnResult));
+                  OOP_CALL_CTOR(TxnResult, txnRes, idle, "txn result"););
+        return (State*)txnRes;
     default:
         break;
     }

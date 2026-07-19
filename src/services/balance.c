@@ -59,6 +59,10 @@ static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
     rec->txn.core.txnType = TXN_BALANCE;
     rec->headerApplied    = true;
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    LOG_DEBUG("----------------------");
+    LOG_DEBUG("----------------------");
+    LOG_DEBUG("----------------------");
+    LOG_DEBUG("----------------------");
     if (st->result == TXN_FLOW_SUCCESS) {
         GOTO_TXN_RES(STATE_IDLE, STATE_IDLE);
     }

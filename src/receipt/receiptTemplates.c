@@ -606,13 +606,13 @@ void createDigitalRec() {
                      .valueColor = lv_color_black()},
 
                     {.icon       = ICON_BANK,
-                     .title      = "",
-                     .value      = "",
+                     .title      = "بانک سامان",
+                     .value      = "6219000000000000",
                      .valueColor = lv_palette_main(LV_PALETTE_RED)},
 
                     {.icon       = ICON_DOC2,
-                     .title      = "پیگیری",
-                     .value      = "",
+                     .title      = "خطا",
+                     .value      = "رمز نامعتبر است",
                      .valueColor = lv_color_black()}}};
 
     buttons = (ReceiptButtons){.left = {.text     = "صفحه اصلی",
@@ -660,11 +660,6 @@ static void DigRecfillCommon(const ReceiptData* data) {
     // Header
     lv_label_set_text(digitalReceipt.date, header.date);
     lv_label_set_text(digitalReceipt.time, header.time);
-    if (data->txn.core.respCode != 0) {
-        DEFINE_STRING(dsc, 128);
-        getResponseCode(data->txn.core.respCode, dsc, sizeof(dsc));
-        lv_label_set_text(digitalReceipt.amount, dsc);
-    }
 
     lv_obj_set_style_text_color(digitalReceipt.statusTitle,
                                 lv_palette_main(palette), 0);
@@ -678,6 +673,16 @@ static void DigRecfillCommon(const ReceiptData* data) {
     lv_label_set_text(digitalReceipt.detailValue[1], refStan);
     lv_label_set_text(digitalReceipt.detailTitle[2], bankNameGetDef(bin));
     lv_label_set_text(digitalReceipt.detailValue[2], maskedPan);
+}
+
+static int8_t digRecBuildFailure(const ReceiptData* data) {
+    details.count++;
+    DEFINE_STRING(dsc, 128);
+    getResponseCode(data->txn.core.respCode, dsc, sizeof(dsc));
+    lv_label_set_text(digitalReceipt.amount, "");
+    lv_label_set_text_fmt(digitalReceipt.detailTitle[3], "%s (%d)",
+                          phraseGetDef(PHRASE_ERROR), data->txn.core.respCode);
+    lv_label_set_text(digitalReceipt.detailValue[3], dsc);
 }
 
 static int8_t digRecBuildPurchase(const ReceiptData* data) {
@@ -739,8 +744,12 @@ Result_t showDigitalRec(const ReceiptData* data) {
     default:
         break;
     }
-    if (builder) {
-        builder(data);
+    if (data->txn.core.respCode != 0) {
+        digRecBuildFailure(data);
+    } else if (builder) {
+        if (data->txn.core.respCode == 0) {
+            builder(data);
+        }
     }
     LOG_DEBUG("-------------------------------------");
     LOG_DEBUG("-------------------------------------");

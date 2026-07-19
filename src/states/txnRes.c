@@ -20,6 +20,7 @@ STATE_DEF_HANDLE(TxnResult, KeypadEvent) {
     } else if (ev->key == KEY_ESC) {
     }
     hideDigitalRec();
+    SM_GOTO(STATE_IDLE);
 }
 
 STATE_DEF_HANDLE(TxnResult, TimeOutEvent) {}

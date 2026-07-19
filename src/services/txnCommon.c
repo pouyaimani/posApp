@@ -34,6 +34,7 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
     if (st->result == TXN_FLOW_SUCCESS) {
         txnTraceInfo()->inc();
         if (!showSucMsg) {
+            HIDE_INFO();
             return;
         }
         DEFINE_STRING(dsc, 128);

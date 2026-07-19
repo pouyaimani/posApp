@@ -4,12 +4,18 @@
 #include "display/display.h"
 #include "error.h"
 
-#define HEADER_HEIGHT   60
-#define DETAIL_HEIGHT   100
-#define BUTTON_HEIGHT   40
-#define HEADER_DT_WIDTH 120
+#define HEADER_HEIGHT             60
+#define DETAIL_HEIGHT             100
+#define DETAIL_ROW_TITLE_MAX_SIZE 120
+#define BUTTON_HEIGHT             40
+#define HEADER_DT_WIDTH           120
 
 #define HEADER_TEXT_WIDTH 106
+
+typedef struct {
+    int32_t leftWidth;
+    int32_t rightWidth;
+} DetailRowLayout;
 
 static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
     /*----------------------------------------------------------
@@ -147,7 +153,7 @@ static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
 
     lv_obj_set_style_text_color(amount, lv_palette_main(LV_PALETTE_GREEN), 0);
 
-    lv_obj_align(amount, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_align(amount, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
     lv_obj_set_width(amount, HEADER_TEXT_WIDTH);
 
@@ -165,7 +171,8 @@ static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
     lv_obj_set_style_text_font(title, &FONT_16, 0);
 
     lv_obj_set_style_text_color(title, lv_palette_main(LV_PALETTE_GREEN), 0);
-    lv_obj_align_to(title, amount, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 6);
+    // lv_obj_align(title, amount, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 6);
+    lv_obj_align(title, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_obj_set_width(title, HEADER_TEXT_WIDTH);
 
     lv_label_set_long_mode(title, LV_LABEL_LONG_SCROLL_CIRCULAR);
@@ -173,6 +180,32 @@ static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
     page->statusTitle = title;
 
     return root;
+}
+
+static DetailRowLayout
+determine_detail_row_layout(lv_obj_t* row, lv_obj_t* title, lv_obj_t* icon) {
+    DetailRowLayout layout = {0};
+
+    lv_obj_update_layout(row);
+
+    int32_t rowWidth   = lv_obj_get_content_width(row);
+    int32_t iconWidth  = lv_obj_get_width(icon);
+    int32_t titleWidth = lv_obj_get_width(title);
+
+    /*
+     * 4 px left padding
+     * 4 px right padding
+     * 8 px between title and icon
+     */
+    layout.rightWidth = iconWidth + titleWidth + 8;
+
+    layout.leftWidth = rowWidth - layout.rightWidth - 8;
+
+    if (layout.leftWidth < 20) {
+        layout.leftWidth = 20;
+    }
+
+    return layout;
 }
 
 static lv_obj_t* create_detail_row(lv_obj_t* parent, lv_obj_t** title,
@@ -207,27 +240,21 @@ static lv_obj_t* create_detail_row(lv_obj_t* parent, lv_obj_t** title,
 
     lv_obj_align_to(*title, *icon, LV_ALIGN_OUT_LEFT_MID, -8, 0);
 
+    lv_obj_set_width(*title, DETAIL_ROW_TITLE_MAX_SIZE);
+
+    lv_label_set_long_mode(*title, LV_LABEL_LONG_SCROLL);
+
     /*
-     * Compute remaining width for value.
+     * Determine sizes.
      */
-    lv_obj_update_layout(row);
-
-    int32_t row_w   = lv_obj_get_content_width(row);
-    int32_t icon_x  = lv_obj_get_x(*icon);
-    int32_t title_w = lv_obj_get_width(*title);
-
-    int32_t value_w = icon_x - title_w - 16; /* title gap + safety */
-
-    if (value_w < 20) {
-        value_w = 20;
-    }
+    DetailRowLayout layout = determine_detail_row_layout(row, *title, *icon);
 
     /*
      * Value
      */
     *value = lv_label_create(row);
 
-    lv_obj_set_width(*value, value_w);
+    lv_obj_set_width(*value, layout.leftWidth);
 
     lv_label_set_long_mode(*value, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
@@ -237,10 +264,7 @@ static lv_obj_t* create_detail_row(lv_obj_t* parent, lv_obj_t** title,
 
     lv_obj_set_style_text_color(*value, detail->valueColor, 0);
 
-    lv_obj_set_style_text_align(*value, LV_TEXT_ALIGN_LEFT, 0);
-
     lv_obj_align(*value, LV_ALIGN_LEFT_MID, 0, 0);
-
     return row;
 }
 
@@ -469,6 +493,19 @@ void ui_receipt_update(ReceiptPage* page, const ReceiptHeader* header,
     // lv_label_set_text(page->btnPrimary, buttons->right.text);
     // lv_label_set_text(page->btnSecondary, buttons->left.text);
     // // Details
+
+    for (uint32_t i = 0; i < details->count; i++) {
+        /*
+         * Determine sizes.
+         */
+        LV_SHOW(page->detailRow[i]);
+        LV_SHOW(page->detailLine[i - 1]);
+        lv_obj_update_layout(page->detailRow[i]);
+        DetailRowLayout layout = determine_detail_row_layout(
+            page->detailRow[i], page->detailTitle[i], page->detailIcon[i]);
+        lv_obj_set_width(page->detailValue[i], layout.leftWidth);
+    }
+
     for (uint32_t i = details->count; i < RECEIPT_MAX_DETAILS; i++) {
         LV_HIDE(page->detailRow[i]);
         LV_HIDE(page->detailLine[i - 1]);
