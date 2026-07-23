@@ -721,8 +721,8 @@ void dateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
     tmp     = (time % 10000);
     int min = tmp / 100;
     int ss  = tmp % 100;
-    snprintf(str, size, "%02d:%02d:%02d-%02d/%02d/%04d", ss, min, hh, dd, mm,
-             yy);
+    snprintf(str, size, "%02d:%02d:%02d-%02d/%02d/%04d", hh, min, ss, yy, mm,
+             dd);
 }
 
 void shortDateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
@@ -1346,4 +1346,257 @@ void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
         padded[i] = unpadded[j++];
     }
     padded[len] = '\0';
+}
+
+bool stringToNumber(const char* str, void* out, NumberType type) {
+    bool     negative = false;
+    uint64_t value    = 0;
+
+    if ((str == NULL) || (out == NULL))
+        return false;
+
+    /* Handle optional sign */
+    if (*str == '-') {
+        negative = true;
+        str++;
+    } else if (*str == '+') {
+        str++;
+    }
+
+    /* Empty string after sign */
+    if (*str == '\0')
+        return false;
+
+    /* Parse digits */
+    while (*str != '\0') {
+        if ((*str < '0') || (*str > '9'))
+            return false;
+
+        uint32_t digit = (uint32_t)(*str - '0');
+
+        /* Detect uint64 overflow */
+        if (value > ((UINT64_MAX - digit) / 10))
+            return false;
+
+        value = (value * 10U) + digit;
+
+        str++;
+    }
+
+    switch (type) {
+    case TYPE_INT8: {
+        if (negative) {
+            if (value > ((uint64_t)INT8_MAX + 1))
+                return false;
+
+            *(int8_t*)out = (int8_t)(-(int64_t)value);
+        } else {
+            if (value > INT8_MAX)
+                return false;
+
+            *(int8_t*)out = (int8_t)value;
+        }
+
+        break;
+    }
+
+    case TYPE_UINT8: {
+        if (negative || (value > UINT8_MAX))
+            return false;
+
+        *(uint8_t*)out = (uint8_t)value;
+        break;
+    }
+
+    case TYPE_INT16: {
+        if (negative) {
+            if (value > ((uint64_t)INT16_MAX + 1))
+                return false;
+
+            *(int16_t*)out = (int16_t)(-(int64_t)value);
+        } else {
+            if (value > INT16_MAX)
+                return false;
+
+            *(int16_t*)out = (int16_t)value;
+        }
+
+        break;
+    }
+
+    case TYPE_UINT16: {
+        if (negative || (value > UINT16_MAX))
+            return false;
+
+        *(uint16_t*)out = (uint16_t)value;
+        break;
+    }
+
+    case TYPE_INT32: {
+        if (negative) {
+            if (value > ((uint64_t)INT32_MAX + 1))
+                return false;
+
+            *(int32_t*)out = (int32_t)(-(int64_t)value);
+        } else {
+            if (value > INT32_MAX)
+                return false;
+
+            *(int32_t*)out = (int32_t)value;
+        }
+
+        break;
+    }
+
+    case TYPE_UINT32: {
+        if (negative || (value > UINT32_MAX))
+            return false;
+
+        *(uint32_t*)out = (uint32_t)value;
+        break;
+    }
+
+    case TYPE_INT64: {
+        if (negative) {
+            if (value > ((uint64_t)INT64_MAX + 1ULL))
+                return false;
+
+            *(int64_t*)out = -(int64_t)value;
+        } else {
+            if (value > INT64_MAX)
+                return false;
+
+            *(int64_t*)out = (int64_t)value;
+        }
+
+        break;
+    }
+
+    case TYPE_UINT64: {
+        if (negative)
+            return false;
+
+        *(uint64_t*)out = value;
+        break;
+    }
+
+    default:
+        return false;
+    }
+
+    return true;
+}
+
+static void reverse(char* str, uint32_t len) {
+    uint32_t i = 0;
+    uint32_t j = len - 1;
+
+    while (i < j) {
+        char tmp = str[i];
+        str[i]   = str[j];
+        str[j]   = tmp;
+
+        i++;
+        j--;
+    }
+}
+
+bool numberToString(const void* value, NumberType type, char* buffer,
+                    uint32_t size) {
+    uint64_t u64      = 0;
+    bool     negative = false;
+    uint32_t pos      = 0;
+
+    if ((value == NULL) || (buffer == NULL) || (size < 2))
+        return false;
+
+    switch (type) {
+    case TYPE_INT8: {
+        int8_t v = *(const int8_t*)value;
+        negative = (v < 0);
+        u64      = negative ? -(int64_t)v : v;
+        break;
+    }
+
+    case TYPE_UINT8:
+        u64 = *(const uint8_t*)value;
+        break;
+
+    case TYPE_INT16: {
+        int16_t v = *(const int16_t*)value;
+        negative  = (v < 0);
+        u64       = negative ? -(int64_t)v : v;
+        break;
+    }
+
+    case TYPE_UINT16:
+        u64 = *(const uint16_t*)value;
+        break;
+
+    case TYPE_INT32: {
+        int32_t v = *(const int32_t*)value;
+        negative  = (v < 0);
+        u64       = negative ? -(int64_t)v : v;
+        break;
+    }
+
+    case TYPE_UINT32:
+        u64 = *(const uint32_t*)value;
+        break;
+
+    case TYPE_INT64: {
+        int64_t v = *(const int64_t*)value;
+        negative  = (v < 0);
+
+        /*
+         * Handles INT64_MIN correctly.
+         */
+        if (negative)
+            u64 = (uint64_t)(-(v + 1)) + 1;
+        else
+            u64 = (uint64_t)v;
+
+        break;
+    }
+
+    case TYPE_UINT64:
+        u64 = *(const uint64_t*)value;
+        break;
+
+    default:
+        return false;
+    }
+
+    /* Special case for zero */
+    if (u64 == 0) {
+        if (size < 2)
+            return false;
+
+        buffer[0] = '0';
+        buffer[1] = '\0';
+
+        return true;
+    }
+
+    /* Generate digits in reverse order */
+    while (u64) {
+        if (pos >= (size - 1))
+            return false;
+
+        buffer[pos++] = '0' + (u64 % 10);
+        u64 /= 10;
+    }
+
+    if (negative) {
+        if (pos >= (size - 1))
+            return false;
+
+        buffer[pos++] = '-';
+    }
+
+    buffer[pos] = '\0';
+
+    reverse(buffer, pos);
+
+    return true;
 }

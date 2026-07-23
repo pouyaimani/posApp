@@ -117,12 +117,13 @@ void GOTO_MENU(State* prev, Menu* amenu, CallBack_t _onExit, void* userData) {
     SM_GOTO(getState(STATE_ID_MENU));
 }
 
-void GOTO_TXN_RES(State* prev, State* next) {
+void GOTO_TXN_RES(State* prev, State* next, TxnData* data) {
     RETURN_IF_NULL(prev, ;);
     RETURN_IF_NULL(next, ;);
     OOP_CALL(getState(STATE_ID_TXN_RES), setNext, next);
     OOP_CALL(getState(STATE_ID_TXN_RES), setPrev, prev);
     TxnResult* res = getState(STATE_ID_TXN_RES);
+    res->data      = *data;
     SM_GOTO(getState(STATE_ID_TXN_RES));
 }
 

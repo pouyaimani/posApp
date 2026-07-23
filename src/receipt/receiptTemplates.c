@@ -627,39 +627,40 @@ void createDigitalRec() {
     ui_receipt_create(&digitalReceipt, &header, &details, &buttons);
 }
 
-static void DigRecfillCommon(const ReceiptData* data) {
+static void DigRecfillCommon(const TxnData* data) {
     uint32_t idate, itime;
-    unpackDateTime(&data->txn.dateTime, &idate, &itime);
+    unpackDateTime(&data->dateTime, &idate, &itime);
     DEFINE_STRING(dtStr, 24);
     dateTimeToStr(idate, itime, dtStr, sizeof(dtStr));
     char time[9 + 1];  // HH:MM:SS
     char date[10 + 1]; // DD/MM/YYYY
 
     sscanf(dtStr, "%8[^-]-%10s", time, date);
-    header.date = date;
-    header.time = time;
+
+    LOG_TRACE("packed dt = %llu, date = %lu, time = %lu, dt str = %s, date str "
+              "= %s, time str = %s",
+              data->dateTime, idate, itime, dtStr, date, time);
 
     lv_palette_t palette =
-        data->txn.core.respCode == 0 ? LV_PALETTE_GREEN : LV_PALETTE_RED;
-    header.statusIcon =
-        data->txn.core.respCode == 0 ? ICON_SUCCEED : ICON_FAILED;
+        data->core.respCode == 0 ? LV_PALETTE_GREEN : LV_PALETTE_RED;
+    header.statusIcon = data->core.respCode == 0 ? ICON_SUCCEED : ICON_FAILED;
     header.statusTitle =
-        phraseGetDef(data->txn.core.respCode == 0 ? PHRASE_SUCCESSFUL_TXN
-                                                  : PHRASE_UNSUCCESSFUL_TXN);
+        phraseGetDef(data->core.respCode == 0 ? PHRASE_SUCCESSFUL_TXN
+                                              : PHRASE_UNSUCCESSFUL_TXN);
 
     details.count = 3;
     DEFINE_STRING(bin, LEN_MAX_BIN + 1);
-    extractBin(data->txn.core.pan, bin, sizeof(bin), LEN_MAX_BIN);
+    extractBin(data->core.pan, bin, sizeof(bin), LEN_MAX_BIN);
     DEFINE_STRING(maskedPan, LEN_MAX_PAN + 1);
-    maskPan(data->txn.core.pan, maskedPan, sizeof(maskedPan));
+    maskPan(data->core.pan, maskedPan, sizeof(maskedPan));
 
-    DEFINE_STRING(refStan, 64);
-    snprintf(refStan, sizeof(refStan), "%s - %s", data->txn.core.rrn,
-             data->txn.core.stan);
+    DEFINE_STRING(refTrace, 64);
+    snprintf(refTrace, sizeof(refTrace), "%lu - %lu", data->core.rrn,
+             data->core.trace);
 
     // Header
-    lv_label_set_text(digitalReceipt.date, header.date);
-    lv_label_set_text(digitalReceipt.time, header.time);
+    lv_label_set_text(digitalReceipt.date, date);
+    lv_label_set_text(digitalReceipt.time, time);
 
     lv_obj_set_style_text_color(digitalReceipt.statusTitle,
                                 lv_palette_main(palette), 0);
@@ -670,39 +671,45 @@ static void DigRecfillCommon(const ReceiptData* data) {
 
     lv_label_set_text(digitalReceipt.detailValue[0],
                       settings()->terminal.terminalId);
-    lv_label_set_text(digitalReceipt.detailValue[1], refStan);
+    lv_label_set_text(digitalReceipt.detailValue[1], refTrace);
     lv_label_set_text(digitalReceipt.detailTitle[2], bankNameGetDef(bin));
     lv_label_set_text(digitalReceipt.detailValue[2], maskedPan);
+    return ERR_OK;
 }
 
-static int8_t digRecBuildFailure(const ReceiptData* data) {
+static int8_t digRecBuildFailure(const TxnData* data) {
     details.count++;
     DEFINE_STRING(dsc, 128);
-    getResponseCode(data->txn.core.respCode, dsc, sizeof(dsc));
+    getResponseCode(data->core.respCode, dsc, sizeof(dsc));
     lv_label_set_text(digitalReceipt.amount, "");
     lv_label_set_text_fmt(digitalReceipt.detailTitle[3], "%s (%d)",
-                          phraseGetDef(PHRASE_ERROR), data->txn.core.respCode);
+                          phraseGetDef(PHRASE_ERROR), data->core.respCode);
     lv_label_set_text(digitalReceipt.detailValue[3], dsc);
+    return ERR_OK;
 }
 
-static int8_t digRecBuildPurchase(const ReceiptData* data) {
-    // header.amount            = data->txn.core.amount;
-    // details.details[3].value = "";
-    // data->txn.extention.balance.available = 0;
+static int8_t digRecBuildPurchase(const TxnData* data) {
+    DEFINE_STRING(amountStr, 24);
+    DEFINE_STRING(amountSep, 24);
+    snprintf(amountStr, sizeof(amountStr), "%llu", data->core.amount);
+    amountSeparator(amountStr, amountSep, sizeof(amountSep));
+    lv_label_set_text_fmt(digitalReceipt.amount, "%s %s", amountSep,
+                          header.currency);
+    return ERR_OK;
 }
 
-static int8_t digRecBuildBalance(const ReceiptData* data) {
+static int8_t digRecBuildBalance(const TxnData* data) {
     details.count++;
     // details.details[3].value = "";
     DEFINE_STRING(availableStr, 36);
     DEFINE_STRING(availableSep, 24);
     snprintf(availableStr, sizeof(availableStr), "%llu",
-             data->txn.extention.balance.available);
+             data->extention.balance.available);
     amountSeparator(availableStr, availableSep, sizeof(availableSep));
     DEFINE_STRING(ledgerStr, 36);
     DEFINE_STRING(ledgerSep, 24);
     snprintf(ledgerStr, sizeof(ledgerStr), "%llu",
-             data->txn.extention.balance.ledger);
+             data->extention.balance.ledger);
     amountSeparator(ledgerStr, ledgerSep, sizeof(ledgerSep));
 
     lv_label_set_text_fmt(digitalReceipt.amount, "%s %s", availableSep,
@@ -712,21 +719,14 @@ static int8_t digRecBuildBalance(const ReceiptData* data) {
     lv_label_set_text(digitalReceipt.detailTitle[3],
                       phraseGetDef(PHRASE_LEDGER));
     lv_label_set_text(digitalReceipt.detailValue[3], ledgerSep);
+    return ERR_OK;
 }
 
-Result_t showDigitalRec(const ReceiptData* data) {
+Result_t showDigitalRec(const TxnData* data) {
     CALL_ONCE(createDigitalRec(););
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
     DigRecfillCommon(data);
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
     DigitalReceiptBuilder builder = NULL;
-    switch (data->txn.core.txnType) {
+    switch (data->core.txnType) {
     case TXN_SALE:
         builder = digRecBuildPurchase;
         break;
@@ -744,22 +744,14 @@ Result_t showDigitalRec(const ReceiptData* data) {
     default:
         break;
     }
-    if (data->txn.core.respCode != 0) {
+    if (data->core.respCode != 0) {
         digRecBuildFailure(data);
     } else if (builder) {
-        if (data->txn.core.respCode == 0) {
+        if (data->core.respCode == 0) {
             builder(data);
         }
     }
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
     ui_receipt_update(&digitalReceipt, &header, &details, &buttons);
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
-    LOG_DEBUG("-------------------------------------");
     LV_SHOW(digitalReceipt.root);
 }
 

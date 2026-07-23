@@ -71,17 +71,16 @@ STATE_DEF_ENTER(Communication) {
 }
 
 static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    ReceiptData recData;
-    recData.type          = DOC_TXN;
-    recData.txn           = flow->data;
-    recData.headerApplied = true;
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        Receipt rec;
-        buildReceipt(&rec, &recData);
-    }
+    // if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+    //     Receipt rec;
+    //     buildReceipt(&rec, &recData);
+    // }
+
+    flow->data.core.txnType = TXN_SALE;
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    // SM_GOTO(result);
-    // &flow->data
+    if (st->result == TXN_FLOW_SUCCESS) {
+        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE, &flow->data);
+    }
 }
 
 static int compose(TxnData* data) { data->core.amount = amount; }
@@ -112,6 +111,8 @@ const TxnFlowConfig purchaseTxn = {
     .prcode = PRC_PURCHASE,
 
     .feilds = isoFeilds,
+
+    .needSettlement = true,
 
     .feildsCnt = sizeof(isoFeilds),
 

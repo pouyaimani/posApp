@@ -58,11 +58,11 @@ typedef struct {
 
 typedef int8_t (*ReceiptBuilder)(Receipt*, const ReceiptData*);
 
-typedef int8_t (*DigitalReceiptBuilder)(const ReceiptData*);
+typedef int8_t (*DigitalReceiptBuilder)(const TxnData*);
 
 Result_t buildReceipt(Receipt* rec, const ReceiptData* data);
 
-Result_t showDigitalRec(const ReceiptData* data);
+Result_t showDigitalRec(const TxnData* data);
 void     hideDigitalRec();
 
 #endif

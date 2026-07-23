@@ -89,6 +89,8 @@ typedef struct {
 
     TxnComposeFn compose;
 
+    bool needSettlement;
+
 } TxnFlowConfig;
 
 /* ================= Runtime ================= */

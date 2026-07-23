@@ -19,3 +19,4 @@
 #define LEN_MAX_BIN         6
 #define LEN_MAX_PAN         19
 #define LEN_MAX_TRACK2      37
+#define LEN_MAX_RRN         12

@@ -396,7 +396,9 @@ static Error_t isoParseReverse(TxnData* txn, ByteArray* buf) {
     // check mac
 }
 
-static Error_t isoParsePurchaseResponse(TxnData* txn, ByteArray* buf) {}
+static Error_t isoParsePurchaseResponse(TxnData* txn, ByteArray* buf) {
+    return ERR_OK;
+}
 
 static Error_t isoParseBillResponse(TxnData* txn, ByteArray* buf) {}
 
@@ -562,6 +564,7 @@ static int8_t setBit11(TxnData* data) {
     stan[STAN_SIZE] = 0;
     LOG_TRACE("| Bit 11 - (Stan) | -> %s", stan);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
+    data->dateTime = OOP_CALL(sys(), getPackedDateTime);
     return ERR_OK;
 }
 static int8_t setBit12(TxnData* data) {
@@ -623,6 +626,16 @@ static int8_t setBit35(TxnData* data) {
     strcat(t2, "F");
     iso8583()->setStr(ELEMENT_TRACK2, t2);
     LOG_TRACE("| Bit 35 - (Track2) | -> %s", t2);
+    return ERR_OK;
+}
+
+static int8_t setBit37(TxnData* data) {
+    (void)data;
+    DEFINE_STRING(rrn, LEN_MAX_RRN);
+    LOG_DEBUG("rrn before converting  = %lu", data->core.rrn);
+    U32_TO_STRING(&data->core.rrn, rrn);
+    iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, rrn);
+    LOG_TRACE("| Bit 37 - (RRN) | -> %s", rrn);
     return ERR_OK;
 }
 
@@ -760,6 +773,10 @@ static const IsoFeildsFunc isoFeild[] = {
     /******************************************************************/
     {.feild = 35, .set = setBit35, .get = NULL},
     /******************************************************************/
+    /*BIT 37: ELEMENT_RETRIEVAL_REFERENCE_NUMBER */
+    /******************************************************************/
+    {.feild = 37, .set = setBit37, .get = NULL},
+    /******************************************************************/
     /*BIT 41: ELEMENT_TERMINAL_ID */
     /******************************************************************/
     {.feild = 41, .set = setBit41, .get = NULL},
@@ -817,6 +834,7 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
     IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
     RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
+
     // Check mac
     // uint16_t packedSize = buf->data[0] * 256 + buf->data[1];
     // packedSize          = packedSize - 5; // without header

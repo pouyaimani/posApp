@@ -128,36 +128,36 @@ static DateTime* getDateTime(System* dev) {
 }
 
 static uint32_t getDate(System* dev) {
-    uint8_t dt[12 + 1];
+    uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
     int year, month, day, hour, minutes, second;
     parseRtcTime(dt, &year, &month, &day, &hour, &minutes, &second);
 
-    uint32_t date = (year * 10000) + (month) + day;
+    uint32_t date = (year * 10000) + (month * 100) + day;
     return date;
 }
 
 static uint32_t getTime(System* dev) {
-    uint8_t dt[12 + 1];
+    uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
     int year, month, day, hour, minutes, second;
     parseRtcTime(dt, &year, &month, &day, &hour, &minutes, &second);
 
-    uint32_t time = (hour * 10000) + (minutes) + second;
+    uint32_t time = (hour * 10000) + (minutes * 100) + second;
     return time;
 }
 
 static uint64_t getPackedDateTime(System* dev) {
-    uint8_t dt[12 + 1];
+    uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
     int year, month, day, hour, minutes, second;
     parseRtcTime(dt, &year, &month, &day, &hour, &minutes, &second);
 
-    uint32_t date = (year * 10000) + (month) + day;
-    uint32_t time = (hour * 10000) + (minutes) + second;
+    uint32_t date = (year * 10000) + (month * 100) + day;
+    uint32_t time = (hour * 10000) + (minutes * 100) + second;
 
     return packDateTime(date, time);
 }

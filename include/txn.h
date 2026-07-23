@@ -99,26 +99,22 @@ typedef enum {
 #define SecRelControlInfo "0800050202031500"
 
 typedef enum {
-    TS_START         = 0,
-    TS_BUILD_REQUEST = 1,
 
-    TS_REQUEST_SEND    = 11,
-    TS_REQUEST_RECIEVE = 12,
+    TXN_STATUS_NEW,
 
-    TS_REQUEST_HAVE_RESPONSE = 3,
+    TXN_STATUS_APPROVED,
 
-    TS_REQUEST_SUCCEED           = 30,
-    TS_REQUEST_SUCCEED_PRINT     = 31,
-    TS_REQUEST_SUCCEED_FINALIZED = 100,
+    TXN_STATUS_DECLINED,
 
-    TS_REQUEST_FAILED           = 35,
-    TS_REQUEST_FAILED_PRINT     = 36,
-    TS_REQUEST_FAILED_FINALIZED = 101,
+    TXN_STATUS_PENDING_REVERSE,
 
-    TS_REQUEST_HAVE_NO_RESPONSE  = 4,
-    TS_REQUEST_REVERSE_PRINT_72H = 40,
-    TS_REQUEST_REVERSE_FINALIZED = 110,
-} TransactionStatus;
+    TXN_STATUS_REVERSED,
+
+    TXN_STATUS_PENDING_SETTLEMENT,
+
+    TXN_STATUS_SETTLED
+
+} TxnStatus;
 
 typedef enum {
     TXN_SALE = 0,
@@ -177,6 +173,7 @@ typedef union {
 
 typedef struct {
     uint64_t     dateTime;
+    TxnStatus    status;
     TxnCore      core;
     TxnExtention extention;
 } TxnData;

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "common.h"
 #include "byteArray.h"
+#include "txn.h"
 
 typedef enum StateId_t {
     STATE_ID_START_UP,
@@ -173,7 +174,7 @@ OOP_CTOR(FixedAmount, State* parent, const char* name);
 
 OOP_CLASS(TxnResult) {
     OOP_EXTENDS(State);
-    void* data;
+    TxnData data;
 };
 
 OOP_CTOR(TxnResult, State* parent, const char* name);
@@ -233,7 +234,7 @@ void GOTO_INPUT(State* prev, State* next, const char* title, const char* body,
 void GOTO_INFO(State* prev, State* next, uint8_t type, const char* title,
                const char* body);
 void GOTO_MENU(State* prev, Menu* amenu, CallBack_t _onExit, void* userData);
-void GOTO_TXN_RES(State* prev, State* next);
+void GOTO_TXN_RES(State* prev, State* next, TxnData* data);
 void GOTO_NET_CONNNECT();
 void GOTO_NET_SEND();
 void GOTO_NET_RECEIVE();

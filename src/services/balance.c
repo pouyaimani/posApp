@@ -52,19 +52,10 @@ STATE_DEF_ENTER(Communication) {
 /*********************** Result sub state *************************/
 
 static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    TxnResult*   res      = STATE_TXN_RES;
-    ReceiptData* rec      = (ReceiptData*)res->data;
-    rec->type             = DOC_TXN;
-    rec->txn              = flow->data;
-    rec->txn.core.txnType = TXN_BALANCE;
-    rec->headerApplied    = true;
+    flow->data.core.txnType = TXN_BALANCE;
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    LOG_DEBUG("----------------------");
-    LOG_DEBUG("----------------------");
-    LOG_DEBUG("----------------------");
-    LOG_DEBUG("----------------------");
     if (st->result == TXN_FLOW_SUCCESS) {
-        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE);
+        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE, &flow->data);
     }
 }
 
@@ -107,7 +98,9 @@ const TxnFlowConfig balanceTxn = {
 
     .onSending = showSending,
 
-    .onReceiving = showReceiving};
+    .onReceiving = showReceiving,
+
+    .needSettlement = false};
 
 /******************************************************************/
 

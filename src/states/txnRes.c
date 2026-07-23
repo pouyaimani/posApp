@@ -6,13 +6,11 @@
 #include "eventloop.h"
 #include "receipt/receiptTemplates.h"
 
-static ReceiptData recData;
-
 /******************** txn result state **********************/
 
 STATE_DEF_ENTER(TxnResult) {
     TxnResult* self = (TxnResult*)state;
-    showDigitalRec((const ReceiptData*)self->data);
+    showDigitalRec(&self->data);
 }
 
 STATE_DEF_HANDLE(TxnResult, KeypadEvent) {
@@ -30,5 +28,4 @@ OOP_CTOR(TxnResult, State* parent, const char* name) {
     self->base.vtable.enter         = STATE_ENTER(TxnResult);
     self->base.vtable.handleTimeout = STATE_HANDLE(TxnResult, TimeOutEvent);
     self->base.vtable.handleKeypad  = STATE_HANDLE(TxnResult, KeypadEvent);
-    self->data                      = &recData;
 }

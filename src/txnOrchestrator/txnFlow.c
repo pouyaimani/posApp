@@ -2,6 +2,7 @@
 #include <string.h>
 #include "error.h"
 #include "logger.h"
+#include "txnPendingMgr.h"
 
 static int8_t onConnect(NthTransaction* tx, void* ctx);
 
@@ -33,6 +34,25 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     st.result = result;
     st.stage  = flow->stage;
     st.code   = code;
+
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
+    if (code == 0) {
+        LOG_TRACE("Txn flow: txn is approved. settlment need = %d",
+                  flow->cfg->needSettlement);
+        txnPendingMgr()->approve(&flow->data, flow->cfg->needSettlement);
+    } else {
+        LOG_TRACE("Txn flow: txn is declined.");
+        txnPendingMgr()->decline(&flow->data);
+    }
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
+    LOG_DEBUG("-----------------------------------");
 
     if (flow->cfg && flow->cfg->done) {
         LOG_DEBUG("Txn flow: calling config done.");
@@ -134,6 +154,8 @@ static int8_t onSent(NthTransaction* tx, void* ctx) {
     TxnFlow* flow = ctx;
 
     flow->stage = TXN_STAGE_RECEIVING;
+
+    txnPendingMgr()->start(&flow->data);
 
     if (flow->cfg->onReceiving) {
         flow->cfg->onReceiving(flow);
