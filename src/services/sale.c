@@ -83,7 +83,10 @@ static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
     }
 }
 
-static int compose(TxnData* data) { data->core.amount = amount; }
+static int compose(TxnData* data) {
+    composeCommon(data);
+    data->core.amount = amount;
+}
 
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,
                                     ELEMENT_PROCESSING_CODE,

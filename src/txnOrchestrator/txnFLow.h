@@ -132,6 +132,7 @@ extern const TxnFlowConfig balanceTxn;
  *                               Transactions common              *
  *                                                                                           *
  ********************************************************************************************/
+int  composeCommon(TxnData* data);
 int  buildCommon(TxnFlow* flow, ByteArray* ba);
 int  parseCommon(TxnFlow* flow, ByteArray* ba);
 void showConnecting(TxnFlow* f);

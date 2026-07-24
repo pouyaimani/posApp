@@ -5,8 +5,14 @@
 #include "event.h"
 #include "eventloop.h"
 #include "receipt/receiptTemplates.h"
+#include "txnOrchestrator/txnPendingMgr.h"
 
 /******************** txn result state **********************/
+
+static int pendMgrDone() {
+    LOG_DEBUG("Pending manager is done.");
+    SM_GOTO(STATE_IDLE);
+}
 
 STATE_DEF_ENTER(TxnResult) {
     TxnResult* self = (TxnResult*)state;
@@ -18,7 +24,7 @@ STATE_DEF_HANDLE(TxnResult, KeypadEvent) {
     } else if (ev->key == KEY_ESC) {
     }
     hideDigitalRec();
-    SM_GOTO(STATE_IDLE);
+    txnPendingMgr()->run(pendMgrDone);
 }
 
 STATE_DEF_HANDLE(TxnResult, TimeOutEvent) {}

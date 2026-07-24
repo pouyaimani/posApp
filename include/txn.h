@@ -139,7 +139,7 @@ typedef struct {
     uint32_t processCode;
     char     pan[LEN_MAX_PAN + 1];
     uint64_t amount;
-    uint32_t rrn;
+    uint64_t rrn;
     uint32_t trace;
     uint32_t stan;
     uint16_t respCode; // responce code

@@ -25,6 +25,7 @@
 #include "ui/swipeHint.h"
 #include "ui/digitalReceipt.h"
 #include "assets.h"
+#include "txnOrchestrator/txnPendingMgr.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -250,6 +251,7 @@ void show_receipt_page(void) {
     lv_obj_t* receipt = ui_receipt_create(&page, &header, &details, &buttons);
     LV_SHOW(receipt);
 }
+static int pendMgrDone() { SM_GOTO(STATE_IDLE); }
 
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_FUNCTION) {
@@ -266,8 +268,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_3) {
         OOP_CALL(file(), remove, "/mtd0/txn_t_info");
     } else if (ev->key == KEY_4) {
-        settings()->terminal.isCfgDone = true;
-        settings()->save();
+        txnPendingMgr()->run(pendMgrDone);
 
     } else if (ev->key == KEY_5) {
         show_receipt_page();

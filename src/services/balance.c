@@ -86,7 +86,7 @@ const TxnFlowConfig balanceTxn = {
 
     .feildsCnt = sizeof(isoFeilds),
 
-    .compose = NULL,
+    .compose = composeCommon,
 
     .build = buildCommon,
 

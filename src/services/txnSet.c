@@ -1,19 +1,17 @@
 #include "txnOrchestrator/txnFLow.h"
 #include "isoBuilder.h"
+#include "settings/settings.h"
+#include "states/states.h"
 
-static int compose(TxnData* data) {}
+extern void settleDone(TxnFlow* flow, const TxnFlowStatus* st);
 
-static void settleDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    // commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-}
+static int compose(TxnData* data) { data->core.stan = txnTraceInfo()->stan; }
 
-static const uint8_t isoFeilds[] = {ELEMENT_PAN,
-                                    ELEMENT_PROCESSING_CODE,
+static const uint8_t isoFeilds[] = {ELEMENT_PROCESSING_CODE,
                                     ELEMENT_AMOUNT_TRANSACTION,
                                     ELEMENT_STAN,
                                     ELEMENT_TIME_LOCAL_TRANSACTION,
                                     ELEMENT_DATE_LOCAL_TRANSACTION,
-                                    ELEMENT_POS_ENTRY_MODE,
                                     ELEMENT_NETWORK_INTL_ID,
                                     ELEMENT_ACQUIRING_INSTITUTION_ID,
                                     ELEMENT_RETRIEVAL_REFERENCE_NUMBER,
@@ -23,6 +21,11 @@ static const uint8_t isoFeilds[] = {ELEMENT_PAN,
                                     ELEMENT_CURRENCY_CODE_TRANSACTION,
                                     ELEMENT_SECURITY_CONTROL_INFO,
                                     ELEMENT_MAC};
+
+int buildSettle(TxnFlow* flow, ByteArray* ba) {
+    return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
+                    flow->cfg->feildsCnt, &flow->data, ba);
+}
 
 const TxnFlowConfig settlementTxn = {
 
@@ -34,9 +37,11 @@ const TxnFlowConfig settlementTxn = {
 
     .feildsCnt = sizeof(isoFeilds),
 
+    .needSettlement = false,
+
     .compose = compose,
 
-    .build = buildCommon,
+    .build = buildSettle,
 
     .parse = parseCommon,
 

@@ -3,6 +3,7 @@
 #include "error.h"
 #include "logger.h"
 #include "txnPendingMgr.h"
+#include "settings/settings.h"
 
 static int8_t onConnect(NthTransaction* tx, void* ctx);
 
@@ -35,24 +36,17 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     st.stage  = flow->stage;
     st.code   = code;
 
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
-    if (code == 0) {
-        LOG_TRACE("Txn flow: txn is approved. settlment need = %d",
-                  flow->cfg->needSettlement);
-        txnPendingMgr()->approve(&flow->data, flow->cfg->needSettlement);
-    } else {
-        LOG_TRACE("Txn flow: txn is declined.");
-        txnPendingMgr()->decline(&flow->data);
+    txnTraceInfo()->inc();
+    if (result == TXN_FLOW_SUCCESS) {
+        if (code == 0) {
+            LOG_TRACE("Txn flow: txn is approved. settlment need = %d",
+                      flow->cfg->needSettlement);
+            txnPendingMgr()->approve(&flow->data, flow->cfg->needSettlement);
+        } else {
+            LOG_TRACE("Txn flow: txn is declined.");
+            txnPendingMgr()->decline(&flow->data);
+        }
     }
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
-    LOG_DEBUG("-----------------------------------");
 
     if (flow->cfg && flow->cfg->done) {
         LOG_DEBUG("Txn flow: calling config done.");
@@ -72,11 +66,13 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
             const TxnFlowConfig* cfg) {
 
     RETURN_VALUE_IF_NULL(flow, ;, false);
-    RETURN_VALUE_IF_NULL(owner, ;, false);
+    // RETURN_VALUE_IF_NULL(owner, ;, false);
     RETURN_VALUE_IF_NULL(host, ;, false);
     LOG_DEBUG("Txn flow: running flow ..., host = %s, port = %d", host, port);
 
     txnFlowInit(flow);
+
+    flow->data.core.mti = cfg->mti;
 
     flow->owner = owner;
 

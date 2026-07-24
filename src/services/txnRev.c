@@ -10,13 +10,18 @@ typedef struct {
 
 } ReverseCtx;
 
+int buildReverse(TxnFlow* flow, ByteArray* ba) {
+    return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
+                    flow->cfg->feildsCnt, &flow->data, ba);
+}
+
 const TxnFlowConfig reverseTxn = {
 
     .mti = MTI_REV_ADVICE,
 
     .prcode = PRC_REVERSE,
 
-    .build = buildCommon,
+    .build = buildReverse,
 
     .parse = parseCommon,
 

@@ -20,3 +20,11 @@
 #define LEN_MAX_PAN         19
 #define LEN_MAX_TRACK2      37
 #define LEN_MAX_RRN         12
+#define LEN_MAX_INT_8       6
+#define LEN_MAX_UINT_8      4
+#define LEN_MAX_INT_16      7
+#define LEN_MAX_UINT_16     6
+#define LEN_MAX_INT_32      12
+#define LEN_MAX_UINT_32     11
+#define LEN_MAX_INT_64      21
+#define LEN_MAX_UINT_64     21

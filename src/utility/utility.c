@@ -721,7 +721,7 @@ void dateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
     tmp     = (time % 10000);
     int min = tmp / 100;
     int ss  = tmp % 100;
-    snprintf(str, size, "%02d:%02d:%02d-%02d/%02d/%04d", hh, min, ss, yy, mm,
+    snprintf(str, size, "%02d:%02d:%02d-%04d/%02d/%02d", hh, min, ss, yy, mm,
              dd);
 }
 

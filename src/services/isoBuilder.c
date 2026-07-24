@@ -363,9 +363,9 @@ static Error_t isoBuildSettle(TxnCore* txn, ByteArray* buf) {
     return ERR_OK;
 }
 
-static Error_t isoParseSettle(TxnData* txn, ByteArray* buf) {
-    // check mac
-}
+static Error_t isoParseSettle(TxnData* txn, ByteArray* buf) { return ERR_OK; }
+
+static Error_t isoParseDefault(TxnData* txn, ByteArray* buf) { return ERR_OK; }
 
 static Error_t isoBuildReverse(TxnCore* txn, ByteArray* buf) {
     DEFINE_STRING(amountstr, LEN_MAX_AMOUNT + 1);
@@ -488,13 +488,13 @@ static const IsoTransaction templates[] = {
     {.mti     = MTI_FIN_ADVICE,
      .prcode  = PRC_SETTLE,
      .builder = NULL,
-     .parser  = isoParseSettle},
+     .parser  = isoParseDefault},
     /******************************************************************/
     /*Reverse*/
     /******************************************************************/
     {.mti     = MTI_REV_ADVICE,
      .builder = NULL,
-     .parser  = isoParseReverse,
+     .parser  = isoParseDefault,
      .prcode  = PRC_REVERSE},
     /******************************************************************/
     /*Purchase*/
@@ -529,11 +529,8 @@ const IsoTransaction* isoFindTransaction(Mti_t mti, PrCode_t prcode) {
 
 static int8_t setBit2(TxnData* data) {
     (void)data;
-    DEFINE_STRING(pan, 24);
-    magreader()->getPan(pan, sizeof(pan));
-    LOG_TRACE("| Bit 2 - (Pan) | -> %s", pan);
-    iso8583()->setStr(ELEMENT_PAN, pan);
-    strcpy(data->core.pan, pan);
+    LOG_TRACE("| Bit 2 - (Pan) | -> %s", data->core.pan);
+    iso8583()->setStr(ELEMENT_PAN, data->core.pan);
     return ERR_OK;
 }
 
@@ -550,7 +547,6 @@ static int8_t setBit3(TxnData* data) {
 static int8_t setBit4(TxnData* data) {
     DEFINE_STRING(amount, (LEN_MAX_AMOUNT + 1));
     prependZerosInt(data->core.amount, LEN_MAX_AMOUNT, amount, sizeof(amount));
-    LOG_TRACE("| Bit 4 - (Txn Amount) | -> %lu", data->core.amount);
     LOG_TRACE("| Bit 4 - (Txn Amount) | -> %s", amount);
     iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, (const DL_UINT8*)amount);
     return ERR_OK;
@@ -631,9 +627,9 @@ static int8_t setBit35(TxnData* data) {
 
 static int8_t setBit37(TxnData* data) {
     (void)data;
-    DEFINE_STRING(rrn, LEN_MAX_RRN);
-    LOG_DEBUG("rrn before converting  = %lu", data->core.rrn);
-    U32_TO_STRING(&data->core.rrn, rrn);
+    DEFINE_STRING(rrn, LEN_MAX_UINT_64);
+    LOG_DEBUG("rrn before converting  = %llu", data->core.rrn);
+    U64_TO_STRING(&data->core.rrn, rrn);
     iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, rrn);
     LOG_TRACE("| Bit 37 - (RRN) | -> %s", rrn);
     return ERR_OK;
@@ -848,17 +844,19 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     txn->core.respCode  = respCode;
     LOG_TRACE("Parser: txn responce code = %d", respCode);
     RESET_STRING(feild);
-    txn->core.rrn = txn->core.rrn = 0;
+    txn->core.rrn = txn->core.trace = 0;
     if (iso8583()->getStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, feild) ==
         ISO_OK) {
-        txn->core.rrn = libAtoi(feild);
+        if (!STRING_TO_U64(feild, &txn->core.rrn)) {
+            LOG_ERROR("Iso Parser: error in converting rrn to llu");
+        }
     }
     RESET_STRING(feild);
     if (iso8583()->getStr(ELEMENT_AUTH_ID_RESPONSE, feild) == ISO_OK) {
-        txn->core.trace = libAtoi(feild);
+        STRING_TO_U32(feild, &txn->core.trace);
     }
-    LOG_TRACE("Iso Parser: txn rrn = %u", txn->core.rrn);
-    LOG_TRACE("Iso Parser: txn trace = %u", txn->core.trace);
+    LOG_TRACE("Iso Parser: txn rrn = %llu", txn->core.rrn);
+    LOG_TRACE("Iso Parser: txn trace = %lu", txn->core.trace);
     RETURN_VALUE_IF_NOT(respCode, 0, ;, respCode);
     // for (int i = 0; i < iso8583()->handler.fieldItems; i++) {
     //     if (iso8583()->msg.field[i].ptr != NULL) {

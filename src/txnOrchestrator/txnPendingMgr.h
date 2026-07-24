@@ -4,9 +4,11 @@
 #include "txn.h"
 #include "txnFlow.h"
 
+typedef int (*TxnPendMgrCb)();
+
 typedef struct {
 
-    void (*run)(void);
+    void (*run)(TxnPendMgrCb);
     void (*start)(TxnData*);
     void (*approve)(TxnData*, bool needSettle);
     void (*decline)(TxnData*);

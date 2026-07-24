@@ -3,6 +3,18 @@
 #include "states/states.h"
 #include "ui/infoPage.h"
 #include "settings/settings.h"
+#include "sys/sys.h"
+#include "magReader/magReader.h"
+
+int composeCommon(TxnData* data) {
+    magreader()->getPan(data->core.pan, sizeof(data->core.pan));
+    // DateTime* dt = OOP_CALL(sys(), getDateTime);
+    // iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION,
+    //                   (const DL_UINT8*)dt->time);
+    // LOG_TRACE("| Bit 12 - (Time) | -> %s", dt->time);
+    // data->dateTime = OOP_CALL(sys(), getPackedDateTime);
+    return ERR_OK;
+}
 
 int buildCommon(TxnFlow* flow, ByteArray* ba) {
     flow->data.core.processCode = flow->cfg->prcode;
@@ -32,7 +44,6 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
     State* state = flow->owner;
     LOG_DEBUG("st->result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
-        txnTraceInfo()->inc();
         if (!showSucMsg) {
             HIDE_INFO();
             return;
@@ -73,9 +84,6 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
 
     default:
         break;
-    }
-    if (st->stage != TXN_STAGE_CONNECTING) {
-        txnTraceInfo()->inc();
     }
     GOTO_INFO(onFail, onFail, INFO_ERROR,
               phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
