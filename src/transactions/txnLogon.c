@@ -1,8 +1,9 @@
-#include "txnOrchestrator/txnFLow.h"
+#include "txnFlow/txnFLow.h"
 #include "settings/settings.h"
+#include "sys/sys.h"
 #include "iso/iso8583.h"
 
-static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
+static void logOnDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         settings()->save();
     }
@@ -13,14 +14,14 @@ static const uint8_t isoFeilds[] = {
     ELEMENT_PROCESSING_CODE, ELEMENT_STAN, ELEMENT_TIME_LOCAL_TRANSACTION,
     ELEMENT_DATE_LOCAL_TRANSACTION, ELEMENT_NETWORK_INTL_ID,
     // ELEMENT_ACQUIRING_INSTITUTION_ID,
-    ELEMENT_TERMINAL_ID, ELEMENT_ADDITIONAL_DATA_PRIVATE,
-    ELEMENT_SECURITY_CONTROL_INFO, ELEMENT_MAC};
+    ELEMENT_ADDITIONAL_DATA_PRIVATE, ELEMENT_SECURITY_CONTROL_INFO,
+    ELEMENT_MAC};
 
-const TxnFlowConfig cfgTxn = {
+const TxnFlowConfig logOnTxn = {
 
-    .mti = MTI_AUTH_REQ,
+    .mti = MTI_NET_REQ,
 
-    .prcode = PRC_CFG,
+    .prcode = PRC_LOG_ON,
 
     .feilds = isoFeilds,
 
@@ -30,7 +31,7 @@ const TxnFlowConfig cfgTxn = {
 
     .parse = parseCommon,
 
-    .done = cfgDone,
+    .done = logOnDone,
 
     .onConnecting = showConnecting,
 

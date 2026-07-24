@@ -114,6 +114,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/states
     ${CMAKE_CURRENT_SOURCE_DIR}/embedDB
     ${CMAKE_CURRENT_SOURCE_DIR}/helpers
+    ${CMAKE_CURRENT_SOURCE_DIR}/transactions
     ${CMAKE_SOURCE_DIR}/assets
 )
 

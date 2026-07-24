@@ -5,7 +5,7 @@
 #include "event.h"
 #include "eventloop.h"
 #include "receipt/receiptTemplates.h"
-#include "txnOrchestrator/txnPendingMgr.h"
+#include "txnFlow/txnPendingMgr.h"
 
 /******************** txn result state **********************/
 

@@ -429,7 +429,7 @@ X(PHRASE_SUMMARY_REPORT                 ,   "گزارش تجمیعی"           
 )
 X(PHRASE_TRANACTION_DETAILS             ,   "ریز تراکنش ها"                  ,   "transaction with details"
 )
-X(PHRASE_TXN_SALE                       ,   "خرید"                           ,   "Sale"
+X(PHRASE_TXN_PURCHASE                    ,   "خرید"                           ,   "purchase"
 )
 X(PHRASE_TXN_BALANCE                    ,   "موجودی"                         ,   "Balance"
 )

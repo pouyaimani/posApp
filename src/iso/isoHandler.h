@@ -1,5 +1,5 @@
-#ifndef ISO_BUILDER_H_
-#define ISO_BUILDER_H_
+#ifndef ISO_HANDLER_H_
+#define ISO_HANDLER_H_
 
 #include "iso/iso8583.h"
 #include "common.h"
@@ -13,20 +13,11 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf);
 typedef int8_t (*TxnIsoBuilder)(TxnData* txn, ByteArray*);
 typedef int8_t (*TxnIsoParser)(TxnData* txn, ByteArray*);
 
-typedef int8_t (*FeildSetter)(TxnData* txn);
-typedef int8_t (*FeildGetter)(TxnData* txn);
-
 typedef struct {
     Mti_t         mti;
     PrCode_t      prcode;
     TxnIsoBuilder builder;
     TxnIsoParser  parser;
 } IsoTransaction;
-
-typedef struct {
-    uint8_t     feild;
-    FeildSetter set;
-    FeildGetter get;
-} IsoFeildsFunc;
 
 #endif

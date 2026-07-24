@@ -7,7 +7,7 @@
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
-#include "services/services.h"
+#include "transactions/transaction.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
@@ -292,8 +292,8 @@ static Menu*     servMenu;
 static SubState* saveServiceStatus;
 
 STATE_DEF_ENTER(SaveServiceStatus) {
-    for (uint8_t i = 0; i < SERVICE_ID_ALL; i++) {
-        getService(i)->enable     = servMenu->toggle[i];
+    for (uint8_t i = 0; i < TXN_ID_ALL; i++) {
+        getTxn(i)->enable         = servMenu->toggle[i];
         termStorage->serviceEn[i] = servMenu->toggle[i];
     }
     SM_GOTO(state->parent);
@@ -301,9 +301,9 @@ STATE_DEF_ENTER(SaveServiceStatus) {
 
 STATE_DEF_ENTER(EnableServices) {
     ui_menu_togglable(servMenu, disp()->screen);
-    for (uint8_t i = 0; i < SERVICE_ID_ALL; i++) {
-        ui_menu_add_on_off_item(servMenu, getService(i)->state.name,
-                                getService(i)->enable, NULL, NULL, NULL);
+    for (uint8_t i = 0; i < TXN_ID_ALL; i++) {
+        ui_menu_add_on_off_item(servMenu, getTxn(i)->state.name,
+                                getTxn(i)->enable, NULL, NULL, NULL);
     }
 
     GOTO_MENU(saveServiceStatus, servMenu, NULL, NULL);

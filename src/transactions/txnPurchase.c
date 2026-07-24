@@ -1,4 +1,4 @@
-#include "services.h"
+#include "transaction.h"
 #include "states/states.h"
 #include "sys/sys.h"
 #include "ui/menu.h"
@@ -21,7 +21,7 @@ static TxnFlow*  flow;
 
 extern const TxnFlowConfig purchaseTxn;
 
-STATE_DEF_ENTER(Sale) {
+STATE_DEF_ENTER(Purchase) {
     memset(flow, 0, sizeof(*flow));
     SM_GOTO(enterAmount);
 }
@@ -133,9 +133,9 @@ const TxnFlowConfig purchaseTxn = {
 
     .onReceiving = showReceiving};
 
-OOP_CTOR(Sale, State* parent, const char* name) {
-    OOP_CALL_CTOR(Service, self, parent, name);
-    self->base.state.vtable.enter = STATE_ENTER(Sale);
+OOP_CTOR(Purchase, State* parent, const char* name) {
+    OOP_CALL_CTOR(Transaction, self, parent, name);
+    self->base.state.vtable.enter = STATE_ENTER(Purchase);
 
     enterAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterAmount, &self->base.state, "enter Amount");

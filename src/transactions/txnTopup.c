@@ -1,4 +1,4 @@
-#include "services.h"
+#include "transaction.h"
 #include "states/states.h"
 #include "sys/sys.h"
 #include "iso/iso8583.h"
@@ -23,7 +23,7 @@ STATE_DEF_ENTER(SelectOperator) {}
 
 STATE_DEF_EXIT(SelectOperator) {}
 
-static void SelectOperator(Sale* parent) {
+static void SelectOperator(TopUp* parent) {
     selectOperator = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, selectOperator, &parent->base.state,
                   "select operator");
@@ -39,7 +39,7 @@ STATE_DEF_ENTER(SelectAmount) {}
 
 STATE_DEF_EXIT(SelectAmount) {}
 
-static void SelectAmount(Sale* parent) {
+static void SelectAmount(TopUp* parent) {
     selectAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, selectAmount, &parent->base.state, "select amount");
     selectAmount->vtable.enter = STATE_ENTER(SelectAmount);
@@ -54,7 +54,7 @@ STATE_DEF_ENTER(EnterPassword) {}
 
 STATE_DEF_EXIT(EnterPassword) {}
 
-static void EnterPassword(Sale* parent) {
+static void EnterPassword(TopUp* parent) {
     enterPass = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, &parent->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
@@ -69,7 +69,7 @@ STATE_DEF_ENTER(Result) {}
 
 STATE_DEF_EXIT(Result) {}
 
-static void Result(Sale* parent) {
+static void Result(TopUp* parent) {
     result = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, result, &parent->base.state, "Result");
     result->vtable.enter = STATE_ENTER(Result);
@@ -129,7 +129,7 @@ const TxnFlowConfig topupTxn = {
 /******************************************************************/
 
 OOP_CTOR(TopUp, State* parent, const char* name) {
-    OOP_CALL_CTOR(Service, self, parent, name);
+    OOP_CALL_CTOR(Transaction, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(TopUp);
     self->base.state.vtable.exit  = STATE_EXIT(TopUp);
 

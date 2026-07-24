@@ -28,6 +28,13 @@ void settleDone(TxnFlow* flow, const TxnFlowStatus* st) {
     settleDoneCb();
 }
 
+void reverseDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    (void*)flow;
+    (void*)st;
+    commonDone(flow, st, NULL, NULL, false);
+    settleDoneCb();
+}
+
 static Error_t loadTxnData(TxnData* data) {
     RETURN_IF_NULL(data, ;);
     LOG_TRACE("TxnPendingMgr: loading transaction data ...");

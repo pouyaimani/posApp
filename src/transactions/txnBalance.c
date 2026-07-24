@@ -1,11 +1,11 @@
-#include "services.h"
+#include "transaction.h"
 #include "states/states.h"
 #include "sys/sys.h"
 #include "phrases/phrases.h"
 #include "common.h"
 #include "utility/utility.h"
 #include "settings/settings.h"
-#include "txnOrchestrator/txnFLow.h"
+#include "txnFlow/txnFLow.h"
 #include "ped/ped.h"
 #include "input/inputMgr.h"
 #include "iso/iso8583.h"
@@ -105,7 +105,7 @@ const TxnFlowConfig balanceTxn = {
 /******************************************************************/
 
 OOP_CTOR(Balance, State* parent, const char* name) {
-    OOP_CALL_CTOR(Service, self, parent, name);
+    OOP_CALL_CTOR(Transaction, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(Balance);
 
     enterPin = (SubState*)MEM_ALLOC(sizeof(SubState));

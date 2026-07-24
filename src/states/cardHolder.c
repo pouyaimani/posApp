@@ -5,7 +5,7 @@
 #include "display.h"
 #include "event.h"
 #include "assets.h"
-#include "services/services.h"
+#include "transactions/transaction.h"
 #include "ui/menu.h"
 #include "eventloop.h"
 #include "magReader/magReader.h"
@@ -13,16 +13,16 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 
-static Menu*       menu;
-static ServiceId_t enableServicesId[SERVICE_ID_ALL];
-static int         selected;
+static Menu*   menu;
+static TxnId_t enableServicesId[TXN_ID_ALL];
+static int     selected;
 
 static void createUi() {
     ui_menu_create(menu, disp()->screen);
     int cnt = 0;
-    for (uint8_t i = 0; i < SERVICE_ID_ALL; i++) {
-        if (getService(i)->enable) {
-            ui_menu_addItem(menu, getService(i)->state.name, NULL, NULL, NULL);
+    for (uint8_t i = 0; i < TXN_ID_ALL; i++) {
+        if (getTxn(i)->enable) {
+            ui_menu_addItem(menu, getTxn(i)->state.name, NULL, NULL, NULL);
             enableServicesId[cnt++] = i;
         }
     }
@@ -47,8 +47,8 @@ STATE_DEF_EXIT(CardHolder) {
 STATE_DEF_HANDLE(CardHolder, TimeOutEvent) {}
 
 static void gotoService() {
-    statusBar()->setInfo(getService(enableServicesId[selected])->state.name);
-    SM_GOTO(&getService(enableServicesId[selected])->state);
+    statusBar()->setInfo(getTxn(enableServicesId[selected])->state.name);
+    SM_GOTO(&getTxn(enableServicesId[selected])->state);
 }
 
 STATE_DEF_HANDLE(CardHolder, MagEvent) {
@@ -63,7 +63,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     ui_menu_handleItem(menu, ev->key);
     CardHolder* ch = (CardHolder*)state;
     if (ev->key <= KEY_9) {
-        selected = (ServiceId_t)((int)ev->key - 1);
+        selected = (TxnId_t)((int)ev->key - 1);
         if (!ch->isMagSwiped) {
             OOP_CALL(infoPage(), setData, INFO_IMG, ICON_SWIPE_CARD,
                      phraseGetDef(PHRASE_SWIPRE_CARD));
@@ -75,7 +75,7 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     } else if (ev->key == KEY_ESC) {
         GOTO_IDLE();
     } else if (ev->key == KEY_ENTER) {
-        selected = (ServiceId_t)menu->idx;
+        selected = (TxnId_t)menu->idx;
         if (!ch->isMagSwiped) {
             OOP_CALL(infoPage(), setData, INFO_IMG, ICON_SWIPE_CARD,
                      phraseGetDef(PHRASE_SWIPRE_CARD));

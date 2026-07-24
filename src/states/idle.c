@@ -25,7 +25,7 @@
 #include "ui/swipeHint.h"
 #include "ui/digitalReceipt.h"
 #include "assets.h"
-#include "txnOrchestrator/txnPendingMgr.h"
+#include "txnFlow/txnPendingMgr.h"
 
 #define MENU_BAR_HEIGHT 46
 

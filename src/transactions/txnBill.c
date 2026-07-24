@@ -1,4 +1,4 @@
-#include "services.h"
+#include "transaction.h"
 #include "states/states.h"
 #include "sys/sys.h"
 #include "iso/iso8583.h"
@@ -23,7 +23,7 @@ STATE_DEF_ENTER(EnterBillId) {}
 
 STATE_DEF_EXIT(EnterBillId) {}
 
-static void EnterBillId(Sale* parent) {
+static void EnterBillId(Bill* parent) {
     enterBillId = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterBillId, &parent->base.state, "enter bill id");
     enterBillId->vtable.enter = STATE_ENTER(EnterBillId);
@@ -38,7 +38,7 @@ STATE_DEF_ENTER(EnterPayId) {}
 
 STATE_DEF_EXIT(EnterPayId) {}
 
-static void EnterPayId(Sale* parent) {
+static void EnterPayId(Bill* parent) {
     enterPayId = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPayId, &parent->base.state, "enter pay id");
     enterPayId->vtable.enter = STATE_ENTER(EnterPayId);
@@ -53,7 +53,7 @@ STATE_DEF_ENTER(EnterPassword) {}
 
 STATE_DEF_EXIT(EnterPassword) {}
 
-static void EnterPassword(Sale* parent) {
+static void EnterPassword(Bill* parent) {
     enterPass = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, enterPass, &parent->base.state, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
@@ -68,7 +68,7 @@ STATE_DEF_ENTER(Result) {}
 
 STATE_DEF_EXIT(Result) {}
 
-static void Result(Sale* parent) {
+static void Result(Bill* parent) {
     result = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, result, &parent->base.state, "Result");
     result->vtable.enter = STATE_ENTER(Result);
@@ -128,7 +128,7 @@ const TxnFlowConfig billTxn = {
 /******************************************************************/
 
 OOP_CTOR(Bill, State* parent, const char* name) {
-    OOP_CALL_CTOR(Service, self, parent, name);
+    OOP_CALL_CTOR(Transaction, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(Bill);
     self->base.state.vtable.exit  = STATE_EXIT(Bill);
 
