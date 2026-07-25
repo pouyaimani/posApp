@@ -5,6 +5,34 @@
 #include "settings/settings.h"
 #include "sys/sys.h"
 #include "magReader/magReader.h"
+#include "txnFlow/txnPendingMgr.h"
+#include "states.h"
+
+static TxnFlowConfig* txnCfg;
+static TxnFlow*       txnFlow;
+static State*         txnOwnerState;
+
+static int pendMgrDone(bool result) {
+    LOG_DEBUG("Pending manager is done.");
+    if (!result) {
+        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
+                  phraseGetDef(PHRASE_PENDED_TXN_FAILURE), "");
+    }
+    DEFINE_STRING(ip, 32);
+    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+    txnRun(txnFlow, txnOwnerState, ip, settings()->server.mainServerPort,
+           txnCfg);
+}
+
+int8_t txnStart(TxnFlowConfig* cfg, TxnFlow* flow, State* owner) {
+    txnCfg        = cfg;
+    txnFlow       = flow;
+    txnOwnerState = owner;
+    if (!txnPendingMgr()->run(pendMgrDone)) {
+        pendMgrDone(true);
+    }
+    return ERR_OK;
+}
 
 int composeCommon(TxnData* data) {
     magreader()->getPan(data->core.pan, sizeof(data->core.pan));

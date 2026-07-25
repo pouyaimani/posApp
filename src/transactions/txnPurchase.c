@@ -64,11 +64,7 @@ STATE_DEF_ENTER(EnterPassword) {
 
 /******************************************************************/
 
-STATE_DEF_ENTER(Communication) {
-    DEFINE_STRING(ip, 32);
-    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    txnRun(flow, state, ip, settings()->server.mainServerPort, &purchaseTxn);
-}
+STATE_DEF_ENTER(Communication) { txnStart(&purchaseTxn, flow, state); }
 
 static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
     // if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {

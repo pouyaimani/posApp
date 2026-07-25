@@ -416,6 +416,8 @@ X(PHRASE_ENTER_SLEEP_TIME_RANGE        ,   "ورود بازه خاموشی"     
 )
 X(PHRASE_SEC_REC_TIME                  ,   "زمان رسید دوم"              ,   ""
 )
+X(PHRASE_PENDED_TXN_FAILURE            ,   "خطا در تسویه تراکنش تسویه نشده"              ,   ""
+)
 /**********************************************************************
  *
  *                  Report and Transaction Types

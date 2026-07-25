@@ -5,6 +5,7 @@
 #include "error.h"
 #include "settings/settings.h"
 #include "utility/alphabetic.h"
+#include "states.h"
 
 #define RECOVERY_TXN_DATA_ADDR "/mtd0/txn_rec"
 
@@ -24,15 +25,17 @@ static const DataDescriptor pendingTxnDsc[] = {
 void settleDone(TxnFlow* flow, const TxnFlowStatus* st) {
     (void*)flow;
     (void*)st;
-    commonDone(flow, st, NULL, NULL, false);
-    settleDoneCb();
+    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    bool res = (st->result == TXN_FLOW_SUCCESS) && (st->code == 0);
+    settleDoneCb(res);
 }
 
 void reverseDone(TxnFlow* flow, const TxnFlowStatus* st) {
     (void*)flow;
     (void*)st;
-    commonDone(flow, st, NULL, NULL, false);
-    settleDoneCb();
+    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    bool res = (st->result == TXN_FLOW_SUCCESS) && (st->code == 0);
+    settleDoneCb(res);
 }
 
 static Error_t loadTxnData(TxnData* data) {
@@ -43,9 +46,6 @@ static Error_t loadTxnData(TxnData* data) {
         RECOVERY_TXN_DATA_ADDR);
     RETURN_VALUE_IF_NOT(err, ERR_OK, ;, ERR_NOK);
     *data = pendTxnData;
-    LOG_DEBUG("amount = %llu", data->core.amount);
-    LOG_DEBUG("rrn = %llu", data->core.rrn);
-    LOG_DEBUG("trace = %lu", data->core.trace);
     return ERR_OK;
 }
 
@@ -104,70 +104,69 @@ static void markSettlement(TxnData* txn) {
     updateTxnData(txn);
 }
 
-static void processReverse(TxnData* tx) {
-    LOG_TRACE("TxnPendingMgr: processing reverse transaction ...");
+static void processPendedTxn(TxnData* tx, TxnFlowConfig* cfg) {
     txnFlowInit(&flow);
 
     DEFINE_STRING(ip, 32);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    txnRun(&flow, NULL, ip, settings()->server.mainServerPort, &reverseTxn);
+    txnRun(&flow, NULL, ip, settings()->server.mainServerPort, cfg);
     flow.data = *tx;
+}
+
+static void processReverse(TxnData* tx) {
+    LOG_TRACE("TxnPendingMgr: processing reverse transaction ...");
+    processPendedTxn(tx, &reverseTxn);
 }
 
 static void processSettlement(TxnData* tx) {
     LOG_TRACE("TxnPendingMgr: processing settlement transaction ...");
-
-    DEFINE_STRING(ip, 32);
-    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    txnRun(&flow, NULL, ip, settings()->server.mainServerPort, &settlementTxn);
-    flow.data = *tx;
+    processPendedTxn(tx, &settlementTxn);
 }
 
-static bool getPendingReverse(TxnData* data) {
+static bool isReverse(TxnData* data) {
     RETURN_VALUE_IF_NULL(data, ;, false);
     return data->status == TXN_STATUS_PENDING_REVERSE ? true : false;
 }
 
-static bool getPendingSettle(TxnData* data) {
+static bool isSettle(TxnData* data) {
     RETURN_VALUE_IF_NULL(data, ;, false);
     return data->status == TXN_STATUS_PENDING_SETTLEMENT ? true : false;
 }
 
-bool hasPendingTxn() {
-    TxnData txn;
-    loadTxnData(&txn);
-    if (txn.status == TXN_STATUS_PENDING_REVERSE ||
-        txn.status == TXN_STATUS_PENDING_SETTLEMENT) {
+bool hasPendingTxn(TxnData* txn) {
+    if (txn->status == TXN_STATUS_PENDING_REVERSE ||
+        txn->status == TXN_STATUS_PENDING_SETTLEMENT) {
         return true;
     }
     return false;
 }
 
-void run(TxnPendMgrCb cb) {
+bool run(TxnPendMgrCb cb) {
     TxnData tx;
-    settleDoneCb = cb;
     loadTxnData(&tx);
-    if (getPendingReverse(&tx)) {
+    RETURN_VALUE_IF_NOT(
+        hasPendingTxn(&tx), true,
+        LOG_TRACE("TxnPendingMgr: no pending transaction exists.");
+        , false);
+    settleDoneCb = cb;
+    if (isReverse(&tx)) {
         LOG_TRACE("TxnPendingMgr: a reverse txn exists.");
         processReverse(&tx);
-    }
-
-    if (getPendingSettle(&tx)) {
+    } else if (isSettle(&tx)) {
         LOG_TRACE("TxnPendingMgr: a settlement txn exists.");
         processSettlement(&tx);
     }
+    return true;
 }
 
 static void init(TxnPendingMgr* mgr) {
-    mgr->approve           = approve;
-    mgr->decline           = decline;
-    mgr->markReverse       = markReverse;
-    mgr->markSettlement    = markSettlement;
-    mgr->hasPendingTxn     = hasPendingTxn;
-    mgr->getPendingReverse = getPendingReverse;
-    mgr->getPendingSettle  = getPendingSettle;
-    mgr->start             = start;
-    mgr->run               = run;
+    mgr->approve        = approve;
+    mgr->decline        = decline;
+    mgr->markReverse    = markReverse;
+    mgr->markSettlement = markSettlement;
+    mgr->hasPendingTxn  = hasPendingTxn;
+    mgr->start          = start;
+    mgr->run            = run;
 }
 
 TxnPendingMgr* txnPendingMgr(void) {

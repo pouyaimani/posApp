@@ -9,9 +9,11 @@
 
 /******************** txn result state **********************/
 
-static int pendMgrDone() {
-    LOG_DEBUG("Pending manager is done.");
-    SM_GOTO(STATE_IDLE);
+static int pendMgrDone(bool result) {
+    LOG_DEBUG("Pending manager is done. result = %d", result);
+    if (result) {
+        SM_GOTO(STATE_IDLE);
+    }
 }
 
 STATE_DEF_ENTER(TxnResult) {
@@ -24,7 +26,9 @@ STATE_DEF_HANDLE(TxnResult, KeypadEvent) {
     } else if (ev->key == KEY_ESC) {
     }
     hideDigitalRec();
-    txnPendingMgr()->run(pendMgrDone);
+    if (!txnPendingMgr()->run(pendMgrDone)) {
+        SM_GOTO(STATE_IDLE);
+    }
 }
 
 STATE_DEF_HANDLE(TxnResult, TimeOutEvent) {}

@@ -151,7 +151,7 @@ static int8_t onSent(NthTransaction* tx, void* ctx) {
 
     flow->stage = TXN_STAGE_RECEIVING;
 
-    txnPendingMgr()->start(&flow->data);
+    txnPendingMgr()->markReverse(&flow->data);
 
     if (flow->cfg->onReceiving) {
         flow->cfg->onReceiving(flow);

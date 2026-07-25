@@ -4,11 +4,11 @@
 #include "txn.h"
 #include "txnFlow.h"
 
-typedef int (*TxnPendMgrCb)();
+typedef int (*TxnPendMgrCb)(bool result);
 
 typedef struct {
 
-    void (*run)(TxnPendMgrCb);
+    bool (*run)(TxnPendMgrCb);
     void (*start)(TxnData*);
     void (*approve)(TxnData*, bool needSettle);
     void (*decline)(TxnData*);
@@ -16,10 +16,6 @@ typedef struct {
     void (*markSettlement)(TxnData*);
 
     bool (*hasPendingTxn)(void);
-
-    bool (*getPendingReverse)(TxnData*);
-
-    bool (*getPendingSettle)(TxnData*);
 
 } TxnPendingMgr;
 

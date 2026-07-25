@@ -112,6 +112,8 @@ struct TxnFlow {
 
 void txnFlowInit(TxnFlow* flow);
 
+int8_t txnStart(TxnFlowConfig* cfg, TxnFlow* flow, State* owner);
+
 bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
             const TxnFlowConfig* cfg);
 
