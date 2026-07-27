@@ -208,14 +208,16 @@ STATE_DEF_ENTER(EnterFixedAmount) {
 STATE_DEF_ENTER(FixedAmount) {
     ui_menu_create(fixedAmntMenu, disp()->screen);
     fixedAmntMenu->checkEnable = true;
-    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_DISABLE), NULL,
-                    disableFixedAmnt, NULL);
-    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_PRICE_LIST), enterAmount,
-                    setFixedItemToList, NULL);
-    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_FIXED_AMNT), enterAmount,
-                    setFixedItemToSingle, NULL);
+    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_DISABLE),
+                    LV_TEXT_ALIGN_RIGHT, NULL, disableFixedAmnt, NULL);
+    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_PRICE_LIST),
+                    LV_TEXT_ALIGN_RIGHT, enterAmount, setFixedItemToList, NULL);
+    ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_FIXED_AMNT),
+                    LV_TEXT_ALIGN_RIGHT, enterAmount, setFixedItemToSingle,
+                    NULL);
     ui_menu_addItem(fixedAmntMenu, phraseGetDef(PHRASE_FIXED_WITH_COEF),
-                    enterAmount, setFixedItemToVariant, NULL);
+                    LV_TEXT_ALIGN_RIGHT, enterAmount, setFixedItemToVariant,
+                    NULL);
     ui_menu_set_checked(fixedAmntMenu, termStorage->fixedAmountItem);
     listCnt = 0;
     GOTO_MENU(state->parent, fixedAmntMenu, NULL, NULL);
@@ -256,10 +258,10 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
 STATE_DEF_ENTER(MaxAmount) {
     ui_menu_create(maxAmntMenu, disp()->screen);
     maxAmntMenu->checkEnable = true;
-    ui_menu_addItem(maxAmntMenu, phraseGetDef(PHRASE_ENABLE), enterMaxAmnt,
-                    NULL, NULL);
-    ui_menu_addItem(maxAmntMenu, phraseGetDef(PHRASE_DISABLE), NULL, disMaxAmnt,
-                    NULL);
+    ui_menu_addItem(maxAmntMenu, phraseGetDef(PHRASE_ENABLE),
+                    LV_TEXT_ALIGN_RIGHT, enterMaxAmnt, NULL, NULL);
+    ui_menu_addItem(maxAmntMenu, phraseGetDef(PHRASE_DISABLE),
+                    LV_TEXT_ALIGN_RIGHT, NULL, disMaxAmnt, NULL);
     if (termStorage->maxAmntEnable) {
         ui_menu_set_checked(maxAmntMenu, 0);
     } else {
@@ -278,10 +280,10 @@ static void disDirectSale() { settings()->terminal.maxAmntEnable = false; }
 STATE_DEF_ENTER(DirectSale) {
     ui_menu_create(dirSaleMenu, disp()->screen);
     dirSaleMenu->checkEnable = true;
-    ui_menu_addItem(dirSaleMenu, phraseGetDef(PHRASE_ENABLE), NULL,
-                    enDirectSale, NULL);
-    ui_menu_addItem(dirSaleMenu, phraseGetDef(PHRASE_DISABLE), NULL,
-                    disDirectSale, NULL);
+    ui_menu_addItem(dirSaleMenu, phraseGetDef(PHRASE_ENABLE),
+                    LV_TEXT_ALIGN_RIGHT, NULL, enDirectSale, NULL);
+    ui_menu_addItem(dirSaleMenu, phraseGetDef(PHRASE_DISABLE),
+                    LV_TEXT_ALIGN_RIGHT, NULL, disDirectSale, NULL);
 
     GOTO_MENU(state->parent, dirSaleMenu, NULL, NULL);
 }
@@ -318,8 +320,8 @@ static void saveSettings() { settings()->save(); }
 STATE_DEF_ENTER(OtherProjects) {
     ui_menu_create(otherMenu, disp()->screen);
     for (uint8_t i = 0; i < OTH_PROJ_ALL; i++) {
-        ui_menu_addItem(otherMenu, phraseGetDef(dsc[i]), subState[i], NULL,
-                        NULL);
+        ui_menu_addItem(otherMenu, phraseGetDef(dsc[i]), LV_TEXT_ALIGN_RIGHT,
+                        subState[i], NULL, NULL);
     }
     GOTO_MENU(state->parent, otherMenu, saveSettings, NULL);
 }

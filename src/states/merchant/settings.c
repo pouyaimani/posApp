@@ -79,7 +79,8 @@ static SubState* getValue;
 STATE_DEF_ENTER(EnergySettings) {
     ui_menu_create(energyMenu, disp()->screen);
     for (uint8_t i = 0; i < 2; i++) {
-        ui_menu_addItem(energyMenu, &energyItemTxt[i], NULL, NULL, NULL);
+        ui_menu_addItem(energyMenu, &energyItemTxt[i], LV_TEXT_ALIGN_RIGHT,
+                        NULL, NULL, NULL);
     }
     ui_menu_show(energyMenu);
 }
@@ -160,8 +161,8 @@ static Menu* receiptMenu;
 STATE_DEF_ENTER(ReceiptSettings) {
     ui_menu_create(receiptMenu, disp()->screen);
     for (uint8_t i = 0; i < 4; i++) {
-        ui_menu_addItem(receiptMenu, &receiptItemTxt[i], subReceipt[i], NULL,
-                        NULL);
+        ui_menu_addItem(receiptMenu, &receiptItemTxt[i], LV_TEXT_ALIGN_RIGHT,
+                        subReceipt[i], NULL, NULL);
     }
     GOTO_MENU(state->parent, receiptMenu, NULL, NULL);
 }
@@ -233,8 +234,10 @@ static Menu* prnModel;
 
 STATE_DEF_ENTER(PrnModel) {
     ui_menu_create(prnModel, disp()->screen);
-    ui_menu_addItem(prnModel, "پس زمینه سفید", NULL, NULL, NULL);
-    ui_menu_addItem(prnModel, "پس زمینه مشکی", NULL, NULL, NULL);
+    ui_menu_addItem(prnModel, "پس زمینه سفید", LV_TEXT_ALIGN_RIGHT, NULL, NULL,
+                    NULL);
+    ui_menu_addItem(prnModel, "پس زمینه مشکی", LV_TEXT_ALIGN_RIGHT, NULL, NULL,
+                    NULL);
     ui_menu_show(prnModel);
 }
 
@@ -401,7 +404,7 @@ static void createUi() {
     ui_menu_create(settingsMenu, disp()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL; i++) {
         ui_menu_addItem(settingsMenu, phraseGetDef(SettingsItemTxt[i]),
-                        subSettings[i], NULL, NULL);
+                        LV_TEXT_ALIGN_RIGHT, subSettings[i], NULL, NULL);
     }
 }
 

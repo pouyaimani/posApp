@@ -26,7 +26,8 @@ STATE_DEF_ENTER(AmountList) {
         char amount[LEN_MAX_AMOUNT] = {0};
         amountSeparator(termStorage->amountList[i], amount, LEN_MAX_AMOUNT);
         snprintf(str, sizeof(str), "[ %s ] [ %s ]", amount, "ریال");
-        ui_menu_addItem(amountListMenu, str, NULL, NULL, NULL);
+        ui_menu_addItem(amountListMenu, str, LV_TEXT_ALIGN_RIGHT, NULL, NULL,
+                        NULL);
     }
     GOTO_MENU(STATE_IDLE, amountListMenu, NULL, NULL);
 }

@@ -7,8 +7,8 @@
 #include "phrases/phrases.h"
 #include "common.h"
 
-void ui_menu_addItem(Menu* menu, const char* text, State* state, CallBack_t cb,
-                     void* user_data) {
+void ui_menu_addItem(Menu* menu, const char* text, lv_text_align_t txtAlign,
+                     State* state, CallBack_t cb, void* user_data) {
     RETURN_IF_NULL(menu, ;);
     if (menu->cnt >= MENU_ITEM_MAX) {
         LOG_ERROR("Menu full");
@@ -27,7 +27,7 @@ void ui_menu_addItem(Menu* menu, const char* text, State* state, CallBack_t cb,
     LV_SET_BORDER_OPA(label, LV_OPA_0);
     LV_SET_TEXT_FONT(label, FONT_20);
     LV_ALIGN(label, LV_ALIGN_CENTER, 0, 0);
-    LV_SET_TEXT_ALIGN(label, LV_TEXT_ALIGN_RIGHT);
+    LV_SET_TEXT_ALIGN(label, txtAlign);
     DEFINE_STRING(str, 64);
     DEFINE_STRING(num, 4);
     snprintf(num, sizeof(num), "%d", menu->cnt + 1);
@@ -216,8 +216,10 @@ void ui_menu_destroy(Menu* menu) {
 void ui_menu_on_off(Menu* menu, lv_obj_t* parent) {
     RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_ENABLE), NULL, NULL, NULL);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_DISABLE), NULL, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_ENABLE), LV_TEXT_ALIGN_RIGHT,
+                    NULL, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_DISABLE), LV_TEXT_ALIGN_RIGHT,
+                    NULL, NULL, NULL);
 }
 
 void ui_menu_togglable(Menu* menu, lv_obj_t* parent) {

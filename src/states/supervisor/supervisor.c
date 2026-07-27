@@ -280,9 +280,10 @@ static void disSSL() { settings()->server.sslEn = 0; }
 STATE_DEF_ENTER(EnableSsl) {
     ui_menu_create(sslMenu, disp()->screen);
     sslMenu->checkEnable = true;
-    ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_ENABLE), success, enSSL, NULL);
-    ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_DISABLE), success, disSSL,
-                    NULL);
+    ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_ENABLE), LV_TEXT_ALIGN_RIGHT,
+                    success, enSSL, NULL);
+    ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_DISABLE), LV_TEXT_ALIGN_RIGHT,
+                    success, disSSL, NULL);
     GOTO_MENU(state->parent, sslMenu, NULL, NULL);
     ui_menu_set_checked(sslMenu, !settings()->server.sslEn);
 }
@@ -312,11 +313,11 @@ static void setItemToTms() { serverItem = SERV_SET_TMS; }
 STATE_DEF_ENTER(NetworkSettings) {
     ui_menu_create(serverSetMenu, disp()->screen);
     ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SERVER_SETTINGS),
-                    enterIp, setItemToMainServer, NULL);
-    ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_TMS_SETTINGS), enterIp,
-                    setItemToTms, NULL);
-    ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SSL), enableSsl, NULL,
-                    NULL);
+                    LV_TEXT_ALIGN_RIGHT, enterIp, setItemToMainServer, NULL);
+    ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_TMS_SETTINGS),
+                    LV_TEXT_ALIGN_RIGHT, enterIp, setItemToTms, NULL);
+    ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SSL),
+                    LV_TEXT_ALIGN_RIGHT, enableSsl, NULL, NULL);
     GOTO_MENU(state->parent, serverSetMenu, NULL, NULL);
 }
 
@@ -402,8 +403,8 @@ static Menu* menu;
 STATE_DEF_ENTER(SupervisorMenu) {
     ui_menu_create(menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL; i++) {
-        ui_menu_addItem(menu, phraseGetDef(itemTxt[i]), subStates[i], NULL,
-                        NULL);
+        ui_menu_addItem(menu, phraseGetDef(itemTxt[i]), LV_TEXT_ALIGN_RIGHT,
+                        subStates[i], NULL, NULL);
     }
     GOTO_MENU(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
 }

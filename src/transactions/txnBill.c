@@ -119,11 +119,8 @@ static int compose(TxnData* txnData) {
 
 static void billDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        // settings()->save();
     }
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    // SM_GOTO(result);
-    // &flow->data
 }
 
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,

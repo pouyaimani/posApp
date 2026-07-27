@@ -158,7 +158,8 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
         for (uint8_t i = 0; i < wifi()->apList.size; i++) {
             DEFINE_STRING(safeSsid, 64);
             normalize_ssid(wifi()->apList.list[i].essid, safeSsid);
-            ui_menu_addItem(wifiMenu, safeSsid, wifiEnterPass, NULL, NULL);
+            ui_menu_addItem(wifiMenu, safeSsid, LV_TEXT_ALIGN_RIGHT,
+                            wifiEnterPass, NULL, NULL);
         }
         HIDE_INFO();
         ui_menu_show(wifiMenu);
@@ -237,7 +238,8 @@ static void createUi() {
     menuCount        = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
     if (sys()->module.wifi) {
-        ui_menu_addItem(menu, phraseGetDef(PHRASE_WIFI), wifiScan, NULL, NULL);
+        ui_menu_addItem(menu, phraseGetDef(PHRASE_WIFI), LV_TEXT_ALIGN_RIGHT,
+                        wifiScan, NULL, NULL);
         menuMap[menuCount] = CONNECTION_WIFI;
         if (route == NET_ROUTE_WIFI) {
             ui_menu_set_checked(menu, menuCount);
@@ -245,8 +247,8 @@ static void createUi() {
         menuCount++;
     }
     if (sys()->module.gprs) {
-        ui_menu_addItem(menu, phraseGetDef(PHRASE_GPRS), cellularLogin, NULL,
-                        NULL);
+        ui_menu_addItem(menu, phraseGetDef(PHRASE_GPRS), LV_TEXT_ALIGN_RIGHT,
+                        cellularLogin, NULL, NULL);
         menuMap[menuCount] = CONNECTION_GPRS;
         if (route == NET_ROUTE_CELLUALR) {
             ui_menu_set_checked(menu, menuCount);

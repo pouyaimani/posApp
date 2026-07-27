@@ -40,8 +40,8 @@ void ui_menu_on_off(Menu* menu, lv_obj_t* parent);
 
 void ui_menu_togglable(Menu* menu, lv_obj_t* parent);
 
-void ui_menu_addItem(Menu* menu, const char* text, State* state, CallBack_t cb,
-                     void* user_data);
+void ui_menu_addItem(Menu* menu, const char* text, lv_text_align_t txtAlign,
+                     State* state, CallBack_t cb, void* user_data);
 
 void ui_menu_handleItem(Menu* menu, Key_t key);
 

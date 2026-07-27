@@ -30,12 +30,14 @@ static void onExit() {
 
 STATE_DEF_ENTER(Supporter) {
     ui_menu_create(menu, disp()->screen);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_CUSTOMER), NULL, onCustomer,
-                    NULL);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_MERCHANT), merchant, NULL, NULL);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_SUPERVISOR), supervisor, NULL,
-                    NULL);
-    ui_menu_addItem(menu, phraseGetDef(PHRASE_TURN_OFF), NULL, onExit, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_CUSTOMER), LV_TEXT_ALIGN_RIGHT,
+                    NULL, onCustomer, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_MERCHANT), LV_TEXT_ALIGN_RIGHT,
+                    merchant, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_SUPERVISOR), LV_TEXT_ALIGN_RIGHT,
+                    supervisor, NULL, NULL);
+    ui_menu_addItem(menu, phraseGetDef(PHRASE_TURN_OFF), LV_TEXT_ALIGN_RIGHT,
+                    NULL, onExit, NULL);
     GOTO_MENU(STATE_IDLE, menu, NULL, NULL);
 }
 

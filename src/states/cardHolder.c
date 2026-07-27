@@ -22,7 +22,8 @@ static void createUi() {
     int cnt = 0;
     for (uint8_t i = 0; i < TXN_ID_ALL; i++) {
         if (getTxn(i)->enable) {
-            ui_menu_addItem(menu, getTxn(i)->state.name, NULL, NULL, NULL);
+            ui_menu_addItem(menu, getTxn(i)->state.name, LV_TEXT_ALIGN_RIGHT,
+                            NULL, NULL, NULL);
             enableServicesId[cnt++] = i;
         }
     }

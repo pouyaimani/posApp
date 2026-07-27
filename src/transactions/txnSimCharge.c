@@ -56,12 +56,12 @@ static void SelectOperator(State* parent) {
     OOP_CALL_CTOR(State, selectOperator, parent, "select operator");
     selectOperator->vtable.enter = STATE_ENTER(SelectOperator);
     ui_menu_create(&opSelectionMenu, disp()->screen);
-    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MCI), NULL,
-                    setOpMci, selectAmount);
-    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MTN), NULL,
-                    setOpMtn, selectAmount);
-    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL), NULL,
-                    setOpRightel, selectAmount);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MCI),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setOpMci, selectAmount);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MTN),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setOpMtn, selectAmount);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setOpRightel, selectAmount);
     ui_menu_hide(&opSelectionMenu);
 }
 
@@ -85,30 +85,44 @@ static void setAmnt(void* arg) { selectedAmnt = *((uint64_t*)arg); }
 void setMtnChargeAmnt() {
     // 5-10-20-50-100
     State* next = txn == TXN_VOUCHER ? enterPass : NULL;
-    ui_menu_addItem(&amntSelectionMenu, "50,000", next, setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", next, setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", next, setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", next, setAmnt, &amnt[4]);
-    ui_menu_addItem(&amntSelectionMenu, "1,000,000", next, setAmnt, &amnt[5]);
+    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[1]);
+    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[2]);
+    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[3]);
+    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[4]);
+    ui_menu_addItem(&amntSelectionMenu, "1,000,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[5]);
 }
 
 void setMciChargeAmnt() {
     // 5-10-20-50
     State* next = txn == TXN_VOUCHER ? enterPass : NULL;
-    ui_menu_addItem(&amntSelectionMenu, "50,000", next, setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", next, setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", next, setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", next, setAmnt, &amnt[4]);
+    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[1]);
+    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[2]);
+    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[3]);
+    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[4]);
 }
 
 void setRightelChargeAmnt() {
     // 2-5-10-20-50
     State* next = txn == TXN_VOUCHER ? enterPass : NULL;
-    ui_menu_addItem(&amntSelectionMenu, "20,000", next, setAmnt, &amnt[0]);
-    ui_menu_addItem(&amntSelectionMenu, "50,000", next, setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", next, setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", next, setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", next, setAmnt, &amnt[4]);
+    ui_menu_addItem(&amntSelectionMenu, "20,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[0]);
+    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[1]);
+    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[2]);
+    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[3]);
+    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, next,
+                    setAmnt, &amnt[4]);
 }
 
 STATE_DEF_ENTER(SelectAmount) {

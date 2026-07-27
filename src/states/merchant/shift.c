@@ -328,7 +328,7 @@ static void createUi() {
     ui_menu_create(shiftItemMenu, disp()->screen);
     for (uint8_t i = 0; i < SHIFT_ITEM_ALL; i++) {
         ui_menu_addItem(shiftItemMenu, phraseGetDef(shiftItemTxt[i]),
-                        subShift[i], NULL, NULL);
+                        LV_TEXT_ALIGN_RIGHT, subShift[i], NULL, NULL);
     }
 }
 
