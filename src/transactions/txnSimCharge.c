@@ -1,0 +1,315 @@
+#include "transaction.h"
+#include "states/states.h"
+#include "display/display.h"
+#include "sys/sys.h"
+#include "iso/iso8583.h"
+#include "ui/menu.h"
+#include "phrases/phrases.h"
+#include "input/inputMgr.h"
+
+/******************************************************************
+ *                           Substates
+ ******************************************************************/
+
+static SubState* selectOperator;
+static SubState* selectAmount;
+static SubState* enterPass;
+static SubState* communication;
+
+/******************************************************************
+ *                Global variable within this file
+ ******************************************************************/
+
+static Menu opSelectionMenu;
+static Menu amntSelectionMenu;
+
+typedef enum {
+    OPERATOR_MCI = 0,
+    OPERATOR_MTN,
+    OPERATOR_RIGHTEL,
+    OPERATOR_ALL
+} OperatorItem_t;
+
+static OperatorItem_t selectedOp;
+static TxnType        txn;
+
+static TxnFlow* flow;
+
+static TxnFlowConfig* cfg;
+
+/******************************************************************
+ *                   Select Operator sub state
+ ******************************************************************/
+
+void setOpMtn(void* arg) { selectedOp = OPERATOR_MTN; }
+
+void setOpMci(void* arg) { selectedOp = OPERATOR_MCI; }
+
+void setOpRightel(void* arg) { selectedOp = OPERATOR_RIGHTEL; }
+
+STATE_DEF_ENTER(SelectOperator) {
+    GOTO_MENU(STATE_IDLE, &opSelectionMenu, NULL, NULL);
+}
+
+static void SelectOperator(State* parent) {
+    selectOperator = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, selectOperator, parent, "select operator");
+    selectOperator->vtable.enter = STATE_ENTER(SelectOperator);
+    ui_menu_create(&opSelectionMenu, disp()->screen);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MCI), NULL,
+                    setOpMci, selectAmount);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MTN), NULL,
+                    setOpMtn, selectAmount);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL), NULL,
+                    setOpRightel, selectAmount);
+    ui_menu_hide(&opSelectionMenu);
+}
+
+/******************************************************************
+ *                   Select amount sub state
+ ******************************************************************/
+
+static const uint64_t amnt[] = {
+    20000,  // 0
+    50000,  // 1
+    100000, // 2
+    200000, // 3
+    500000, // 4
+    1000000 // 5
+};
+
+static uint64_t selectedAmnt;
+
+static void setAmnt(void* arg) { selectedAmnt = *((uint64_t*)arg); }
+
+void setMtnChargeAmnt() {
+    // 5-10-20-50-100
+    State* next = txn == TXN_VOUCHER ? enterPass : NULL;
+    ui_menu_addItem(&amntSelectionMenu, "50,000", next, setAmnt, &amnt[1]);
+    ui_menu_addItem(&amntSelectionMenu, "100,000", next, setAmnt, &amnt[2]);
+    ui_menu_addItem(&amntSelectionMenu, "200,000", next, setAmnt, &amnt[3]);
+    ui_menu_addItem(&amntSelectionMenu, "500,000", next, setAmnt, &amnt[4]);
+    ui_menu_addItem(&amntSelectionMenu, "1,000,000", next, setAmnt, &amnt[5]);
+}
+
+void setMciChargeAmnt() {
+    // 5-10-20-50
+    State* next = txn == TXN_VOUCHER ? enterPass : NULL;
+    ui_menu_addItem(&amntSelectionMenu, "50,000", next, setAmnt, &amnt[1]);
+    ui_menu_addItem(&amntSelectionMenu, "100,000", next, setAmnt, &amnt[2]);
+    ui_menu_addItem(&amntSelectionMenu, "200,000", next, setAmnt, &amnt[3]);
+    ui_menu_addItem(&amntSelectionMenu, "500,000", next, setAmnt, &amnt[4]);
+}
+
+void setRightelChargeAmnt() {
+    // 2-5-10-20-50
+    State* next = txn == TXN_VOUCHER ? enterPass : NULL;
+    ui_menu_addItem(&amntSelectionMenu, "20,000", next, setAmnt, &amnt[0]);
+    ui_menu_addItem(&amntSelectionMenu, "50,000", next, setAmnt, &amnt[1]);
+    ui_menu_addItem(&amntSelectionMenu, "100,000", next, setAmnt, &amnt[2]);
+    ui_menu_addItem(&amntSelectionMenu, "200,000", next, setAmnt, &amnt[3]);
+    ui_menu_addItem(&amntSelectionMenu, "500,000", next, setAmnt, &amnt[4]);
+}
+
+STATE_DEF_ENTER(SelectAmount) {
+    ui_menu_create(&amntSelectionMenu, disp()->screen);
+    switch (selectedOp) {
+    case OPERATOR_MCI:
+        setMciChargeAmnt();
+        break;
+    case OPERATOR_MTN:
+        setMtnChargeAmnt();
+        break;
+    case OPERATOR_RIGHTEL:
+        setRightelChargeAmnt();
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void SelectAmount(State* parent) {
+    selectAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, selectAmount, parent, "select amount");
+    selectAmount->vtable.enter = STATE_ENTER(SelectAmount);
+}
+
+/******************************************************************
+ *                   Enter pass sub state
+ ******************************************************************/
+
+STATE_DEF_ENTER(EnterPassword) {
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_PED,
+            .mode   = INMD_ENTER_PIN,
+            .title  = phraseGetDef(PHRASE_CARD_PIN),
+            .info   = phraseGetDef(PHRASE_BY_CUSTOMER),
+            .maxLen = LEN_MAX_CARD_PIN,
+        },
+        STATE_IDLE, communication);
+}
+
+static void EnterPassword(Voucher* parent) {
+    enterPass = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, enterPass, &parent->base.state, "enter password");
+    enterPass->vtable.enter = STATE_ENTER(EnterPassword);
+}
+
+/******************************************************************
+ *                   Communication sub state
+ ******************************************************************/
+
+STATE_DEF_ENTER(Communication) { txnStart(cfg, flow, state); }
+
+static void Communication(State* parent) {
+    communication = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, communication, parent, "Communication");
+    communication->vtable.enter = STATE_ENTER(Communication);
+}
+
+static void createCommonStates(State* state) {
+    CALL_ONCE(SelectOperator(state); SelectAmount(state); EnterPassword(state);
+              Communication(state););
+}
+
+/******************************************************************
+ *                      Voucher Transaction
+ ******************************************************************/
+
+static void voucherDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+        // settings()->save();
+    }
+    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    // SM_GOTO(result);
+    // &flow->data
+}
+
+static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
+                                           ELEMENT_PROCESSING_CODE,
+                                           ELEMENT_AMOUNT_TRANSACTION,
+                                           ELEMENT_STAN,
+                                           ELEMENT_TIME_LOCAL_TRANSACTION,
+                                           ELEMENT_DATE_LOCAL_TRANSACTION,
+                                           ELEMENT_POS_ENTRY_MODE,
+                                           ELEMENT_NETWORK_INTL_ID,
+                                           ELEMENT_POS_CONDITION_CODE,
+                                           ELEMENT_ACQUIRING_INSTITUTION_ID,
+                                           ELEMENT_TRACK2,
+                                           ELEMENT_TERMINAL_ID,
+                                           ELEMENT_CARD_ACCEPTOR_ID,
+                                           ELEMENT_ADDITIONAL_DATA_PRIVATE,
+                                           ELEMENT_CURRENCY_CODE_TRANSACTION,
+                                           ELEMENT_PIN_DATA,
+                                           ELEMENT_SECURITY_CONTROL_INFO,
+                                           ELEMENT_MAC};
+
+const TxnFlowConfig voucherTxn = {
+
+    .mti = MTI_FIN_REQ,
+
+    .prcode = PRC_PURCHASE,
+
+    .feilds = isoFeildsVoucher,
+
+    .feildsCnt = sizeof(isoFeildsVoucher),
+
+    .build = buildCommon,
+
+    .parse = parseCommon,
+
+    .done = voucherDone,
+
+    .onConnecting = showConnecting,
+
+    .onSending = showSending,
+
+    .onReceiving = showReceiving};
+
+STATE_DEF_ENTER(Voucher) {
+    memset(flow, 0, sizeof(*flow));
+    txn = TXN_VOUCHER;
+}
+
+STATE_DEF_EXIT(Voucher) {}
+
+OOP_CTOR(Voucher, State* parent, const char* name) {
+    OOP_CALL_CTOR(Transaction, self, parent, name);
+    self->base.state.vtable.enter = STATE_ENTER(Voucher);
+    self->base.state.vtable.exit  = STATE_EXIT(Voucher);
+
+    createCommonStates(&self->base.state);
+
+    flow = self->base.flow;
+}
+
+/******************************************************************
+ *                      TopUp Transaction
+ ******************************************************************/
+
+STATE_DEF_ENTER(TopUp) {
+    memset(flow, 0, sizeof(*flow));
+    txn = TXN_TOP_UP;
+}
+
+STATE_DEF_EXIT(TopUp) {}
+
+static void topupDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+        // settings()->save();
+    }
+    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    // SM_GOTO(result);
+    // &flow->data
+}
+
+static const uint8_t isoFeildsTopUp[] = {ELEMENT_PAN,
+                                         ELEMENT_PROCESSING_CODE,
+                                         ELEMENT_AMOUNT_TRANSACTION,
+                                         ELEMENT_STAN,
+                                         ELEMENT_TIME_LOCAL_TRANSACTION,
+                                         ELEMENT_DATE_LOCAL_TRANSACTION,
+                                         ELEMENT_POS_ENTRY_MODE,
+                                         ELEMENT_NETWORK_INTL_ID,
+                                         ELEMENT_POS_CONDITION_CODE,
+                                         ELEMENT_ACQUIRING_INSTITUTION_ID,
+                                         ELEMENT_TRACK2,
+                                         ELEMENT_TERMINAL_ID,
+                                         ELEMENT_CARD_ACCEPTOR_ID,
+                                         ELEMENT_ADDITIONAL_DATA_PRIVATE,
+                                         ELEMENT_CURRENCY_CODE_TRANSACTION,
+                                         ELEMENT_PIN_DATA,
+                                         ELEMENT_SECURITY_CONTROL_INFO,
+                                         ELEMENT_MAC};
+
+const TxnFlowConfig topupTxn = {
+
+    .mti = MTI_FIN_REQ,
+
+    .prcode = PRC_PURCHASE,
+
+    .feilds = isoFeildsTopUp,
+
+    .feildsCnt = sizeof(isoFeildsTopUp),
+
+    .build = buildCommon,
+
+    .parse = parseCommon,
+
+    .done = topupDone,
+
+    .onConnecting = showConnecting,
+
+    .onSending = showSending,
+
+    .onReceiving = showReceiving};
+
+OOP_CTOR(TopUp, State* parent, const char* name) {
+    OOP_CALL_CTOR(Transaction, self, parent, name);
+    self->base.state.vtable.enter = STATE_ENTER(TopUp);
+    self->base.state.vtable.exit  = STATE_EXIT(TopUp);
+    createCommonStates(&self->base.state);
+    flow = self->base.flow;
+}

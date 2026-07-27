@@ -12,12 +12,20 @@
 #include "iso/iso8583.h"
 #include "ui/infoPage.h"
 
+/******************************************************************
+ *                           Substates
+ ******************************************************************/
 static SubState* enterAmount;
 static SubState* enterPass;
 static SubState* result;
 static SubState* commu;
-static uint64_t  amount;
-static TxnFlow*  flow;
+
+/******************************************************************
+ *                Global variable within this file
+ ******************************************************************/
+
+static uint64_t amount;
+static TxnFlow* flow;
 
 extern const TxnFlowConfig purchaseTxn;
 
@@ -26,7 +34,9 @@ STATE_DEF_ENTER(Purchase) {
     SM_GOTO(enterAmount);
 }
 
-/******************** Enter amount sub state **********************/
+/******************************************************************
+ *                Enter amount sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(EnterAmount) {
     inmgr()->run(
@@ -39,7 +49,10 @@ STATE_DEF_ENTER(EnterAmount) {
         STATE_IDLE, enterPass);
 }
 
-/******************** Enter pass sub state **********************/
+/******************************************************************
+ *                Enter pass sub state
+ ******************************************************************/
+
 STATE_DEF_ENTER(EnterPassword) {
     amount = 0;
     if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
@@ -62,7 +75,9 @@ STATE_DEF_ENTER(EnterPassword) {
         STATE_IDLE, commu);
 }
 
-/******************************************************************/
+/******************************************************************
+ *                Communication sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(Communication) { txnStart(&purchaseTxn, flow, state); }
 

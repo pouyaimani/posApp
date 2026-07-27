@@ -49,6 +49,88 @@ void setCommonLtv(char* deviceSerial, const char* version, int iLang,
     sprintf(buff, "%s", buffer);
 }
 
+void setVoucherLtv(char* deviceSerial, const char* version, int iLang,
+                   const char* code, char* buff) {
+    int  len         = 0;
+    char temp[128]   = {0};
+    char pack[128]   = {0};
+    char buffer[128] = {0};
+    char model[64]   = {0};
+
+    len = strlen(deviceSerial);
+    pubBytesToHexString((unsigned char*)deviceSerial, len, temp);
+    len += 1;
+    sprintf(pack, "%02d01%s", len, temp);
+    strcpy(buffer, pack);
+
+    memset(temp, 0x00, sizeof(temp));
+    memset(pack, 0x00, sizeof(pack));
+    len = strlen(version);
+    pubBytesToHexString((unsigned char*)version, len, temp);
+    len += 1;
+    sprintf(pack, "%02d02%s", len, temp);
+    strcat(buffer, pack);
+
+    memset(pack, 0x00, sizeof(pack));
+    sprintf(pack, "0203%s", (iLang == 1) ? "31" : "30");
+    strcat(buffer, pack);
+
+    memset(temp, 0x00, sizeof(temp));
+    memset(pack, 0x00, sizeof(pack));
+    len = strlen(code);
+    pubBytesToHexString((unsigned char*)code, len, temp);
+    len += 1;
+    sprintf(pack, "%02d14%s", len, temp);
+    strcat(buffer, pack);
+
+    sprintf(buff, "%s", buffer);
+}
+
+void setTopupLtv(char* deviceSerial, const char* version, int iLang,
+                 const char* code, const char* phone, char* buff) {
+    int  len         = 0;
+    char temp[128]   = {0};
+    char pack[128]   = {0};
+    char buffer[128] = {0};
+    char model[64]   = {0};
+
+    len = strlen(deviceSerial);
+    pubBytesToHexString((unsigned char*)deviceSerial, len, temp);
+    len += 1;
+    sprintf(pack, "%02d01%s", len, temp);
+    strcpy(buffer, pack);
+
+    memset(temp, 0x00, sizeof(temp));
+    memset(pack, 0x00, sizeof(pack));
+    len = strlen(version);
+    pubBytesToHexString((unsigned char*)version, len, temp);
+    len += 1;
+    sprintf(pack, "%02d02%s", len, temp);
+    strcat(buffer, pack);
+
+    memset(pack, 0x00, sizeof(pack));
+    sprintf(pack, "0203%s", (iLang == 1) ? "31" : "30");
+    strcat(buffer, pack);
+
+    memset(temp, 0x00, sizeof(temp));
+    memset(pack, 0x00, sizeof(pack));
+    len = strlen(code);
+    pubBytesToHexString((unsigned char*)code, len, temp);
+    len += 1;
+    sprintf(pack, "%02d14%s", len, temp);
+    strcat(buffer, pack);
+
+    memset(temp, 0x00, sizeof(temp));
+    memset(pack, 0x00, sizeof(pack));
+    len = strlen(phone);
+    pubBytesToHexString((unsigned char*)phone, len, temp);
+    len += 1;
+    sprintf(pack, "%02d08%s", len, temp);
+    strcat(buffer, pack);
+
+    sprintf(buff, "%s", buffer);
+}
+
 int unpackLtv(char* buffer, LtvStructInfo ltvStructInfo[]) {
     int c = 0;
     int i = 0;

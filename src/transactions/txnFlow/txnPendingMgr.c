@@ -61,12 +61,6 @@ static Error_t updateTxnData(TxnData* data) {
                            RECOVERY_TXN_DATA_ADDR);
 }
 
-static void start(TxnData* txn, bool needSettle) {
-    LOG_TRACE("TxnPendingMgr: transaction is started ...");
-    txn->status = TXN_STATUS_NEW;
-    updateTxnData(txn);
-}
-
 static void approve(TxnData* txn, bool needSettle) {
     RETURN_IF_NULL(txn, ;);
     txn->status = TXN_STATUS_APPROVED;
@@ -165,7 +159,6 @@ static void init(TxnPendingMgr* mgr) {
     mgr->markReverse    = markReverse;
     mgr->markSettlement = markSettlement;
     mgr->hasPendingTxn  = hasPendingTxn;
-    mgr->start          = start;
     mgr->run            = run;
 }
 

@@ -13,6 +13,11 @@ typedef struct {
 void setCommonLtv(char* deviceSerial, const char* version, int iLang,
                   char* buff);
 
+void setTopupLtv(char* deviceSerial, const char* version, int iLang,
+                 const char* code, const char* phone, char* buff);
+void setVoucherLtv(char* deviceSerial, const char* version, int iLang,
+                   const char* code, char* buff);
+
 int unpackLtv(char* buffer, LtvStructInfo ltvStructInfo[]);
 
 #endif

@@ -524,8 +524,8 @@ Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
         case TXN_PAY:
             builder = buildPaymentReceipt;
             break;
-        case TXN_SIM_CHARGE:
-            builder = buildChargeCodeReceipt;
+            // case TXN_SIM_CHARGE:
+            //     builder = buildChargeCodeReceipt;
             break;
         default:
             break;
@@ -739,8 +739,8 @@ Result_t showDigitalRec(const TxnData* data) {
         break;
     case TXN_PAY:
         break;
-    case TXN_SIM_CHARGE:
-        break;
+    // case TXN_SIM_CHARGE:
+    //     break;
     default:
         break;
     }

@@ -2,11 +2,19 @@
 #include "states/states.h"
 #include "sys/sys.h"
 
+/******************************************************************
+ *                           Substates
+ ******************************************************************/
+
 static SubState* enterAccountId;
 static SubState* enterPayId;
 static SubState* enterPass;
 static SubState* communication;
 static SubState* result;
+
+/******************************************************************
+ *                Global variable within this file
+ ******************************************************************/
 
 static TxnFlow* flow;
 
@@ -16,7 +24,10 @@ STATE_DEF_ENTER(Pay) {
 }
 
 STATE_DEF_EXIT(Pay) {}
-/******************** Enter account id sub state **********************/
+
+/******************************************************************
+ *                Enter account id sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(EnterAccountId) {}
 
@@ -30,9 +41,9 @@ static void EnterAccountId(Pay* parent) {
     enterAccountId->vtable.exit  = STATE_EXIT(EnterAccountId);
 }
 
-/******************************************************************/
-
-/******************** Enter pay id sub state **********************/
+/******************************************************************
+ *                Enter pay id sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(EnterPayId) {}
 
@@ -45,9 +56,9 @@ static void EnterPayId(Pay* parent) {
     enterPayId->vtable.exit  = STATE_EXIT(EnterPayId);
 }
 
-/******************************************************************/
-
-/******************** Enter pass sub state **********************/
+/******************************************************************
+ *                Enter pass sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(EnterPassword) {}
 
@@ -60,9 +71,9 @@ static void EnterPassword(Pay* parent) {
     enterPass->vtable.exit  = STATE_EXIT(EnterPassword);
 }
 
-/******************************************************************/
-
-/*********************** Result sub state *************************/
+/******************************************************************
+ *                Result sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(Result) {}
 
@@ -74,8 +85,6 @@ static void Result(Pay* parent) {
     result->vtable.enter = STATE_ENTER(Result);
     result->vtable.exit  = STATE_EXIT(Result);
 }
-
-/******************************************************************/
 
 OOP_CTOR(Pay, State* parent, const char* name) {
     OOP_CALL_CTOR(Transaction, self, parent, name);

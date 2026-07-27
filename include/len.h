@@ -28,3 +28,7 @@
 #define LEN_MAX_UINT_32     11
 #define LEN_MAX_INT_64      21
 #define LEN_MAX_UINT_64     21
+#define LEN_PAYMENT_ID_MIN  6
+#define LEN_PAYMENT_ID_MAX  13
+#define LEN_BILL_ID_MIN     6
+#define LEN_BILL_ID_MAX     13

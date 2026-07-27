@@ -11,16 +11,26 @@
 #include "iso/iso8583.h"
 #include "receipt/receiptTemplates.h"
 
+/******************************************************************
+ *                           Substates
+ ******************************************************************/
+
 static SubState* enterPin;
 static SubState* checkPin;
 static SubState* commu;
 static SubState* result;
 
+/******************************************************************
+ *                Global variable within this file
+ ******************************************************************/
+
 static TxnFlow* flow;
 
 STATE_DEF_ENTER(Balance) { SM_GOTO(enterPin); }
 
-/******************** Enter pass sub state **********************/
+/******************************************************************
+ *                Enter pass sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(EnterPin) {
     static DEFINE_STRING(wage, 56);
@@ -41,7 +51,9 @@ STATE_DEF_ENTER(EnterPin) {
         STATE_IDLE, commu);
 }
 
-/******************** Connection sub state **********************/
+/******************************************************************
+ *                  Communication sub state
+ ******************************************************************/
 
 STATE_DEF_ENTER(Communication) {
     DEFINE_STRING(ip, 32);
@@ -49,7 +61,9 @@ STATE_DEF_ENTER(Communication) {
     txnRun(flow, state, ip, settings()->server.mainServerPort, &balanceTxn);
 }
 
-/*********************** Result sub state *************************/
+/******************************************************************
+ *                  Result sub state
+ ******************************************************************/
 
 static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
     flow->data.core.txnType = TXN_BALANCE;
@@ -101,8 +115,6 @@ const TxnFlowConfig balanceTxn = {
     .onReceiving = showReceiving,
 
     .needSettlement = false};
-
-/******************************************************************/
 
 OOP_CTOR(Balance, State* parent, const char* name) {
     OOP_CALL_CTOR(Transaction, self, parent, name);

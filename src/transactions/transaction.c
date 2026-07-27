@@ -14,7 +14,7 @@ static TxnFlow      flow;
 static const char* TxnTypeStr[] = {
     [TXN_SALE] = "خرید",         [TXN_BILL] = "پرداخت قبض",
     [TXN_TOPUP] = "شارژ مستقیم", [TXN_BALANCE] = "موجودی",
-    [TXN_PAY] = "پرداخت",        [TXN_SIM_CHARGE] = "کد شارژ",
+    [TXN_PAY] = "پرداخت",        [TXN_VOUCHER] = "کد شارژ",
     [TXN_ALL] = "همه تراکنش ها"};
 
 int8_t getTxnName(TxnType type, char* name, size_t size) {

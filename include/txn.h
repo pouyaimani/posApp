@@ -100,8 +100,6 @@ typedef enum {
 
 typedef enum {
 
-    TXN_STATUS_NEW,
-
     TXN_STATUS_APPROVED,
 
     TXN_STATUS_DECLINED,
@@ -122,7 +120,8 @@ typedef enum {
     TXN_TOPUP,
     TXN_BALANCE,
     TXN_PAY,
-    TXN_SIM_CHARGE,
+    TXN_TOP_UP,
+    TXN_VOUCHER,
     TXN_LOGON,
     TXN_CFG,
     TXN_ALL

@@ -298,7 +298,7 @@ X(PHRASE_INVALID_TRANSACTION            ,   "invalidTransaction"            ,   
 )
 X(PHRASE_PREPAID_PIN                    ,   "prepaidPin"                    ,   ""
 )
-X(PHRASE_BILL_ID                        ,   "billId"                        ,   ""
+X(PHRASE_BILL_ID                        ,   "شماره قبض"                        ,   ""
 )
 X(PHRASE_PAYMENT_ID                     ,   "paymentId"                     ,   ""
 )
@@ -527,6 +527,47 @@ X(PHRASE_PRINTER_OVERHEAT       ,    "دمای پرینتر بیش از حد ا�
 X(PHRASE_PRINTER_BUSY           ,    "پرینتر مشغول است"  ,   "Printer is busy" 
 )
 
+ /**********************************************************************
+ *
+ *                              Bills
+ * 
+ **********************************************************************/
+
+X(PHRASE_BILL_WATER             ,    "قبض آب"  ,            "mci"  
+)
+X(PHRASE_BILL_ELECTRICITY      ,    "قبض برق"  ,            "mci"  
+)
+X(PHRASE_BILL_GAS               ,    "قبض گاز"  ,           "mci"  
+)
+X(PHRASE_BILL_TELEPHONE         ,    "قبض تلفن"  ,          "mci"  
+)
+X(PHRASE_BILL_MOBILE            ,    "قبض موبایل"  ,        "mci"  
+)
+X(PHRASE_BILL_MUNICIPALITY      ,    "شهرداری"  ,           "mci"  
+)
+X(PHRASE_BILL_TAX               ,    "مالیات"  ,            "mci"  
+)
+X(PHRASE_BILL_DRIVE_POLICY      ,    "راهنمایی رانندگی"  ,  "mci"  
+)
+X(PHRASE_PUBLIC_SERVICE         ,    "خدمات عمومی"  ,       "mci"  
+)
+X(PHRASE_BILL_INVALID           ,    "قبض نامعتبر"  ,       "mci"  
+)
+
+/**********************************************************************
+ *
+ *                              Simcard Operators
+ * 
+ **********************************************************************/
+
+ X(PHRASE_SIM_OP_MCI      ,    "همراه اول"  ,   "mci"  
+ )
+
+ X(PHRASE_SIM_OP_MTN      ,    "ایرانسل"  ,   "mtn"  
+ )
+
+ X(PHRASE_SIM_OP_RIGHTEL      ,    "رایتل"  ,   "rightel"  
+ )
 
 /**********************************************************************
  *

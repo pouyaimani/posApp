@@ -306,7 +306,13 @@ static int8_t setBit48(TxnData* data) {
     DEFINE_STRING(privateData, 128);
     if (data->core.processCode == PRC_BILL_PAYMENT) {
     } else if (data->core.processCode == PRC_VOUCHER) {
+        // setVoucherLtv(char* deviceSerial, const char* version, int iLang,
+        //    const char* code, char* buff)
     } else if (data->core.processCode == PRC_TOPUP) {
+        // 1:MCI; 2:MTN; 3:IRANCELL;
+        // sprintf(currentTransaction.sqlTrx.BillId, "%s%d%ld", opType, count,
+        // price); setTopupLtv(sn, PNA_APP_VERSION, 0 /*language*/,
+        // data->extention.charge.phoneNumber, privateData);
     } else {
         setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
     }
