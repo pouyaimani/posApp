@@ -28,8 +28,12 @@ STATE_DEF_HANDLE(StMenu, KeypadEvent) {
             ui_menu_toggle(menu->menu, menu->menu->idx);
         }
         if (menu->menu->cb[menu->menu->idx]) {
-            menu->menu->cb[menu->menu->idx](
-                menu->menu->userData[menu->menu->idx]);
+            if (menu->menu->userData[menu->menu->idx]) {
+                menu->menu->cb[menu->menu->idx](
+                    menu->menu->userData[menu->menu->idx]);
+            } else {
+                menu->menu->cb[menu->menu->idx](&menu->menu->idx);
+            }
         }
         if (menu->menu->state[menu->menu->idx])
             SM_GOTO(menu->menu->state[menu->menu->idx]);

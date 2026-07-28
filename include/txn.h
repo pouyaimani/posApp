@@ -9,6 +9,10 @@
 #define PRCODE_SIZE 6
 #define MTI_SIZE    4
 
+#define OPERATOR_CODE_MTN 11
+#define OPERATOR_CODE_MCI 12
+#define OPERATOR_CODE_RTL 17
+
 /**********************************************************/
 //                         MTI
 /**********************************************************/
@@ -128,6 +132,13 @@ typedef enum {
 } TxnType;
 
 typedef enum {
+    OPERATOR_MCI     = 12,
+    OPERATOR_MTN     = 11,
+    OPERATOR_RIGHTEL = 17,
+    OPERATOR_ALL     = 4
+} Operator_t;
+
+typedef enum {
     CL_NORMAL   = 1,
     CL_SPECIFIC = 2,
 } ChargeLevel;
@@ -156,6 +167,7 @@ typedef union {
         ChargeLevel level;
         char        chargePin[16];
         char        chargeSerial[16];
+        Operator_t  op;
     } charge;
 
     struct {

@@ -23,15 +23,8 @@ static SubState* communication;
 static Menu opSelectionMenu;
 static Menu amntSelectionMenu;
 
-typedef enum {
-    OPERATOR_MCI = 0,
-    OPERATOR_MTN,
-    OPERATOR_RIGHTEL,
-    OPERATOR_ALL
-} OperatorItem_t;
-
-static OperatorItem_t selectedOp;
-static TxnType        txn;
+static Operator_t selectedOp;
+static TxnType    txn;
 
 static TxnFlow* flow;
 
@@ -41,11 +34,23 @@ static TxnFlowConfig* cfg;
  *                   Select Operator sub state
  ******************************************************************/
 
-void setOpMtn(void* arg) { selectedOp = OPERATOR_MTN; }
+void setOperator(void* arg) {
+    int idx = *(((int*)arg));
+    switch (idx) {
+    case 0:
+        selectedOp = OPERATOR_MCI;
+        break;
+    case 1:
+        selectedOp = OPERATOR_MTN;
+        break;
+    case 2:
+        selectedOp = OPERATOR_RIGHTEL;
+        break;
 
-void setOpMci(void* arg) { selectedOp = OPERATOR_MCI; }
-
-void setOpRightel(void* arg) { selectedOp = OPERATOR_RIGHTEL; }
+    default:
+        break;
+    }
+}
 
 STATE_DEF_ENTER(SelectOperator) {
     GOTO_MENU(STATE_IDLE, &opSelectionMenu, NULL, NULL);
@@ -57,11 +62,11 @@ static void SelectOperator(State* parent) {
     selectOperator->vtable.enter = STATE_ENTER(SelectOperator);
     ui_menu_create(&opSelectionMenu, disp()->screen);
     ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MCI),
-                    LV_TEXT_ALIGN_RIGHT, NULL, setOpMci, selectAmount);
+                    LV_TEXT_ALIGN_RIGHT, selectAmount, setOperator, NULL);
     ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MTN),
-                    LV_TEXT_ALIGN_RIGHT, NULL, setOpMtn, selectAmount);
+                    LV_TEXT_ALIGN_RIGHT, selectAmount, setOperator, NULL);
     ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL),
-                    LV_TEXT_ALIGN_RIGHT, NULL, setOpRightel, selectAmount);
+                    LV_TEXT_ALIGN_RIGHT, selectAmount, setOperator, NULL);
     ui_menu_hide(&opSelectionMenu);
 }
 
@@ -201,6 +206,12 @@ static void voucherDone(TxnFlow* flow, const TxnFlowStatus* st) {
     // &flow->data
 }
 
+static int compose(TxnData* data) {
+    composeCommon(data);
+    data->core.amount         = selectedAmnt;
+    data->extention.charge.op = selectedOp;
+}
+
 static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
                                            ELEMENT_PROCESSING_CODE,
                                            ELEMENT_AMOUNT_TRANSACTION,
@@ -229,6 +240,8 @@ const TxnFlowConfig voucherTxn = {
     .feilds = isoFeildsVoucher,
 
     .feildsCnt = sizeof(isoFeildsVoucher),
+
+    .compose = compose,
 
     .build = buildCommon,
 
@@ -307,6 +320,8 @@ const TxnFlowConfig topupTxn = {
     .feilds = isoFeildsTopUp,
 
     .feildsCnt = sizeof(isoFeildsTopUp),
+
+    .compose = compose,
 
     .build = buildCommon,
 

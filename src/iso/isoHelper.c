@@ -299,20 +299,44 @@ static int8_t setBit42(TxnData* data) {
     return ERR_OK;
 }
 
+static int8_t buildChargeF48(TxnData* data, const char* sn, char* privateData) {
+    DEFINE_STRING(code, 32);
+    DEFINE_STRING(opCode, 4);
+    U16_TO_STRING((uint16_t*)&data->extention.charge.op, opCode);
+    if (data->core.processCode == PRC_VOUCHER) {
+        uint64_t amount = data->core.amount;
+        int      count  = 0;
+        while (amount > 0) {
+            if ((amount % 10) == 0) {
+                count += 1;
+                amount = amount / 10;
+            } else {
+                break;
+            }
+        }
+        sprintf(code, "%s%d%ld", opCode, count, amount);
+        setVoucherLtv(sn, PNA_APP_VERSION, 0 /*language*/, code, privateData);
+    } else if (data->core.processCode == PRC_TOPUP) {
+        sprintf(code, "%s0", opCode);
+        setTopupLtv(sn, PNA_APP_VERSION, 0 /*language*/, code,
+                    data->extention.charge.phoneNumber, privateData);
+    }
+}
+
+static int8_t buildBillF48(TxnData* data, const char* sn, char* privateData) {
+    setBillLtv(sn, PNA_APP_VERSION, 0 /*language*/, data->extention.bill.billId,
+               data->extention.bill.paymentId, privateData);
+}
+
 static int8_t setBit48(TxnData* data) {
     (void)data;
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     DEFINE_STRING(privateData, 128);
     if (data->core.processCode == PRC_BILL_PAYMENT) {
-    } else if (data->core.processCode == PRC_VOUCHER) {
-        // setVoucherLtv(char* deviceSerial, const char* version, int iLang,
-        //    const char* code, char* buff)
-    } else if (data->core.processCode == PRC_TOPUP) {
-        // 1:MCI; 2:MTN; 3:IRANCELL;
-        // sprintf(currentTransaction.sqlTrx.BillId, "%s%d%ld", opType, count,
-        // price); setTopupLtv(sn, PNA_APP_VERSION, 0 /*language*/,
-        // data->extention.charge.phoneNumber, privateData);
+    } else if (data->core.processCode == PRC_VOUCHER ||
+               data->core.processCode == PRC_TOPUP) {
+        buildChargeF48(data, sn, privateData);
     } else {
         setCommonLtv(sn, PNA_APP_VERSION, 0 /*language*/, privateData);
     }

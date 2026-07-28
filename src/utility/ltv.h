@@ -17,6 +17,8 @@ void setTopupLtv(char* deviceSerial, const char* version, int iLang,
                  const char* code, const char* phone, char* buff);
 void setVoucherLtv(char* deviceSerial, const char* version, int iLang,
                    const char* code, char* buff);
+void setBillLtv(char* deviceSerial, const char* version, int iLang,
+                const char* billId, const char* paymentId, char* buff);
 
 int unpackLtv(char* buffer, LtvStructInfo ltvStructInfo[]);
 
