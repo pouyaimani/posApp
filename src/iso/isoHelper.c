@@ -168,9 +168,9 @@ void decodeMerchantDesc(char* buffer) {
  ********************************************************************************************/
 
 Error_t setMti(uint16_t mti) {
-    DEFINE_STRING(mtistr, (MTI_SIZE + 1));
-    prependZerosInt(mti, MTI_SIZE, mtistr, sizeof(mtistr));
-    mtistr[MTI_SIZE] = 0;
+    DEFINE_STRING(mtistr, (LEN_MAX_MTI + 1));
+    prependZerosInt(mti, LEN_MAX_MTI, mtistr, sizeof(mtistr));
+    mtistr[LEN_MAX_MTI] = 0;
     iso8583()->setMTI((const DL_UINT8*)mtistr);
     return ERR_OK;
 }
@@ -184,9 +184,9 @@ static int8_t setBit2(TxnData* data) {
 
 static int8_t setBit3(TxnData* data) {
     uint32_t code = data->core.processCode;
-    DEFINE_STRING(prcode, (PRCODE_SIZE + 1));
-    prependZerosInt(code, PRCODE_SIZE, prcode, sizeof(prcode));
-    prcode[STAN_SIZE] = 0;
+    DEFINE_STRING(prcode, (LEN_MAX_PRCODE + 1));
+    prependZerosInt(code, LEN_MAX_PRCODE, prcode, sizeof(prcode));
+    prcode[LEN_MAX_STAN] = 0;
     LOG_TRACE("| Bit 3 - (Process Code) | -> %s", prcode);
     iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)prcode);
     return ERR_OK;
@@ -203,9 +203,9 @@ static int8_t setBit4(TxnData* data) {
 static int8_t setBit11(TxnData* data) {
     (void)data;
     uint16_t istan = data->core.stan;
-    DEFINE_STRING(stan, (STAN_SIZE + 1));
-    prependZerosInt(istan, STAN_SIZE, stan, sizeof(stan));
-    stan[STAN_SIZE] = 0;
+    DEFINE_STRING(stan, (LEN_MAX_STAN + 1));
+    prependZerosInt(istan, LEN_MAX_STAN, stan, sizeof(stan));
+    stan[LEN_MAX_STAN] = 0;
     LOG_TRACE("| Bit 11 - (Stan) | -> %s", stan);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
     data->dateTime = OOP_CALL(sys(), getPackedDateTime);
@@ -334,6 +334,7 @@ static int8_t setBit48(TxnData* data) {
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     DEFINE_STRING(privateData, 128);
     if (data->core.processCode == PRC_BILL_PAYMENT) {
+        buildBillF48(data, sn, privateData);
     } else if (data->core.processCode == PRC_VOUCHER ||
                data->core.processCode == PRC_TOPUP) {
         buildChargeF48(data, sn, privateData);

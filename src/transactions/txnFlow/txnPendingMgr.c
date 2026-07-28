@@ -61,41 +61,13 @@ static Error_t updateTxnData(TxnData* data) {
                            RECOVERY_TXN_DATA_ADDR);
 }
 
-static void approve(TxnData* txn, bool needSettle) {
+static void mark(TxnData* txn, TxnStatus st) {
     RETURN_IF_NULL(txn, ;);
-    txn->status = TXN_STATUS_APPROVED;
 
-    if (needSettle) {
-        txn->status = TXN_STATUS_PENDING_SETTLEMENT;
-    }
+    txn->status = st;
     updateTxnData(txn);
 
     LOG_TRACE("TxnPendingMgr: transaction is approved ...");
-}
-
-static void decline(TxnData* txn) {
-    RETURN_IF_NULL(txn, ;);
-
-    if (txn->core.mti == MTI_FIN_ADVICE || txn->core.mti == MTI_REV_REQ) {
-        return;
-    }
-    txn->status = TXN_STATUS_DECLINED;
-
-    updateTxnData(txn);
-
-    LOG_TRACE("TxnPendingMgr: transaction is declined ...");
-}
-
-static void markReverse(TxnData* txn) {
-    txn->status = TXN_STATUS_PENDING_REVERSE;
-
-    updateTxnData(txn);
-}
-
-static void markSettlement(TxnData* txn) {
-    txn->status = TXN_STATUS_PENDING_SETTLEMENT;
-
-    updateTxnData(txn);
 }
 
 static void processPendedTxn(TxnData* tx, TxnFlowConfig* cfg) {
@@ -154,12 +126,9 @@ bool run(TxnPendMgrCb cb) {
 }
 
 static void init(TxnPendingMgr* mgr) {
-    mgr->approve        = approve;
-    mgr->decline        = decline;
-    mgr->markReverse    = markReverse;
-    mgr->markSettlement = markSettlement;
-    mgr->hasPendingTxn  = hasPendingTxn;
-    mgr->run            = run;
+    mgr->mark          = mark;
+    mgr->hasPendingTxn = hasPendingTxn;
+    mgr->run           = run;
 }
 
 TxnPendingMgr* txnPendingMgr(void) {

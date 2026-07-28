@@ -9,10 +9,7 @@ typedef int (*TxnPendMgrCb)(bool result);
 typedef struct {
 
     bool (*run)(TxnPendMgrCb);
-    void (*approve)(TxnData*, bool needSettle);
-    void (*decline)(TxnData*);
-    void (*markReverse)(TxnData*);
-    void (*markSettlement)(TxnData*);
+    void (*mark)(TxnData*, TxnStatus st);
 
     bool (*hasPendingTxn)(void);
 

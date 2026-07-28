@@ -40,7 +40,7 @@ STATE_DEF_ENTER(EnterBillId) {
             .mode   = INMD_ENTER_NUMBERS,
             .title  = phraseGetDef(PHRASE_BILL_ID),
             .info   = "",
-            .maxLen = LEN_BILL_ID_MAX,
+            .maxLen = LEN_MAX_BILL_ID,
         },
         STATE_IDLE, enterPayId);
     inmgr()->setOut(data.bill.billId, NULL, sizeof(data.bill.billId));
@@ -61,7 +61,7 @@ STATE_DEF_ENTER(EnterPayId) {
             .mode   = INMD_ENTER_NUMBERS,
             .title  = phraseGetDef(PHRASE_BILL_ID),
             .info   = "",
-            .maxLen = LEN_PAYMENT_ID_MAX,
+            .maxLen = LEN_MAX_PAYMENT_ID,
         },
         STATE_IDLE, enterPass);
     inmgr()->setOut(data.bill.paymentId, NULL, sizeof(data.bill.paymentId));

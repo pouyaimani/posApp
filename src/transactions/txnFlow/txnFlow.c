@@ -37,15 +37,13 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     st.code   = code;
 
     txnTraceInfo()->inc();
-    if (result == TXN_FLOW_SUCCESS) {
-        if (code == 0) {
-            LOG_TRACE("Txn flow: txn is approved. settlment need = %d",
-                      flow->cfg->needSettlement);
-            txnPendingMgr()->approve(&flow->data, flow->cfg->needSettlement);
+    if (result == TXN_FLOW_SUCCESS && code == RESP_CODE_SUCESS) {
+        if (flow->cfg->needSettlement) {
+            txnPendingMgr()->mark(&flow->data, TXN_STATUS_PENDING_SETTLEMENT);
         } else {
-            LOG_TRACE("Txn flow: txn is declined.");
-            txnPendingMgr()->decline(&flow->data);
+            txnPendingMgr()->mark(&flow->data, TXN_STATUS_DONE);
         }
+        LOG_TRACE("Txn flow: txn is done.");
     }
 
     if (flow->cfg && flow->cfg->done) {
@@ -151,7 +149,9 @@ static int8_t onSent(NthTransaction* tx, void* ctx) {
 
     flow->stage = TXN_STAGE_RECEIVING;
 
-    txnPendingMgr()->markReverse(&flow->data);
+    if (flow->cfg->needSettlement) {
+        txnPendingMgr()->mark(&flow->data, TXN_STATUS_PENDING_REVERSE);
+    }
 
     if (flow->cfg->onReceiving) {
         flow->cfg->onReceiving(flow);

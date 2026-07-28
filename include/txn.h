@@ -5,13 +5,7 @@
 #include "oop.h"
 #include "len.h"
 
-#define STAN_SIZE   6
-#define PRCODE_SIZE 6
-#define MTI_SIZE    4
-
-#define OPERATOR_CODE_MTN 11
-#define OPERATOR_CODE_MCI 12
-#define OPERATOR_CODE_RTL 17
+#define RESP_CODE_SUCESS 0
 
 /**********************************************************/
 //                         MTI
@@ -103,18 +97,11 @@ typedef enum {
 #define SecRelControlInfo "0800050202031500"
 
 typedef enum {
-
-    TXN_STATUS_APPROVED,
-
-    TXN_STATUS_DECLINED,
+    TXN_STATUS_DONE,
 
     TXN_STATUS_PENDING_REVERSE,
 
-    TXN_STATUS_REVERSED,
-
     TXN_STATUS_PENDING_SETTLEMENT,
-
-    TXN_STATUS_SETTLED
 
 } TxnStatus;
 

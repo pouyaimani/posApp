@@ -24,6 +24,11 @@ int     toInt(const char* value);
 int16_t hexCharToDecimal(char hexChar);
 void    toPersianDigits(char* out, size_t out_size, int value);
 
+void bytesToHex(const uint8_t* data, size_t dataLen, char* out, size_t outSize);
+void hexStringToBytes(char* inhex, int len, unsigned char* retval);
+
+int hex2data(unsigned char* data, const unsigned char* hexstring,
+             unsigned int len);
 typedef enum {
     TYPE_INT8,
     TYPE_UINT8,

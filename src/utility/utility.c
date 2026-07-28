@@ -10,6 +10,16 @@
 #include <inttypes.h>
 #include "len.h"
 
+/**
+ * @brief Copy only numeric characters from source string.
+ *
+ * Extracts all digits from @p src and writes them to @p dst.
+ * The output is always null-terminated.
+ *
+ * @param src Input string.
+ * @param dst Output buffer.
+ * @param dst_size Size of output buffer.
+ */
 void removeNonDigits(const char* src, char* dst, size_t dst_size) {
     size_t j = 0;
 
@@ -22,6 +32,15 @@ void removeNonDigits(const char* src, char* dst, size_t dst_size) {
     dst[j] = '\0';
 }
 
+/**
+ * @brief Remove all '.' characters from a string.
+ *
+ * Copies all characters except dots into the destination buffer.
+ *
+ * @param src Input string.
+ * @param dst Output buffer.
+ * @param dst_size Size of output buffer.
+ */
 void removeDots(const char* src, char* dst, size_t dst_size) {
     size_t j = 0;
 
@@ -33,6 +52,18 @@ void removeDots(const char* src, char* dst, size_t dst_size) {
 
     dst[j] = '\0';
 }
+
+/**
+ * @brief Convert a 12-digit IP representation to dotted format.
+ *
+ * Example:
+ * "192168001001" -> "192.168.1.1"
+ *
+ * Leading zeros are removed from each octet.
+ *
+ * @param ip Input 12-digit IP string.
+ * @param ip_add Output buffer for formatted IP address.
+ */
 
 inline void InsertDotIP(const char* ip, char* ip_add) {
     /* Insert Dot between the octed of ip address of user prompt */
@@ -57,12 +88,33 @@ inline void InsertDotIP(const char* ip, char* ip_add) {
     sprintf(ip_add, "%s.%s.%s.%s", octed1, octed2, octed3, octed4);
 }
 
+/**
+ * @brief Check whether a character is a decimal digit.
+ *
+ * @param c Character to test.
+ * @return true if character is '0'..'9'.
+ */
 bool isDigit(char c) { return (c >= '0' && c <= '9'); }
 
+/**
+ * @brief Check whether a character is alphabetic.
+ *
+ * @param c Character to test.
+ * @return true if character is A-Z or a-z.
+ */
 bool isAlphabetic(char c) {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
+/**
+ * @brief Append a character to the end of a string.
+ *
+ * @param buf Null-terminated string buffer.
+ * @param buf_size Total size of buffer.
+ * @param c Character to append.
+ *
+ * @return 0 on success, -1 if buffer is full.
+ */
 int appendChar(char* buf, size_t buf_size, char c) {
     size_t len = 0;
 
@@ -80,6 +132,13 @@ int appendChar(char* buf, size_t buf_size, char c) {
     return 0;
 }
 
+/**
+ * @brief Remove the last character from a string.
+ *
+ * @param buf Null-terminated string.
+ *
+ * @return 0 on success, -1 if string is empty.
+ */
 int deleteChar(char* buf) {
     size_t len = 0;
 
@@ -93,6 +152,13 @@ int deleteChar(char* buf) {
     return 0;
 }
 
+/**
+ * @brief Clear a string.
+ *
+ * Sets the first character to '\0'.
+ *
+ * @param buf String buffer.
+ */
 void clearStr(char* buf) {
     if (buf)
         buf[0] = '\0';
@@ -101,6 +167,17 @@ void clearStr(char* buf) {
 static const char* day_names[] = {"شنبه",     "یکشنبه",   "دوشنبه", "سه شنبه",
                                   "چهارشنبه", "پنج شنبه", "جمعه"};
 
+/**
+ * @brief Calculate Persian day name for a given date.
+ *
+ * Uses Zeller's congruence to determine weekday.
+ *
+ * @param y Year.
+ * @param m Month.
+ * @param d Day.
+ *
+ * @return Pointer to Persian day name string.
+ */
 const char* getDayName(int y, int m, int d) {
     if (m < 3) {
         m += 12;
@@ -114,6 +191,15 @@ const char* getDayName(int y, int m, int d) {
     return day_names[h];
 }
 
+/**
+ * @brief Convert YYYYMMDD date into Persian day name.
+ *
+ * @param date Date in YYYYMMDD format.
+ * @param out Output buffer.
+ * @param size Output buffer size.
+ *
+ * @return ERR_OK on success, error code otherwise.
+ */
 int8_t getNameofDay(uint32_t date, char* out, size_t size) {
     RETURN_VALUE_IF_NULL(out, ;, ERR_BAD_PARAMETER);
     uint32_t y = date / 10000;
@@ -131,11 +217,16 @@ int8_t getNameofDay(uint32_t date, char* out, size_t size) {
     snprintf(out, size, "s", day_names[h]);
     return ERR_OK;
 }
-/*
- * Combines two uint32_t values into a single uint64_t
- * date: yyyymmdd (high 32 bits)
- * time: hhmmss   (low 32 bits)
- * returns: uint64_t combined as (date << 32) | time
+
+/**
+ * @brief Pack date and time into a 64-bit value.
+ *
+ * Date occupies upper bits and time occupies lower 18 bits.
+ *
+ * @param date Date in YYYYMMDD format.
+ * @param time Time in HHMMSS format.
+ *
+ * @return Packed value, or 0 if input is invalid.
  */
 uint64_t packDateTime(uint32_t date, uint32_t time) {
     if (date > 99999999UL) // 8-digit date
@@ -148,31 +239,70 @@ uint64_t packDateTime(uint32_t date, uint32_t time) {
     return dt;
 }
 
-/*
- * Extract date and time from uint64_t
- * dateTime: packed value
- * date: output pointer to uint32_t (YYYMMDD)
- * time: output pointer to uint32_t (HHMMSS)
+/**
+ * @brief Unpack date and time from a packed 64-bit value.
+ *
+ * @param dt Packed date/time value.
+ * @param date Output date (YYYYMMDD).
+ * @param time Output time (HHMMSS).
  */
 void unpackDateTime(const uint64_t* dt, uint32_t* date, uint32_t* time) {
     *time = (*dt) & ((1ULL << 18) - 1);
     *date = (*dt) >> 18;
 }
 
+/**
+ * @brief Left-pad a string with zeros.
+ *
+ * Example:
+ * "123" -> "000123"
+ *
+ * @param src Input string.
+ * @param dst Output buffer.
+ * @param dstSize Output buffer size.
+ * @param width Desired total width.
+ */
 void leftPadZero(const char* src, char* dst, size_t dstSize, int width) {
     snprintf(dst, dstSize, "%0*s", width, src);
 }
 
+/**
+ * @brief Format integer with leading zeros.
+ *
+ * @param number Input number.
+ * @param totalWidth Desired width.
+ * @param output Output buffer.
+ * @param outputSize Output buffer size.
+ */
 void prependZerosInt(uint64_t number, int totalWidth, char* output,
                      size_t outputSize) {
     snprintf(output, outputSize, "%0*d", totalWidth, number);
 }
 
+/**
+ * @brief Format uint64_t with leading zeros.
+ *
+ * @param number Input number.
+ * @param totalWidth Desired width.
+ * @param output Output buffer.
+ * @param outputSize Output buffer size.
+ */
 void prependZerosUInt64(uint64_t number, int totalWidth, char* output,
                         size_t outputSize) {
     snprintf(output, outputSize, "%0*" PRIu64, totalWidth, number);
 }
 
+/**
+ * @brief Convert digit stream into left-aligned IPv4 display format.
+ *
+ * Missing octets are displayed as "---".
+ * Values larger than 255 are clamped to 255.
+ *
+ * @param in Input digit stream.
+ * @param out Output formatted IP string.
+ *
+ * @return true if all octets were valid, false if clamping occurred.
+ */
 bool ipFormatLeftAligned(const char* in, char* out) {
     char digits[12] = {0};
     int  dcount     = 0;
@@ -226,6 +356,18 @@ bool ipFormatLeftAligned(const char* in, char* out) {
     return valid;
 }
 
+/**
+ * @brief Validate and normalize a 12-digit IPv4 address.
+ *
+ * Example:
+ * "192168001001" -> "192.168.1.1"
+ *
+ * @param input 12-digit IPv4 string.
+ * @param output Output buffer.
+ * @param outputSize Output buffer size.
+ *
+ * @return true if input is valid.
+ */
 bool normalizeIp(const char* input, char* output, size_t outputSize) {
     if (input == NULL || output == NULL)
         return false;
@@ -258,6 +400,15 @@ bool normalizeIp(const char* input, char* output, size_t outputSize) {
     return true;
 }
 
+/**
+ * @brief Validate a date string.
+ *
+ * Accepts 8 digits in YYYYMMDD format.
+ *
+ * @param in Input date string.
+ *
+ * @return true if date is valid.
+ */
 bool dateValidate(const char* in) {
     char digits[8];
     int  len = 0;
@@ -302,6 +453,15 @@ bool dateValidate(const char* in) {
     return day <= maxDay;
 }
 
+/**
+ * @brief Validate a time string.
+ *
+ * Accepts 6 digits in HHMMSS format.
+ *
+ * @param in Input time string.
+ *
+ * @return true if time is valid.
+ */
 bool timeValidate(const char* in) {
     char digits[6];
     int  len = 0;
@@ -329,6 +489,16 @@ bool timeValidate(const char* in) {
     return true;
 }
 
+/**
+ * @brief Skip leading zeros in-place.
+ *
+ * Example:
+ * "000123" -> points to "123"
+ *
+ * @param str Input string.
+ *
+ * @return Pointer to first non-zero character.
+ */
 char* skipLeadingZeros(char* str) {
     if (str == NULL)
         return NULL;
@@ -339,6 +509,15 @@ char* skipLeadingZeros(char* str) {
     return str;
 }
 
+/**
+ * @brief Remove leading zeros and copy result.
+ *
+ * @param input Input string.
+ * @param output Output buffer.
+ * @param outputSize Output buffer size.
+ *
+ * @return true on success.
+ */
 bool removeLeadingZeros(const char* input, char* output, size_t outputSize) {
     if (input == NULL || output == NULL || outputSize == 0)
         return false;
@@ -356,6 +535,18 @@ bool removeLeadingZeros(const char* input, char* output, size_t outputSize) {
     return true;
 }
 
+/**
+ * @brief Extract BIN/IIN from PAN.
+ *
+ * Supports 6-digit and 8-digit BIN lengths.
+ *
+ * @param pan PAN string.
+ * @param bin Output BIN buffer.
+ * @param binSize Output buffer size.
+ * @param binLen BIN length (6 or 8).
+ *
+ * @return true on success.
+ */
 bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen) {
     if (pan == NULL || bin == NULL)
         return false;
@@ -377,6 +568,20 @@ bool extractBin(const char* pan, char* bin, size_t binSize, size_t binLen) {
     return true;
 }
 
+/**
+ * @brief Mask PAN digits.
+ *
+ * Keeps first 6 and last 4 digits visible.
+ *
+ * Example:
+ * 6037991234567890 -> 603799******7890
+ *
+ * @param pan Input PAN.
+ * @param masked Output buffer.
+ * @param masked_size Output buffer size.
+ *
+ * @return 0 on success, negative error code otherwise.
+ */
 int maskPan(const char* pan, char* masked, size_t masked_size) {
     if (pan == NULL || masked == NULL)
         return -1;
@@ -401,6 +606,15 @@ int maskPan(const char* pan, char* masked, size_t masked_size) {
     return 0;
 }
 
+/**
+ * @brief Right-pad a string to a fixed length.
+ *
+ * @param unpadded Source string.
+ * @param unpadlength Source length.
+ * @param len Target length.
+ * @param padded Output buffer.
+ * @param p Padding character.
+ */
 void padRight(const char* unpadded, int unpadlength, int len, char* padded,
               char p) {
     int j = 0, i;
@@ -413,6 +627,15 @@ void padRight(const char* unpadded, int unpadlength, int len, char* padded,
     padded[len] = '\0';
 }
 
+/**
+ * @brief Left-pad a string to a fixed length.
+ *
+ * @param unpadded Source string.
+ * @param unpadlength Source length.
+ * @param len Target length.
+ * @param padded Output buffer.
+ * @param p Padding character.
+ */
 void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
              char p) {
     int j = 0, i;
@@ -425,11 +648,28 @@ void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
     padded[len] = '\0';
 }
 
+/**
+ * @brief Determine bill type from bill identifier.
+ *
+ * Bill type is encoded in the second last digit.
+ *
+ * @param billId Bill identifier.
+ * @param len Length of bill identifier.
+ *
+ * @return Bill type code.
+ */
 int getBillType(const char* billId, size_t len) {
     char digit = billId[len - 2];
     return libAtoi(&digit);
 }
 
+/**
+ * @brief Get organization name associated with a bill type.
+ *
+ * @param id Bill type.
+ *
+ * @return Localized organization name string.
+ */
 const char* getBillOrgName(BillType_t id) {
     Phrases_t phrase = PHRASE_BILL_INVALID;
     switch (id) {
@@ -478,6 +718,15 @@ const char* getBillOrgName(BillType_t id) {
     return phraseGetDef(phrase);
 }
 
+/**
+ * @brief Calculate Mod-11 check digit.
+ *
+ * Uses weights 2..7 repeatedly.
+ *
+ * @param digits Numeric string.
+ *
+ * @return Computed check digit.
+ */
 static int calculateMod11(const char* digits) {
     int    sum = 0;
     size_t len = strlen(digits);
@@ -492,6 +741,17 @@ static int calculateMod11(const char* digits) {
     return (digit > 9) ? 0 : digit;
 }
 
+/**
+ * @brief Extract bill amount from payment identifier.
+ *
+ * Amount is derived from payment ID and multiplied by 1000.
+ *
+ * @param paymentId Payment identifier.
+ * @param amount Output amount string.
+ * @param alen Output buffer size.
+ *
+ * @return true.
+ */
 bool billExtractAmount(const char* paymentId, char* amount, size_t alen) {
     size_t len = strlen(paymentId);
     // TODO: check size of amount
@@ -501,14 +761,21 @@ bool billExtractAmount(const char* paymentId, char* amount, size_t alen) {
     return true;
 }
 
+/**
+ * @brief Validate a bill identifier using Mod-11 checksum.
+ *
+ * @param billId Bill identifier.
+ *
+ * @return true if bill ID checksum is valid.
+ */
 bool isBillIdValid(const char* billId) {
     size_t inputlen = strlen(billId);
-    if (inputlen < LEN_BILL_ID_MIN || inputlen > LEN_BILL_ID_MAX) {
+    if (inputlen < LEN_MIN_BILL_ID || inputlen > LEN_MAX_BILL_ID) {
         return false;
     }
 
-    DEFINE_STRING(paddedBillId, LEN_BILL_ID_MAX);
-    padLeft(billId, inputlen, LEN_BILL_ID_MAX, paddedBillId, '0');
+    DEFINE_STRING(paddedBillId, LEN_MAX_BILL_ID);
+    padLeft(billId, inputlen, LEN_MAX_BILL_ID, paddedBillId, '0');
 
     const size_t len = strlen(paddedBillId);
 
@@ -525,6 +792,17 @@ bool isBillIdValid(const char* billId) {
     return checkDigit != (paddedBillId[len - 1] - '0');
 }
 
+/**
+ * @brief Validate bill ID and payment ID pair.
+ *
+ * Verifies Mod-11 checksum of payment ID and the combined
+ * bill ID + payment ID value.
+ *
+ * @param billId Bill identifier.
+ * @param paymentId Payment identifier.
+ *
+ * @return true if both validations succeed.
+ */
 bool isBillValid(const char* billId, const char* paymentId) {
     size_t len = strlen(paymentId);
 
@@ -533,7 +811,7 @@ bool isBillValid(const char* billId, const char* paymentId) {
     }
     bool res = calculateMod11(paymentId) == (paymentId[len - 1] - '0');
     RETURN_VALUE_IF_NOT(res, true, ;, false);
-    DEFINE_STRING(tmp, (LEN_PAYMENT_ID_MAX * 2 + 1));
+    DEFINE_STRING(tmp, (LEN_MAX_PAYMENT_ID * 2 + 1));
     strcpy(tmp, billId);
     strcat(tmp, paymentId);
     len = strlen(tmp);

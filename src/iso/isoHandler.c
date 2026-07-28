@@ -327,7 +327,7 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     // Error_t res         = checkMac(buf->data + 7, packedSize -
     // LEN_MAX_ISO_MAC);
     // RETURN_VALUE_IF_NOT(res, ERR_OK, ;, ERR_NOK);
-    // Check responce code
+
     DEFINE_STRING(feild, 128);
     iso8583()->getStr(ELEMENT_RESPONSE_CODE, feild);
     RespCode_t respCode = libAtoi(feild);
@@ -347,7 +347,7 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     }
     LOG_TRACE("Iso Parser: txn rrn = %llu", txn->core.rrn);
     LOG_TRACE("Iso Parser: txn trace = %lu", txn->core.trace);
-    RETURN_VALUE_IF_NOT(respCode, 0, ;, respCode);
+    RETURN_VALUE_IF_NOT(respCode, RESP_CODE_SUCESS, ;, respCode);
     // for (int i = 0; i < iso8583()->handler.fieldItems; i++) {
     //     if (iso8583()->msg.field[i].ptr != NULL) {
     //         for (size_t j = 0; j < sizeof(isoHelper); j++) {
