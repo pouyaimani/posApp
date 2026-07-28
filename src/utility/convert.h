@@ -5,6 +5,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum {
+    TYPE_INT8,
+    TYPE_UINT8,
+    TYPE_INT16,
+    TYPE_UINT16,
+    TYPE_INT32,
+    TYPE_UINT32,
+    TYPE_INT64,
+    TYPE_UINT64
+} NumberType;
+
 int libAtoi(const char* str);
 
 int intToStr(int val, char* out, size_t size);
@@ -20,25 +31,18 @@ bool u64toStr(uint64_t value, char* str, size_t size);
 void convertStrNoNumber(char* source, int len, unsigned char hex,
                         int startCompare, int endCompare, char* dest);
 
-int     toInt(const char* value);
+int toInt(const char* value);
+
 int16_t hexCharToDecimal(char hexChar);
-void    toPersianDigits(char* out, size_t out_size, int value);
+
+void toPersianDigits(char* out, size_t out_size, int value);
 
 void bytesToHex(const uint8_t* data, size_t dataLen, char* out, size_t outSize);
+
 void hexStringToBytes(char* inhex, int len, unsigned char* retval);
 
 int hex2data(unsigned char* data, const unsigned char* hexstring,
              unsigned int len);
-typedef enum {
-    TYPE_INT8,
-    TYPE_UINT8,
-    TYPE_INT16,
-    TYPE_UINT16,
-    TYPE_INT32,
-    TYPE_UINT32,
-    TYPE_INT64,
-    TYPE_UINT64
-} NumberType;
 
 bool stringToNumber(const char* str, void* out, NumberType type);
 

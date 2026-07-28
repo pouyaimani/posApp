@@ -342,13 +342,13 @@ STATE_DEF_ENTER(ExtractData) {
     case DOC_SUMMARY_REPORT:
         if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
             // TODO
-            recData.summaryHeader.dateFrom = libAtoi(rquery.startDate);
-            recData.summaryHeader.dateTo   = libAtoi(rquery.endDate);
-            recData.summaryHeader.timeFrom = libAtoi(rquery.startTime);
-            recData.summaryHeader.timeTo   = libAtoi(rquery.endDate);
-            recData.summaryHeader.dateNow  = OOP_CALL(sys(), getDate);
-            recData.summaryHeader.timeNow  = OOP_CALL(sys(), getTime);
-            recData.summaryHeader.txnType  = 0;
+            STRING_TO_U32(rquery.startDate, &recData.summaryHeader.dateFrom);
+            STRING_TO_U32(rquery.endDate, &recData.summaryHeader.dateTo);
+            STRING_TO_U32(rquery.startTime, &recData.summaryHeader.timeFrom);
+            STRING_TO_U32(rquery.endTime, &recData.summaryHeader.timeTo);
+            recData.summaryHeader.dateNow = OOP_CALL(sys(), getDate);
+            recData.summaryHeader.timeNow = OOP_CALL(sys(), getTime);
+            recData.summaryHeader.txnType = 0;
         }
         break;
     case DOC_DAILY_REPORT:
@@ -362,13 +362,13 @@ STATE_DEF_ENTER(ExtractData) {
     case DOC_DETAILED_REPORT:
         if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
             // TODO
-            recData.detailedHeader.dateFrom = libAtoi(rquery.startDate);
-            recData.detailedHeader.dateTo   = libAtoi(rquery.endDate);
-            recData.detailedHeader.timeFrom = libAtoi(rquery.startTime);
-            recData.detailedHeader.timeTo   = libAtoi(rquery.endDate);
-            recData.detailedHeader.dateNow  = OOP_CALL(sys(), getDate);
-            recData.detailedHeader.timeNow  = OOP_CALL(sys(), getTime);
-            recData.detailedHeader.txnType  = 0;
+            STRING_TO_U32(rquery.startDate, &recData.summaryHeader.dateFrom);
+            STRING_TO_U32(rquery.endDate, &recData.summaryHeader.dateTo);
+            STRING_TO_U32(rquery.startTime, &recData.summaryHeader.timeFrom);
+            STRING_TO_U32(rquery.endTime, &recData.summaryHeader.timeTo);
+            recData.detailedHeader.dateNow = OOP_CALL(sys(), getDate);
+            recData.detailedHeader.timeNow = OOP_CALL(sys(), getTime);
+            recData.detailedHeader.txnType = 0;
         }
         break;
     default:
@@ -378,12 +378,16 @@ STATE_DEF_ENTER(ExtractData) {
     txnquery()->init(&op);
 
     if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
-        uint32_t sdate = libAtoi(rquery.startDate);
-        uint32_t stime = libAtoi(rquery.startTime);
-        uint32_t edate = libAtoi(rquery.endDate);
-        uint32_t etime = libAtoi(rquery.endTime);
-        uint64_t sdt   = packDateTime(sdate, stime);
-        uint64_t ldt   = packDateTime(edate, etime);
+        uint32_t sdate;
+        uint32_t stime;
+        uint32_t edate;
+        uint32_t etime;
+        STRING_TO_U32(rquery.startDate, &sdate);
+        STRING_TO_U32(rquery.startTime, &stime);
+        STRING_TO_U32(rquery.endDate, &edate);
+        STRING_TO_U32(rquery.endTime, &etime);
+        uint64_t sdt = packDateTime(sdate, stime);
+        uint64_t ldt = packDateTime(edate, etime);
         txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_GTE, &sdt);
         txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_LTE, &ldt);
     }

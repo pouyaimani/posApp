@@ -161,7 +161,8 @@ static const BankName bankName[] = {
 };
 
 const char* bankNameGetDef(const char* iin) {
-    uint32_t iiin = libAtoi(iin);
+    uint32_t iiin;
+    STRING_TO_U32(iin, (uint32_t*)&iiin);
     LOG_TRACE("BIN String = %s, BIN int = %d", iin, iiin);
     const char* result = "نامشخص";
     for (size_t i = 0; i < sizeof(bankName) / sizeof(bankName[0]); i++) {

@@ -274,7 +274,8 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
 static SubState* handleReports;
 
 STATE_DEF_ENTER(HandleReports) {
-    int shiftNum = libAtoi(inmgr()->input);
+    uint16_t shiftNum;
+    STRING_TO_U16(inmgr()->input, &shiftNum);
     LOG_DEBUG("shiftNum = %d", shiftNum);
     ShiftData data;
     if (shifts()->get(shiftNum, &data) != 0) {

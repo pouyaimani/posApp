@@ -186,7 +186,7 @@ int unpackLtv(char* buffer, LtvStructInfo ltvStructInfo[]) {
     while (true) {
         RESET_STRING(lenc);
         memcpy(lenc, buffer + c, 2);
-        ltvStructInfo[i].len = libAtoi(lenc);
+        STRING_TO_U32(lenc, &ltvStructInfo[i].len);
         c += 2;
         if (ltvStructInfo[i].len == 0)
             break;

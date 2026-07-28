@@ -18,8 +18,9 @@ enum {
 
 static int parse2Digits(const unsigned char* p) {
     char buf[3] = {(char)p[0], (char)p[1], '\0'};
-
-    return libAtoi(buf);
+    int  dig;
+    STRING_TO_U8(buf, (uint8_t*)&dig);
+    return dig;
 }
 
 static int8_t pedDecrypt(void* buffer, int bufLen, void* decryptedData) {
@@ -126,7 +127,8 @@ void decodeMerchantDesc(char* buffer) {
     int count = unpackLtv(buffer, tags);
 
     for (int i = 0; i < count; i++) {
-        int tag = libAtoi(tags[i].tag);
+        uint16_t tag;
+        STRING_TO_U16(tags[i].tag, (uint16_t*)&tag);
         LOG_DEBUG("decodeMerchantDesc: i = %d, tag = %s , itag = %d", i,
                   tags[i].tag, tag);
         switch (tag) {

@@ -330,8 +330,9 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
 
     DEFINE_STRING(feild, 128);
     iso8583()->getStr(ELEMENT_RESPONSE_CODE, feild);
-    RespCode_t respCode = libAtoi(feild);
-    txn->core.respCode  = respCode;
+    RespCode_t respCode;
+    STRING_TO_U8(feild, (uint8_t*)&respCode);
+    txn->core.respCode = respCode;
     LOG_TRACE("Parser: txn responce code = %d", respCode);
     RESET_STRING(feild);
     txn->core.rrn = txn->core.trace = 0;

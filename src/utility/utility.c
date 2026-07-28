@@ -388,7 +388,7 @@ bool normalizeIp(const char* input, char* output, size_t outputSize) {
         memcpy(octetStr, input + (i * 3), 3);
         octetStr[3] = '\0';
 
-        octet[i] = libAtoi(octetStr);
+        STRING_TO_U32(octetStr, &octet[i]);
         // Validate IPv4 range
         if (octet[i] < 0 || octet[i] > 255)
             return false;
@@ -659,8 +659,10 @@ void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
  * @return Bill type code.
  */
 int getBillType(const char* billId, size_t len) {
-    char digit = billId[len - 2];
-    return libAtoi(&digit);
+    char    digit = billId[len - 2];
+    uint8_t type;
+    STRING_TO_U8(&digit, &type);
+    return type;
 }
 
 /**

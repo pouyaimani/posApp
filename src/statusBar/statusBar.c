@@ -151,7 +151,8 @@ static void updateOperatorDsc() {
     static uint8_t prevOpt    = 0;
     char           opt[2 + 1] = {0};
     memcpy(opt, &simInfo.imsi[3], 2);
-    uint8_t opType = libAtoi(opt);
+    uint8_t opType;
+    STRING_TO_U16(opt, &opType);
     if (prevOpt == opType)
         return;
     switch (opType) {

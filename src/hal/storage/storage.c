@@ -5,6 +5,7 @@
 #include "event.h"
 #include "logger.h"
 #include "utility/tlv.h"
+#include "utility/utility.h"
 #include "error.h"
 
 #define SETTINGS_FILE_MAX_SIZE   2048
@@ -71,11 +72,13 @@ static void init(DataDescriptor* dsc, uint32_t itemsCount) {
 
     for (i = 0; i < itemsCount; i++) {
         if ((dsc[i].type) == T_INT) {
-            uint32_t intDefaultValue = (uint32_t)libAtoi(dsc[i].defaultValue);
+            uint32_t intDefaultValue;
+            STRING_TO_U32(dsc[i].defaultValue, &intDefaultValue);
             memcpy(dsc[i].address, &intDefaultValue, sizeof(uint32_t));
             LOG_TRACE("%d.%20s:%d", i, dsc[i].key, intDefaultValue);
         } else if ((dsc[i].type) == T_BYTE) {
-            uint8_t byteDefaultValue = (uint8_t)libAtoi(dsc[i].defaultValue);
+            uint8_t byteDefaultValue;
+            STRING_TO_U8(dsc[i].defaultValue, &byteDefaultValue);
             memcpy(dsc[i].address, &byteDefaultValue, sizeof(uint8_t));
             LOG_TRACE("%d.%20s:%d", i, dsc[i].key, byteDefaultValue);
         } else if (dsc[i].type == T_BINARY) {
