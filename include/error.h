@@ -101,6 +101,7 @@ typedef enum {
     /* Storage */
     ERR_DSC_STORAGE,
     ERR_DSC_MEMORY,
+    ERR_DSC_DATABASE,
 
     /* Hardware */
     ERR_DSC_PRINTER,
@@ -127,6 +128,21 @@ typedef enum PrinterErr_t {
     PRNT_ERR_NO_PAPER,
     PRNT_ERR_TIME_OUT
 } PrinterErr_t;
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Database Errors
+ *                                                                                           *
+ ********************************************************************************************/
+typedef enum DataBase_t {
+    DB_ERR_OK,
+    DB_ERR_NOK,
+    DB_ERR_SETUP_FAILURE,
+    DB_ERR_CREATING_SCHEMA_FAILURE,
+    DB_ERR_CREATING_OP_FAILURE,
+    DB_ERR_RESET_FAILURE,
+    DB_ERR_INSERT_FAILURE
+} DataBase_t;
 
 /*********************************************************************************************
  *                                                                                           *
@@ -207,6 +223,7 @@ typedef struct {
         NetError_t     net;
         CellErr_t      cellular;
         MagReaderErr_t mag;
+        DataBase_t     db;
         int            raw;
     } detail;
 } Result_t;

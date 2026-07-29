@@ -24,9 +24,10 @@ static TxnQuery  __txnquery;
 static embedDBState*  state;
 static embedDBSchema* schema;
 
-static int txnInsert(TxnData* txn) {
-    if (!txn || !state)
-        return ERR_NOK;
+static Result_t txnInsert(TxnData* txn) {
+    Result_t res = {.err = ERR_DSC_OK};
+    RETURN_VALUE_IF_NULL(txn, res.err = ERR_DSC_INVALID_ARG, res);
+    RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_INVALID_ARG, res);
     LOG_DEBUG("time stamp = %llu", txn->dateTime);
     uint32_t date, time;
     unpackDateTime(txn->dateTime, &date, &time);
@@ -35,19 +36,21 @@ static int txnInsert(TxnData* txn) {
     rec.extention = txn->extention;
     if (embedDBPut(state, &txn->dateTime, &rec) != 0) {
         LOG_ERROR("Transaction record: error in inserting record.");
-        return -1;
+        res.err       = ERR_DSC_DATABASE;
+        res.detail.db = DB_ERR_INSERT_FAILURE;
+        return res;
     }
     LOG_DEBUG(
         "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = %s, "
         "amount = %s",
         date, time, txn->core.trace, txn->core.rrn, txn->core.stan,
         txn->core.amount);
-    return 0;
+    return res;
 }
 
-static int8_t iterateThrough() {
-    if (!state)
-        return ERR_NOK;
+static Result_t iterateThrough() {
+    Result_t res = {.err = ERR_DSC_OK};
+    RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_INVALID_ARG, res);
     embedDBIterator it;
     embedDBInitIterator(state, &it);
     uint64_t timeStamp;
@@ -61,29 +64,26 @@ static int8_t iterateThrough() {
             date, time, rec.core.trace, rec.core.rrn, rec.core.stan,
             rec.core.amount);
     }
-    return ERR_OK;
+    return res;
 }
 
-static int8_t txnReset() {
-    if (!state)
-        return ERR_NOK;
+static Result_t txnReset() {
+    Result_t res = {.err = ERR_DSC_OK};
+    RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_INVALID_ARG, res);
     if (embedDBreset(state, TRANS_RECORD_PATH, TRANS_IDX_PATH) != 0) {
         LOG_ERROR("Error in reseting embedDB.");
-        return ERR_NOK;
+        res.err       = ERR_DSC_DATABASE;
+        res.detail.db = DB_ERR_RESET_FAILURE;
+        return res;
     }
-    return ERR_OK;
+    return res;
 }
 
-static int8_t queryInit(QueryOperator* qo) {
-    if (!qo) {
-        LOG_ERROR("Txn record: QueryOperator is NULL.");
-        return ERR_NOK;
-    }
+static Result_t queryInit(QueryOperator* qo) {
+    Result_t res = {.err = ERR_DSC_OK};
+    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
     qo->it = (embedDBIterator*)MEM_ALLOC(sizeof(embedDBIterator));
-    if (!qo->it) {
-        LOG_ERROR("Txn record: Failed to allocate iterator.");
-        return ERR_NOK;
-    }
+    RETURN_VALUE_IF_NULL(qo->it, res.err = ERR_DSC_MEMORY, res);
     memset(qo->it, 0, sizeof(embedDBIterator));
     embedDBInitIterator(state, qo->it);
     qo->op = createTableScanOperator(state, qo->it, schema);
@@ -91,28 +91,29 @@ static int8_t queryInit(QueryOperator* qo) {
         LOG_ERROR("Failed to create table scan operator.");
         embedDBCloseIterator(qo->it);
         EMDB_MEM_FREE(qo->it);
-        return ERR_NOK;
+        res.err       = ERR_DSC_DATABASE;
+        res.detail.db = DB_ERR_CREATING_OP_FAILURE;
+        return res;
     }
-    return ERR_OK;
+    return res;
 }
 
-static void queryWhere(QueryOperator* qo, int column, int comparison,
-                       void* value) {
-    if (!qo || !value)
-        return;
+static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
+                           void* value) {
+    Result_t res = {.err = ERR_DSC_OK};
+    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
+    RETURN_VALUE_IF_NULL(value, res.err = ERR_DSC_INVALID_ARG, res);
     embedDBOperator* newOp =
         createSelectionOperator(qo->op, column, comparison, value);
-
-    if (!newOp) {
-        LOG_ERROR("Txn query: creating selection operator failed.");
-        return;
-    }
+    RETURN_VALUE_IF_NULL(newOp, res.err = ERR_DSC_MEMORY, res);
     qo->op = newOp;
 }
 
-static void txnSelect(QueryOperator* qo, TxnHandler handler, void* userData) {
-    if (!qo || !handler)
-        return;
+static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
+                          void* userData) {
+    Result_t res = {.err = ERR_DSC_OK};
+    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
+    RETURN_VALUE_IF_NULL(handler, res.err = ERR_DSC_INVALID_ARG, res);
     (qo->op)->init(qo->op);
     while (exec(qo->op)) {
         TxnData  data;
@@ -125,14 +126,13 @@ static void txnSelect(QueryOperator* qo, TxnHandler handler, void* userData) {
     (qo->op)->close((qo->op));
     EMDB_MEM_FREE(qo->it);
     embedDBFreeOperatorRecursive(qo->op);
+    return res;
 }
 
-static int8_t init(TxnRecord* self) {
-    state = (embedDBState*)EMDB_MEM_ALLOC(sizeof(embedDBState));
-    if (!state) {
-        LOG_ERROR("Transaction records: not enough memory for embedDB.");
-        return -1;
-    }
+static Result_t init(TxnRecord* self) {
+    Result_t res = {.err = ERR_DSC_OK};
+    state        = (embedDBState*)EMDB_MEM_ALLOC(sizeof(embedDBState));
+    RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_MEMORY, res);
     int8_t colSizes[] = {
         state->keySize,                                  // key
         sizeof(sizeof(((TxnData*)0)->core.txnType)),     // type
@@ -175,7 +175,9 @@ static int8_t init(TxnRecord* self) {
         EMDB_MEM_FREE(state);
         state = NULL;
         LOG_ERROR("Error in setuping embedDB.");
-        return ERR_NOK;
+        res.err       = ERR_DSC_DATABASE;
+        res.detail.db = DB_ERR_SETUP_FAILURE;
+        return res;
     }
 
     schema = embedDBCreateSchema(21, colSizes, colSignedness, colTypes);
@@ -184,10 +186,12 @@ static int8_t init(TxnRecord* self) {
         embedDBClose(state);
         embedDBtearDown(state);
         EMDB_MEM_FREE(state);
-        state = NULL;
-        return ERR_NOK;
+        state         = NULL;
+        res.err       = ERR_DSC_DATABASE;
+        res.detail.db = DB_ERR_CREATING_SCHEMA_FAILURE;
+        return res;
     }
-    return ERR_OK;
+    return res;
 }
 
 OOP_CTOR(TxnRecord) {

@@ -7,6 +7,7 @@
 #include "embedDB/embedDB.h"
 #include "embedDB/query-interface/advancedQueries.h"
 #include "txn.h"
+#include "error.h"
 
 typedef enum {
     TXN_REC_FIELD_TIMESTAMP = 0,
@@ -38,12 +39,12 @@ OOP_CLASS(TxnQuery) {
 TxnQuery* txnquery(void);
 
 OOP_CLASS(TxnRecord) {
-    OOP_METHOD(void, init);
-    OOP_METHOD(void, insert, TxnData*);
-    OOP_METHOD(void, iterate);
-    OOP_METHOD(void, select, QueryOperator*, TxnHandler handler,
+    OOP_METHOD(, init);
+    OOP_METHOD(Result_t, insert, TxnData*);
+    OOP_METHOD(Result_t, iterate);
+    OOP_METHOD(Result_t, select, QueryOperator*, TxnHandler handler,
                void* userData);
-    OOP_METHOD(void, reset);
+    OOP_METHOD(Result_t, reset);
 };
 
 TxnRecord* txnrecord(void);

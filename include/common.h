@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "logger.h"
 #include <stdint.h>
-#include "helpers/error.h"
+#include "error.h"
 
 /**********************************************************/
 //                         VERSIONS
