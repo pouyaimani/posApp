@@ -17,7 +17,7 @@ static TxnData       pendTxnData;
 
 static TxnFlow flow;
 
-static TxnPendMgrCb settleDoneCb;
+static TxnPendMgrCb pendDoneCb;
 
 static const DataDescriptor pendingTxnDsc[] = {
     {"txn", T_BINARY, (0), (sizeof(TxnData)), ("0"), &(pendTxnData)}};
@@ -27,7 +27,10 @@ void settleDone(TxnFlow* flow, const TxnFlowStatus* st) {
     (void*)st;
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
     bool res = (st->result == TXN_FLOW_SUCCESS) && (st->code == 0);
-    settleDoneCb(res);
+    if (res) {
+        pendTxnData.status = TXN_STATUS_APPROVED;
+    }
+    pendDoneCb(&pendTxnData);
 }
 
 void reverseDone(TxnFlow* flow, const TxnFlowStatus* st) {
@@ -35,7 +38,10 @@ void reverseDone(TxnFlow* flow, const TxnFlowStatus* st) {
     (void*)st;
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
     bool res = (st->result == TXN_FLOW_SUCCESS) && (st->code == 0);
-    settleDoneCb(res);
+    if (res) {
+        pendTxnData.status = TXN_STATUS_REVERSED;
+    }
+    pendDoneCb(&pendTxnData);
 }
 
 static Error_t loadTxnData(TxnData* data) {
@@ -61,11 +67,10 @@ static Error_t updateTxnData(TxnData* data) {
                            RECOVERY_TXN_DATA_ADDR);
 }
 
-static void mark(TxnData* txn, TxnStatus st) {
-    RETURN_IF_NULL(txn, ;);
+static void mark(TxnStatus st) {
 
-    txn->status = st;
-    updateTxnData(txn);
+    pendTxnData.status = st;
+    updateTxnData(&pendTxnData);
 
     LOG_TRACE("TxnPendingMgr: transaction is approved ...");
 }
@@ -114,7 +119,7 @@ bool run(TxnPendMgrCb cb) {
         hasPendingTxn(&tx), true,
         LOG_TRACE("TxnPendingMgr: no pending transaction exists.");
         , false);
-    settleDoneCb = cb;
+    pendDoneCb = cb;
     if (isReverse(&tx)) {
         LOG_TRACE("TxnPendingMgr: a reverse txn exists.");
         processReverse(&tx);

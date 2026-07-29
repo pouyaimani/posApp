@@ -739,8 +739,8 @@ Result_t showDigitalRec(const TxnData* data) {
         break;
     case TXN_PAY:
         break;
-    // case TXN_SIM_CHARGE:
-    //     break;
+    case TXN_VOUCHER:
+        break;
     default:
         break;
     }

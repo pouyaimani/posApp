@@ -82,12 +82,6 @@ STATE_DEF_ENTER(EnterPassword) {
 STATE_DEF_ENTER(Communication) { txnStart(&purchaseTxn, flow, state); }
 
 static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    // if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-    //     Receipt rec;
-    //     buildReceipt(&rec, &recData);
-    // }
-
-    flow->data.core.txnType = TXN_SALE;
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
     if (st->result == TXN_FLOW_SUCCESS) {
         GOTO_TXN_RES(STATE_IDLE, STATE_IDLE, &flow->data);
@@ -96,7 +90,8 @@ static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
 
 static int compose(TxnData* data) {
     composeCommon(data);
-    data->core.amount = amount;
+    data->core.txnType = TXN_SALE;
+    data->core.amount  = amount;
 }
 
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,

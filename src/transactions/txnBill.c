@@ -113,6 +113,7 @@ STATE_DEF_ENTER(Communication) { txnStart(&billTxn, flow, state); }
 
 static int compose(TxnData* txnData) {
     composeCommon(txnData);
+    txnData->core.txnType   = TXN_BILL;
     txnData->core.amount    = amount;
     txnData->extention.bill = data.bill;
 }

@@ -97,7 +97,11 @@ typedef enum {
 #define SecRelControlInfo "0800050202031500"
 
 typedef enum {
-    TXN_STATUS_DONE,
+    TXN_STATUS_APPROVED,
+
+    TXN_STATUS_DECLINED,
+
+    TXN_STATUS_REVERSED,
 
     TXN_STATUS_PENDING_REVERSE,
 
@@ -111,7 +115,6 @@ typedef enum {
     TXN_TOPUP,
     TXN_BALANCE,
     TXN_PAY,
-    TXN_TOP_UP,
     TXN_VOUCHER,
     TXN_LOGON,
     TXN_CFG,

@@ -4,12 +4,12 @@
 #include "txn.h"
 #include "txnFlow.h"
 
-typedef int (*TxnPendMgrCb)(bool result);
+typedef int (*TxnPendMgrCb)(const TxnData* txnData);
 
 typedef struct {
 
     bool (*run)(TxnPendMgrCb);
-    void (*mark)(TxnData*, TxnStatus st);
+    void (*mark)(TxnStatus st);
 
     bool (*hasPendingTxn)(void);
 

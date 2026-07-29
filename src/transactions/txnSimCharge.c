@@ -206,10 +206,11 @@ static void voucherDone(TxnFlow* flow, const TxnFlowStatus* st) {
     // &flow->data
 }
 
-static int compose(TxnData* data) {
+static int composeVoucher(TxnData* data) {
     composeCommon(data);
     data->core.amount         = selectedAmnt;
     data->extention.charge.op = selectedOp;
+    data->core.txnType        = TXN_VOUCHER;
 }
 
 static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
@@ -241,7 +242,7 @@ const TxnFlowConfig voucherTxn = {
 
     .feildsCnt = sizeof(isoFeildsVoucher),
 
-    .compose = compose,
+    .compose = composeVoucher,
 
     .build = buildCommon,
 
@@ -278,7 +279,7 @@ OOP_CTOR(Voucher, State* parent, const char* name) {
 
 STATE_DEF_ENTER(TopUp) {
     memset(flow, 0, sizeof(*flow));
-    txn = TXN_TOP_UP;
+    txn = TXN_TOPUP;
 }
 
 STATE_DEF_EXIT(TopUp) {}
@@ -290,6 +291,13 @@ static void topupDone(TxnFlow* flow, const TxnFlowStatus* st) {
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
     // SM_GOTO(result);
     // &flow->data
+}
+
+static int composeTopUp(TxnData* data) {
+    composeCommon(data);
+    data->core.amount         = selectedAmnt;
+    data->extention.charge.op = selectedOp;
+    data->core.txnType        = TXN_TOPUP;
 }
 
 static const uint8_t isoFeildsTopUp[] = {ELEMENT_PAN,
@@ -321,7 +329,7 @@ const TxnFlowConfig topupTxn = {
 
     .feildsCnt = sizeof(isoFeildsTopUp),
 
-    .compose = compose,
+    .compose = composeTopUp,
 
     .build = buildCommon,
 
