@@ -21,19 +21,34 @@ void ui_menu_addItem(Menu* menu, const char* text, lv_text_align_t txtAlign,
     LV_SET_BORDER_OPA(btn, LV_OPA_0);
     LV_ALIGN(btn, LV_ALIGN_CENTER, 0, 0);
 
+    lv_obj_t* number = lv_label_create(btn);
+    LV_SET_SIZE(number, lv_pct(10), LV_SIZE_CONTENT);
+    LV_SET_BG_OPA(number, LV_OPA_0);
+    LV_SET_BORDER_OPA(number, LV_OPA_0);
+    LV_SET_TEXT_FONT(number, FONT_20);
+    LV_ALIGN(number,
+             txtAlign == LV_TEXT_ALIGN_LEFT ? LV_ALIGN_LEFT_MID
+                                            : LV_ALIGN_RIGHT_MID,
+             0, 0);
+    LV_SET_TEXT_ALIGN(number, txtAlign == LV_TEXT_ALIGN_LEFT
+                                  ? LV_TEXT_ALIGN_RIGHT
+                                  : LV_TEXT_ALIGN_LEFT);
+
     lv_obj_t* label = lv_label_create(btn);
-    LV_SET_SIZE(label, lv_pct(100), LV_SIZE_CONTENT);
+    LV_SET_SIZE(label, lv_pct(90), LV_SIZE_CONTENT);
     LV_SET_BG_OPA(label, LV_OPA_0);
     LV_SET_BORDER_OPA(label, LV_OPA_0);
     LV_SET_TEXT_FONT(label, FONT_20);
-    LV_ALIGN(label, LV_ALIGN_CENTER, 0, 0);
+    LV_ALIGN(label,
+             txtAlign == LV_TEXT_ALIGN_LEFT ? LV_ALIGN_RIGHT_MID
+                                            : LV_ALIGN_LEFT_MID,
+             txtAlign == LV_TEXT_ALIGN_LEFT ? 5 : -5, 0);
     LV_SET_TEXT_ALIGN(label, txtAlign);
-    DEFINE_STRING(str, 64);
-    DEFINE_STRING(num, 4);
-    snprintf(num, sizeof(num), "%d", menu->cnt + 1);
-    snprintf(str, sizeof(str), "%s.%s", num, text);
     lv_obj_set_style_base_dir(label, LV_BASE_DIR_RTL, 0);
-    LV_SET_TEXT(label, str);
+    lv_obj_set_style_base_dir(number, LV_BASE_DIR_AUTO, 0);
+    lv_label_set_text_fmt(
+        number, txtAlign == LV_TEXT_ALIGN_LEFT ? "%d." : ".%d", menu->cnt + 1);
+    LV_SET_TEXT(label, text);
 
     menu->item[menu->cnt]     = btn;
     menu->state[menu->cnt]    = state;
