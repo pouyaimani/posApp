@@ -129,7 +129,15 @@ static void copyWifiAp(Wifi* wifi, WifiAPInfo* apInfo, uint32_t num) {
     }
 }
 
-static void init(Wifi* wifi) { sdkWifiOpen(); }
+static WifiErr_t init(Wifi* wifi) {
+    VAR_UNUSED(wifi);
+    return translateSdkErr(sdkWifiOpen());
+}
+
+static WifiErr_t close(Wifi* wifi) {
+    VAR_UNUSED(wifi);
+    return translateSdkErr(sdkWifiClose());
+}
 
 static WifiErr_t startScan(Wifi* wifi) {
     wifi->scanSt = WIFI_SCAN_FAILED;
@@ -212,6 +220,7 @@ static WifiSigStrength_t getSignalStrength(Wifi* self) {
 
 OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.init              = init;
+    self->base.vtable.close             = close;
     self->base.vtable.hstartScan        = startScan;
     self->base.vtable.hconnect          = connect;
     self->base.vtable.hgetScanStatus    = getScanStatus;

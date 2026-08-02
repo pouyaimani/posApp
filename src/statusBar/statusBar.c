@@ -138,7 +138,7 @@ static void updateWifiIcon() {
 
 static void updateOperatorDsc() {
     static char* current = NULL;
-    if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
+    if (OOP_CALL(cellular(), getSimStatus) != SIM_STATUS_OK) {
         setTextIfChanged(operator, "NoSim");
         setIconIfChanged(cellularIcon, ICON_CELL_DISCONNECT, &current);
         return;
@@ -177,7 +177,7 @@ static void updateOperatorDsc() {
 static void updateCellIcon() {
     static char* current = NULL;
     char*        icon    = NULL;
-    if (OOP_CALL(cellular(), getSimStatus) != CELL_ERR_OK) {
+    if (OOP_CALL(cellular(), getSimStatus) != SIM_STATUS_OK) {
         icon = ICON_CELL_DISCONNECT;
         setIconIfChanged(cellularIcon, icon, &current);
         return;

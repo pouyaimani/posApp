@@ -31,6 +31,7 @@ static void checkCellLoginResult() {
         return;
     }
     CellPPPStatus_t st = OOP_CALL(__cellular, getPPPstatus);
+    LOG_DEBUG(" Cellular status = %d", st);
     if (st == CELL_PPP_DIALING || st == CELL_PPP_INIT) {
         return;
     } else if (st == CELL_PPP_READY) {

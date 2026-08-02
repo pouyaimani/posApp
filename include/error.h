@@ -3,6 +3,8 @@
 
 #include "logger.h"
 
+#define VAR_UNUSED(x) ((void)x)
+
 /**********************************************************/
 //                         ERRORS
 /**********************************************************/
@@ -192,6 +194,8 @@ typedef enum {
     ERR_DSC_DISPLAY,
     ERR_DSC_PED,
     ERR_DSC_SCANNER,
+    ERR_DSC_CELLULAR,
+    ERR_DSC_WIFI,
 
     /* System */
     ERR_DSC_SYSTEM,
@@ -255,7 +259,12 @@ typedef enum MagReaderErr_t {
  *                                      Cellular Errors
  *                                                                                           *
  ********************************************************************************************/
-typedef enum CellErr_t { CELL_ERR_OK, CELL_ERR_SIM_ERROR } CellErr_t;
+typedef enum CellErr_t {
+    CELL_ERR_OK,
+    CELL_ERR_INIT,
+    CELL_ERR_SIM_ERROR,
+    CELL_ERR_OTHER
+} CellErr_t;
 
 /*********************************************************************************************
  *                                                                                           *
@@ -286,6 +295,7 @@ typedef enum {
 
 typedef enum WifiErr_t {
     WIFI_ERR_OK,
+    WIFI_ERR_INIT,
     WIFI_ERR_NOK,
     WIFI_ERR_INPUT,
     WIFI_ERR_TIME_OUT,
@@ -308,6 +318,7 @@ typedef struct {
         CellErr_t      cellular;
         MagReaderErr_t mag;
         DataBase_t     db;
+        WifiErr_t      wifi;
         int            raw;
     } detail;
 } Result_t;

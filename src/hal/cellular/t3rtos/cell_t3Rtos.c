@@ -6,18 +6,30 @@
 #include "logger.h"
 
 static CellErr_t translateSdkErr(int err) {
-    CellErr_t cellErr;
+    CellErr_t cellErr = CELL_ERR_OTHER;
     switch (err) {
-    default:
+    case SDK_CELLULAR_OK:
         cellErr = CELL_ERR_OK;
+    default:
         break;
     }
     return cellErr;
 }
 
-static void init(Cellular* self) {}
+static CellErr_t init(Cellular* self) { VAR_UNUSED(self); }
+
+static CellErr_t open(Cellular* self) {
+    VAR_UNUSED(self);
+    return translateSdkErr(sdkCellularOpen(NULL));
+}
+
+static CellErr_t close(Cellular* self) {
+    VAR_UNUSED(self);
+    return translateSdkErr(sdkCellularClose());
+}
 
 static CellSigStrength_t getSignalStrength(Cellular* self) {
+    VAR_UNUSED(self);
     uint8_t           sig;
     CellSigStrength_t strength = CELL_SIGNAL_STRENGTH_INVALID;
     if (translateSdkErr(sdkCellularGetSignal(&sig)) == CELL_ERR_OK) {
@@ -35,6 +47,7 @@ static CellSigStrength_t getSignalStrength(Cellular* self) {
 }
 
 static CellErr_t getSimInfo(Cellular* self, CellSimInfo* sinfo) {
+    VAR_UNUSED(self);
     SimInfo info;
     memset(sinfo->iccId, 0, sizeof(sinfo->iccId));
     memset(sinfo->imsi, 0, sizeof(sinfo->imsi));
@@ -47,6 +60,7 @@ static CellErr_t getSimInfo(Cellular* self, CellSimInfo* sinfo) {
 }
 
 static CellPPPStatus_t getPPPstatus(Cellular* self) {
+    VAR_UNUSED(self);
     CellPPPStatus_t status = CELL_PPP_INVALID;
     int             st     = sdkCellularGetPPPStatus();
     // LOG_DEBUG("sdkCellularGetPPPStatus = %d", st);
@@ -63,6 +77,7 @@ static CellPPPStatus_t getPPPstatus(Cellular* self) {
 static CellErr_t startPPPlogin(Cellular* self, const char* apn,
                                const char* user, const char* pass,
                                const char* number) {
+    VAR_UNUSED(self);
     return translateSdkErr(sdkCellularStartPPPLogin(apn, user, pass, number));
 }
 
@@ -71,30 +86,37 @@ static CellErr_t selectSim(uint8_t slot) {
 }
 
 static CellErr_t ussdInit(Cellular* self) {
+    VAR_UNUSED(self);
     return translateSdkErr(sdkCellularUSSDInit());
 }
 
 static CellErr_t ussdSend(Cellular* self, char* req, uint8_t dsc) {
+    VAR_UNUSED(self);
     return translateSdkErr(sdkCellularUSSDSend(req, dsc));
 }
 
 static CellErr_t ussdRec(Cellular* self, char* buff, size_t size) {
+    VAR_UNUSED(self);
     return translateSdkErr(sdkCellularUSSDRecv(buff, size));
 }
 
 static CellErr_t ussdStop(Cellular* self) {
+    VAR_UNUSED(self);
     return translateSdkErr(sdkCellularUSSDStop());
 }
 
 static CellErr_t ussdGetCharset(Cellular* self, char* cs, uint32_t len) {
+    VAR_UNUSED(self);
     return translateSdkErr(sdkCellularUSSDGetCharset(cs, len));
 }
 
 static CellErr_t ussdSetCharset(Cellular* self, char* cs) {
+    VAR_UNUSED(self);
     return translateSdkErr(sdkCellularUSSDSetCharset(cs));
 }
 
 static CellNeyType_t getNetType(Cellular* self) {
+    VAR_UNUSED(self);
     int           ret     = sdkCellularGetNetType();
     CellNeyType_t netType = CELL_NET_TYPE_INVALID;
     if (ret == CELLULAR_NET_2G) {
@@ -107,15 +129,17 @@ static CellNeyType_t getNetType(Cellular* self) {
     return netType;
 }
 
-static CellErr_t getSimStatus(Cellular* self) {
-    if (sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0) ==
-        SDK_CELLULAR_ERR_SIM) {
-        return CELL_ERR_SIM_ERROR;
-    }
-    return CELL_ERR_OK;
+static SimStatus_t getSimStatus(Cellular* self) {
+    VAR_UNUSED(self);
+    return sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0) ==
+                   SDK_CELLULAR_ERR_SIM
+               ? SIM_STATUS_ERR
+               : SIM_STATUS_OK;
 }
 
 OOP_CTOR(CellT3Rtos) {
+    self->base.vtable.open              = open;
+    self->base.vtable.close             = close;
     self->base.vtable.getNetType        = getNetType;
     self->base.vtable.getPPPstatus      = getPPPstatus;
     self->base.vtable.getSignalStrength = getSignalStrength;

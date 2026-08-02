@@ -39,7 +39,8 @@ typedef struct WifiApList_t {
 OOP_DECLARE_CLASS(Wifi)
 
 OOP_VTABLE(Wifi) {
-    OOP_IMETHOD(void, Wifi, init);
+    OOP_IMETHOD(WifiErr_t, Wifi, init);
+    OOP_IMETHOD(WifiErr_t, Wifi, close);
     OOP_IMETHOD(WifiErr_t, Wifi, hconnect, WifiApInfo_t*, char*);
     OOP_IMETHOD(WifiErr_t, Wifi, hdisconnect);
     OOP_IMETHOD(void, Wifi, hstartScan);

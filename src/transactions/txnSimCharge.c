@@ -31,6 +31,8 @@ static TxnFlow* flow;
 
 static TxnFlowConfig* cfg;
 
+static char phoneNum[LEN_MAX_PHONE_NUMBER + 1];
+
 /******************************************************************
  *                   Select Operator sub state
  ******************************************************************/
@@ -172,6 +174,7 @@ STATE_DEF_ENTER(EnterPhone) {
         },
         selectAmount, enterPass);
     inmgr()->set(INPUT_TYPE_KEYPAD, "09");
+    inmgr()->setOut(phoneNum, phoneNum, sizeof(phoneNum));
 }
 
 static void EnterPhone(State* parent) {
@@ -323,10 +326,11 @@ static void topupDone(TxnFlow* flow, const TxnFlowStatus* st) {
 
 static int composeTopUp(TxnData* data) {
     composeCommon(data);
-    data->core.amount                  = selectedAmnt;
-    data->extention.charge.op          = selectedOp;
-    data->extention.charge.phoneNumber = selectedOp;
-    data->core.txnType                 = TXN_TOPUP;
+    data->core.amount         = selectedAmnt;
+    data->extention.charge.op = selectedOp;
+    memcpy(data->extention.charge.phoneNumber, phoneNum,
+           sizeof(data->extention.charge.phoneNumber));
+    data->core.txnType = TXN_TOPUP;
 }
 
 static const uint8_t isoFeildsTopUp[] = {ELEMENT_PAN,

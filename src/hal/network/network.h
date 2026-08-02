@@ -14,7 +14,7 @@
 #define REC_BUFF_LEN     1024
 
 typedef enum {
-    NET_ROUTE_CELLUALR = 0,
+    NET_ROUTE_CELLULAR = 0,
     NET_ROUTE_WIFI,
     NET_ROUTE_ETH
 } NetRoute_t;
@@ -54,7 +54,7 @@ typedef enum {
 OOP_DECLARE_CLASS(Network)
 
 OOP_VTABLE(Network) {
-    OOP_IMETHOD(NetError_t, Network, init);
+    OOP_IMETHOD(Result_t, Network, init, NetRoute_t route);
     OOP_IMETHOD(NetRoute_t, Network, getRoute);
     OOP_IMETHOD(NetError_t, Network, setRoute, NetRoute_t);
     OOP_IMETHOD(NetError_t, Network, setAddr, const char*, uint16_t);
@@ -73,7 +73,8 @@ OOP_CLASS(Network) {
     SocketAddr_t address;
     OOP_METHOD(int, connect);
     OOP_METHOD(void, disconnect);
-    OOP_METHOD(NetError_t, init);
+    OOP_METHOD(Result_t, init, NetRoute_t route);
+    OOP_METHOD(NetError_t, setRoute, NetRoute_t);
     OOP_METHOD(int, send, uint8_t* data, size_t len);
     int id;
 };

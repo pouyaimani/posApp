@@ -12,7 +12,7 @@ static NetRoute_t getRoute(Network* self) {
     SOCKET_ROUTE route = sdkNetGetRoute();
     switch (route) {
     case SOCKET_ROUTE_CELLULAR:
-        return NET_ROUTE_CELLUALR;
+        return NET_ROUTE_CELLULAR;
     case SOCKET_ROUTE_WIFI:
         return NET_ROUTE_WIFI;
     case SOCKET_ROUTE_ETH:
@@ -23,7 +23,7 @@ static NetRoute_t getRoute(Network* self) {
 static NetError_t setRoute(Network* self, NetRoute_t route) {
     SOCKET_ROUTE sdkRoute;
     switch (route) {
-    case NET_ROUTE_CELLUALR:
+    case NET_ROUTE_CELLULAR:
         sdkRoute = SOCKET_ROUTE_CELLULAR;
         break;
     case NET_ROUTE_WIFI:

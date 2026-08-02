@@ -50,7 +50,7 @@ static void saveWifiInfo(WifiApInfo_t* ap, const char* pwd) {
     snprintf(settings()->terminal.wifiPwd, sizeof(settings()->terminal.wifiPwd),
              "%s", pwd);
     settings()->terminal.netRoute = NET_ROUTE_WIFI;
-    OOP_CALL(network(), setRoute, NET_ROUTE_WIFI);
+    network()->setRoute(NET_ROUTE_WIFI);
     settings()->save();
 }
 
@@ -183,7 +183,7 @@ static void WifiScan(State* parent) {
 STATE_DEF_ENTER(CellularLogin) {
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING_2_NET),
               phraseGetDef(PHRASE_PLEASE_WAIT));
-    if (OOP_CALL(cel, getSimStatus) != CELL_ERR_OK) {
+    if (OOP_CALL(cel, getSimStatus) != SIM_STATUS_OK) {
         GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                   phraseGetDef(PHRASE_CONNECTION_ERR),
                   phraseGetDef(PHRASE_CHECK_SIM_STAT));
@@ -198,6 +198,8 @@ STATE_DEF_HANDLE(CellularLogin, CellEvent) {
     if (ev->pppSt == CELL_PPP_SUCESS) {
         GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
                   phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
+        settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
+        network()->setRoute(NET_ROUTE_CELLULAR);
     } else if (ev->pppSt == CELL_PPP_FAILURE) {
         GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                   phraseGetDef(PHRASE_CONNECTION_ERR), "");
@@ -250,7 +252,7 @@ static void createUi() {
         ui_menu_addItem(menu, phraseGetDef(PHRASE_GPRS), LV_TEXT_ALIGN_RIGHT,
                         cellularLogin, NULL, NULL);
         menuMap[menuCount] = CONNECTION_GPRS;
-        if (route == NET_ROUTE_CELLUALR) {
+        if (route == NET_ROUTE_CELLULAR) {
             ui_menu_set_checked(menu, menuCount);
         }
         menuCount++;

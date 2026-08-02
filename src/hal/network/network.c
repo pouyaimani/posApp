@@ -5,6 +5,8 @@
 #include "logger.h"
 #include "settings/settings.h"
 #include "len.h"
+#include "cellular/cellular.h"
+#include "wifi/wifi.h"
 
 Network* __network;
 
@@ -22,15 +24,36 @@ static void constructT3Rtos() {
 
 static uint32_t tick;
 
-static NetError_t init() {
-    NetError_t err =
-        OOP_CALL(network(), setRoute, settings()->terminal.netRoute);
-    if (err != NET_ERR_OK) {
-        return err;
+static Result_t setRoute(NetRoute_t route) {
+    Result_t res;
+    res.err = ERR_DSC_OK;
+    LOG_TRACE("Network: setting route to %d", route);
+    NetError_t err = OOP_CALL(network(), setRoute, route);
+    RETURN_VALUE_IF_NOT(err, NET_ERR_OK, res.err = ERR_DSC_DEVICE;, res);
+
+    OOP_CALL(cellular(), close);
+    OOP_CALL(wifi(), close);
+    if (route == NET_ROUTE_CELLULAR) {
+        if (OOP_CALL(cellular(), init) != CELL_ERR_OK) {
+            res.err             = ERR_DSC_CELLULAR;
+            res.detail.cellular = CELL_ERR_INIT;
+        }
+    } else if (route == NET_ROUTE_WIFI) {
+        if (OOP_CALL(wifi(), init) != WIFI_ERR_OK) {
+            res.err         = ERR_DSC_WIFI;
+            res.detail.wifi = WIFI_ERR_INIT;
+        }
+    } else if (route == NET_ROUTE_ETH) {
     }
-    err = OOP_CALL(network(), setAddr, settings()->server.mainServerIp,
-                   settings()->server.mainServerPort);
-    return err;
+    LOG_TRACE("Network: setting route done. error =  %d", res.err);
+    return res;
+}
+
+static Result_t init(NetRoute_t route) {
+    Result_t res = setRoute(route);
+    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, res);
+    res.err = ERR_DSC_OK;
+    return res;
 }
 
 static void checkSocketConnectStatus() {
@@ -92,6 +115,7 @@ OOP_CTOR(Network) {
     self->connect    = connect;
     self->send       = send;
     self->disconnect = disconnect;
+    self->setRoute   = setRoute;
 }
 
 Network* network() {

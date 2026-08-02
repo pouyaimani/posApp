@@ -21,6 +21,11 @@ typedef enum CellNeyType_t {
     CELL_NET_TYPE_INVALID
 } CellNeyType_t;
 
+typedef enum SimStatus_t {
+    SIM_STATUS_ERR,
+    SIM_STATUS_OK,
+} SimStatus_t;
+
 OOP_CLASS(CellSimInfo) {
     char iccId[32 + 1];
     char imsi[32 + 1];
@@ -29,7 +34,9 @@ OOP_CLASS(CellSimInfo) {
 OOP_DECLARE_CLASS(Cellular)
 
 OOP_VTABLE(Cellular) {
-    OOP_IMETHOD(void, Cellular, init);
+    OOP_IMETHOD(CellErr_t, Cellular, init);
+    OOP_IMETHOD(CellErr_t, Cellular, open);
+    OOP_IMETHOD(CellErr_t, Cellular, close);
     OOP_IMETHOD(CellSigStrength_t, Cellular, getSignalStrength);
     OOP_IMETHOD(CellPPPStatus_t, Cellular, getPPPstatus);
     OOP_IMETHOD(CellErr_t, Cellular, startPPPlogin, const char*, const char*,
@@ -43,7 +50,7 @@ OOP_VTABLE(Cellular) {
     OOP_IMETHOD(CellNeyType_t, Cellular, getNetType);
     OOP_IMETHOD(CellErr_t, Cellular, getSimInfo, CellSimInfo*);
     OOP_IMETHOD(CellErr_t, Cellular, selectSim, uint8_t);
-    OOP_IMETHOD(CellErr_t, Cellular, getSimStatus);
+    OOP_IMETHOD(SimStatus_t, Cellular, getSimStatus);
 };
 
 OOP_CLASS(Cellular) {

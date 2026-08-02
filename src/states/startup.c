@@ -14,6 +14,7 @@
 #include "settings/settings.h"
 #include "record/shiftRecs.h"
 #include "nth/nth.h"
+#include "error.h"
 
 static lv_obj_t* startUpPage;
 static lv_obj_t* label;
@@ -34,7 +35,9 @@ STATE_DEF_ENTER(Startup) {
     core->registerCallback(nth()->tick);
 
     // Network setitings
-    network()->init();
+    Result_t res = network()->init(settings()->terminal.netRoute);
+    if (res.err != ERR_DSC_OK) {
+    }
 
     shifts()->init();
 

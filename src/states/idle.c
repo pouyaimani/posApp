@@ -7,6 +7,7 @@
 #include "display.h"
 #include "event.h"
 #include "wifi/wifi.h"
+#include "cellular/cellular.h"
 #include "assets.h"
 #include "font/myFont.h"
 #include "statusBar/statusBar.h"
@@ -42,9 +43,6 @@ static Timer*    timer;
 static SwipeHint swipe;
 
 static void wifiAutoConnect() {
-    if (OOP_CALL(network(), getRoute) != NET_ROUTE_WIFI) {
-        return;
-    }
     WifiConnectSt_t conSt = OOP_CALL(wifi(), getConnectStatus);
     if (conSt == WIFI_CONNECT_SUCCEED || conSt == WIFI_CONNECT_UNDER_PROCESS) {
         return;
@@ -62,7 +60,30 @@ static void wifiAutoConnect() {
     }
 }
 
-static void timerCb() { wifiAutoConnect(); }
+static void cellAutoConnect() {
+    if (OOP_CALL(cellular(), getSimStatus) != SIM_STATUS_OK) {
+        LOG_DEBUG("sim status error");
+        return;
+    }
+    CellPPPStatus_t st = OOP_CALL(cellular(), getPPPstatus);
+    LOG_DEBUG("cellular status = %d", st);
+    if (st == CELL_PPP_SUCESS || st == CELL_PPP_DIALING) {
+        return;
+    }
+    cellular()->startPPPlogin(NULL, NULL, NULL, NULL);
+}
+
+static void netAutoConnect() {
+    NetRoute_t route = OOP_CALL(network(), getRoute);
+    LOG_DEBUG("network route = %d", route);
+    if (route == NET_ROUTE_WIFI) {
+        wifiAutoConnect();
+    } else if (route == NET_ROUTE_CELLULAR) {
+        cellAutoConnect();
+    }
+}
+
+static void timerCb() { netAutoConnect(); }
 
 static void menuEventCb(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
