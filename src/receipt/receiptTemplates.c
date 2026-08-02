@@ -509,7 +509,7 @@ Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
         case TXN_CFG:
             builder = buildCfgReceipt;
             break;
-        case TXN_SALE:
+        case TXN_PURCHASE:
             builder = buildSaleReceipt;
             break;
         case TXN_BILL:
@@ -727,7 +727,7 @@ Result_t showDigitalRec(const TxnData* data) {
     DigRecfillCommon(data);
     DigitalReceiptBuilder builder = NULL;
     switch (data->core.txnType) {
-    case TXN_SALE:
+    case TXN_PURCHASE:
         builder = digRecBuildPurchase;
         break;
     case TXN_BILL:

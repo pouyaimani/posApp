@@ -121,7 +121,7 @@ static void print() {
     txn.core.rrn         = 1399;
     txn.core.trace       = 6419;
     txn.core.stan        = 19000;
-    txn.core.txnType     = TXN_SALE;
+    txn.core.txnType     = TXN_PURCHASE;
     txn.dateTime         = OOP_CALL(sys(), getPackedDateTime);
     Receipt rec;
     buildReceipt(&rec, &data);
@@ -271,7 +271,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         txnPendingMgr()->run(pendMgrDone);
 
     } else if (ev->key == KEY_5) {
-        show_receipt_page();
+        txnPendingMgr()->reset();
     } else if (ev->key == KEY_6) {
         insertTxn();
     } else if (ev->key == KEY_7) {

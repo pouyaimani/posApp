@@ -130,10 +130,16 @@ bool run(TxnPendMgrCb cb) {
     return true;
 }
 
+static void reset() {
+    memset(&pendTxnData, 0, sizeof(pendTxnData));
+    updateTxnData(&pendTxnData);
+}
+
 static void init(TxnPendingMgr* mgr) {
     mgr->mark          = mark;
     mgr->hasPendingTxn = hasPendingTxn;
     mgr->run           = run;
+    mgr->reset         = reset;
 }
 
 TxnPendingMgr* txnPendingMgr(void) {

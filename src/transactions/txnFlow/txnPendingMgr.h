@@ -10,6 +10,7 @@ typedef struct {
 
     bool (*run)(TxnPendMgrCb);
     void (*mark)(TxnStatus st);
+    void (*reset)();
 
     bool (*hasPendingTxn)(void);
 

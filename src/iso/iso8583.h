@@ -155,7 +155,7 @@
 #define ELEMENT_RESERVED_PRIVATE_127                127
 #define ELEMENT_MAC_2                               128
 
-typedef int RespCode_t;
+typedef uint16_t RespCode_t;
 
 /* Field format types */
 typedef enum {

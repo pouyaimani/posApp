@@ -2,6 +2,7 @@
 #define TXN_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "oop.h"
 #include "len.h"
 
@@ -110,7 +111,7 @@ typedef enum {
 } TxnStatus;
 
 typedef enum {
-    TXN_SALE = 0,
+    TXN_PURCHASE = 0,
     TXN_BILL,
     TXN_TOPUP,
     TXN_BALANCE,

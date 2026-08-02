@@ -129,9 +129,9 @@ static const DataDescriptor settingsDsc[] = {
 
     DSC_BYTE(__settings.terminal.directSaleEn, DEFAULT_DIRECT_SALE_EN),
 
-    DSC_BIN(__settings.terminal.serviceEn,
-            sizeof(__settings.terminal.serviceEn),
-            sizeof(__settings.terminal.serviceEn), NULL),
+    DSC_BIN(__settings.terminal.chItemStatus,
+            sizeof(__settings.terminal.chItemStatus),
+            sizeof(__settings.terminal.chItemStatus), NULL),
 
     DSC_INT(__settings.terminal.fixedAmountItem, DEFAULT_FIXED_AMNT_ITEM),
     DSC_STR_BUF(__settings.terminal.amountList, DEFAULT_FIXED_AMNT_LIST),

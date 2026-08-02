@@ -30,12 +30,96 @@ typedef int8_t Error_t;
         }                                                                      \
     } while (0)
 
+#define RETURN_VALUE_IF(expr, expected, on_error, retval)                      \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val == __exp) {                                                  \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return (retval);                                                   \
+        }                                                                      \
+    } while (0)
+
+#define RETURN_VALUE_IF_GREATER(expr, expected, on_error, retval)              \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val > __exp) {                                                   \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return (retval);                                                   \
+        }                                                                      \
+    } while (0)
+
+#define RETURN_VALUE_IF_LIITLE(expr, expected, on_error, retval)               \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val < __exp) {                                                   \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return (retval);                                                   \
+        }                                                                      \
+    } while (0)
+
+#define RETURN_VALUE_IF_GE(expr, expected, on_error, retval)                   \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val >= __exp) {                                                  \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return (retval);                                                   \
+        }                                                                      \
+    } while (0)
+
+#define RETURN_VALUE_IF_LE(expr, expected, on_error, retval)                   \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val <= __exp) {                                                  \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return (retval);                                                   \
+        }                                                                      \
+    } while (0)
+
 #define RETURN_IF_NOT(expr, expected, on_error)                                \
     do {                                                                       \
         __typeof__(expr)     __val = (expr);                                   \
         __typeof__(expected) __exp = (expected);                               \
                                                                                \
         if (__val != __exp) {                                                  \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return;                                                            \
+        }                                                                      \
+    } while (0)
+
+#define RETURN_IF(expr, expected, on_error)                                    \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val == __exp) {                                                  \
             LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
                       (int)__exp);                                             \
                                                                                \

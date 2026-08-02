@@ -156,8 +156,8 @@ void setReprintItem(void* arg) {
 static SubState* startReprint;
 
 static const Phrases_t printItemTxt[REPRINT_END] = {
-    PHRASE_TXN_ALL,         PHRASE_TXN_PURCHASE,    PHRASE_TXN_BILL,
-    PHRASE_TXN_TOPUP,       PHRASE_TXN_CHARGE_CODE, PHRASE_BASED_ON_TRACE,
+    PHRASE_TXN_ALL,         PHRASE_TXN_PURCHASE, PHRASE_TXN_BILL,
+    PHRASE_TXN_TOPUP,       PHRASE_TXN_VOUCHER,  PHRASE_BASED_ON_TRACE,
     PHRASE_BASED_ON_REF_NUM};
 
 static Menu* printMenu;

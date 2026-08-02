@@ -13,6 +13,7 @@
 
 static SubState* selectOperator;
 static SubState* selectAmount;
+static SubState* enterPhone;
 static SubState* enterPass;
 static SubState* communication;
 
@@ -50,9 +51,17 @@ void setOperator(void* arg) {
     default:
         break;
     }
+    SM_GOTO(selectAmount);
 }
 
 STATE_DEF_ENTER(SelectOperator) {
+    ui_menu_create(&opSelectionMenu, disp()->screen);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MCI),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setOperator, NULL);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MTN),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setOperator, NULL);
+    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setOperator, NULL);
     GOTO_MENU(STATE_IDLE, &opSelectionMenu, NULL, NULL);
 }
 
@@ -60,14 +69,6 @@ static void SelectOperator(State* parent) {
     selectOperator = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, selectOperator, parent, "select operator");
     selectOperator->vtable.enter = STATE_ENTER(SelectOperator);
-    ui_menu_create(&opSelectionMenu, disp()->screen);
-    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MCI),
-                    LV_TEXT_ALIGN_RIGHT, selectAmount, setOperator, NULL);
-    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_MTN),
-                    LV_TEXT_ALIGN_RIGHT, selectAmount, setOperator, NULL);
-    ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL),
-                    LV_TEXT_ALIGN_RIGHT, selectAmount, setOperator, NULL);
-    ui_menu_hide(&opSelectionMenu);
 }
 
 /******************************************************************
@@ -85,53 +86,54 @@ static const uint64_t amnt[] = {
 
 static uint64_t selectedAmnt;
 
-static void setAmnt(void* arg) { selectedAmnt = *((uint64_t*)arg); }
+static void setAmnt(void* arg) {
+    selectedAmnt = *((uint64_t*)arg);
+    SM_GOTO(txn == TXN_VOUCHER ? enterPass : enterPhone);
+}
 
 void setMtnChargeAmnt() {
     // 5-10-20-50-100
-    State* next = txn == TXN_VOUCHER ? enterPass : NULL;
-    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[4]);
-    ui_menu_addItem(&amntSelectionMenu, "1,000,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "1,000,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[5]);
 }
 
 void setMciChargeAmnt() {
     // 5-10-20-50
-    State* next = txn == TXN_VOUCHER ? enterPass : NULL;
-    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[4]);
 }
 
 void setRightelChargeAmnt() {
     // 2-5-10-20-50
-    State* next = txn == TXN_VOUCHER ? enterPass : NULL;
-    ui_menu_addItem(&amntSelectionMenu, "20,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "20,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[0]);
-    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, next,
+    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[4]);
 }
 
 STATE_DEF_ENTER(SelectAmount) {
     ui_menu_create(&amntSelectionMenu, disp()->screen);
+    LOG_TRACE("Operator = %d", selectedOp);
     switch (selectedOp) {
     case OPERATOR_MCI:
         setMciChargeAmnt();
@@ -146,12 +148,36 @@ STATE_DEF_ENTER(SelectAmount) {
     default:
         break;
     }
+    GOTO_MENU(selectOperator, &amntSelectionMenu, NULL, NULL);
 }
 
 static void SelectAmount(State* parent) {
     selectAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, selectAmount, parent, "select amount");
     selectAmount->vtable.enter = STATE_ENTER(SelectAmount);
+}
+
+/******************************************************************
+ *                   Enter phone sub state
+ ******************************************************************/
+
+STATE_DEF_ENTER(EnterPhone) {
+    inmgr()->run(
+        &(InputCfg){
+            .type   = INPUT_TYPE_KEYPAD,
+            .mode   = INMD_ENTER_NUMBERS,
+            .title  = phraseGetDef(PHRASE_PHONE_NUMBER),
+            .info   = "",
+            .maxLen = LEN_MAX_PHONE_NUMBER,
+        },
+        selectAmount, enterPass);
+    inmgr()->set(INPUT_TYPE_KEYPAD, "09");
+}
+
+static void EnterPhone(State* parent) {
+    enterPhone = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, enterPhone, parent, "enter phone");
+    enterPhone->vtable.enter = STATE_ENTER(EnterPhone);
 }
 
 /******************************************************************
@@ -170,9 +196,9 @@ STATE_DEF_ENTER(EnterPassword) {
         STATE_IDLE, communication);
 }
 
-static void EnterPassword(Voucher* parent) {
+static void EnterPassword(State* parent) {
     enterPass = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, enterPass, &parent->base.state, "enter password");
+    OOP_CALL_CTOR(State, enterPass, parent, "enter password");
     enterPass->vtable.enter = STATE_ENTER(EnterPassword);
 }
 
@@ -190,7 +216,7 @@ static void Communication(State* parent) {
 
 static void createCommonStates(State* state) {
     CALL_ONCE(SelectOperator(state); SelectAmount(state); EnterPassword(state);
-              Communication(state););
+              Communication(state); EnterPhone(state););
 }
 
 /******************************************************************
@@ -259,6 +285,7 @@ const TxnFlowConfig voucherTxn = {
 STATE_DEF_ENTER(Voucher) {
     memset(flow, 0, sizeof(*flow));
     txn = TXN_VOUCHER;
+    SM_GOTO(selectOperator);
 }
 
 STATE_DEF_EXIT(Voucher) {}
@@ -280,6 +307,7 @@ OOP_CTOR(Voucher, State* parent, const char* name) {
 STATE_DEF_ENTER(TopUp) {
     memset(flow, 0, sizeof(*flow));
     txn = TXN_TOPUP;
+    SM_GOTO(selectOperator);
 }
 
 STATE_DEF_EXIT(TopUp) {}
@@ -295,9 +323,10 @@ static void topupDone(TxnFlow* flow, const TxnFlowStatus* st) {
 
 static int composeTopUp(TxnData* data) {
     composeCommon(data);
-    data->core.amount         = selectedAmnt;
-    data->extention.charge.op = selectedOp;
-    data->core.txnType        = TXN_TOPUP;
+    data->core.amount                  = selectedAmnt;
+    data->extention.charge.op          = selectedOp;
+    data->extention.charge.phoneNumber = selectedOp;
+    data->core.txnType                 = TXN_TOPUP;
 }
 
 static const uint8_t isoFeildsTopUp[] = {ELEMENT_PAN,

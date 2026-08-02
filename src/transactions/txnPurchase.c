@@ -90,7 +90,7 @@ static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
 
 static int compose(TxnData* data) {
     composeCommon(data);
-    data->core.txnType = TXN_SALE;
+    data->core.txnType = TXN_PURCHASE;
     data->core.amount  = amount;
 }
 

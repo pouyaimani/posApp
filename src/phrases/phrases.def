@@ -441,11 +441,11 @@ X(PHRASE_TXN_PAY                        ,   "پرداخت"                      
 )
 X(PHRASE_TXN_TOPUP                      ,   "شارژ مستقیم"                    ,   "Top up"
 )
-X(PHRASE_TXN_CHARGE_CODE                ,   "کد شارژ"                         ,   "Charge code"
+X(PHRASE_TXN_VOUCHER                ,   "کد شارژ"                         ,   "Charge code"
 )
 X(PHRASE_TXN_ALL                        ,   "همه تراکنش ها"                   ,   "َall transactions"
 )
-X(PHRASE_TXN_SIM_CHARGE                 ,   "خرید شارز"                       ,   "simcard charge"
+X(PHRASE_TXN_SIM_CHARGE                 ,   "خرید شارژ"                       ,   "simcard charge"
 )
 X(PHRASE_DETAILED_REPORT                ,   "ریز تراکنش"                      ,   "detailed reports"
 )
@@ -488,12 +488,12 @@ X(PHRASE_DT_UPDATING        ,   "به روز رسانی زمان و تاریخ" 
 
 X(PHRASE_GET_KEY            ,   "دریافت کلید"                   ,  "get key"
 )
-
 X(PHRASE_GET_MERCHANT_DATA  ,   "دریافت اطلاعات پذیرنده"        ,  "get merchant info"
 )
 X(PHRASE_BY_CUSTOMER       ,   "(توسط مشتری)"                  ,  "get merchant info"
 )
-
+X(PHRASE_PHONE_NUMBER       ,   "شماره تلفن"                  ,  "phone number"
+)
 /**********************************************************************
  *
  *                   Miscellaneous/Other Settings & Labels

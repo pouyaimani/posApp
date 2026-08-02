@@ -15,23 +15,13 @@ OOP_VTABLE(Transaction) { OOP_IMETHOD(void, Transaction, makeReceipt); };
 OOP_CLASS(Transaction) {
     OOP_IMPLEMENTS(Transaction);
     State    state;
-    bool     enable;
     char     name[24];
     TxnFlow* flow;
 };
 
 OOP_CTOR(Transaction, State* parent, const char* name);
 
-typedef enum TxnId_t {
-    TXN_ID_PURCHASE = 0,
-    TXN_ID_BALANCE,
-    TXN_ID_BILL,
-    TXN_ID_PAY,
-    TXN_ID_SIM_CHARGE,
-    TXN_ID_ALL
-} TxnId_t;
-
-Transaction* getTxn(TxnId_t id);
+Transaction* getTxn(TxnType id);
 
 /*********************Sale*********************/
 

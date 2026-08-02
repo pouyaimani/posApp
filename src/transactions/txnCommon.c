@@ -70,7 +70,7 @@ void showReceiving(TxnFlow* f) {
 void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
                 State* onFail, bool showSucMsg) {
     State* state = flow->owner;
-    LOG_DEBUG("st->result = %d", st->result);
+    LOG_DEBUG("transaction result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
         if (!showSucMsg) {
             HIDE_INFO();
@@ -97,7 +97,7 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
     }
 
     Phrases_t body = PHRASE_CONNECTION_ERR;
-
+    LOG_DEBUG("transaction stage = %d", st->stage);
     switch (st->stage) {
     case TXN_STAGE_SENDING:
         body = PHRASE_SENDING_DATA_ERR;

@@ -98,18 +98,6 @@ NthTransaction* nth_allocTransaction(void) {
     return NULL;
 }
 
-void nth_releaseTransaction(NthTransaction* tx) {
-    RETURN_IF_NULL(tx, ;);
-
-    if (tx->socketFd >= 0) {
-        NTH_LOG("NTH: closing socekt = %d", tx->socketFd);
-        g_transport->close(tx->socketFd);
-    }
-
-    memset(tx, 0, sizeof(*tx));
-    tx->socketFd = -1;
-}
-
 void nth_disconnect(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
 
@@ -118,6 +106,12 @@ void nth_disconnect(NthTransaction* tx) {
         g_transport->close(tx->socketFd);
     }
     tx->socketFd = -1;
+}
+
+void nth_releaseTransaction(NthTransaction* tx) {
+    RETURN_IF_NULL(tx, ;);
+    nth_disconnect(tx);
+    memset(tx, 0, sizeof(*tx));
 }
 
 NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {

@@ -9,6 +9,7 @@
 #include "phrases/phrases.h"
 #include <inttypes.h>
 #include "len.h"
+#include "error.h"
 
 int libAtoi(const char* str) {
     int  s    = 0;
@@ -100,8 +101,8 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
     bool     negative = false;
     uint64_t value    = 0;
 
-    if ((str == NULL) || (out == NULL))
-        return false;
+    RETURN_VALUE_IF_NULL(str, ;, false);
+    RETURN_VALUE_IF_NULL(out, ;, false);
 
     /* Handle optional sign */
     if (*str == '-') {
@@ -112,8 +113,7 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
     }
 
     /* Empty string after sign */
-    if (*str == '\0')
-        return false;
+    RETURN_VALUE_IF((*str), '\0', ;, false);
 
     /* Parse digits */
     while (*str != '\0') {
@@ -123,9 +123,7 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
         uint32_t digit = (uint32_t)(*str - '0');
 
         /* Detect uint64 overflow */
-        if (value > ((UINT64_MAX - digit) / 10))
-            return false;
-
+        RETURN_VALUE_IF_GREATER(value, ((UINT64_MAX - digit) / 10), ;, false);
         value = (value * 10U) + digit;
 
         str++;
@@ -134,14 +132,11 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
     switch (type) {
     case TYPE_INT8: {
         if (negative) {
-            if (value > ((uint64_t)INT8_MAX + 1))
-                return false;
+            RETURN_VALUE_IF_GREATER(value, ((uint64_t)INT8_MAX + 1), ;, false);
 
             *(int8_t*)out = (int8_t)(-(int64_t)value);
         } else {
-            if (value > INT8_MAX)
-                return false;
-
+            RETURN_VALUE_IF_GREATER(value, INT8_MAX, ;, false);
             *(int8_t*)out = (int8_t)value;
         }
 
@@ -149,8 +144,8 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
     }
 
     case TYPE_UINT8: {
-        if (negative || (value > UINT8_MAX))
-            return false;
+        RETURN_VALUE_IF_GREATER(value, UINT8_MAX, ;, false);
+        RETURN_VALUE_IF(negative, true, ;, false);
 
         *(uint8_t*)out = (uint8_t)value;
         break;
@@ -158,13 +153,11 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
 
     case TYPE_INT16: {
         if (negative) {
-            if (value > ((uint64_t)INT16_MAX + 1))
-                return false;
+            RETURN_VALUE_IF_GREATER(value, ((uint64_t)INT16_MAX + 1), ;, false);
 
             *(int16_t*)out = (int16_t)(-(int64_t)value);
         } else {
-            if (value > INT16_MAX)
-                return false;
+            RETURN_VALUE_IF_GREATER(value, INT16_MAX, ;, false);
 
             *(int16_t*)out = (int16_t)value;
         }
@@ -173,8 +166,8 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
     }
 
     case TYPE_UINT16: {
-        if (negative || (value > UINT16_MAX))
-            return false;
+        RETURN_VALUE_IF_GREATER(value, UINT16_MAX, ;, false);
+        RETURN_VALUE_IF(negative, true, ;, false);
 
         *(uint16_t*)out = (uint16_t)value;
         break;
@@ -182,13 +175,11 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
 
     case TYPE_INT32: {
         if (negative) {
-            if (value > ((uint64_t)INT32_MAX + 1))
-                return false;
+            RETURN_VALUE_IF_GREATER(value, ((uint64_t)INT32_MAX + 1), ;, false);
 
             *(int32_t*)out = (int32_t)(-(int64_t)value);
         } else {
-            if (value > INT32_MAX)
-                return false;
+            RETURN_VALUE_IF_GREATER(value, (INT32_MAX), ;, false);
 
             *(int32_t*)out = (int32_t)value;
         }
@@ -197,8 +188,8 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
     }
 
     case TYPE_UINT32: {
-        if (negative || (value > UINT32_MAX))
-            return false;
+        RETURN_VALUE_IF_GREATER(value, UINT32_MAX, ;, false);
+        RETURN_VALUE_IF(negative, true, ;, false);
 
         *(uint32_t*)out = (uint32_t)value;
         break;
@@ -206,13 +197,12 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
 
     case TYPE_INT64: {
         if (negative) {
-            if (value > ((uint64_t)INT64_MAX + 1ULL))
-                return false;
+            RETURN_VALUE_IF_GREATER(value, ((uint64_t)INT64_MAX + 1ULL), ;
+                                    , false);
 
             *(int64_t*)out = -(int64_t)value;
         } else {
-            if (value > INT64_MAX)
-                return false;
+            RETURN_VALUE_IF_GREATER(value, INT64_MAX, ;, false);
 
             *(int64_t*)out = (int64_t)value;
         }
@@ -221,8 +211,7 @@ bool stringToNumber(const char* str, void* out, NumberType type) {
     }
 
     case TYPE_UINT64: {
-        if (negative)
-            return false;
+        RETURN_VALUE_IF(negative, true, ;, false);
 
         *(uint64_t*)out = value;
         break;

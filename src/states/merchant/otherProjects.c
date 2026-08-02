@@ -12,6 +12,7 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
+#include "cardHolder.h"
 
 static TerminalSettings* termStorage;
 
@@ -294,18 +295,18 @@ static Menu*     servMenu;
 static SubState* saveServiceStatus;
 
 STATE_DEF_ENTER(SaveServiceStatus) {
-    for (uint8_t i = 0; i < TXN_ID_ALL; i++) {
-        getTxn(i)->enable         = servMenu->toggle[i];
-        termStorage->serviceEn[i] = servMenu->toggle[i];
+    for (uint8_t i = 0; i < LEN_CARDHOLDER_ITEMS; i++) {
+        cardHolderItems(i)->enabled  = servMenu->toggle[i];
+        termStorage->chItemStatus[i] = servMenu->toggle[i];
     }
     SM_GOTO(state->parent);
 }
 
 STATE_DEF_ENTER(EnableServices) {
     ui_menu_togglable(servMenu, disp()->screen);
-    for (uint8_t i = 0; i < TXN_ID_ALL; i++) {
-        ui_menu_add_on_off_item(servMenu, getTxn(i)->state.name,
-                                getTxn(i)->enable, NULL, NULL, NULL);
+    for (uint8_t i = 0; i < LEN_CARDHOLDER_ITEMS; i++) {
+        ui_menu_add_on_off_item(servMenu, cardHolderItems(i)->name,
+                                cardHolderItems(i)->enabled, NULL, NULL, NULL);
     }
 
     GOTO_MENU(saveServiceStatus, servMenu, NULL, NULL);

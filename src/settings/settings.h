@@ -40,7 +40,7 @@ typedef struct __attribute__((packed)) {
     bool     maxAmntEnable;
     char     maxAmnt[12 + 1];
     bool     directSaleEn;
-    bool     serviceEn[LEN_MAX_SERVICE_NUM];
+    bool     chItemStatus[LEN_MAX_CARDHOLDER_ITEMS];
     int      fixedAmountItem;
     char     amountList[12 + 1][LEN_MAX_AMOUNT_LIST];
     int      amountListCnt;
