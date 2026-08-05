@@ -485,7 +485,6 @@ X(PHRASE_TOUCH_STATUS       ,   "وضعیت صفحه لمسی"               ,  
 )
 X(PHRASE_DT_UPDATING        ,   "به روز رسانی زمان و تاریخ"     ,  "sync date time"
 )
-
 X(PHRASE_GET_KEY            ,   "دریافت کلید"                   ,  "get key"
 )
 X(PHRASE_GET_MERCHANT_DATA  ,   "دریافت اطلاعات پذیرنده"        ,  "get merchant info"
@@ -493,6 +492,10 @@ X(PHRASE_GET_MERCHANT_DATA  ,   "دریافت اطلاعات پذیرنده"    
 X(PHRASE_BY_CUSTOMER       ,   "(توسط مشتری)"                  ,  "get merchant info"
 )
 X(PHRASE_PHONE_NUMBER       ,   "شماره تلفن"                  ,  "phone number"
+)
+X(PHRASE_NO_SIM            ,   "عدم شناسایی سیم کارت"         ,  "phone number"
+)
+X(PHRASE_NKN_OPERATOR            ,   "عدم شناسایی اپراتور"         ,  "phone number"
 )
 /**********************************************************************
  *

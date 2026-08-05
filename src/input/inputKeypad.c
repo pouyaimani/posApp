@@ -68,10 +68,9 @@ static void handlePin(KeypadEvent* ev) {
 static void handleNumbers(KeypadEvent* ev) { strcpy(finput, input); }
 
 static void handleAlphaB(KeypadEvent* ev) {
-    if (ev->key == KEY_CLEAR) {
-        return;
+    if (ev->key != KEY_CLEAR) {
+        alphebatic()->addKey(input, maxLen(), ev->key);
     }
-    alphebatic()->addKey(input, maxLen(), ev->key);
     strcpy(finput, input);
 }
 

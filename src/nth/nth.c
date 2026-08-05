@@ -145,7 +145,6 @@ NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
                 ba->len, tx->txBuffer.capacity);
         return NTH_ERR_OVERFLOW;
     }
-
     memcpy(tx->txBuffer.data, ba->data, ba->len);
 
     tx->txBuffer.len = ba->len;
@@ -238,6 +237,7 @@ static void nth_handleConnecting(NthTransaction* tx) {
         NTH_LOG("nth: socket is connected.");
         tx->state = NTH_TX_IDLE;
         if (tx->onConnect) {
+            NTH_LOG("nth: calling connect callback.");
             tx->onConnect(tx, tx->userData);
         }
         nth_emitConnectEvent(tx, true);
@@ -269,6 +269,8 @@ static void nth_handleSending(NthTransaction* tx) {
         return;
     }
 
+    NTH_LOG("nth: send %d bytes succeed.", ret);
+
     tx->txOffset += ret;
 
     if (tx->txOffset >= tx->txBuffer.len) {
@@ -276,6 +278,7 @@ static void nth_handleSending(NthTransaction* tx) {
         tx->state     = NTH_TX_RECEIVING;
         tx->startTick = nth_getTick();
         if (tx->onSent) {
+            NTH_LOG("nth: calling send callback.");
             tx->onSent(tx, tx->userData);
         }
         nth_emitSendEvent(tx);
@@ -314,6 +317,7 @@ static void nth_handleReceiving(NthTransaction* tx) {
         return;
 
     if (tx->onReceive) {
+        NTH_LOG("nth: calling receive callback.");
         tx->onReceive(tx, tx->userData);
     }
     nth_emitReadEvent(tx);
@@ -346,7 +350,7 @@ static void nth_checkTimeout(NthTransaction* tx) {
         tx->lastError = NTH_ERR_TIMEOUT;
 
         if (tx->onTimeout) {
-
+            NTH_LOG("nth: calling timeout callback.");
             tx->onTimeout(tx, tx->userData);
         }
 

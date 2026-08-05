@@ -27,6 +27,10 @@ const TxnFlowConfig logOnTxn = {
 
     .feildsCnt = sizeof(isoFeilds),
 
+    .needSettlement = false,
+
+    .compose = NULL,
+
     .build = buildCommon,
 
     .parse = parseCommon,

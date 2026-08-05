@@ -8,6 +8,8 @@
 #include "ui/infoPage.h"
 #include "sys/sys.h"
 #include "phrases/phrases.h"
+#include "cellular/cellular.h"
+#include "settings/settings.h"
 
 static void setData(InfoType_t type, const char* title, const char* body) {
     OOP_CALL(infoPage(), setData, type, title, body);
@@ -90,6 +92,43 @@ lv_obj_t* uiRowMenu(lv_obj_t* parent) {
     return main;
 }
 
+static void getOperatorDsc(char* op, size_t size) {
+    static char* current = NULL;
+    if (OOP_CALL(cellular(), getSimStatus) != SIM_STATUS_OK) {
+        snprintf(op, size, "%s", phraseGetDef(PHRASE_NO_SIM));
+        return;
+    }
+    CellSimInfo simInfo;
+    if (OOP_CALL(cellular(), getSimInfo, &simInfo) != CELL_ERR_OK) {
+        snprintf(op, size, "%s", phraseGetDef(PHRASE_NO_SIM));
+        return;
+    }
+    Phrases_t      phrase;
+    static uint8_t prevOpt    = 0;
+    char           opt[2 + 1] = {0};
+    memcpy(opt, &simInfo.imsi[3], 2);
+    uint8_t opType;
+    STRING_TO_U16(opt, &opType);
+    switch (opType) {
+    case 11:
+        phrase = PHRASE_SIM_OP_MCI;
+        break;
+    case 35:
+        phrase = PHRASE_SIM_OP_MTN;
+        break;
+    case 20:
+        phrase = PHRASE_SIM_OP_RIGHTEL;
+        break;
+    case 8:
+        phrase = PHRASE_SIM_OP_RIGHTEL;
+        // LV_SET_TEXT(operator, "STL");
+        break;
+    default:
+        phrase = PHRASE_NKN_OPERATOR;
+    }
+    snprintf(op, size, "%s", phraseGetDef(phrase));
+}
+
 lv_obj_t* menu;
 
 STATE_DEF_ENTER(DevInfo) {
@@ -99,11 +138,16 @@ STATE_DEF_ENTER(DevInfo) {
     rowMenuAdd(menu, phraseGetDef(PHRASE_SERIAL), sn);
     rowMenuAdd(menu, phraseGetDef(PHRASE_DEVICE_CODE),
                OOP_CALL(sys(), getCode));
-    rowMenuAdd(menu, phraseGetDef(PHRASE_TERMINAL), OOP_CALL(sys(), getName));
-    rowMenuAdd(menu, phraseGetDef(PHRASE_MERCHANT), "3331313");
-    rowMenuAdd(menu, phraseGetDef(PHRASE_IMEI), "");
-    rowMenuAdd(menu, phraseGetDef(PHRASE_OPERATOR),
-               "1313132kjn32n3kn2k3n2kn3k2n3");
+    rowMenuAdd(menu, phraseGetDef(PHRASE_TERMINAL),
+               settings()->terminal.terminalId);
+    rowMenuAdd(menu, phraseGetDef(PHRASE_MERCHANT),
+               settings()->terminal.merchantName);
+    DEFINE_STRING(imei, 48);
+    OOP_CALL(cellular(), getImei, imei, sizeof(imei));
+    rowMenuAdd(menu, phraseGetDef(PHRASE_IMEI), imei);
+    DEFINE_STRING(op, 48);
+    getOperatorDsc(op, sizeof(op));
+    rowMenuAdd(menu, phraseGetDef(PHRASE_OPERATOR), op);
     LV_SHOW(menu);
 }
 

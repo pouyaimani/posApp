@@ -25,35 +25,31 @@ static void constructT3Rtos() {
 static uint32_t tick;
 
 static Result_t setRoute(NetRoute_t route) {
-    Result_t res;
-    res.err = ERR_DSC_OK;
+    Result_t res = {.err = ERR_DSC_OK};
     LOG_TRACE("Network: setting route to %d", route);
     NetError_t err = OOP_CALL(network(), setRoute, route);
     RETURN_VALUE_IF_NOT(err, NET_ERR_OK, res.err = ERR_DSC_DEVICE;, res);
+    return res;
+}
 
-    OOP_CALL(cellular(), close);
-    OOP_CALL(wifi(), close);
+static Result_t init(NetRoute_t route) {
+    Result_t res = {.err = ERR_DSC_OK};
     if (route == NET_ROUTE_CELLULAR) {
+        OOP_CALL(wifi(), close);
         if (OOP_CALL(cellular(), init) != CELL_ERR_OK) {
             res.err             = ERR_DSC_CELLULAR;
             res.detail.cellular = CELL_ERR_INIT;
         }
     } else if (route == NET_ROUTE_WIFI) {
+        OOP_CALL(cellular(), close);
         if (OOP_CALL(wifi(), init) != WIFI_ERR_OK) {
             res.err         = ERR_DSC_WIFI;
             res.detail.wifi = WIFI_ERR_INIT;
         }
     } else if (route == NET_ROUTE_ETH) {
     }
-    LOG_TRACE("Network: setting route done. error =  %d", res.err);
-    return res;
-}
-
-static Result_t init(NetRoute_t route) {
-    Result_t res = setRoute(route);
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, res);
-    res.err = ERR_DSC_OK;
-    return res;
+    return setRoute(route);
 }
 
 static void checkSocketConnectStatus() {

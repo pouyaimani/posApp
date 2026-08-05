@@ -47,16 +47,29 @@ static void wifiAutoConnect() {
     if (conSt == WIFI_CONNECT_SUCCEED || conSt == WIFI_CONNECT_UNDER_PROCESS) {
         return;
     }
-    WifiApInfo_t apInfo  = {0};
-    char         pwd[64] = {0};
-    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s",
-             settings()->terminal.wfiSSID);
-    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s",
-             settings()->terminal.wifiMac);
-    apInfo.secMode = settings()->terminal.wifiEnc;
-    snprintf(pwd, sizeof(pwd), "%s", settings()->terminal.wifiPwd);
-    if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 && apInfo.secMode != 0) {
-        OOP_CALL(wifi(), hconnect, &apInfo, pwd);
+    WifiScanSt_t scnSt = OOP_CALL(wifi(), hgetScanStatus);
+    if (scnSt == WIFI_SCAN_SUCCEED) {
+        for (uint8_t i = 0; i < wifi()->apList.size; i++) {
+            DEFINE_STRING(safeSsid, 64);
+            normalizeSsid(wifi()->apList.list[i].essid, safeSsid);
+            if (strcmp(wifi()->apList.list[i].essid,
+                       settings()->terminal.wfiSSID) == 0) {
+                WifiApInfo_t apInfo  = {0};
+                char         pwd[64] = {0};
+                snprintf(apInfo.essid, sizeof(apInfo.essid), "%s",
+                         settings()->terminal.wfiSSID);
+                snprintf(apInfo.mac, sizeof(apInfo.mac), "%s",
+                         settings()->terminal.wifiMac);
+                apInfo.secMode = settings()->terminal.wifiEnc;
+                snprintf(pwd, sizeof(pwd), "%s", settings()->terminal.wifiPwd);
+                if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 &&
+                    apInfo.secMode != 0) {
+                    OOP_CALL(wifi(), hconnect, &apInfo, pwd);
+                }
+            }
+        }
+    } else if (scnSt != WIFI_SCAN_UNDER_PROCESS) {
+        wifi()->scanInBg();
     }
 }
 
@@ -75,7 +88,6 @@ static void cellAutoConnect() {
 
 static void netAutoConnect() {
     NetRoute_t route = OOP_CALL(network(), getRoute);
-    LOG_DEBUG("network route = %d", route);
     if (route == NET_ROUTE_WIFI) {
         wifiAutoConnect();
     } else if (route == NET_ROUTE_CELLULAR) {
@@ -102,6 +114,7 @@ static void setTextIfChanged(lv_obj_t* label, const char* txt) {
 }
 
 STATE_DEF_ENTER(Idle) {
+    netAutoConnect();
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
     getEventloop()->registerChecker(magreader()->ioRead);

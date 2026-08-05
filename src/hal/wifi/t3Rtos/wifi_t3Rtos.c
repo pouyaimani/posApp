@@ -120,6 +120,7 @@ static WifiErr_t translateSdkErr(int err) {
 static void copyWifiAp(Wifi* wifi, WifiAPInfo* apInfo, uint32_t num) {
     wifi->apList.size = num;
     for (uint32_t i = 0; i < num; i++) {
+        LOG_TRACE("wifi ap (%d): %s", i, apInfo[i].mSsid);
         snprintf(wifi->apList.list[i].essid, sizeof(wifi->apList.list[i].essid),
                  "%s", apinfo[i].mSsid);
         snprintf(wifi->apList.list[i].mac, sizeof(wifi->apList.list[i].mac),
@@ -129,10 +130,12 @@ static void copyWifiAp(Wifi* wifi, WifiAPInfo* apInfo, uint32_t num) {
     }
 }
 
-static WifiErr_t init(Wifi* wifi) {
+static WifiErr_t open(Wifi* wifi) {
     VAR_UNUSED(wifi);
     return translateSdkErr(sdkWifiOpen());
 }
+
+static WifiErr_t init(Wifi* wifi) { return open(wifi); }
 
 static WifiErr_t close(Wifi* wifi) {
     VAR_UNUSED(wifi);
@@ -220,6 +223,7 @@ static WifiSigStrength_t getSignalStrength(Wifi* self) {
 
 OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.init              = init;
+    self->base.vtable.open              = open;
     self->base.vtable.close             = close;
     self->base.vtable.hstartScan        = startScan;
     self->base.vtable.hconnect          = connect;

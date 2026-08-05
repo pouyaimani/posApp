@@ -363,4 +363,6 @@ bool isBillIdValid(const char* billId);
  */
 bool isBillValid(const char* billId, const char* paymentId);
 
+void normalizeSsid(char* in, char* out);
+
 #endif

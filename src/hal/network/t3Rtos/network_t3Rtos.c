@@ -21,6 +21,8 @@ static NetRoute_t getRoute(Network* self) {
 }
 
 static NetError_t setRoute(Network* self, NetRoute_t route) {
+    VAR_UNUSED(self);
+    LOG_TRACE("Network: setting route to %d", route);
     SOCKET_ROUTE sdkRoute;
     switch (route) {
     case NET_ROUTE_CELLULAR:

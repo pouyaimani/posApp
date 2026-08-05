@@ -819,3 +819,17 @@ bool isBillValid(const char* billId, const char* paymentId) {
     len = strlen(tmp);
     return calculateMod11(tmp) == (tmp[len - 1] - '0');
 }
+
+void normalizeSsid(char* in, char* out) {
+    size_t size = strlen(in);
+    size_t j    = 0;
+    for (size_t i = 0; in[i] && j < size - 1; i++) {
+        unsigned char c = (unsigned char)in[i];
+
+        /* Allow printable ASCII only */
+        if (c >= 32 && c <= 126) {
+            out[j++] = c;
+        }
+    }
+    out[j] = '\0';
+}

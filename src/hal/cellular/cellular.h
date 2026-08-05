@@ -51,6 +51,7 @@ OOP_VTABLE(Cellular) {
     OOP_IMETHOD(CellErr_t, Cellular, getSimInfo, CellSimInfo*);
     OOP_IMETHOD(CellErr_t, Cellular, selectSim, uint8_t);
     OOP_IMETHOD(SimStatus_t, Cellular, getSimStatus);
+    OOP_IMETHOD(int8_t, Cellular, getImei, char*, size_t size);
 };
 
 OOP_CLASS(Cellular) {

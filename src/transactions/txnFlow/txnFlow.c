@@ -47,11 +47,12 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
         LOG_TRACE("Txn flow: txn is done.");
     }
 
+    txnFlowRelease(flow);
+
     if (flow->cfg && flow->cfg->done) {
         LOG_DEBUG("Txn flow: calling config done.");
         flow->cfg->done(flow, &st);
     }
-    txnFlowRelease(flow);
 }
 
 void txnFlowInit(TxnFlow* flow) {

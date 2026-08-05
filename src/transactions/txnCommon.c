@@ -12,11 +12,14 @@ static TxnFlowConfig* txnCfg;
 static TxnFlow*       txnFlow;
 static State*         txnOwnerState;
 
-static int pendMgrDone(bool result) {
-    LOG_DEBUG("Pending manager is done.");
-    if (!result) {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
-                  phraseGetDef(PHRASE_PENDED_TXN_FAILURE), "");
+static int pendMgrDone(TxnData* data) {
+    LOG_DEBUG("Pending manager done callback is called.");
+    if (data) {
+        if (data->core.respCode != RESP_CODE_SUCESS) {
+            GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
+                      phraseGetDef(PHRASE_PENDED_TXN_FAILURE), "");
+            return;
+        }
     }
     DEFINE_STRING(ip, 32);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
@@ -29,7 +32,7 @@ int8_t txnStart(TxnFlowConfig* cfg, TxnFlow* flow, State* owner) {
     txnFlow       = flow;
     txnOwnerState = owner;
     if (!txnPendingMgr()->run(pendMgrDone)) {
-        pendMgrDone(true);
+        pendMgrDone(NULL);
     }
     return ERR_OK;
 }

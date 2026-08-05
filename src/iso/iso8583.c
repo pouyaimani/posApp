@@ -6,7 +6,7 @@
 #include "error.h"
 #include "utility/utility.h"
 
-#define USE_DUMP 1
+#define USE_DUMP 0
 
 static Iso8583* __iso8583;
 

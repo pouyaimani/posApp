@@ -37,6 +37,7 @@ STATE_DEF_ENTER(Startup) {
     // Network setitings
     Result_t res = network()->init(settings()->terminal.netRoute);
     if (res.err != ERR_DSC_OK) {
+        LOG_DEBUG("Network init error = %d", res.err);
     }
 
     shifts()->init();

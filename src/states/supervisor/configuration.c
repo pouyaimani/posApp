@@ -46,8 +46,8 @@ static Menu* cfgMenu;
 
 STATE_DEF_ENTER(Configuration) {
     ui_menu_create(cfgMenu, disp()->screen);
-    ui_menu_addItem(cfgMenu, phraseGetDef(PHRASE_GET_KEY), logOn,
-                    LV_TEXT_ALIGN_RIGHT, NULL, NULL);
+    ui_menu_addItem(cfgMenu, phraseGetDef(PHRASE_GET_KEY), LV_TEXT_ALIGN_RIGHT,
+                    logOn, NULL, NULL);
     ui_menu_addItem(cfgMenu, phraseGetDef(PHRASE_GET_MERCHANT_DATA),
                     LV_TEXT_ALIGN_RIGHT, getMerchantData, NULL, NULL);
     GOTO_MENU(state->parent, cfgMenu, NULL, NULL);

@@ -41,7 +41,7 @@ STATE_DEF_ENTER(WifiConnect) {
 
 STATE_DEF_EXIT(WifiConnect) {}
 
-static void saveWifiInfo(WifiApInfo_t* ap, const char* pwd) {
+static void saveWifiInfo(State* parent, WifiApInfo_t* ap, const char* pwd) {
     snprintf(settings()->terminal.wfiSSID, sizeof(settings()->terminal.wfiSSID),
              "%s", ap->essid);
     snprintf(settings()->terminal.wifiMac, sizeof(settings()->terminal.wifiMac),
@@ -49,8 +49,15 @@ static void saveWifiInfo(WifiApInfo_t* ap, const char* pwd) {
     settings()->terminal.wifiEnc = ap->secMode;
     snprintf(settings()->terminal.wifiPwd, sizeof(settings()->terminal.wifiPwd),
              "%s", pwd);
+    LOG_TRACE("saveWifiInfo: setting route to %d", NET_ROUTE_WIFI);
+    Result_t res = network()->setRoute(NET_ROUTE_WIFI);
+    if (res.err != ERR_DSC_OK) {
+        LOG_TRACE("Unable to set device route.");
+        GOTO_INFO(parent, parent, INFO_ERROR,
+                  phraseGetDef(PHRASE_CONNECTION_ERR), "");
+        return;
+    }
     settings()->terminal.netRoute = NET_ROUTE_WIFI;
-    network()->setRoute(NET_ROUTE_WIFI);
     settings()->save();
 }
 
@@ -59,10 +66,11 @@ STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
         wifi()->connect(selectedAp, inmgr()->input);
         connectState = WIFI_CONNECT_STATE;
     } else {
+        LOG_TRACE("Wifi: connect status = %d", ev->connectStatus);
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
             GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
                       phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
-            saveWifiInfo(selectedAp, inmgr()->input);
+            saveWifiInfo(state->parent, selectedAp, inmgr()->input);
         } else {
             GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                       phraseGetDef(PHRASE_CONNECTION_ERR), "");
@@ -108,7 +116,10 @@ static Menu* wifiMenu = NULL;
 STATE_DEF_ENTER(WifiScan) {
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SEARCHING_4_WIFI),
               phraseGetDef(PHRASE_PLEASE_WAIT));
-    wifi()->startScan();
+    if (wifi()->startScan() != WIFI_ERR_OK) {
+        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+                  phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
+    }
 }
 
 STATE_DEF_EXIT(WifiScan) {
@@ -136,20 +147,6 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
     }
 }
 
-static void normalize_ssid(char* in, char* out) {
-    size_t size = strlen(in);
-    size_t j    = 0;
-    for (size_t i = 0; in[i] && j < size - 1; i++) {
-        unsigned char c = (unsigned char)in[i];
-
-        /* Allow printable ASCII only */
-        if (c >= 32 && c <= 126) {
-            out[j++] = c;
-        }
-    }
-    out[j] = '\0';
-}
-
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
         wifiMenu = MEM_ALLOC(sizeof(*wifiMenu));
@@ -157,7 +154,7 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
         LOG_DEBUG("wifi()->apList.size = %d", wifi()->apList.size);
         for (uint8_t i = 0; i < wifi()->apList.size; i++) {
             DEFINE_STRING(safeSsid, 64);
-            normalize_ssid(wifi()->apList.list[i].essid, safeSsid);
+            normalizeSsid(wifi()->apList.list[i].essid, safeSsid);
             ui_menu_addItem(wifiMenu, safeSsid, LV_TEXT_ALIGN_RIGHT,
                             wifiEnterPass, NULL, NULL);
         }
@@ -196,10 +193,17 @@ STATE_DEF_EXIT(CellularLogin) {}
 
 STATE_DEF_HANDLE(CellularLogin, CellEvent) {
     if (ev->pppSt == CELL_PPP_SUCESS) {
+        Result_t res = network()->setRoute(NET_ROUTE_CELLULAR);
+        if (res.err != ERR_DSC_OK) {
+            LOG_TRACE("Unable to set device route.");
+            GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+                      phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            return;
+        }
+        settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
+        settings()->save();
         GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
                   phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
-        settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
-        network()->setRoute(NET_ROUTE_CELLULAR);
     } else if (ev->pppSt == CELL_PPP_FAILURE) {
         GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                   phraseGetDef(PHRASE_CONNECTION_ERR), "");

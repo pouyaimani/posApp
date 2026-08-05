@@ -30,11 +30,13 @@ static void checkWifiScanResult() {
     }
 }
 
-static void startScan() {
+static WifiErr_t startScan() {
     LOG_TRACE("Wifi: start scanning ...");
     getEventloop()->registerChecker(checkWifiScanResult);
-    OOP_CALL(__wifi, hstartScan);
+    return OOP_CALL(__wifi, hstartScan);
 }
+
+static WifiErr_t scanInBg() { return OOP_CALL(__wifi, hstartScan); }
 
 static void checkWifiConnectResult() {
     WifiConnectSt_t st = OOP_CALL(__wifi, getConnectStatus);
@@ -64,11 +66,11 @@ OOP_CTOR(Wifi) {
     self->vtable.hgetScanStatus    = NULL;
     self->vtable.getConnectStatus  = NULL;
     self->vtable.getSignalStrength = NULL;
-
-    self->getApList  = getApList;
-    self->startScan  = startScan;
-    self->connect    = connect;
-    self->disconnect = disconnect;
+    self->getApList                = getApList;
+    self->startScan                = startScan;
+    self->connect                  = connect;
+    self->disconnect               = disconnect;
+    self->scanInBg                 = scanInBg;
 }
 
 Wifi* wifi() {

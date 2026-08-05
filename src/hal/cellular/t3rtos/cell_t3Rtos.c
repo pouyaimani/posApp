@@ -16,16 +16,27 @@ static CellErr_t translateSdkErr(int err) {
     return cellErr;
 }
 
-static CellErr_t init(Cellular* self) { VAR_UNUSED(self); }
-
 static CellErr_t open(Cellular* self) {
     VAR_UNUSED(self);
     return translateSdkErr(sdkCellularOpen(NULL));
 }
 
+static CellErr_t init(Cellular* self) { return open(self); }
+
 static CellErr_t close(Cellular* self) {
     VAR_UNUSED(self);
     return translateSdkErr(sdkCellularClose());
+}
+
+static int8_t getImei(Cellular* dev, char* imei, size_t size) {
+    int        result     = 0;
+    ModuleInfo moduleInfo = {0};
+    result                = sdkCellularGetModuleInfo(&moduleInfo);
+    if (result == SDK_CELLULAR_OK) {
+        snprintf(imei, size, "%s", moduleInfo.mImei);
+        return ERR_OK;
+    }
+    return ERR_NOK;
 }
 
 static CellSigStrength_t getSignalStrength(Cellular* self) {
@@ -138,12 +149,12 @@ static SimStatus_t getSimStatus(Cellular* self) {
 }
 
 OOP_CTOR(CellT3Rtos) {
+    self->base.vtable.init              = init;
     self->base.vtable.open              = open;
     self->base.vtable.close             = close;
     self->base.vtable.getNetType        = getNetType;
     self->base.vtable.getPPPstatus      = getPPPstatus;
     self->base.vtable.getSignalStrength = getSignalStrength;
-    self->base.vtable.init              = init;
     self->base.vtable.startPPPlogin     = startPPPlogin;
     self->base.vtable.ussdGetCharset    = ussdGetCharset;
     self->base.vtable.ussdGetCharset    = ussdSetCharset;
@@ -154,6 +165,7 @@ OOP_CTOR(CellT3Rtos) {
     self->base.vtable.getSimInfo        = getSimInfo;
     self->base.vtable.selectSim         = selectSim;
     self->base.vtable.getSimStatus      = getSimStatus;
+    self->base.vtable.getImei           = getImei;
 }
 
 #endif
