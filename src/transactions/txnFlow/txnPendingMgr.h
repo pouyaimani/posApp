@@ -3,14 +3,17 @@
 
 #include "txn.h"
 #include "txnFlow.h"
+#include "error.h"
 
 typedef int (*TxnPendMgrCb)(const TxnData* txnData);
 
 typedef struct {
 
     bool (*run)(TxnPendMgrCb);
-    void (*mark)(TxnStatus st);
-    void (*reset)();
+    Error_t (*mark)(TxnStatus st);
+    Error_t (*new)(TxnData* txnData);
+    Error_t (*update)(TxnStatus st, TxnData* txnData);
+    Error_t (*reset)();
 
     bool (*hasPendingTxn)(void);
 

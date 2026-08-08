@@ -79,7 +79,7 @@ static void cellAutoConnect() {
         return;
     }
     CellPPPStatus_t st = OOP_CALL(cellular(), getPPPstatus);
-    LOG_DEBUG("cellular status = %d", st);
+    // LOG_DEBUG("cellular status = %d", st);
     if (st == CELL_PPP_SUCESS || st == CELL_PPP_DIALING) {
         return;
     }

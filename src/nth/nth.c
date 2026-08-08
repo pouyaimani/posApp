@@ -12,6 +12,8 @@ static NthTransaction g_transactions[NT_MAX_TRANSACTIONS];
 
 static NthTransport* g_transport;
 
+static void nth_fail(NthTransaction* tx, NthResult error);
+
 static bool isValidIPv4(const char* ip) {
     RETURN_VALUE_IF_NULL(ip, ;, false);
 
@@ -73,6 +75,7 @@ void nth_init() {
 }
 
 NthTransaction* nth_allocTransaction(void) {
+    NTH_LOG("nth: allocating transaction ...");
     for (size_t i = 0; i < NT_MAX_TRANSACTIONS; i++) {
 
         NthTransaction* tx = &g_transactions[i];
@@ -90,11 +93,11 @@ NthTransaction* nth_allocTransaction(void) {
             tx->rxBuffer.capacity = sizeof(tx->rxStorage);
 
             tx->timeoutMs = NT_DEFAULT_TIMEOUT_MS;
-
+            NTH_LOG("nth: allocating transaction succeed.");
             return tx;
         }
     }
-
+    NTH_LOG("nth: allocating transaction failed.");
     return NULL;
 }
 
@@ -110,6 +113,7 @@ void nth_disconnect(NthTransaction* tx) {
 
 void nth_releaseTransaction(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
+    NTH_LOG("nth: releasing transaction ...");
     nth_disconnect(tx);
     memset(tx, 0, sizeof(*tx));
 }
@@ -117,21 +121,18 @@ void nth_releaseTransaction(NthTransaction* tx) {
 NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(host, ;, NTH_ERR_INVALID_ARG);
-    if (!isValidIPv4(host)) {
-        return NTH_ERR_INVALID_HOST;
-    }
-
-    tx->socketFd = g_transport->connect(host, port);
-    NTH_LOG("NTH: connect to socket = %d", tx->socketFd);
-
-    if (tx->socketFd <= 0) {
-        tx->state = NTH_TX_FAILED;
-        return NTH_ERR_CONNECT;
-    }
-
-    tx->state = NTH_TX_CONNECTING;
+    RETURN_VALUE_IF_NOT(isValidIPv4(host), true, ;, NTH_ERR_INVALID_ARG);
 
     tx->startTick = nth_getTick();
+
+    tx->socketFd = g_transport->connect(host, port);
+
+    NTH_LOG("NTH: connect to socket = %d", tx->socketFd);
+
+    RETURN_VALUE_IF_LE(tx->socketFd, 0, nth_fail(tx, NTH_ERR_CONNECT);
+                       , NTH_ERR_CONNECT);
+
+    tx->state = NTH_TX_CONNECTING;
 
     return NTH_OK;
 }
@@ -140,9 +141,12 @@ NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(ba, ;, NTH_ERR_INVALID_ARG);
 
+    tx->startTick = nth_getTick();
+
     if (ba->len > tx->txBuffer.capacity) {
         NTH_LOG("NTH: buffer overfllow.data len = %d, buffer capacity = %d",
                 ba->len, tx->txBuffer.capacity);
+        nth_fail(tx, NTH_TX_SENDING);
         return NTH_ERR_OVERFLOW;
     }
     memcpy(tx->txBuffer.data, ba->data, ba->len);
@@ -151,8 +155,7 @@ NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
 
     tx->txOffset = 0;
 
-    tx->state     = NTH_TX_SENDING;
-    tx->startTick = nth_getTick();
+    tx->state = NTH_TX_SENDING;
     return NTH_OK;
 }
 
@@ -163,6 +166,7 @@ NthResult nth_setTx(NthTransaction* tx, ByteArray* ba) {
     if (ba->len > tx->txBuffer.capacity) {
         NTH_LOG("NTH: buffer overfllow.data len = %d, buffer capacity = %d",
                 ba->len, tx->txBuffer.capacity);
+        nth_fail(tx, NTH_TX_SENDING);
         return NTH_ERR_OVERFLOW;
     }
 
@@ -240,15 +244,10 @@ static void nth_handleConnecting(NthTransaction* tx) {
             NTH_LOG("nth: calling connect callback.");
             tx->onConnect(tx, tx->userData);
         }
-        nth_emitConnectEvent(tx, true);
+        // nth_emitConnectEvent(tx, true);
     } else if (ret < 0) {
-        NTH_LOG("nth: socket couldn't stablish connection.");
-        tx->state     = NTH_TX_FAILED;
-        tx->lastError = NTH_ERR_CONNECT;
-        if (tx->onFailure) {
-            tx->onFailure(tx, tx->userData);
-        }
-        nth_emitConnectEvent(tx, false);
+        nth_fail(tx, NTH_ERR_CONNECT);
+        // nth_emitConnectEvent(tx, false);
     }
 }
 
@@ -265,7 +264,7 @@ static void nth_handleSending(NthTransaction* tx) {
 
     if (ret < 0) {
         NTH_LOG("nth: sending data failed.");
-        tx->state = NTH_TX_FAILED;
+        nth_fail(tx, NTH_ERR_SEND);
         return;
     }
 
@@ -281,7 +280,7 @@ static void nth_handleSending(NthTransaction* tx) {
             NTH_LOG("nth: calling send callback.");
             tx->onSent(tx, tx->userData);
         }
-        nth_emitSendEvent(tx);
+        // nth_emitSendEvent(tx);
         NTH_LOG("nth: sending data succeed.");
     }
 }
@@ -299,10 +298,7 @@ static void nth_handleReceiving(NthTransaction* tx) {
 
     if (ret < 0) {
         NTH_LOG("nth: receiving data failed.");
-        tx->state = NTH_TX_FAILED;
-        if (tx->onFailure) {
-            tx->onFailure(tx, tx->userData);
-        }
+        nth_fail(tx, NTH_ERR_RECEIVE);
         return;
     }
 
@@ -316,13 +312,13 @@ static void nth_handleReceiving(NthTransaction* tx) {
     if (!tx->isComplete(tx, NULL))
         return;
 
+    tx->state = NTH_TX_COMPLETED;
+
     if (tx->onReceive) {
         NTH_LOG("nth: calling receive callback.");
         tx->onReceive(tx, tx->userData);
     }
-    nth_emitReadEvent(tx);
-
-    tx->state = NTH_TX_COMPLETED;
+    // nth_emitReadEvent(tx);
     NTH_LOG("nth: receiving data succeed.");
 }
 
@@ -354,7 +350,22 @@ static void nth_checkTimeout(NthTransaction* tx) {
             tx->onTimeout(tx, tx->userData);
         }
 
-        nth_emitTimeout(tx);
+        // nth_emitTimeout(tx);
+    }
+}
+
+static void nth_fail(NthTransaction* tx, NthResult error) {
+    NTH_LOG("nth: transaction failed.");
+    if (!tx)
+        return;
+
+    tx->prevState = tx->state;
+    tx->state     = NTH_TX_FAILED;
+    tx->lastError = error;
+
+    if (tx->onFailure) {
+        NTH_LOG("nth: calling on failure callback.");
+        tx->onFailure(tx, tx->userData);
     }
 }
 
@@ -368,6 +379,14 @@ void nth_tick(void) {
 
         switch (tx->state) {
 
+        case NTH_TX_IDLE:
+            NTH_LOG("nth: state idle.");
+            break;
+
+        case NTH_TX_COMPLETED:
+            NTH_LOG("nth: state completed.");
+            break;
+
         case NTH_TX_CONNECTING:
             nth_handleConnecting(tx);
             break;
@@ -380,8 +399,7 @@ void nth_tick(void) {
             nth_handleReceiving(tx);
             break;
         case NTH_TX_FAILED:
-            // tx->active = false;
-            return;
+            break;
         default:
             break;
         }

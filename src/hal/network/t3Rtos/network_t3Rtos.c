@@ -83,6 +83,7 @@ static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
 }
 
 static NetError_t close(Network* self, int32_t id) {
+    LOG_TRACE("T3Rtos: closing socket = <%d>", id);
     int ret = sdkNetCloseSocket(id);
     return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
 }

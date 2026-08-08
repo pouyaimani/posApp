@@ -40,7 +40,7 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     if (result == TXN_FLOW_SUCCESS && code == RESP_CODE_SUCESS) {
         if (flow->cfg->needSettlement) {
             LOG_TRACE("Txn flow: settlement needed.");
-            txnPendingMgr()->mark(TXN_STATUS_PENDING_SETTLEMENT);
+            txnPendingMgr()->update(TXN_STATUS_PENDING_SETTLEMENT, &flow->data);
         } else {
             txnPendingMgr()->mark(TXN_STATUS_APPROVED);
         }
@@ -104,9 +104,11 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
     flow->tx->isComplete = isComplete;
 
     if (cfg && cfg->onConnecting) {
+        LOG_TRACE("TxnFolw: on connect callback is calling ...");
         cfg->onConnecting(flow);
     }
     NthResult res = nth()->connect(flow->tx, host, port);
+    LOG_TRACE("TxnFolw: connect result = %d", res);
     if (res != NTH_OK) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_CONNECT);
         return false;
@@ -121,6 +123,7 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
 
     /* Compose transaction related data */
     if (flow->cfg->compose) {
+        LOG_TRACE("TxnFolw: compose callback is calling ...");
         flow->cfg->compose(&flow->data);
     }
 
@@ -132,6 +135,7 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
     flow->stage = TXN_STAGE_SENDING;
 
     if (flow->cfg->onSending) {
+        LOG_TRACE("TxnFolw: on send callback is calling ...");
         flow->cfg->onSending(flow);
     }
 
@@ -143,19 +147,19 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
 }
 
 static int8_t onSent(NthTransaction* tx, void* ctx) {
-    (void)tx;
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_DEBUG("Txn flow: on send ...");
 
     TxnFlow* flow = ctx;
 
     flow->stage = TXN_STAGE_RECEIVING;
 
     if (flow->cfg->needSettlement) {
-        txnPendingMgr()->mark(TXN_STATUS_PENDING_REVERSE);
+        LOG_TRACE("TxnFolw: txn needs settlement ...");
+        txnPendingMgr()->new(&flow->data);
     }
 
     if (flow->cfg->onReceiving) {
+        LOG_TRACE("TxnFolw: on receive callback is calling ...");
         flow->cfg->onReceiving(flow);
     }
     return 0;
@@ -163,7 +167,7 @@ static int8_t onSent(NthTransaction* tx, void* ctx) {
 
 static int8_t onReceive(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_DEBUG("Txn flow: on receive ...");
+
     TxnFlow* flow = ctx;
     flow->stage   = TXN_STAGE_PARSING;
     nth()->disconnect(flow->tx);

@@ -148,7 +148,7 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
 }
 
-static int8_t buildSaleReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -510,7 +510,7 @@ Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
             builder = buildCfgReceipt;
             break;
         case TXN_PURCHASE:
-            builder = buildSaleReceipt;
+            builder = buildPurchaseReceipt;
             break;
         case TXN_BILL:
             builder = buildBillReceipt;

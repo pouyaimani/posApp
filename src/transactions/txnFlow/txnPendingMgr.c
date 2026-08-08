@@ -51,14 +51,14 @@ static Error_t loadTxnData(TxnData* data) {
         pendingTxnDsc, sizeof(pendingTxnDsc) / sizeof(DataDescriptor),
         RECOVERY_TXN_DATA_ADDR);
     RETURN_VALUE_IF_NOT(err, ERR_OK, ;, ERR_NOK);
-    *data = pendTxnData;
+    memcpy(data, &pendTxnData, sizeof(*data));
     return ERR_OK;
 }
 
 static Error_t updateTxnData(TxnData* data) {
     RETURN_IF_NULL(data, ;);
     LOG_TRACE("TxnPendingMgr: updating transaction data ...");
-    pendTxnData = *data;
+    memcpy(&pendTxnData, data, sizeof(*data));
     LOG_DEBUG("amount = %llu", pendTxnData.core.amount);
     LOG_DEBUG("rrn = %llu", pendTxnData.core.rrn);
     LOG_DEBUG("trace = %lu", pendTxnData.core.trace);
@@ -67,12 +67,22 @@ static Error_t updateTxnData(TxnData* data) {
                            RECOVERY_TXN_DATA_ADDR);
 }
 
-static void mark(TxnStatus st) {
+static Error_t mark(TxnStatus st) {
 
     pendTxnData.status = st;
-    updateTxnData(&pendTxnData);
+    return updateTxnData(&pendTxnData);
+}
 
-    LOG_TRACE("TxnPendingMgr: transaction is approved ...");
+static Error_t update(TxnStatus st, TxnData* data) {
+    data->status = st;
+    return updateTxnData(data);
+}
+
+static Error_t new(TxnData* data) {
+
+    pendTxnData.status = TXN_STATUS_PENDING_REVERSE;
+    LOG_TRACE("TxnPendingMgr: new transaction is saving ...");
+    return updateTxnData(data);
 }
 
 static void processPendedTxn(TxnData* tx, TxnFlowConfig* cfg) {
@@ -81,7 +91,7 @@ static void processPendedTxn(TxnData* tx, TxnFlowConfig* cfg) {
     DEFINE_STRING(ip, 32);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
     txnRun(&flow, NULL, ip, settings()->server.mainServerPort, cfg);
-    flow.data = *tx;
+    memcpy(&flow.data, tx, sizeof(*tx));
 }
 
 static void processReverse(TxnData* tx) {
@@ -130,9 +140,9 @@ bool run(TxnPendMgrCb cb) {
     return true;
 }
 
-static void reset() {
+static Error_t reset() {
     memset(&pendTxnData, 0, sizeof(pendTxnData));
-    updateTxnData(&pendTxnData);
+    return updateTxnData(&pendTxnData);
 }
 
 static void init(TxnPendingMgr* mgr) {
@@ -140,6 +150,8 @@ static void init(TxnPendingMgr* mgr) {
     mgr->hasPendingTxn = hasPendingTxn;
     mgr->run           = run;
     mgr->reset         = reset;
+    mgr->new           = new;
+    mgr->update        = update;
 }
 
 TxnPendingMgr* txnPendingMgr(void) {
