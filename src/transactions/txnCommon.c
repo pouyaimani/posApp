@@ -121,3 +121,10 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
               st->result == TXN_FLOW_TIMEOUT ? phraseGetDef(PHRASE_TIME_OUT)
                                              : phraseGetDef(body));
 }
+
+void financeTxnDone(TxnFlow* flow, const TxnFlowStatus* st) {
+    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
+    if (st->result == TXN_FLOW_SUCCESS) {
+        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE, &flow->data);
+    }
+}

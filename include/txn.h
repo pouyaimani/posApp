@@ -119,6 +119,8 @@ typedef enum {
     TXN_VOUCHER,
     TXN_LOGON,
     TXN_CFG,
+    TXN_SETTLE,
+    TXN_REVERSE,
     TXN_ALL
 } TxnType;
 

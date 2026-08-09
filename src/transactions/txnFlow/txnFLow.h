@@ -67,6 +67,8 @@ typedef int (*TxnComposeFn)(TxnData* data);
 
 typedef struct {
 
+    TxnType type;
+
     Mti_t mti;
 
     PrCode_t prcode;
@@ -118,29 +120,5 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
             const TxnFlowConfig* cfg);
 
 void txnFlowRelease(TxnFlow* flow);
-
-/*********************************************************************************************
- *                                                                                           *
- *                               Transactions config              *
- *                                                                                           *
- ********************************************************************************************/
-
-extern const TxnFlowConfig logOnTxn;
-extern const TxnFlowConfig cfgTxn;
-extern const TxnFlowConfig balanceTxn;
-
-/*********************************************************************************************
- *                                                                                           *
- *                               Transactions common              *
- *                                                                                           *
- ********************************************************************************************/
-int  composeCommon(TxnData* data);
-int  buildCommon(TxnFlow* flow, ByteArray* ba);
-int  parseCommon(TxnFlow* flow, ByteArray* ba);
-void showConnecting(TxnFlow* f);
-void showSending(TxnFlow* f);
-void showReceiving(TxnFlow* f);
-void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
-                State* onFail, bool showSucMsg);
 
 #endif

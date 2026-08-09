@@ -10,6 +10,7 @@
 #include "input/inputMgr.h"
 #include "iso/iso8583.h"
 #include "receipt/receiptTemplates.h"
+#include "txnCommon.h"
 
 /******************************************************************
  *                           Substates
@@ -65,14 +66,6 @@ STATE_DEF_ENTER(Communication) {
  *                  Result sub state
  ******************************************************************/
 
-static void balanceDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    flow->data.core.txnType = TXN_BALANCE;
-    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    if (st->result == TXN_FLOW_SUCCESS) {
-        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE, &flow->data);
-    }
-}
-
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,
                                     ELEMENT_PROCESSING_CODE,
                                     ELEMENT_STAN,
@@ -92,6 +85,10 @@ static const uint8_t isoFeilds[] = {ELEMENT_PAN,
 
 const TxnFlowConfig balanceTxn = {
 
+    TXN_FLOW_COMMON,
+
+    .type = TXN_BALANCE,
+
     .mti = MTI_AUTH_REQ,
 
     .prcode = PRC_BALANCE,
@@ -102,17 +99,7 @@ const TxnFlowConfig balanceTxn = {
 
     .compose = composeCommon,
 
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
-    .done = balanceDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving,
+    .done = financeTxnDone,
 
     .needSettlement = false};
 

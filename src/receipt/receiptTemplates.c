@@ -65,21 +65,28 @@ static int8_t receiptSectionRefTrace(Receipt* rec, const uint32_t* trace,
 static int8_t receiptSectionBalance(Receipt* rec, const uint64_t* balance,
                                     const uint64_t* ledger) {
     DEFINE_STRING(balanceStr, 64);
-    snprintf(balanceStr, sizeof(balanceStr), "%s %d", phraseGetDef(PHRASE_RIAL),
-             *balance);
+    DEFINE_STRING(balanceSep, 32);
+
+    snprintf(balanceStr, sizeof(balanceStr), "%llu", *balance);
+    amountSeparator(balanceStr, balanceSep, sizeof(balanceSep));
+    snprintf(balanceStr, sizeof(balanceStr), "%s %s", balanceSep,
+             phraseGetDef(PHRASE_RIAL));
     RecColumn_t row[] = {{balanceStr, LV_TEXT_ALIGN_LEFT, 1},
                          {phraseGetDef(PHRASE_LEDGER), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 
     DEFINE_STRING(ledgerStr, 64);
-    snprintf(ledgerStr, sizeof(ledgerStr), "%s %d", *ledger,
+    DEFINE_STRING(ledgerSep, 32);
+    snprintf(ledgerStr, sizeof(ledgerStr), "%llu", *ledger);
+    amountSeparator(ledgerStr, ledgerSep, sizeof(ledgerSep));
+    snprintf(ledgerStr, sizeof(ledgerStr), "%s %s", ledgerSep,
              phraseGetDef(PHRASE_RIAL));
     RecColumn_t row1[] = {
         {ledgerStr, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_AVAILABLE), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -98,10 +105,10 @@ static int8_t receiptSectionTxnHeader(Receipt* rec, const uint64_t* dateTime,
     getTxnName(type, servName, sizeof(servName));
     snprintf(header, sizeof(header), "%s-%s", servName,
              phraseGetDef(PHRASE_CUSTOMER_RECEIPT));
-    snprintf(dt, sizeof(dt), "%s-%s", timeStr, dateStr);
+    snprintf(dt, sizeof(dt), "%s-%s", dateStr, timeStr);
     RecColumn_t row[] = {{dt, LV_TEXT_ALIGN_LEFT, 1},
                          {header, LV_TEXT_ALIGN_RIGHT, 1}};
-    return OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 2, row);
+    return OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 2, row);
 }
 
 static int8_t receiptSectionAmount(Receipt* rec, const uint64_t* amount) {
@@ -646,7 +653,7 @@ void createDigitalRec() {
                      .valueColor = lv_palette_main(LV_PALETTE_RED)},
 
                     {.icon       = ICON_DOC2,
-                     .title      = "خطا",
+                     .title      = "خطا             ",
                      .value      = "رمز نامعتبر است",
                      .valueColor = lv_color_black()}}};
 
@@ -731,6 +738,36 @@ static int8_t digRecBuildPurchase(const TxnData* data) {
     return ERR_OK;
 }
 
+static int8_t digRecBuildTopUp(const TxnData* data) {
+    DEFINE_STRING(amountStr, 24);
+    DEFINE_STRING(amountSep, 24);
+    snprintf(amountStr, sizeof(amountStr), "%llu", data->core.amount);
+    amountSeparator(amountStr, amountSep, sizeof(amountSep));
+    lv_label_set_text_fmt(digitalReceipt.amount, "%s %s", amountSep,
+                          header.currency);
+    return ERR_OK;
+}
+
+static int8_t digRecBuildVoucher(const TxnData* data) {
+    DEFINE_STRING(amountStr, 24);
+    DEFINE_STRING(amountSep, 24);
+    snprintf(amountStr, sizeof(amountStr), "%llu", data->core.amount);
+    amountSeparator(amountStr, amountSep, sizeof(amountSep));
+    lv_label_set_text_fmt(digitalReceipt.amount, "%s %s", amountSep,
+                          header.currency);
+    return ERR_OK;
+}
+
+static int8_t digRecBuildBill(const TxnData* data) {
+    DEFINE_STRING(amountStr, 24);
+    DEFINE_STRING(amountSep, 24);
+    snprintf(amountStr, sizeof(amountStr), "%llu", data->core.amount);
+    amountSeparator(amountStr, amountSep, sizeof(amountSep));
+    lv_label_set_text_fmt(digitalReceipt.amount, "%s %s", amountSep,
+                          header.currency);
+    return ERR_OK;
+}
+
 static int8_t digRecBuildBalance(const TxnData* data) {
     details.count++;
     // details.details[3].value = "";
@@ -764,8 +801,10 @@ Result_t showDigitalRec(const TxnData* data) {
         builder = digRecBuildPurchase;
         break;
     case TXN_BILL:
+        builder = digRecBuildBill;
         break;
     case TXN_TOPUP:
+        builder = digRecBuildTopUp;
         break;
     case TXN_BALANCE:
         builder = digRecBuildBalance;
@@ -773,6 +812,7 @@ Result_t showDigitalRec(const TxnData* data) {
     case TXN_PAY:
         break;
     case TXN_VOUCHER:
+        builder = digRecBuildVoucher;
         break;
     default:
         break;

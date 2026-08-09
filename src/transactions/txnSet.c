@@ -2,6 +2,7 @@
 #include "isoHandler.h"
 #include "settings/settings.h"
 #include "states/states.h"
+#include "txnCommon.h"
 
 extern void settleDone(TxnFlow* flow, const TxnFlowStatus* st);
 
@@ -29,6 +30,10 @@ int buildSettle(TxnFlow* flow, ByteArray* ba) {
 
 const TxnFlowConfig settlementTxn = {
 
+    TXN_FLOW_COMMON,
+
+    .type = TXN_SETTLE,
+
     .mti = MTI_FIN_ADVICE,
 
     .prcode = PRC_SETTLE,
@@ -43,12 +48,5 @@ const TxnFlowConfig settlementTxn = {
 
     .build = buildSettle,
 
-    .parse = parseCommon,
-
     .done = settleDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+};

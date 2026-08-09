@@ -11,6 +11,7 @@
 #include "input/inputMgr.h"
 #include "iso/iso8583.h"
 #include "ui/infoPage.h"
+#include "txnCommon.h"
 
 /******************************************************************
  *                           Substates
@@ -81,17 +82,9 @@ STATE_DEF_ENTER(EnterPassword) {
 
 STATE_DEF_ENTER(Communication) { txnStart(&purchaseTxn, flow, state); }
 
-static void purchaseDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    if (st->result == TXN_FLOW_SUCCESS) {
-        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE, &flow->data);
-    }
-}
-
 static int compose(TxnData* data) {
     composeCommon(data);
-    data->core.txnType = TXN_PURCHASE;
-    data->core.amount  = amount;
+    data->core.amount = amount;
 }
 
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,
@@ -115,6 +108,10 @@ static const uint8_t isoFeilds[] = {ELEMENT_PAN,
 
 const TxnFlowConfig purchaseTxn = {
 
+    TXN_FLOW_COMMON,
+
+    .type = TXN_PURCHASE,
+
     .mti = MTI_FIN_REQ,
 
     .prcode = PRC_PURCHASE,
@@ -127,17 +124,8 @@ const TxnFlowConfig purchaseTxn = {
 
     .compose = compose,
 
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
-    .done = purchaseDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+    .done = financeTxnDone,
+};
 
 OOP_CTOR(Purchase, State* parent, const char* name) {
     OOP_CALL_CTOR(Transaction, self, parent, name);

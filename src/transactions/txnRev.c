@@ -1,6 +1,7 @@
 #include "txnFlow/txnFLow.h"
 #include "isoHandler.h"
 #include "settings/settings.h"
+#include "txnCommon.h"
 
 extern void reverseDone(TxnFlow* flow, const TxnFlowStatus* st);
 
@@ -27,6 +28,10 @@ int buildReverse(TxnFlow* flow, ByteArray* ba) {
 
 const TxnFlowConfig reverseTxn = {
 
+    TXN_FLOW_COMMON,
+
+    .type = TXN_REVERSE,
+
     .mti = MTI_REV_ADVICE,
 
     .prcode = PRC_REVERSE,
@@ -41,12 +46,5 @@ const TxnFlowConfig reverseTxn = {
 
     .build = buildReverse,
 
-    .parse = parseCommon,
-
     .done = reverseDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+};

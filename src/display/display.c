@@ -11,7 +11,7 @@
 #define BYTE_PER_PIXEL                                                         \
     (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565)) /*will be 2 for RGB565  \
                                                         */
-#define LV_BUFFER_SIZE (DISP_HOR_RES * 60) * BYTE_PER_PIXEL
+#define LV_BUFFER_SIZE (DISP_HOR_RES * 30) * BYTE_PER_PIXEL
 
 #define STATUS_BAR_WIDTH  DISP_HOR_RES
 #define STATUS_BAR_HEIGHT 30

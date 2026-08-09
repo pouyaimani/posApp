@@ -1,6 +1,7 @@
 #include "txnFlow/txnFLow.h"
 #include "settings/settings.h"
 #include "iso/iso8583.h"
+#include "txnCommon.h"
 
 static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
@@ -18,6 +19,10 @@ static const uint8_t isoFeilds[] = {
 
 const TxnFlowConfig cfgTxn = {
 
+    TXN_FLOW_COMMON,
+
+    .type = TXN_CFG,
+
     .mti = MTI_AUTH_REQ,
 
     .prcode = PRC_CFG,
@@ -30,14 +35,5 @@ const TxnFlowConfig cfgTxn = {
 
     .compose = NULL,
 
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
     .done = cfgDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+};

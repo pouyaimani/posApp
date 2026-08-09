@@ -2,6 +2,7 @@
 #include "settings/settings.h"
 #include "sys/sys.h"
 #include "iso/iso8583.h"
+#include "txnCommon.h"
 
 static void logOnDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
@@ -19,6 +20,10 @@ static const uint8_t isoFeilds[] = {
 
 const TxnFlowConfig logOnTxn = {
 
+    TXN_FLOW_COMMON,
+
+    .type = TXN_LOGON,
+
     .mti = MTI_NET_REQ,
 
     .prcode = PRC_LOG_ON,
@@ -31,14 +36,4 @@ const TxnFlowConfig logOnTxn = {
 
     .compose = NULL,
 
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
-    .done = logOnDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+    .done = logOnDone};

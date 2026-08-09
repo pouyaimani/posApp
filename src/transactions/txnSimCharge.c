@@ -6,6 +6,7 @@
 #include "ui/menu.h"
 #include "phrases/phrases.h"
 #include "input/inputMgr.h"
+#include "txnCommon.h"
 
 /******************************************************************
  *                           Substates
@@ -226,20 +227,10 @@ static void createCommonStates(State* state) {
  *                      Voucher Transaction
  ******************************************************************/
 
-static void voucherDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        // settings()->save();
-    }
-    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    // SM_GOTO(result);
-    // &flow->data
-}
-
 static int composeVoucher(TxnData* data) {
     composeCommon(data);
     data->core.amount         = selectedAmnt;
     data->extention.charge.op = selectedOp;
-    data->core.txnType        = TXN_VOUCHER;
 }
 
 static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
@@ -263,6 +254,8 @@ static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
 
 const TxnFlowConfig voucherTxn = {
 
+    .type = TXN_VOUCHER,
+
     .mti = MTI_FIN_REQ,
 
     .prcode = PRC_PURCHASE,
@@ -277,7 +270,7 @@ const TxnFlowConfig voucherTxn = {
 
     .parse = parseCommon,
 
-    .done = voucherDone,
+    .done = financeTxnDone,
 
     .onConnecting = showConnecting,
 
@@ -288,16 +281,13 @@ const TxnFlowConfig voucherTxn = {
 STATE_DEF_ENTER(Voucher) {
     memset(flow, 0, sizeof(*flow));
     txn = TXN_VOUCHER;
+    cfg = &voucherTxn;
     SM_GOTO(selectOperator);
 }
-
-STATE_DEF_EXIT(Voucher) {}
 
 OOP_CTOR(Voucher, State* parent, const char* name) {
     OOP_CALL_CTOR(Transaction, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(Voucher);
-    self->base.state.vtable.exit  = STATE_EXIT(Voucher);
-
     createCommonStates(&self->base.state);
 
     flow = self->base.flow;
@@ -307,30 +297,12 @@ OOP_CTOR(Voucher, State* parent, const char* name) {
  *                      TopUp Transaction
  ******************************************************************/
 
-STATE_DEF_ENTER(TopUp) {
-    memset(flow, 0, sizeof(*flow));
-    txn = TXN_TOPUP;
-    SM_GOTO(selectOperator);
-}
-
-STATE_DEF_EXIT(TopUp) {}
-
-static void topupDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        // settings()->save();
-    }
-    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    // SM_GOTO(result);
-    // &flow->data
-}
-
 static int composeTopUp(TxnData* data) {
     composeCommon(data);
     data->core.amount         = selectedAmnt;
     data->extention.charge.op = selectedOp;
     memcpy(data->extention.charge.phoneNumber, phoneNum,
            sizeof(data->extention.charge.phoneNumber));
-    data->core.txnType = TXN_TOPUP;
 }
 
 static const uint8_t isoFeildsTopUp[] = {ELEMENT_PAN,
@@ -354,6 +326,8 @@ static const uint8_t isoFeildsTopUp[] = {ELEMENT_PAN,
 
 const TxnFlowConfig topupTxn = {
 
+    .type = TXN_TOPUP,
+
     .mti = MTI_FIN_REQ,
 
     .prcode = PRC_PURCHASE,
@@ -368,7 +342,7 @@ const TxnFlowConfig topupTxn = {
 
     .parse = parseCommon,
 
-    .done = topupDone,
+    .done = financeTxnDone,
 
     .onConnecting = showConnecting,
 
@@ -376,10 +350,16 @@ const TxnFlowConfig topupTxn = {
 
     .onReceiving = showReceiving};
 
+STATE_DEF_ENTER(TopUp) {
+    memset(flow, 0, sizeof(*flow));
+    txn = TXN_TOPUP;
+    cfg = &topupTxn;
+    SM_GOTO(selectOperator);
+}
+
 OOP_CTOR(TopUp, State* parent, const char* name) {
     OOP_CALL_CTOR(Transaction, self, parent, name);
     self->base.state.vtable.enter = STATE_ENTER(TopUp);
-    self->base.state.vtable.exit  = STATE_EXIT(TopUp);
     createCommonStates(&self->base.state);
     flow = self->base.flow;
 }

@@ -74,6 +74,8 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
 
     flow->data.core.mti = cfg->mti;
 
+    flow->data.core.txnType = cfg->type;
+
     flow->owner = owner;
 
     flow->cfg = cfg;

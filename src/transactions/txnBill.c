@@ -7,6 +7,7 @@
 #include "txn.h"
 #include "ui/infoPage.h"
 #include "common.h"
+#include "txnCommon.h"
 
 /******************************************************************
  *                           Substates
@@ -113,15 +114,8 @@ STATE_DEF_ENTER(Communication) { txnStart(&billTxn, flow, state); }
 
 static int compose(TxnData* txnData) {
     composeCommon(txnData);
-    txnData->core.txnType   = TXN_BILL;
     txnData->core.amount    = amount;
     txnData->extention.bill = data.bill;
-}
-
-static void billDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-    }
-    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
 }
 
 static const uint8_t isoFeilds[] = {ELEMENT_PAN,
@@ -145,6 +139,10 @@ static const uint8_t isoFeilds[] = {ELEMENT_PAN,
 
 const TxnFlowConfig billTxn = {
 
+    TXN_FLOW_COMMON,
+
+    .type = TXN_BILL,
+
     .mti = MTI_FIN_REQ,
 
     .prcode = PRC_PURCHASE,
@@ -155,17 +153,8 @@ const TxnFlowConfig billTxn = {
 
     .compose = compose,
 
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
-    .done = billDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+    .done = financeTxnDone,
+};
 
 OOP_CTOR(Bill, State* parent, const char* name) {
     OOP_CALL_CTOR(Transaction, self, parent, name);

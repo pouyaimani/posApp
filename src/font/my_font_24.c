@@ -11,11 +11,13 @@
 #include "lvgl/lvgl.h"
 #endif
 
-#ifndef MY_FONT_24
-#define MY_FONT_24 1
-#endif
+// #ifndef MY_FONT_24
+// #define MY_FONT_24 1
+// #endif
 
-#if MY_FONT_24
+// #if MY_FONT_24
+
+#if 0
 
 /*-----------------
  *    BITMAPS

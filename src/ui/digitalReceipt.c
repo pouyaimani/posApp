@@ -8,9 +8,9 @@
 #define DETAIL_HEIGHT             100
 #define DETAIL_ROW_TITLE_MAX_SIZE 120
 #define BUTTON_HEIGHT             40
-#define HEADER_DT_WIDTH           120
-
-#define HEADER_TEXT_WIDTH 106
+#define HEADER_DT_WIDTH           100
+#define HEADER_RS_WIDTH           190
+#define HEADER_TEXT_WIDTH         130
 
 typedef struct {
     int32_t leftWidth;
@@ -130,7 +130,7 @@ static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
     lv_obj_t* right = lv_obj_create(root);
     lv_obj_remove_style_all(right);
 
-    lv_obj_set_size(right, 170, LV_PCT(100));
+    lv_obj_set_size(right, HEADER_RS_WIDTH, LV_PCT(100));
 
     /*----------------------------------------------------------
      * Success icon
@@ -157,7 +157,7 @@ static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
 
     lv_obj_set_width(amount, HEADER_TEXT_WIDTH);
 
-    lv_label_set_long_mode(amount, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(amount, LV_LABEL_LONG_SCROLL);
 
     page->amount = amount;
 
@@ -175,7 +175,7 @@ static lv_obj_t* create_header(ReceiptPage* page, const ReceiptHeader* cfg) {
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_obj_set_width(title, HEADER_TEXT_WIDTH);
 
-    lv_label_set_long_mode(title, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(title, LV_LABEL_LONG_SCROLL);
 
     page->statusTitle = title;
 
