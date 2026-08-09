@@ -49,4 +49,10 @@ void timeFormat(const char* in, char* out);
 
 Date_t getJalaliDate();
 
+void dateToJalaliStr(uint32_t date, char* str, size_t size);
+
+void dateToStr(uint32_t date, char* str, size_t size);
+
+void timeToStr(uint32_t time, char* str, size_t size);
+
 #endif

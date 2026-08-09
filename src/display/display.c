@@ -8,10 +8,6 @@
 #define SCREEN_SIZE     DISP_HOR_RES* DISP_VER_RES
 #define BYTES_PER_PIXEL 2
 
-static Display   display;
-static Touchpad* tp;
-// Display buffer
-static uint8_t* buffer;
 #define BYTE_PER_PIXEL                                                         \
     (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565)) /*will be 2 for RGB565  \
                                                         */
@@ -19,6 +15,11 @@ static uint8_t* buffer;
 
 #define STATUS_BAR_WIDTH  DISP_HOR_RES
 #define STATUS_BAR_HEIGHT 30
+
+static Display   display;
+static Touchpad* tp;
+// Display buffer
+static uint8_t* buffer;
 
 static volatile bool isFlushEnabled;
 

@@ -15,6 +15,7 @@
 #include "record/shiftRecs.h"
 #include "nth/nth.h"
 #include "error.h"
+#include "record/txnRecs.h"
 
 static lv_obj_t* startUpPage;
 static lv_obj_t* label;
@@ -41,6 +42,8 @@ STATE_DEF_ENTER(Startup) {
     }
 
     shifts()->init();
+
+    txnrecord()->init();
 
     LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
     OOP_CALL(sys(), setVolume, settings()->terminal.devVolume);

@@ -14,7 +14,8 @@ static int8_t receiptSectionPsp(Receipt* rec) {
     RecColumn_t row[] = {
         {"910990057", LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_PSP_GREEN_PAYMENT), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -27,7 +28,8 @@ static int8_t receiptSectionTerminalInfo(Receipt* rec) {
              settings()->terminal.terminalId);
     RecColumn_t row[] = {{code, LV_TEXT_ALIGN_LEFT, 1},
                          {terminal, LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -40,7 +42,8 @@ static int8_t receiptSectionBankName(Receipt* rec, const char* pan) {
     maskPan(pan, maskedPan, sizeof(maskedPan));
     RecColumn_t row[] = {{maskedPan, LV_TEXT_ALIGN_LEFT, 1},
                          {bankNameGetDef(bin), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -54,7 +57,8 @@ static int8_t receiptSectionRefTrace(Receipt* rec, const uint32_t* trace,
              *refNum);
     RecColumn_t row[] = {{refStr, LV_TEXT_ALIGN_LEFT, 1},
                          {traceStr, LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -65,7 +69,8 @@ static int8_t receiptSectionBalance(Receipt* rec, const uint64_t* balance,
              *balance);
     RecColumn_t row[] = {{balanceStr, LV_TEXT_ALIGN_LEFT, 1},
                          {phraseGetDef(PHRASE_LEDGER), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 
     DEFINE_STRING(ledgerStr, 64);
     snprintf(ledgerStr, sizeof(ledgerStr), "%s %d", *ledger,
@@ -73,40 +78,46 @@ static int8_t receiptSectionBalance(Receipt* rec, const uint64_t* balance,
     RecColumn_t row1[] = {
         {ledgerStr, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_AVAILABLE), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
 static int8_t receiptSectionTxnHeader(Receipt* rec, const uint64_t* dateTime,
                                       TxnType type) {
-    uint32_t date, time;
-    unpackDateTime(dateTime, &date, &time);
-    DEFINE_STRING(dtStr, 24);
-    dateTimeToStr(date, time, dtStr, sizeof(dtStr));
+    uint32_t idate, itime;
+    unpackDateTime(dateTime, &idate, &itime);
+    DEFINE_STRING(dateStr, 24);
+    DEFINE_STRING(timeStr, 24);
+    dateToJalaliStr(idate, dateStr, sizeof(dateStr));
+    timeToStr(itime, timeStr, sizeof(timeStr));
+
     DEFINE_STRING(header, 64);
-    DEFINE_STRING(servName, 24);
+    DEFINE_STRING(dt, 32);
+    DEFINE_STRING(servName, 32);
     getTxnName(type, servName, sizeof(servName));
-    snprintf(header, sizeof(header), "%s-%s-%s", servName,
-             phraseGetDef(PHRASE_CUSTOMER_RECEIPT), dtStr);
-    RecColumn_t row[] = {
-        {header, LV_TEXT_ALIGN_CENTER, 1},
-    };
-    return OOP_CALL(rec, addTextWithBorder, 1, row);
+    snprintf(header, sizeof(header), "%s-%s", servName,
+             phraseGetDef(PHRASE_CUSTOMER_RECEIPT));
+    snprintf(dt, sizeof(dt), "%s-%s", timeStr, dateStr);
+    RecColumn_t row[] = {{dt, LV_TEXT_ALIGN_LEFT, 1},
+                         {header, LV_TEXT_ALIGN_RIGHT, 1}};
+    return OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 2, row);
 }
 
 static int8_t receiptSectionAmount(Receipt* rec, const uint64_t* amount) {
     DEFINE_STRING(amountStr, 36);
     DEFINE_STRING(amountSep, 24);
+    DEFINE_STRING(txt, 128);
     snprintf(amountStr, sizeof(amountStr), "%llu", *amount);
     amountSeparator(amountStr, amountSep, sizeof(amountSep));
     memset(amountStr, 0, sizeof(amountStr));
-    snprintf(amountStr, sizeof(amountStr), "%s %s", amountStr,
-             phraseGetDef(PHRASE_RIAL));
+    snprintf(txt, sizeof(txt), "%s %s", amountSep, phraseGetDef(PHRASE_RIAL));
     RecColumn_t row[] = {
-        {amountStr, LV_TEXT_ALIGN_LEFT, 1},
+        {txt, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_SUCCESSFUL_OPERATION), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 2, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 2, row),
+                        ERR_OK,
+                        ;, ERR_NOK);
 }
 
 static int8_t receiptSectionFailure(Receipt* rec, uint16_t respCode) {
@@ -115,8 +126,9 @@ static int8_t receiptSectionFailure(Receipt* rec, uint16_t respCode) {
     snprintf(desc, sizeof(desc), "%s (%d)", desc, "error description",
              respCode);
     RecColumn_t row[] = {{desc, LV_TEXT_ALIGN_CENTER, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 1, row),
+                        ERR_OK,
+                        ;, ERR_NOK);
 }
 
 static int8_t receiptSectionOperatorPhone(Receipt* rec, const char* phone,
@@ -124,7 +136,8 @@ static int8_t receiptSectionOperatorPhone(Receipt* rec, const char* phone,
     // TODO: operator name
     RecColumn_t row[] = {{"operator", LV_TEXT_ALIGN_LEFT, 1},
                          {phone, LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 }
 
 static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
@@ -134,18 +147,21 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
     RecColumn_t row[] = {
         {serial, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_SIM_CHARGE_SERIAL), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     RecColumn_t row1[] = {
         {pin, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_SIM_CHARGE_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     DEFINE_STRING(command, 16);
     snprintf(command, sizeof(command), "%s %s", "", "*رمز شارژ#");
     // TODO: sim operator
     RecColumn_t row2[] = {
         {command, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_SIM_CHARGE_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 }
 
 static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
@@ -259,8 +275,9 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     RecColumn_t row[] = {
         {txt, LV_TEXT_ALIGN_CENTER, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
+        , ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -275,20 +292,24 @@ static int8_t buildCfgReceipt(Receipt* rec, const ReceiptData* data) {
     RecColumn_t row[] = {
         {txt, LV_TEXT_ALIGN_CENTER, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
+        , ERR_NOK);
     RecColumn_t row1[] = {
         {"", LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_TERMINAL_ID), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row1), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     RecColumn_t row2[] = {
         {"", LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_MERCHANT_ID), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row2), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
     RecColumn_t row3[] = {
         {"", LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_MERCHANT_ID), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row3), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -304,8 +325,9 @@ static int8_t buildDailyRepHeaderReceipt(Receipt*           rec,
              phraseGetDef(PHRASE_TXN_ALL));
     RecColumn_t row[] = {
         {"گزارش روزانه همه تراکنش ها", LV_TEXT_ALIGN_CENTER, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
+        , ERR_NOK);
     // Date Time
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
@@ -324,8 +346,9 @@ static int8_t buildDailyRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     snprintf(title, sizeof(title), "%s-%s", dtStr,
              phraseGetDef(PHRASE_SERVICE_NAME));
     RecColumn_t row[] = {{title, LV_TEXT_ALIGN_CENTER, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
+        , ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
                         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
@@ -342,8 +365,9 @@ static int8_t buildSumRepHeaderReceipt(Receipt* rec, const ReceiptData* data) {
     SummaryReportHeader* header = &data->summaryHeader;
     RecColumn_t          row[]  = {
         {phraseGetDef(PHRASE_SUMMARY_REPORT), LV_TEXT_ALIGN_CENTER, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
+        , ERR_NOK);
     DATE_TIME_STR(dt);
     dateTimeToStr(header->dateNow, header->timeNow, dt, sizeof(dt));
     DEFINE_STRING(day, 24);
@@ -353,24 +377,28 @@ static int8_t buildSumRepHeaderReceipt(Receipt* rec, const ReceiptData* data) {
         {day, LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row1), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateFrom, header->timeFrom, dt, sizeof(dt));
     RecColumn_t row2[] = {
         {phraseGetDef(PHRASE_FROM_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row2), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateTo, header->timeTo, dt, sizeof(dt));
     RecColumn_t row3[] = {
         {phraseGetDef(PHRASE_TO_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row3), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
     RecColumn_t row4[] = {{phraseGetDef(PHRASE_TO_RIAL), LV_TEXT_ALIGN_LEFT, 1},
                           {phraseGetDef(PHRASE_COUNT), LV_TEXT_ALIGN_LEFT, 1},
                           {phraseGetDef(PHRASE_TXN), LV_TEXT_ALIGN_LEFT, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTable, 3, row4), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTable, REC_FONT_REGULAR, 3, row4), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -391,7 +419,8 @@ static int8_t buildSumRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
         {countStr, LV_TEXT_ALIGN_LEFT, 1},
         {txnName, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTable, 3, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTable, REC_FONT_REGULAR, 3, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -405,8 +434,9 @@ static int8_t buildDetailtRepHeaderReceipt(Receipt*           rec,
     snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_DETAILED_REPORT),
              phraseGetDef(PHRASE_TXN_ALL));
     RecColumn_t row[] = {{txt, LV_TEXT_ALIGN_CENTER, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, 1, row), ERR_OK, ;
-                        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
+        , ERR_NOK);
     DATE_TIME_STR(dt);
     dateTimeToStr(header->dateNow, header->timeNow, dt, sizeof(dt));
     uint32_t date = OOP_CALL(sys(), getDate);
@@ -416,19 +446,22 @@ static int8_t buildDetailtRepHeaderReceipt(Receipt*           rec,
         {today, LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row1), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateFrom, header->timeFrom, dt, sizeof(dt));
     RecColumn_t row2[] = {
         {phraseGetDef(PHRASE_FROM_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row2), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateTo, header->timeTo, dt, sizeof(dt));
     RecColumn_t row3[] = {
         {phraseGetDef(PHRASE_TO_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, 2, row3), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
     RecColumn_t row4[] = {
         {phraseGetDef(PHRASE_DATE), LV_TEXT_ALIGN_LEFT, 1},
@@ -436,7 +469,8 @@ static int8_t buildDetailtRepHeaderReceipt(Receipt*           rec,
         {phraseGetDef(PHRASE_TO_RIAL), LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_TXN), LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTable, 4, row4), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTable, REC_FONT_REGULAR, 4, row4), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -462,7 +496,8 @@ static int8_t buildDetailRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
         {amntStr, LV_TEXT_ALIGN_LEFT, 1},
         {txnName, LV_TEXT_ALIGN_LEFT, 1},
     };
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTable, 4, row4), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTable, REC_FONT_REGULAR, 4, row4), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
@@ -630,16 +665,14 @@ void createDigitalRec() {
 static void DigRecfillCommon(const TxnData* data) {
     uint32_t idate, itime;
     unpackDateTime(&data->dateTime, &idate, &itime);
-    DEFINE_STRING(dtStr, 24);
-    dateTimeToStr(idate, itime, dtStr, sizeof(dtStr));
-    char time[9 + 1];  // HH:MM:SS
-    char date[10 + 1]; // DD/MM/YYYY
+    DEFINE_STRING(dateStr, 24);
+    DEFINE_STRING(timeStr, 24);
+    dateToJalaliStr(idate, dateStr, sizeof(dateStr));
+    timeToStr(itime, timeStr, sizeof(timeStr));
 
-    sscanf(dtStr, "%8[^-]-%10s", time, date);
-
-    LOG_TRACE("packed dt = %llu, date = %lu, time = %lu, dt str = %s, date str "
+    LOG_TRACE("packed dt = %llu, date = %lu, time = %lu, date str "
               "= %s, time str = %s",
-              data->dateTime, idate, itime, dtStr, date, time);
+              data->dateTime, idate, itime, dateStr, timeStr);
 
     lv_palette_t palette =
         data->core.respCode == 0 ? LV_PALETTE_GREEN : LV_PALETTE_RED;
@@ -655,12 +688,12 @@ static void DigRecfillCommon(const TxnData* data) {
     maskPan(data->core.pan, maskedPan, sizeof(maskedPan));
 
     DEFINE_STRING(refTrace, 64);
-    snprintf(refTrace, sizeof(refTrace), "%lu - %lu", data->core.rrn,
+    snprintf(refTrace, sizeof(refTrace), "%llu - %llu", data->core.rrn,
              data->core.trace);
 
     // Header
-    lv_label_set_text(digitalReceipt.date, date);
-    lv_label_set_text(digitalReceipt.time, time);
+    lv_label_set_text(digitalReceipt.date, dateStr);
+    lv_label_set_text(digitalReceipt.time, timeStr);
 
     lv_obj_set_style_text_color(digitalReceipt.statusTitle,
                                 lv_palette_main(palette), 0);

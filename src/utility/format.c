@@ -106,6 +106,39 @@ void dateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
              dd);
 }
 
+void dateToStr(uint32_t date, char* str, size_t size) {
+    int yy  = date / 10000;
+    int tmp = (date % 10000);
+    int mm  = tmp / 100;
+    int dd  = tmp % 100;
+    snprintf(str, size, "%04d/%02d/%02d", yy, mm, dd);
+}
+
+void dateToJalaliStr(uint32_t date, char* out, size_t size) {
+    int yy  = date / 10000;
+    int tmp = (date % 10000);
+    int mm  = tmp / 100;
+    int dd  = tmp % 100;
+
+    int    full_year = 2000 + yy; // adjust if needed
+    Date_t greg;
+    greg.day   = dd;
+    greg.month = mm;
+    greg.year  = full_year;
+    Date_t jalali;
+    gregorianToJalali(greg, &jalali);
+    snprintf(out, size, "%02d/%02d/%02d", jalali.year % 100, jalali.month,
+             jalali.day);
+}
+
+void timeToStr(uint32_t time, char* str, size_t size) {
+    int hh  = time / 10000;
+    int tmp = (time % 10000);
+    int min = tmp / 100;
+    int ss  = tmp % 100;
+    snprintf(str, size, "%02d:%02d:%02d", hh, min, ss);
+}
+
 void shortDateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
     int mm = (date % 10000) / 100;
     int dd = date % 100;

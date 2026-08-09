@@ -11,7 +11,7 @@
 #include "phrases/phrases.h"
 
 #define PRINTER_WIDTH_PIX 384
-#define MAX_HEIGHT        PRINTER_WIDTH_PIX // dynamic safe max
+#define MAX_HEIGHT        (PRINTER_WIDTH_PIX / 2) // dynamic safe max
 #define SHAPED_MAX        128
 
 /* =========================
@@ -110,10 +110,13 @@ static uint16_t measure_text_height(const char* txt, int width,
     return size.y;
 }
 
-static int8_t addText(Receipt* r, int count, const RecColumn_t* cols) {
+static int8_t addText(Receipt* r, RecFont_t font, int count,
+                      const RecColumn_t* cols) {
     RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
+
+    lv_font_t* lvFont = font == REC_FONT_REGULAR ? &FONT_16 : &FONT_20;
 
     uint32_t tick = OOP_CALL(sys(), getTick);
 
@@ -141,7 +144,7 @@ static int8_t addText(Receipt* r, int count, const RecColumn_t* cols) {
         RETURN_VALUE_IF_NOT(safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX),
                             ERR_OK,
                             ;, ERR_NOK);
-        uint16_t h = measure_text_height(r->shaped[i], w, &FONT_16);
+        uint16_t h = measure_text_height(r->shaped[i], w, lvFont);
         if (h > height)
             height = h;
     }
@@ -159,7 +162,7 @@ static int8_t addText(Receipt* r, int count, const RecColumn_t* cols) {
 
         remaining -= w;
         draw_text_line(&layer, x, r->height, w, height, r->shaped[i],
-                       cols[i].align, &FONT_16);
+                       cols[i].align, lvFont);
 
         x += w;
     }
@@ -170,7 +173,8 @@ static int8_t addText(Receipt* r, int count, const RecColumn_t* cols) {
     return ERR_OK;
 }
 
-static int8_t addTable(Receipt* r, int count, const RecColumn_t* cols) {
+static int8_t addTable(Receipt* r, RecFont_t font, int count,
+                       const RecColumn_t* cols) {
     RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
@@ -185,13 +189,15 @@ static int8_t addTable(Receipt* r, int count, const RecColumn_t* cols) {
     int      x           = 0;
     uint16_t max_h       = 0;
 
+    lv_font_t* lvFont = font == REC_FONT_REGULAR ? &FONT_16 : &FONT_20;
+
     // Calculate row height
     for (int i = 0; i < count; i++) {
         uint32_t w = PRINTER_WIDTH_PIX / totalWeight;
         RETURN_VALUE_IF_NOT(safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX),
                             ERR_OK,
                             ;, ERR_NOK);
-        uint16_t h = measure_text_height(cols[i].src, w - 4, &FONT_16);
+        uint16_t h = measure_text_height(cols[i].src, w - 4, lvFont);
         if (h > max_h)
             max_h = h;
     }
@@ -242,7 +248,7 @@ static int8_t addTable(Receipt* r, int count, const RecColumn_t* cols) {
 
         // Draw text (with padding)
         draw_text_line(&layer, x + 2, r->height + 2, w - 4, max_h, cols[i].src,
-                       cols[i].align, &FONT_16);
+                       cols[i].align, lvFont);
 
         x += w;
     }
@@ -375,125 +381,7 @@ static int8_t addImage(Receipt* r, int count, const RecColumn_t* cols) {
     return ERR_OK;
 }
 
-/* -------- SPACE -------- */
-static int8_t addSpace(Receipt* r, uint16_t h) {
-    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NOT(flushIfNeeded(r, h), true, ;, ERR_NOK);
-    uint32_t tick = OOP_CALL(sys(), getTick);
-    r->height += h;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addSpace process time = %u ms", elapsed);
-    return ERR_OK;
-}
-
-static int8_t addHighlightedText(Receipt* r, const char* text,
-                                 const lv_font_t* font, lv_text_align_t align) {
-    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
-    if (!font)
-        font = &FONT_16;
-    uint32_t tick = OOP_CALL(sys(), getTick);
-
-    // Measure text ---
-    uint16_t text_h = measure_text_height(text, PRINTER_WIDTH_PIX, font);
-
-    // TODO: add pading based on font
-    uint16_t padding_top    = 4;
-    uint16_t padding_bottom = 4;
-    uint16_t height         = text_h + padding_top + padding_bottom;
-
-    // Flush if needed ---
-    RETURN_VALUE_IF_NOT(flushIfNeeded(r, height), true, ;, ERR_NOK);
-
-    // Start drawing ---
-    lv_layer_t layer;
-    lv_canvas_init_layer(r->canvas, &layer);
-
-    // Draw BLACK background ---
-    lv_draw_rect_dsc_t rect_dsc;
-    lv_draw_rect_dsc_init(&rect_dsc);
-    rect_dsc.bg_color = lv_color_black();
-    rect_dsc.bg_opa   = LV_OPA_COVER;
-
-    lv_area_t bg = {.x1 = 0,
-                    .y1 = r->height,
-                    .x2 = PRINTER_WIDTH_PIX - 1,
-                    .y2 = r->height + height - 1};
-
-    lv_draw_rect(&layer, &rect_dsc, &bg);
-
-    // Draw WHITE text ---
-    lv_draw_label_dsc_t label_dsc;
-    lv_draw_label_dsc_init(&label_dsc);
-    label_dsc.color = lv_color_white();
-    label_dsc.font  = font;
-    label_dsc.align = align;
-    label_dsc.flag |= LV_TEXT_FLAG_EXPAND;
-    label_dsc.bidi_dir = LV_BASE_DIR_AUTO;
-    if (safe_shape(text, r->shaped[0], SHAPED_MAX) != ERR_OK) {
-        lv_canvas_finish_layer(r->canvas, &layer);
-        return ERR_NOK;
-    }
-    label_dsc.text = r->shaped[0];
-
-    lv_area_t txt_area = {.x1 = 0,
-                          .y1 = r->height + padding_top,
-                          .x2 = PRINTER_WIDTH_PIX - 1,
-                          .y2 = r->height + padding_top + text_h - 1};
-
-    lv_draw_label(&layer, &label_dsc, &txt_area);
-
-    // Finish ---
-    lv_canvas_finish_layer(r->canvas, &layer);
-
-    r->height += height;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addHighlightedText process time = %u ms", elapsed);
-    return ERR_OK;
-}
-
-static int8_t addAmount(Receipt* r, const char* amount) {
-    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
-    if (!amount) {
-        return ERR_BAD_PARAMETER;
-    }
-    char buf[64];
-    snprintf(buf, sizeof(buf), " %s: %s %s ", phraseGetDef(PHRASE_AMOUNT),
-             amount, phraseGetDef(PHRASE_RIAL));
-
-    return addHighlightedText(r, buf, &FONT_16, LV_TEXT_ALIGN_CENTER);
-}
-
-/* -------- HEADER -------- */
-static int8_t addHeader(Receipt* r, uint32_t date, uint32_t time) {
-    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
-    TerminalSettings* t = &settings()->terminal;
-
-    RecColumn_t row1[] = {
-        {"TODO", LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_PSP_GREEN_PAYMENT), LV_TEXT_ALIGN_RIGHT, 1}};
-    if (addText(r, 2, row1) != ERR_OK) {
-        return ERR_NOK;
-    }
-    DEFINE_STRING(dt, 64);
-    dateTimeToStr(date, time, dt, sizeof(dt));
-
-    DEFINE_STRING(buf, 64);
-    snprintf(buf, sizeof(buf), "%s - %s", dt, "TODO");
-
-    RecColumn_t row2[] = {{buf, LV_TEXT_ALIGN_LEFT, 1}};
-
-    return addHighlightedText(r, buf, &FONT_16, row2);
-}
-
-static int8_t addTextWithBorder(Receipt* r, int count,
+static int8_t addTextWithBorder(Receipt* r, RecFont_t font, int count,
                                 const RecColumn_t* cols) {
     RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
@@ -517,6 +405,8 @@ static int8_t addTextWithBorder(Receipt* r, int count,
 
     RETURN_VALUE_IF_NOT((totalWeight <= 0), false, ;, ERR_NOK);
 
+    lv_font_t* lvFont = font == REC_FONT_REGULAR ? &FONT_16 : &FONT_20;
+
     uint16_t max_h = 0;
 
     for (int i = 0; i < count; i++) {
@@ -526,7 +416,7 @@ static int8_t addTextWithBorder(Receipt* r, int count,
                             ERR_OK,
                             ;, ERR_NOK);
 
-        uint16_t h = measure_text_height(r->shaped[i], w - 6, &FONT_16);
+        uint16_t h = measure_text_height(r->shaped[i], w - 6, lvFont);
 
         if (h > max_h) {
             max_h = h;
@@ -581,7 +471,7 @@ static int8_t addTextWithBorder(Receipt* r, int count,
 
         // Text
         draw_text_line(&layer, x + 3, r->height + 3, w - 6, max_h - 6,
-                       r->shaped[i], cols[i].align, &FONT_16);
+                       r->shaped[i], cols[i].align, lvFont);
 
         x += w;
     }
@@ -599,6 +489,125 @@ static int8_t addTextWithBorder(Receipt* r, int count,
     uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
     LOG_DEBUG("addTextWithBorder process time = %u ms", elapsed);
     return ERR_OK;
+}
+
+/* -------- SPACE -------- */
+static int8_t addSpace(Receipt* r, uint16_t h) {
+    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NOT(flushIfNeeded(r, h), true, ;, ERR_NOK);
+    uint32_t tick = OOP_CALL(sys(), getTick);
+    r->height += h;
+    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    LOG_DEBUG("addSpace process time = %u ms", elapsed);
+    return ERR_OK;
+}
+
+static int8_t addHighlightedText(Receipt* r, const char* text, RecFont_t font,
+                                 lv_text_align_t align) {
+    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
+
+    lv_font_t* lvFont = font == REC_FONT_REGULAR ? &FONT_16 : &FONT_20;
+
+    uint32_t tick = OOP_CALL(sys(), getTick);
+
+    // Measure text ---
+    uint16_t text_h = measure_text_height(text, PRINTER_WIDTH_PIX, lvFont);
+
+    // TODO: add pading based on font
+    uint16_t padding_top    = 4;
+    uint16_t padding_bottom = 4;
+    uint16_t height         = text_h + padding_top + padding_bottom;
+
+    // Flush if needed ---
+    RETURN_VALUE_IF_NOT(flushIfNeeded(r, height), true, ;, ERR_NOK);
+
+    // Start drawing ---
+    lv_layer_t layer;
+    lv_canvas_init_layer(r->canvas, &layer);
+
+    // Draw BLACK background ---
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_color = lv_color_black();
+    rect_dsc.bg_opa   = LV_OPA_COVER;
+
+    lv_area_t bg = {.x1 = 0,
+                    .y1 = r->height,
+                    .x2 = PRINTER_WIDTH_PIX - 1,
+                    .y2 = r->height + height - 1};
+
+    lv_draw_rect(&layer, &rect_dsc, &bg);
+
+    // Draw WHITE text ---
+    lv_draw_label_dsc_t label_dsc;
+    lv_draw_label_dsc_init(&label_dsc);
+    label_dsc.color = lv_color_white();
+    label_dsc.font  = lvFont;
+    label_dsc.align = align;
+    label_dsc.flag |= LV_TEXT_FLAG_EXPAND;
+    label_dsc.bidi_dir = LV_BASE_DIR_AUTO;
+    if (safe_shape(text, r->shaped[0], SHAPED_MAX) != ERR_OK) {
+        lv_canvas_finish_layer(r->canvas, &layer);
+        return ERR_NOK;
+    }
+    label_dsc.text = r->shaped[0];
+
+    lv_area_t txt_area = {.x1 = 0,
+                          .y1 = r->height + padding_top,
+                          .x2 = PRINTER_WIDTH_PIX - 1,
+                          .y2 = r->height + padding_top + text_h - 1};
+
+    lv_draw_label(&layer, &label_dsc, &txt_area);
+
+    // Finish ---
+    lv_canvas_finish_layer(r->canvas, &layer);
+
+    r->height += height;
+    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    LOG_DEBUG("addHighlightedText process time = %u ms", elapsed);
+    return ERR_OK;
+}
+
+static int8_t addAmount(Receipt* r, const char* amount) {
+    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
+    if (!amount) {
+        return ERR_BAD_PARAMETER;
+    }
+    char buf[64];
+    snprintf(buf, sizeof(buf), " %s: %s %s ", phraseGetDef(PHRASE_AMOUNT),
+             amount, phraseGetDef(PHRASE_RIAL));
+
+    return addHighlightedText(r, buf, &FONT_16, LV_TEXT_ALIGN_CENTER);
+}
+
+/* -------- HEADER -------- */
+static int8_t addHeader(Receipt* r, uint32_t date, uint32_t time) {
+    RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
+    TerminalSettings* t = &settings()->terminal;
+
+    RecColumn_t row1[] = {
+        {"TODO", LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_PSP_GREEN_PAYMENT), LV_TEXT_ALIGN_RIGHT, 1}};
+    if (addText(r, REC_FONT_REGULAR, 2, row1) != ERR_OK) {
+        return ERR_NOK;
+    }
+    DEFINE_STRING(dt, 64);
+    dateTimeToStr(date, time, dt, sizeof(dt));
+
+    DEFINE_STRING(buf, 64);
+    snprintf(buf, sizeof(buf), "%s - %s", dt, "TODO");
+
+    RecColumn_t row2[] = {{buf, LV_TEXT_ALIGN_LEFT, 1}};
+
+    return addHighlightedText(r, buf, &FONT_16, row2);
 }
 
 static int8_t addLineHorizontal(Receipt* r, uint16_t thickness,

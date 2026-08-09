@@ -14,16 +14,20 @@ typedef struct {
     uint8_t     weight;
 } RecColumn_t;
 
+typedef enum { REC_FONT_REGULAR, REC_FONT_BOLD } RecFont_t;
+
 OOP_DECLARE_CLASS(Receipt)
 OOP_VTABLE(Receipt) {
-    OOP_IMETHOD(int8_t, Receipt, addText, int, const RecColumn_t*);
-    OOP_IMETHOD(int8_t, Receipt, addHighlightedText, const char* text,
-                const lv_font_t* font, lv_text_align_t align);
-    OOP_IMETHOD(int8_t, Receipt, addSpace, uint16_t height);
-    OOP_IMETHOD(int8_t, Receipt, addTable, int culCount, const RecColumn_t*);
-    OOP_IMETHOD(int8_t, Receipt, addImage, int culCount, const RecColumn_t*);
-    OOP_IMETHOD(int8_t, Receipt, addTextWithBorder, int culCount,
+    OOP_IMETHOD(int8_t, Receipt, addText, RecFont_t font, int,
                 const RecColumn_t*);
+    OOP_IMETHOD(int8_t, Receipt, addHighlightedText, const char* text,
+                RecFont_t font, lv_text_align_t align);
+    OOP_IMETHOD(int8_t, Receipt, addSpace, uint16_t height);
+    OOP_IMETHOD(int8_t, Receipt, addTable, RecFont_t font, int culCount,
+                const RecColumn_t*);
+    OOP_IMETHOD(int8_t, Receipt, addImage, int culCount, const RecColumn_t*);
+    OOP_IMETHOD(int8_t, Receipt, addTextWithBorder, RecFont_t font,
+                int culCount, const RecColumn_t*);
     OOP_IMETHOD(int8_t, Receipt, addHeader, uint32_t date, uint32_t time);
     OOP_IMETHOD(int8_t, Receipt, addFooter);
     OOP_IMETHOD(int8_t, Receipt, addAmount, const char*);

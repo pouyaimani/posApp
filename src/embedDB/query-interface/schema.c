@@ -74,7 +74,9 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes,
         totalSize += colSize;
         if (colSize <= 0) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Column size must be greater than zero\n");
+            debug_log("ERROR: Column size must be greater than zero. column "
+                      "number = %d, size = %d",
+                      i, colSize);
 #endif
             return NULL;
         }

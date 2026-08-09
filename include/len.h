@@ -5,7 +5,7 @@
 #define LEN_MAX_TRACE_IN         6
 #define LEN_MAX_DATE_IN          8
 #define LEN_MAX_TIME_IN          6
-#define LEN_WIFI_AP_LIST         50
+#define LEN_WIFI_AP_LIST         20
 #define LEN_MAX_SERVICE_NUM      10
 #define LEN_MAX_CARDHOLDER_ITEMS 10
 #define LEN_MAX_AMOUNT_LIST      13
@@ -37,3 +37,4 @@
 #define LEN_MAX_PRCODE           6
 #define LEN_MAX_MTI              4
 #define LEN_MAX_PHONE_NUMBER     11
+#define LEN_SOCKET_REC_BUFF      1024

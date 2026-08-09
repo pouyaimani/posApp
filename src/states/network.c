@@ -82,8 +82,8 @@ OOP_CTOR(NetSend, State* parent, const char* name) {
     self->base.vtable.enter        = STATE_ENTER(NetSend);
     self->base.vtable.handleKeypad = STATE_HANDLE(NetSend, KeypadEvent);
     self->base.vtable.onSocketSent = STATE_HANDLE(NetSend, SocketSentEvent);
-    self->data.data                = MEM_ALLOC(REC_BUFF_LEN);
-    self->data.capacity            = REC_BUFF_LEN;
+    self->data.data                = MEM_ALLOC(LEN_SOCKET_REC_BUFF);
+    self->data.capacity            = LEN_SOCKET_REC_BUFF;
 }
 
 /*************************** Network receive ***********************/
@@ -131,6 +131,6 @@ OOP_CTOR(NetReceive, State* parent, const char* name) {
     self->base.vtable.handleKeypad = STATE_HANDLE(NetReceive, KeypadEvent);
     self->base.vtable.onSocketReadyRead =
         STATE_HANDLE(NetReceive, SocketReadyReadEvent);
-    self->data.data     = MEM_ALLOC(REC_BUFF_LEN);
-    self->data.capacity = REC_BUFF_LEN;
+    self->data.data     = MEM_ALLOC(LEN_SOCKET_REC_BUFF);
+    self->data.capacity = LEN_SOCKET_REC_BUFF;
 }

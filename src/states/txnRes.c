@@ -13,12 +13,16 @@
 static int pendMgrDone(const TxnData* data) {
     if (data->status == TXN_STATUS_APPROVED) {
         LOG_TRACE("Txn pending manager: transaction is approved.");
-        Result_t res = txnrecord()->insert(data);
-        if (res.err != ERR_DSC_OK) {
-            LOG_ERROR(
-                "Inserting transaction to database is failed. detail code = %d",
-                res.detail.db);
-        }
+        // Result_t res = txnrecord()->insert(data);
+        // if (res.err != ERR_DSC_OK) {
+        //     LOG_ERROR("Inserting transaction to database is failed. error =
+        //     %d "
+        //               "detail code = %d",
+        //               res.err, res.detail.db);
+        // } else {
+        //     LOG_TRACE(
+        //         "Inserting transaction to database is successfully done.");
+        // }
     } else if (data->status == TXN_STATUS_REVERSED) {
         LOG_TRACE("Txn pending manager: transaction is reversed.");
     } else {

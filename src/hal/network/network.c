@@ -83,9 +83,9 @@ static int connect() {
 }
 
 static void checkSocketReceive() {
-    DEFINE_BYTE_ARRAY(recBuffer, REC_BUFF_LEN);
-    int ret =
-        OOP_CALL(__network, receive, __network->id, recBuffer, REC_BUFF_LEN);
+    DEFINE_BYTE_ARRAY(recBuffer, LEN_SOCKET_REC_BUFF);
+    int ret = OOP_CALL(__network, receive, __network->id, recBuffer,
+                       LEN_SOCKET_REC_BUFF);
     SocketReadyReadEvent* ev =
         (SocketReadyReadEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
     ev->ba.data = ret > 0 ? recBuffer : NULL;

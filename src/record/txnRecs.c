@@ -133,6 +133,24 @@ static Result_t init(TxnRecord* self) {
     Result_t res = {.err = ERR_DSC_OK};
     state        = (embedDBState*)EMDB_MEM_ALLOC(sizeof(embedDBState));
     RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_MEMORY, res);
+
+    uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY |
+                          (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
+    LOG_ERROR("size of txnData = %u.", sizeof(TxnRec_t));
+
+    if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(uint64_t),
+                     sizeof(TxnRec_t), PAGE_SIZE_512, PAGE_NUMBER,
+                     parameters) != 0) {
+        embedDBClose(state);
+        embedDBtearDown(state);
+        EMDB_MEM_FREE(state);
+        state = NULL;
+        LOG_ERROR("Error in setuping embedDB.");
+        res.err       = ERR_DSC_DATABASE;
+        res.detail.db = DB_ERR_SETUP_FAILURE;
+        return res;
+    }
+
     int8_t colSizes[] = {
         state->keySize,                                  // key
         sizeof(sizeof(((TxnData*)0)->core.txnType)),     // type
@@ -164,23 +182,8 @@ static Result_t init(TxnRecord* self) {
                              embedDB_COLUMN_UINT32, embedDB_COLUMN_UINT32,
                              embedDB_COLUMN_UINT32, embedDB_COLUMN_UINT32};
 
-    uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY |
-                          (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
-    LOG_ERROR("size of txnData = %u.", sizeof(TxnRec_t));
-    if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(uint64_t),
-                     sizeof(TxnRec_t), PAGE_SIZE_512, PAGE_NUMBER,
-                     parameters) != 0) {
-        embedDBClose(state);
-        embedDBtearDown(state);
-        EMDB_MEM_FREE(state);
-        state = NULL;
-        LOG_ERROR("Error in setuping embedDB.");
-        res.err       = ERR_DSC_DATABASE;
-        res.detail.db = DB_ERR_SETUP_FAILURE;
-        return res;
-    }
-
-    schema = embedDBCreateSchema(21, colSizes, colSignedness, colTypes);
+    schema = embedDBCreateSchema((sizeof(colSizes) / colSizes[0]), colSizes,
+                                 colSignedness, colTypes);
     if (!schema) {
         LOG_ERROR("Txn query error: failed to create schema.");
         embedDBClose(state);

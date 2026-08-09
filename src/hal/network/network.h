@@ -7,11 +7,11 @@
 #include "dcfg.h"
 #include "event.h"
 #include "error.h"
+#include "len.h"
 
 #define CONNECT_TIME_OUT 20000
 #define SEND_TIME_OUT    20000
 #define REC_TIME_OUT     20000
-#define REC_BUFF_LEN     1024
 
 typedef enum {
     NET_ROUTE_CELLULAR = 0,
