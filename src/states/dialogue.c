@@ -58,12 +58,12 @@ static void createUi() {
     ui_button_create(&confirmBut, disp()->screen);
     ui_button_set_text(&confirmBut, phraseGetDef(PHRASE_CONFIRM));
     ui_button_set_icon(&confirmBut, LV_SYMBOL_OK);
-    ui_button_set_color(&confirmBut, lv_color_hex(0x68DD40));
+    ui_button_set_color(&confirmBut, lv_palette_main(LV_PALETTE_GREEN));
     LV_ALIGN(ui_button_obj(&confirmBut), LV_ALIGN_BOTTOM_RIGHT, -5, -10);
     ui_button_create(&cancelBut, disp()->screen);
     ui_button_set_text(&cancelBut, phraseGetDef(PHRASE_CANCEL));
     ui_button_set_icon(&cancelBut, LV_SYMBOL_CLOSE);
-    ui_button_set_color(&cancelBut, lv_color_hex(0xFF4E4E));
+    ui_button_set_color(&cancelBut, lv_palette_main(LV_PALETTE_RED));
     LV_ALIGN(ui_button_obj(&cancelBut), LV_ALIGN_BOTTOM_LEFT, 5, -10);
 
     LV_SET_TEXT(title, "");

@@ -7,7 +7,7 @@ typedef struct {
     lv_obj_t* root;
 
     lv_obj_t* bg;
-    lv_obj_t* accent;
+    // lv_obj_t* accent;
 
     lv_obj_t* icon;
     lv_obj_t* label;
