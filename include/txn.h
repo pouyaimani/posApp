@@ -129,7 +129,7 @@ typedef enum {
     OPERATOR_MTN     = 11,
     OPERATOR_RIGHTEL = 17,
     OPERATOR_ALL     = 4
-} Operator_t;
+} SimCardOp_t;
 
 typedef enum {
     CL_NORMAL   = 1,
@@ -160,7 +160,7 @@ typedef union {
         ChargeLevel level;
         char        chargePin[16];
         char        chargeSerial[16];
-        Operator_t  op;
+        SimCardOp_t op;
     } charge;
 
     struct {
@@ -181,13 +181,6 @@ typedef struct {
     TxnCore      core;
     TxnExtention extention;
 } TxnData;
-
-typedef enum {
-    SIM_OP_MCI = 0,
-    SIM_OP_IRANCELL,
-    SIM_OP_RIGHTEL,
-    SIM_OP_TALIA
-} SimCardOperators_t;
 
 int8_t getTxnName(TxnType type, char* name, size_t size);
 

@@ -25,8 +25,8 @@ static SubState* communication;
 static Menu opSelectionMenu;
 static Menu amntSelectionMenu;
 
-static Operator_t selectedOp;
-static TxnType    txn;
+static SimCardOp_t selectedOp;
+static TxnType     txn;
 
 static TxnFlow* flow;
 

@@ -1,3 +1,4 @@
+#include "supporter.h"
 #include "states.h"
 #include "logger.h"
 #include "display.h"
@@ -65,6 +66,11 @@ OOP_CTOR(Supporter, State* parent, const char* name) {
 
     supervisor = (Supervisor*)MEM_ALLOC(sizeof(Supervisor));
     OOP_CALL_CTOR(Supervisor, supervisor, self, "supervisor");
+
+    self->substate.customer   = NULL;
+    self->substate.merchant   = merchant;
+    self->substate.supervisor = supervisor;
+    self->substate.powerOff   = powerOff;
 
     menu = MEM_ALLOC(sizeof(*menu));
 }

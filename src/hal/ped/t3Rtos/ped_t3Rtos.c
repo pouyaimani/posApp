@@ -9,14 +9,36 @@
 
 #define KEY_INDEX_MASTER 0
 
-#define TMK_INDEX  0
+#define TMK_INDEX  0 // Master key
 #define TK_INDEX   1
 #define LTAK_INDEX 2
-#define TAK_INDEX  3
-#define TPK_INDEX  4
-#define TDK_INDEX  5
+#define TAK_INDEX  3 // Mac key
+#define TPK_INDEX  4 // Pin key
+#define TDK_INDEX  5 // Data key
 #define TMP_INDEX  6
 #define TMH_INDEX  7
+
+static int convertKeyIndex(PedKeyType_t key) {
+    int keyIndex = -1;
+    switch (key) {
+    case PED_KEY_MASTER:
+        keyIndex = TMK_INDEX;
+        break;
+    case PED_KEY_PIN:
+        keyIndex = TPK_INDEX;
+        break;
+    case PED_KEY_DATA:
+        keyIndex = TDK_INDEX;
+        break;
+    case PED_KEY_MAC:
+        keyIndex = TAK_INDEX;
+        break;
+
+    default:
+        break;
+    }
+    return keyIndex;
+}
 
 static PedErr_t translateSdkErr(int err) {
     LOG_DEBUG("Ped: sdk error = %d", err);
@@ -52,27 +74,27 @@ static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t* key,
     PedKeyInfo       keyInfo    = {0};
     PedKeyCheckValue checkValue = {0};
     switch (type) {
-    case PED_MASTER_KEY:
+    case PED_KEY_MASTER:
         keyInfo.mSrcKeyType   = 0; // Plain
         keyInfo.mDestKeyType  = PED_KEY_TDES_TMK;
         keyInfo.mSrcKeyIndex  = 0;
         keyInfo.mDestKeyIndex = KEY_INDEX_MASTER;
         break;
-    case PED_PIN_KEY:
+    case PED_KEY_PIN:
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType   = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType  = PED_KEY_TDES_TPK;
         keyInfo.mSrcKeyIndex  = KEY_INDEX_MASTER;
         keyInfo.mDestKeyIndex = TPK_INDEX;
         break;
-    case PED_DATA_KEY:
+    case PED_KEY_DATA:
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType   = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType  = PED_KEY_TDK;
         keyInfo.mSrcKeyIndex  = KEY_INDEX_MASTER;
         keyInfo.mDestKeyIndex = TDK_INDEX;
         break;
-    case PED_MAC_KEY:
+    case PED_KEY_MAC:
         checkValue.mCheckMode = PED_CHECK_MODE_DES;
         keyInfo.mSrcKeyType   = PED_KEY_TDES_TMK;
         keyInfo.mDestKeyType  = PED_KEY_TAK;
@@ -89,6 +111,47 @@ static PedErr_t injectKey(Ped* self, PedKeyType_t type, uint8_t* key,
 
     result = sdkPedWriteKey(&keyInfo, &checkValue);
     return translateSdkErr(result);
+}
+
+static PedErr_t getKcv(PedKeyType_t key, char* out, size_t size) {
+    if (size < 4) {
+        return PED_ERR_INPUT;
+    }
+    int            result   = 0;
+    u32            keyGroup = 0;
+    unsigned char  buffer[8];
+    PedAccountData accData = {0};
+    int            keyIdx  = convertKeyIndex(key);
+    switch (keyIdx) {
+    case TMK_INDEX:
+        result = sdkPedEncryptAccountData(keyGroup, PED_KEY_TDES_TMK, TMK_INDEX,
+                                          PED_ACCOUNTALG_TDES_ENC_ECB, 0, 0,
+                                          buffer, 8, &accData);
+        break;
+    case TPK_INDEX:
+        result = sdkPedEncryptAccountData(keyGroup, PED_KEY_TDES_TPK, TPK_INDEX,
+                                          PED_ACCOUNTALG_TDES_ENC_ECB, 0, 0,
+                                          buffer, 8, &accData);
+        break;
+    case TAK_INDEX:
+        result = sdkPedEncryptAccountData(keyGroup, PED_KEY_TAK, TAK_INDEX,
+                                          PED_ACCOUNTALG_TDES_ENC_ECB, 0, 0,
+                                          buffer, 8, &accData);
+        break;
+    case TDK_INDEX:
+        result = sdkPedEncryptAccountData(keyGroup, PED_KEY_TDK, TDK_INDEX,
+                                          PED_ACCOUNTALG_TDES_ENC_ECB, 0, 0,
+                                          buffer, 8, &accData);
+        break;
+
+    default:
+        break;
+    }
+    if (result != SDK_PED_OK) {
+        return translateSdkErr(result);
+    }
+    memcpy(out, accData.mAccountBlockData, 4);
+    return SDK_PED_OK;
 }
 
 static PedErr_t enterPinEntryMode(Ped* self) {
@@ -177,6 +240,7 @@ OOP_CTOR(PedT3Rtos) {
     self->base.vtable.getPinBlock       = getPinBlock;
     self->base.vtable.getMac            = getMac;
     self->base.vtable.poll              = poll;
+    self->base.vtable.getKcv            = getKcv;
 }
 
 #endif

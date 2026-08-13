@@ -23,7 +23,19 @@ OOP_CTOR(Transaction, State* parent, const char* name);
 
 Transaction* getTxn(TxnType id);
 
-/*********************Sale*********************/
+/*********************Logon*********************/
+
+OOP_CLASS(Logon) { OOP_EXTENDS(Transaction); };
+
+OOP_CTOR(Logon, State* parent, const char* name);
+
+/*********************Config*********************/
+
+OOP_CLASS(Config) { OOP_EXTENDS(Transaction); };
+
+OOP_CTOR(Config, State* parent, const char* name);
+
+/*********************Purchase*********************/
 
 OOP_CLASS(Purchase) { OOP_EXTENDS(Transaction); };
 

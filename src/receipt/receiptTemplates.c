@@ -8,12 +8,13 @@
 #include "ui/digitalReceipt.h"
 #include "assets.h"
 #include "mylvgl.h"
+#include "ped/ped.h"
+#include "cellular/cellular.h"
 
 static int8_t receiptSectionPsp(Receipt* rec) {
-    // TODO: left side value?
     RecColumn_t row[] = {
-        {"910990057", LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_PSP_GREEN_PAYMENT), LV_TEXT_ALIGN_RIGHT, 1}};
+        {settings()->terminal.merchantPhone, LV_TEXT_ALIGN_LEFT, 1},
+        {settings()->terminal.merchantName, LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
@@ -74,7 +75,8 @@ static int8_t receiptSectionBalance(Receipt* rec, const uint64_t* balance,
     RecColumn_t row[] = {{balanceStr, LV_TEXT_ALIGN_LEFT, 1},
                          {phraseGetDef(PHRASE_LEDGER), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 2, row), ERR_OK, ;
+        , ERR_NOK);
 
     DEFINE_STRING(ledgerStr, 64);
     DEFINE_STRING(ledgerSep, 32);
@@ -85,8 +87,11 @@ static int8_t receiptSectionBalance(Receipt* rec, const uint64_t* balance,
     RecColumn_t row1[] = {
         {ledgerStr, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_AVAILABLE), LV_TEXT_ALIGN_RIGHT, 1}};
-    RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, REC_FONT_BOLD, 2, row1), ERR_OK,
+                        ;, ERR_NOK);
+    // RETURN_VALUE_IF_NOT(
+    //     OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;,
+    //     ERR_NOK);
     return ERR_OK;
 }
 
@@ -103,8 +108,14 @@ static int8_t receiptSectionTxnHeader(Receipt* rec, const uint64_t* dateTime,
     DEFINE_STRING(dt, 32);
     DEFINE_STRING(servName, 32);
     getTxnName(type, servName, sizeof(servName));
-    snprintf(header, sizeof(header), "%s-%s", servName,
-             phraseGetDef(PHRASE_CUSTOMER_RECEIPT));
+    char* customerRec = "";
+    // TODO: use config to wether print this or not
+    if (type != TXN_LOGON && type != TXN_CFG) {
+        snprintf(header, sizeof(header), "%s-%s", servName,
+                 phraseGetDef(PHRASE_CUSTOMER_RECEIPT));
+    } else {
+        snprintf(header, sizeof(header), "%s", servName);
+    }
     snprintf(dt, sizeof(dt), "%s-%s", dateStr, timeStr);
     RecColumn_t row[] = {{dt, LV_TEXT_ALIGN_LEFT, 1},
                          {header, LV_TEXT_ALIGN_RIGHT, 1}};
@@ -128,29 +139,28 @@ static int8_t receiptSectionAmount(Receipt* rec, const uint64_t* amount) {
 }
 
 static int8_t receiptSectionFailure(Receipt* rec, uint16_t respCode) {
-    DEFINE_STRING(desc, 24);
-    // TODO: error description
-    snprintf(desc, sizeof(desc), "%s (%d)", desc, "error description",
-             respCode);
-    RecColumn_t row[] = {{desc, LV_TEXT_ALIGN_CENTER, 1}};
+    DEFINE_STRING(dsc, 128);
+    getResponseCode(respCode, dsc, sizeof(dsc));
+    DEFINE_STRING(fdsc, 128);
+    snprintf(fdsc, sizeof(fdsc), "%s (%d)", dsc, respCode);
+    RecColumn_t row[] = {{fdsc, LV_TEXT_ALIGN_CENTER, 1}};
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 1, row),
                         ERR_OK,
                         ;, ERR_NOK);
 }
 
 static int8_t receiptSectionOperatorPhone(Receipt* rec, const char* phone,
-                                          SimCardOperators_t operaor) {
-    // TODO: operator name
-    RecColumn_t row[] = {{"operator", LV_TEXT_ALIGN_LEFT, 1},
+                                          SimCardOp_t op) {
+    DEFINE_STRING(opDsc, 32);
+    getSimOpName(op, opDsc, sizeof(opDsc));
+    RecColumn_t row[] = {{opDsc, LV_TEXT_ALIGN_LEFT, 1},
                          {phone, LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 }
 
 static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
-                                       const char*        pin,
-                                       SimCardOperators_t operaor) {
-    // TODO: operator name
+                                       const char* pin, SimCardOp_t op) {
     RecColumn_t row[] = {
         {serial, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_SIM_CHARGE_SERIAL), LV_TEXT_ALIGN_RIGHT, 1}};
@@ -163,10 +173,10 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
     DEFINE_STRING(command, 16);
     snprintf(command, sizeof(command), "%s %s", "", "*رمز شارژ#");
-    // TODO: sim operator
-    RecColumn_t row2[] = {
-        {command, LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_SIM_CHARGE_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
+    DEFINE_STRING(opDsc, 32);
+    getSimOpName(op, opDsc, sizeof(opDsc));
+    RecColumn_t row2[] = {{command, LV_TEXT_ALIGN_LEFT, 1},
+                          {opDsc, LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 }
@@ -213,8 +223,11 @@ static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
         , ERR_NOK);
+
     RETURN_VALUE_IF_NOT(
-        receiptSectionOperatorPhone(rec, "phone num", SIM_OP_IRANCELL), ERR_OK,
+        receiptSectionOperatorPhone(rec, txn->extention.charge.phoneNumber,
+                                    txn->extention.charge.op),
+        ERR_OK,
         ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
                         , ERR_NOK);
@@ -276,47 +289,150 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
-    DEFINE_STRING(txt, 256);
-    snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_GET_KEY),
-             phraseGetDef(PHRASE_SUC_DONME));
     RecColumn_t row[] = {
-        {txt, LV_TEXT_ALIGN_CENTER, 1},
+        {phraseGetDef(PHRASE_KEYS_KCV), LV_TEXT_ALIGN_CENTER, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
         , ERR_NOK);
+    DEFINE_STRING(kcv, 8);
+    DEFINE_STRING(skcv, 8);
+    // KCV Master
+    OOP_CALL(ped(), getKcv, PED_KEY_MASTER, kcv, sizeof(kcv));
+    sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
+    RecColumn_t row1[] = {
+        {skcv, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_KEY_MASTER), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+    RESET_STRING(kcv);
+    RESET_STRING(skcv);
+
+    // KCV Pin
+    OOP_CALL(ped(), getKcv, PED_KEY_PIN, kcv, sizeof(kcv));
+    sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
+    RecColumn_t row2[] = {
+        {skcv, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_KEY_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+    RESET_STRING(kcv);
+    RESET_STRING(skcv);
+
+    // KCV Mac
+    OOP_CALL(ped(), getKcv, PED_KEY_MAC, kcv, sizeof(kcv));
+    sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
+    RecColumn_t row3[] = {
+        {skcv, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_KEY_MAC), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+    RESET_STRING(kcv);
+    RESET_STRING(skcv);
+
+    // KCV Data
+    OOP_CALL(ped(), getKcv, PED_KEY_DATA, kcv, sizeof(kcv));
+    sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
+    RecColumn_t row4[] = {
+        {skcv, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_KEY_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addLineHorizontal, 2, 2, 2), ERR_OK, ;
+                        , ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
+
+static int8_t buildNetSpec(Receipt* rec, const ReceiptData* data) {
+    VAR_UNUSED(data);
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+
+    RecColumn_t row[] = {
+        {phraseGetDef(PHRASE_NET_SPECS), LV_TEXT_ALIGN_CENTER, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
+        , ERR_NOK);
+
+    DEFINE_STRING(route, 32);
+    getCurrentNetRouteName(route, sizeof(route));
+    RecColumn_t row1[] = {
+        {route, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_CONNECTION_TYPE), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
+
+    DEFINE_STRING(ip, 32);
+    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+    DEFINE_STRING(ipPort, 32);
+    snprintf(ipPort, sizeof(ipPort), "%s : %d", ip,
+             settings()->server.mainServerPort);
+    RecColumn_t row2[] = {
+        {ipPort, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_MAIN_SERVER), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
+
+    RESET_STRING(ip);
+    RESET_STRING(ipPort);
+    char* tmsIpPort;
+    if (isStringEmpty(settings()->server.tmsIp)) {
+        tmsIpPort = phraseGetDef(PHRASE_IS_NOT_SET);
+    } else {
+        normalizeIp(settings()->server.tmsIp, ip, sizeof(ip));
+        snprintf(ipPort, sizeof(ipPort), "%s : %d", ip,
+                 settings()->server.tmsPort);
+        tmsIpPort = ipPort;
+    }
+    RecColumn_t row3[] = {
+        {tmsIpPort, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_APP_UPDATE_SERVER), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
+
+    DEFINE_STRING(imei, 48);
+    OOP_CALL(cellular(), getImei, imei, sizeof(imei));
+    RecColumn_t row4[] = {{imei, LV_TEXT_ALIGN_LEFT, 1},
+                          {phraseGetDef(PHRASE_IMEI), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row4), ERR_OK, ;, ERR_NOK);
+}
+
 static int8_t buildCfgReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
-    DEFINE_STRING(txt, 256);
-    snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_GET_MERCHANT_DATA),
-             phraseGetDef(PHRASE_SUC_DONME));
-    RecColumn_t row[] = {
-        {txt, LV_TEXT_ALIGN_CENTER, 1},
-    };
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
-        , ERR_NOK);
+        receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
+        ;, ERR_NOK);
+    DEFINE_STRING(sn, 32);
+    OOP_CALL(sys(), getSN, sn, sizeof(sn));
     RecColumn_t row1[] = {
-        {"", LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_TERMINAL_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+        {sn, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_SERIAL), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
-    RecColumn_t row2[] = {
-        {"", LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_MERCHANT_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+
+    DEFINE_STRING(terminal, 64);
+    snprintf(terminal, sizeof(terminal), "%s:%s", phraseGetDef(PHRASE_TERMINAL),
+             settings()->terminal.terminalId);
+    DEFINE_STRING(merchant, 64);
+    snprintf(merchant, sizeof(merchant), "%s:%s", phraseGetDef(PHRASE_MERCHANT),
+             settings()->terminal.merchantId);
+    RecColumn_t row2[] = {{terminal, LV_TEXT_ALIGN_LEFT, 1},
+                          {merchant, LV_TEXT_ALIGN_RIGHT, 2}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
+
     RecColumn_t row3[] = {
-        {"", LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_MERCHANT_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+        {PNA_APP_VERSION, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_VERSION), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
+
+    RETURN_VALUE_IF_NOT(buildNetSpec(rec, data), ERR_OK, ;, ERR_NOK);
+
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -828,4 +944,8 @@ Result_t showDigitalRec(const TxnData* data) {
     LV_SHOW(digitalReceipt.root);
 }
 
-void hideDigitalRec() { LV_HIDE(digitalReceipt.root); }
+void hideDigitalRec() {
+    if ((digitalReceipt.root && lv_obj_is_valid(digitalReceipt.root))) {
+        LV_HIDE(digitalReceipt.root);
+    }
+}

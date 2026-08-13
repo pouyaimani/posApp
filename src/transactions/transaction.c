@@ -11,22 +11,50 @@ static Transaction* txns[LEN_MAX_SERVICE_NUM];
 static Transaction* parent;
 static TxnFlow      flow;
 
-static const char* TxnTypeStr[] = {
-    [TXN_PURCHASE] = "خرید",     [TXN_BILL] = "پرداخت قبض",
-    [TXN_TOPUP] = "شارژ مستقیم", [TXN_BALANCE] = "موجودی",
-    [TXN_PAY] = "پرداخت",        [TXN_VOUCHER] = "کد شارژ",
-    [TXN_ALL] = "همه تراکنش ها"};
-
 int8_t getTxnName(TxnType type, char* name, size_t size) {
     RETURN_VALUE_IF_NULL(name, ;, ERR_BAD_PARAMETER);
     if (type > TXN_ALL)
         return ERR_BAD_PARAMETER;
-    snprintf(name, size, "%s", TxnTypeStr[type]);
+    Phrases_t phrase;
+    switch (type) {
+    case TXN_PURCHASE:
+        phrase = PHRASE_TXN_PURCHASE;
+        break;
+    case TXN_BALANCE:
+        phrase = PHRASE_TXN_BALANCE;
+        break;
+
+    case TXN_BILL:
+        phrase = PHRASE_TXN_BILL;
+        break;
+
+    case TXN_PAY:
+        phrase = PHRASE_TXN_PAY;
+        break;
+
+    case TXN_TOPUP:
+        phrase = PHRASE_TXN_TOPUP;
+        break;
+
+    case TXN_VOUCHER:
+        phrase = PHRASE_TXN_VOUCHER;
+        break;
+
+    case TXN_CFG:
+        phrase = PHRASE_TXN_CFG;
+        break;
+
+    default:
+        break;
+    }
+    snprintf(name, size, "%s", phraseGetDef(phrase));
     return ERR_OK;
 }
 
 static void createTxns() {
     parent             = (Transaction*)MEM_ALLOC(sizeof(Transaction));
+    txns[TXN_LOGON]    = (Logon*)MEM_ALLOC(sizeof(Logon));
+    txns[TXN_CFG]      = (Config*)MEM_ALLOC(sizeof(Config));
     txns[TXN_PURCHASE] = (Purchase*)MEM_ALLOC(sizeof(Purchase));
     txns[TXN_BILL]     = (Bill*)MEM_ALLOC(sizeof(Bill));
     txns[TXN_BALANCE]  = (Balance*)MEM_ALLOC(sizeof(Balance));
@@ -36,6 +64,9 @@ static void createTxns() {
 
     OOP_CALL_CTOR(Transaction, parent, getState(STATE_ID_CARD_HOLDER),
                   "parent");
+    OOP_CALL_CTOR(Logon, txns[TXN_LOGON], parent,
+                  phraseGetDef(PHRASE_TXN_LOGON));
+    OOP_CALL_CTOR(Config, txns[TXN_CFG], parent, phraseGetDef(PHRASE_TXN_CFG));
     OOP_CALL_CTOR(Purchase, txns[TXN_PURCHASE], parent,
                   phraseGetDef(PHRASE_TXN_PURCHASE));
     OOP_CALL_CTOR(Bill, txns[TXN_BILL], parent, phraseGetDef(PHRASE_TXN_BILL));

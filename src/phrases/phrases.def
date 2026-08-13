@@ -8,6 +8,50 @@
  * 
  **********************************************************************/
 
+ /**********************************************************************
+ *
+ *                          Numbers
+ * 
+ **********************************************************************/
+X(PHRASE_ONE                    ,   "یک"                                  ,   "one"
+)
+X(PHRASE_TWO                    ,   "دو"                                  ,   "two"
+)
+X(PHRASE_THREE                  ,   "سه"                                  ,   "three"
+)
+X(PHRASE_FOUR                   ,   "چهار"                                ,   "four"
+)
+X(PHRASE_FIVE                   ,   "پنج"                                  ,   "five"
+)
+X(PHRASE_SIX                    ,   "شش"                                   ,   "six"
+)
+X(PHRASE_SEVEN                  ,   "هفت"                                  ,   "seven"
+)
+X(PHRASE_EIGHT                  ,   "هشت"                                  ,   "eight"
+)
+X(PHRASE_NINE                   ,   "نه"                                   ,   "nine"
+)
+X(PHRASE_FIRST_AMNT             ,   "مبلغ اول"                             ,   "first amount"
+)
+X(PHRASE_SEC_AMNT               ,   "مبلغ دوم"                             ,   "second amount"
+)
+X(PHRASE_THIRD_AMNT             ,   "مبلغ سوم"                             ,   "third amount"
+)
+X(PHRASE_FOURTH_AMNT            ,   "مبلغ چهارم"                           ,   "fourth amount"
+)
+X(PHRASE_FIFTH_AMNT             ,   "مبلغ پنجم"                            ,   "fifth amount"
+)
+X(PHRASE_SIXTH_AMNT             ,   "مبلغ ششم"                             ,   "sixth amount"
+)
+X(PHRASE_SEVENTH_AMNT           ,   "مبلغ هفتم"                            ,   "seventh amount"
+)
+X(PHRASE_EIGHTH_AMNT            ,   "مبلغ هشتم"                            ,   "eighth amount"
+)
+X(PHRASE_NINTH_AMNT             ,   "مبلغ نهم"                             ,   "ninth amount"
+)
+X(PHRASE_TENTH_AMNT             ,   "مبلغ دهم"                             ,   "tenth amount"
+)
+
 /**********************************************************************
  *
  *                  General Terms and Phrases
@@ -34,10 +78,6 @@ X(PHRASE_PLEASE                 ,   "please"                         ,   ""
 )
 X(PHRASE_INVALID_PORT           ,   "invalidPort"                    ,   ""
 )   
-X(PHRASE_WIFI                   ,   "وایفای"                         ,   "wifi" 
-)
-X(PHRASE_GPRS                   ,   "جی پی آر اس"                    ,   "gprs"
-)         
 X(PHRASE_ENABLE                 ,   "فعال"                           ,   "enable"
 )  
 X(PHRASE_DISABLE                ,   "غیر فعال"                      ,   "disable"
@@ -142,45 +182,7 @@ X(PHRASE_ENTER_SERV_ID          ,   "لطفا شناسه سرور را وارد 
 )
 X(PHRASE_SUC_DONME              ,   "با موفقیت انجام شد"                ,   "successfuly done"
 )
-X(PHRASE_ONE                    ,   "یک"                                  ,   "one"
-)
-X(PHRASE_TWO                    ,   "دو"                                  ,   "two"
-)
-X(PHRASE_THREE                  ,   "سه"                                  ,   "three"
-)
-X(PHRASE_FOUR                   ,   "چهار"                                ,   "four"
-)
-X(PHRASE_FIVE                   ,   "پنج"                                  ,   "five"
-)
-X(PHRASE_SIX                    ,   "شش"                                   ,   "six"
-)
-X(PHRASE_SEVEN                  ,   "هفت"                                  ,   "seven"
-)
-X(PHRASE_EIGHT                  ,   "هشت"                                  ,   "eight"
-)
-X(PHRASE_NINE                   ,   "نه"                                   ,   "nine"
-)
 X(PHRASE_AMNT_CEIL              ,   "سقف مبلغ"                             ,   "amount ceil"
-)
-X(PHRASE_FIRST_AMNT             ,   "مبلغ اول"                             ,   "first amount"
-)
-X(PHRASE_SEC_AMNT               ,   "مبلغ دوم"                             ,   "second amount"
-)
-X(PHRASE_THIRD_AMNT             ,   "مبلغ سوم"                             ,   "third amount"
-)
-X(PHRASE_FOURTH_AMNT            ,   "مبلغ چهارم"                           ,   "fourth amount"
-)
-X(PHRASE_FIFTH_AMNT             ,   "مبلغ پنجم"                            ,   "fifth amount"
-)
-X(PHRASE_SIXTH_AMNT             ,   "مبلغ ششم"                             ,   "sixth amount"
-)
-X(PHRASE_SEVENTH_AMNT           ,   "مبلغ هفتم"                            ,   "seventh amount"
-)
-X(PHRASE_EIGHTH_AMNT            ,   "مبلغ هشتم"                            ,   "eighth amount"
-)
-X(PHRASE_NINTH_AMNT             ,   "مبلغ نهم"                             ,   "ninth amount"
-)
-X(PHRASE_TENTH_AMNT             ,   "مبلغ دهم"                             ,   "tenth amount"
 )
 X(PHRASE_ENTER_COUNT            ,   "تعداد را وارد کنید"                  ,   "enter count"
 )
@@ -219,6 +221,8 @@ X(PHRASE_PARSE_ERROR           ,   "خطا در تفسیر داده دریافت
 X(PHRASE_DEV_IS_NOT_CONFIGURED ,   "دستگاه پیکربندی نشده است"                 , "device is not configured"
 )
 X(PHRASE_WAGE                  ,   "کارمزد"                                     ,   "wage"
+)
+X(PHRASE_IS_NOT_SET            ,   "تنظیم نشده است"                                     ,   "wage"
 )  
 
 /**********************************************************************
@@ -404,10 +408,6 @@ X(PHRASE_OPERATOR                       ,   "اپراتور"                    
 )
 X(PHRASE_REPORT                         ,   "گزارش"                         ,   "report"
 )
-X(PHRASE_KEY_INJ_SUCCEED                ,   "کلیدگذاری با موفقیت انجام شد"                  ,   "key injection is successfuly done"
-)
-X(PHRASE_KEY_INJ_FAILED                ,   "خطا در کلیدگذاری"              ,   "key injection is failed"
-)
 X(PHRASE_NONE                           ,   ""              ,   ""
 )
 X(PHRASE_ENTER_ENERGY_SAVER_RANGE      ,   "ورود بازه ذخیره انرژی"         ,   ""
@@ -417,6 +417,8 @@ X(PHRASE_ENTER_SLEEP_TIME_RANGE        ,   "ورود بازه خاموشی"     
 X(PHRASE_SEC_REC_TIME                  ,   "زمان رسید دوم"              ,   ""
 )
 X(PHRASE_PENDED_TXN_FAILURE            ,   "خطا در تسویه تراکنش تسویه نشده"              ,   ""
+)
+X(PHRASE_VERSION                       ,   "نسخه"              ,   ""
 )
 /**********************************************************************
  *
@@ -431,30 +433,33 @@ X(PHRASE_SUMMARY_REPORT                 ,   "گزارش تجمیعی"           
 )
 X(PHRASE_TRANACTION_DETAILS             ,   "ریز تراکنش ها"                  ,   "transaction with details"
 )
-X(PHRASE_TXN_PURCHASE                    ,   "خرید"                           ,   "purchase"
-)
-X(PHRASE_TXN_BALANCE                    ,   "موجودی"                         ,   "Balance"
-)
-X(PHRASE_TXN_BILL                       ,   "پرداخت قبض"                     ,   "Bill Payment"
-)
-X(PHRASE_TXN_PAY                        ,   "پرداخت"                         ,   "Paymeny"
-)
-X(PHRASE_TXN_TOPUP                      ,   "شارژ مستقیم"                    ,   "Top up"
-)
-X(PHRASE_TXN_VOUCHER                ,   "کد شارژ"                         ,   "Charge code"
-)
-X(PHRASE_TXN_ALL                        ,   "همه تراکنش ها"                   ,   "َall transactions"
-)
-X(PHRASE_TXN_SIM_CHARGE                 ,   "خرید شارژ"                       ,   "simcard charge"
-)
 X(PHRASE_DETAILED_REPORT                ,   "ریز تراکنش"                      ,   "detailed reports"
 )
 X(PHRASE_BASED_ON_REF_NUM               ,   "بر اساس مرجع"                     ,   "based on reference number"
 )
 X(PHRASE_BASED_ON_TRACE                 ,   "بر اساس پیگیری"                  ,   "based on trace"
 )
-X(PHRASE_REPRINT            ,   "چاپ مجدد"                      ,  "reprint"
+X(PHRASE_REPRINT                        ,   "چاپ مجدد"                      ,  "reprint"
 )
+
+/**********************************************************************
+ *
+ *                      Network Specifications
+ *
+ * 
+ **********************************************************************/
+X(PHRASE_NET_SPECS               ,   "مشخصات شبکه"       ,   "update app"
+)
+X(PHRASE_CONNECTION_TYPE         ,   "نوع ارتباط"       ,   "update app"
+)
+X(PHRASE_MAIN_SERVER             ,   "سرور شبکه"       ,   "update app"
+)
+X(PHRASE_APP_UPDATE_SERVER       ,   "سرور به روزرسانی"       ,   "update app"
+)
+X(PHRASE_WIFI                   ,   "وایفای"                         ,   "wifi" 
+)
+X(PHRASE_GPRS                   ,   "جی پی آر اس"                    ,   "gprs"
+)         
 
 /**********************************************************************
  *
@@ -485,8 +490,6 @@ X(PHRASE_TOUCH_STATUS       ,   "وضعیت صفحه لمسی"               ,  
 )
 X(PHRASE_DT_UPDATING        ,   "به روز رسانی زمان و تاریخ"     ,  "sync date time"
 )
-X(PHRASE_GET_KEY            ,   "دریافت کلید"                   ,  "get key"
-)
 X(PHRASE_GET_MERCHANT_DATA  ,   "دریافت اطلاعات پذیرنده"        ,  "get merchant info"
 )
 X(PHRASE_BY_CUSTOMER       ,   "(توسط مشتری)"                  ,  "get merchant info"
@@ -497,6 +500,59 @@ X(PHRASE_NO_SIM            ,   "عدم شناسایی سیم کارت"         ,
 )
 X(PHRASE_NKN_OPERATOR            ,   "عدم شناسایی اپراتور"         ,  "phone number"
 )
+
+/**********************************************************************
+ *
+ *                          Key management 
+ *          
+ * 
+ **********************************************************************/
+X(PHRASE_KEY_INJ_FAILED         ,           "خطا در کلیدگذاری"                      ,   "key injection is failed"
+)
+X(PHRASE_GET_KEY                ,           "دریافت کلید"                           ,  "get key"
+)
+X(PHRASE_KEY_INJ_SUCCEED        ,           "کلیدگذاری با موفقیت انجام شد"         ,   "key injection is successfuly done"
+)
+X(PHRASE_KEYS_KCV               ,           "kcv کلیدها"                            ,  "get key"
+)
+X(PHRASE_KEY_MASTER             ,           "کلید مستر"                             ,  "get key"
+)
+X(PHRASE_KEY_MAC                ,           "کلید مک"                               ,  "get key"
+)
+X(PHRASE_KEY_DATA               ,           "کلید دیتا"                             ,  "get key"
+)
+X(PHRASE_KEY_PIN                ,           "کلید پین"                              ,  "get key"
+)
+X(PHRASE_KEY_INJECTION          ,           "کلیدگذاری"                             ,   "key injection"
+)
+
+/**********************************************************************
+ *
+ *                          Transactions name 
+ *          
+ * 
+ **********************************************************************/
+X(PHRASE_TXN_PURCHASE           ,   "خرید"                           ,   "purchase"
+)
+X(PHRASE_TXN_BALANCE            ,   "موجودی"                         ,   "Balance"
+)
+X(PHRASE_TXN_BILL               ,   "پرداخت قبض"                     ,   "Bill Payment"
+)
+X(PHRASE_TXN_PAY                ,   "پرداخت"                         ,   "Paymeny"
+)
+X(PHRASE_TXN_TOPUP              ,   "شارژ مستقیم"                    ,   "Top up"
+)
+X(PHRASE_TXN_VOUCHER            ,   "کد شارژ"                         ,   "Charge code"
+)
+X(PHRASE_TXN_ALL                ,   "همه تراکنش ها"                   ,   "َall transactions"
+)
+X(PHRASE_TXN_SIM_CHARGE         ,   "خرید شارژ"                       ,   "simcard charge"
+)
+X(PHRASE_TXN_CFG                ,   "اطلاعات پذيرنده"                       ,   "simcard charge"
+)
+X(PHRASE_TXN_LOGON              ,   "دریافت کلید"                      ,   "simcard charge"
+)
+
 /**********************************************************************
  *
  *                   Miscellaneous/Other Settings & Labels
@@ -507,8 +563,6 @@ X(PHRASE_NKN_OPERATOR            ,   "عدم شناسایی اپراتور"     
 X(PHRASE_SPECIAL_PROJECTS   ,    "specialProjects"  ,   ""
 )
 X(PHRASE_SSL                ,    "ssl"              ,   "ssl"
-)
-X(PHRASE_KEY_INJECTION      ,    "کلیدگذاری"        ,   "key injection"
 )
 X(PHRASE_CONFIGURATION      ,    "پیکربندی"         ,   "configuration"
 )

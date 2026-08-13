@@ -7,6 +7,7 @@
 #include "common.h"
 #include "byteArray.h"
 #include "txn.h"
+#include "txnflow/txnFLow.h"
 
 typedef enum StateId_t {
     STATE_ID_START_UP,
@@ -143,15 +144,6 @@ OOP_CTOR(Dialogue, State* parent, const char* name);
     dial->setBody(body);                                                       \
     SM_GOTO(getState(STATE_ID_DIALOGUE));
 
-/************************Supporter***********************/
-
-OOP_CLASS(Supporter) { OOP_EXTENDS(State); };
-
-OOP_CTOR(Supporter, State* parent, const char* name);
-
-#define STATE_SUPPORTER  getState(STATE_ID_SUPPORTER)
-#define GOTO_SUPPORTER() SM_GOTO(STATE_SUPPORTER)
-
 /************************ Menu ***********************/
 typedef struct Menu Menu;
 
@@ -174,67 +166,29 @@ OOP_CTOR(FixedAmount, State* parent, const char* name);
 
 OOP_CLASS(TxnResult) {
     OOP_EXTENDS(State);
-    TxnData data;
+    TxnData        data;
+    TxnFlowConfig* txnCfg;
+    TxnFlowStatus* st;
+    State*         onSuccess;
+    State*         onFailure;
 };
 
 OOP_CTOR(TxnResult, State* parent, const char* name);
 
 #define STATE_TXN_RES getState(STATE_ID_TXN_RES)
 
-/*************************** Network ***********************/
-
-typedef struct {
-    State*        onSucess;
-    State*        onFailure;
-    ErrCallBack_t onSucessCb;
-    ErrCallBack_t onFailureCb;
-    void*         userDataOnSucess;
-    void*         userDataOnFailure;
-} NetSubTaskCtx_t;
-
-/*************************** Network connect ***********************/
-
-OOP_CLASS(NetConnect) {
-    OOP_EXTENDS(State);
-    NetSubTaskCtx_t ctx;
-};
-
-OOP_CTOR(NetConnect, State* parent, const char* name);
-
-#define STATE_NET_CONNECT getState(STATE_ID_NET_CONNECT)
-
-/*************************** Network send ***********************/
-
-OOP_CLASS(NetSend) {
-    OOP_EXTENDS(State);
-    NetSubTaskCtx_t ctx;
-    ByteArray       data;
-};
-
-OOP_CTOR(NetSend, State* parent, const char* name);
-
-#define STATE_NET_SEND getState(STATE_ID_NET_SEND)
-
-/*************************** Network receive ***********************/
-
-OOP_CLASS(NetReceive) {
-    OOP_EXTENDS(State);
-    NetSubTaskCtx_t ctx;
-    ByteArray       data;
-};
-
-OOP_CTOR(NetReceive, State* parent, const char* name);
-
-#define STATE_NET_RECEIVE getState(STATE_ID_NET_RECEIVE)
-
 // Helper functions
+
+#define STATE_SUPPORTER  getState(STATE_ID_SUPPORTER)
+#define GOTO_SUPPORTER() SM_GOTO(STATE_SUPPORTER)
 
 void GOTO_INPUT(State* prev, State* next, const char* title, const char* body,
                 int max, InputMode_t mode, char* out);
 void GOTO_INFO(State* prev, State* next, uint8_t type, const char* title,
                const char* body);
 void GOTO_MENU(State* prev, Menu* amenu, CallBack_t _onExit, void* userData);
-void GOTO_TXN_RES(State* prev, State* next, TxnData* data);
+void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
+                  State* onSuccess, State* onFailure);
 void GOTO_NET_CONNNECT();
 void GOTO_NET_SEND();
 void GOTO_NET_RECEIVE();

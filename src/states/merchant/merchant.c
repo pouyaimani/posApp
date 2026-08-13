@@ -259,5 +259,11 @@ OOP_CTOR(Merchant, State* parent, const char* name) {
     OOP_CALL_CTOR(MerchantData, subStates[SUBS_MERCHANT_DATA], merchantMenu,
                   "merchant data");
 
+    self->subState.connection    = subStates[SUBS_CONNECTIONS];
+    self->subState.settings      = subStates[SUBS_SETTINGS];
+    self->subState.reports       = subStates[SUBS_REPORTS];
+    self->subState.shifts        = subStates[SUBS_SHIFT];
+    self->subState.otherProjects = subStates[SUBS_OTHER_PROJECTS];
+
     menu = MEM_ALLOC(sizeof(*menu));
 }

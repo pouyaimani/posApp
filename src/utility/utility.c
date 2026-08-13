@@ -9,6 +9,8 @@
 #include "phrases/phrases.h"
 #include <inttypes.h>
 #include "len.h"
+#include "settings/settings.h"
+#include "network/network.h"
 
 /**
  * @brief Copy only numeric characters from source string.
@@ -833,3 +835,45 @@ void normalizeSsid(char* in, char* out) {
     }
     out[j] = '\0';
 }
+
+void getSimOpName(SimCardOp_t op, char* out, size_t size) {
+    Phrases_t phrase;
+    switch (op) {
+    case 11:
+        phrase = PHRASE_SIM_OP_MCI;
+        break;
+    case 35:
+        phrase = PHRASE_SIM_OP_MTN;
+        break;
+    case 20:
+        phrase = PHRASE_SIM_OP_RIGHTEL;
+        break;
+    case 8:
+        phrase = PHRASE_SIM_OP_RIGHTEL;
+        // LV_SET_TEXT(operator, "STL");
+        break;
+    default:
+        phrase = PHRASE_NKN_OPERATOR;
+    }
+    memset(out, 0, size);
+    snprintf(out, size, "%s", phraseGetDef(phrase));
+}
+
+void getCurrentNetRouteName(char* out, size_t size) {
+    Phrases_t phrase;
+    switch (settings()->terminal.netRoute) {
+    case NET_ROUTE_WIFI:
+        phrase = PHRASE_WIFI;
+        break;
+    case NET_ROUTE_CELLULAR:
+        phrase = PHRASE_GPRS;
+        break;
+
+    default:
+        break;
+    }
+    memset(out, 0, size);
+    snprintf(out, size, "%s", phraseGetDef(phrase));
+}
+
+bool isStringEmpty(const char* str) { return str == NULL || str[0] == '\0'; }

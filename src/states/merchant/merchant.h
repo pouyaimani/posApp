@@ -1,9 +1,8 @@
+#ifndef MERCHANT_H_
+#define MERCHANT_H_
+
 #include "core/stateMachine/state.h"
 #include <stdbool.h>
-
-OOP_CLASS(Merchant) { OOP_EXTENDS(State); };
-
-OOP_CTOR(Merchant, State* parent, const char* name);
 
 OOP_CLASS(Connections) { OOP_EXTENDS(State); };
 
@@ -36,3 +35,20 @@ typedef enum {
 OOP_CLASS(MerchantData) { OOP_EXTENDS(State); };
 
 OOP_CTOR(MerchantData, State* parent, const char* name);
+
+OOP_CLASS(MerchantSubStates) {
+    Connections*   connection;
+    Settings*      settings;
+    Reports*       reports;
+    Shift*         shifts;
+    OtherProjects* otherProjects;
+};
+
+OOP_CLASS(Merchant) {
+    OOP_EXTENDS(State);
+    MerchantSubStates subState;
+};
+
+OOP_CTOR(Merchant, State* parent, const char* name);
+
+#endif

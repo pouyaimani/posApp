@@ -72,30 +72,9 @@ void showReceiving(TxnFlow* f) {
 
 void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
                 State* onFail, bool showSucMsg) {
-    State* state = flow->owner;
     LOG_DEBUG("transaction result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
-        if (!showSucMsg) {
-            HIDE_INFO();
-            return;
-        }
-        DEFINE_STRING(dsc, 128);
-        if (st->code != 0) {
-            getResponseCode(st->code, dsc, sizeof(dsc));
-        }
-        if (st->code == 0) {
-            GOTO_INFO(onSuc, onSuc, INFO_SUCCESS,
-                      phraseGetDef(PHRASE_SUC_DONME), dsc);
-        } else {
-            GOTO_INFO(onFail, onFail, INFO_ERROR,
-                      phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
-        }
-        GOTO_INFO(st->code == 0 ? onSuc : onFail,
-                  st->code == 0 ? onSuc : onFail,
-                  st->code == 0 ? INFO_SUCCESS : INFO_ERROR,
-                  phraseGetDef(st->code == 0 ? PHRASE_SUC_DONME
-                                             : PHRASE_UNSUCCESSFUL_OPERATION),
-                  dsc);
+        GOTO_TXN_RES(flow->cfg, &flow->data, st, onSuc, onFail);
         return;
     }
 
@@ -124,7 +103,4 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
 
 void financeTxnDone(TxnFlow* flow, const TxnFlowStatus* st) {
     commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-    if (st->result == TXN_FLOW_SUCCESS) {
-        GOTO_TXN_RES(STATE_IDLE, STATE_IDLE, &flow->data);
-    }
 }

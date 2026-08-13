@@ -19,19 +19,19 @@ static void constructT3Rtos() {
 #endif
 
 static PedErr_t injectMasterKey(uint8_t* key, size_t len) {
-    return OOP_CALL(__ped, injectKey, PED_MASTER_KEY, key, len);
+    return OOP_CALL(__ped, injectKey, PED_KEY_MASTER, key, len);
 }
 
 static PedErr_t injectDataKey(uint8_t* key, size_t len) {
-    return OOP_CALL(__ped, injectKey, PED_DATA_KEY, key, len);
+    return OOP_CALL(__ped, injectKey, PED_KEY_DATA, key, len);
 }
 
 static PedErr_t injectPinKey(uint8_t* key, size_t len) {
-    return OOP_CALL(__ped, injectKey, PED_PIN_KEY, key, len);
+    return OOP_CALL(__ped, injectKey, PED_KEY_PIN, key, len);
 }
 
 static PedErr_t injectMacKey(uint8_t* key, size_t len) {
-    return OOP_CALL(__ped, injectKey, PED_MAC_KEY, key, len);
+    return OOP_CALL(__ped, injectKey, PED_KEY_MAC, key, len);
 }
 
 PedErr_t getMac(size_t keyLen, uint8_t* in, size_t inLen, void* out) {

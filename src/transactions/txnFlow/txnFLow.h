@@ -93,6 +93,8 @@ typedef struct {
 
     bool needSettlement;
 
+    bool digitalReceipt;
+
 } TxnFlowConfig;
 
 /* ================= Runtime ================= */

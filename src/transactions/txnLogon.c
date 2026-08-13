@@ -3,6 +3,9 @@
 #include "sys/sys.h"
 #include "iso/iso8583.h"
 #include "txnCommon.h"
+#include "transaction.h"
+
+static TxnFlow* gflow;
 
 static void logOnDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
@@ -36,4 +39,19 @@ const TxnFlowConfig logOnTxn = {
 
     .compose = NULL,
 
-    .done = logOnDone};
+    .done = logOnDone,
+
+    .digitalReceipt = false};
+
+STATE_DEF_ENTER(Logon) {
+    DEFINE_STRING(ip, 32);
+    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+    txnRun(gflow, state, ip, settings()->server.mainServerPort, &logOnTxn);
+}
+
+OOP_CTOR(Logon, State* parent, const char* name) {
+    OOP_CALL_CTOR(Transaction, self, parent, name);
+    self->base.state.vtable.enter = STATE_ENTER(Logon);
+
+    gflow = self->base.flow;
+}

@@ -109,24 +109,7 @@ static void getOperatorDsc(char* op, size_t size) {
     memcpy(opt, &simInfo.imsi[3], 2);
     uint8_t opType;
     STRING_TO_U16(opt, &opType);
-    switch (opType) {
-    case 11:
-        phrase = PHRASE_SIM_OP_MCI;
-        break;
-    case 35:
-        phrase = PHRASE_SIM_OP_MTN;
-        break;
-    case 20:
-        phrase = PHRASE_SIM_OP_RIGHTEL;
-        break;
-    case 8:
-        phrase = PHRASE_SIM_OP_RIGHTEL;
-        // LV_SET_TEXT(operator, "STL");
-        break;
-    default:
-        phrase = PHRASE_NKN_OPERATOR;
-    }
-    snprintf(op, size, "%s", phraseGetDef(phrase));
+    getSimOpName(opType, op, size);
 }
 
 lv_obj_t* menu;

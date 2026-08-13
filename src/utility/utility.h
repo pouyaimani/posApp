@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "convert.h"
 #include "format.h"
+#include "txn.h"
 
 typedef enum {
     BILL_PUBLIC_SERVICE = 0,
@@ -364,5 +365,11 @@ bool isBillIdValid(const char* billId);
 bool isBillValid(const char* billId, const char* paymentId);
 
 void normalizeSsid(char* in, char* out);
+
+void getSimOpName(SimCardOp_t op, char* out, size_t size);
+
+void getCurrentNetRouteName(char* out, size_t size);
+
+bool isStringEmpty(const char* str);
 
 #endif

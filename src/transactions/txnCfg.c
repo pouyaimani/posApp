@@ -2,12 +2,19 @@
 #include "settings/settings.h"
 #include "iso/iso8583.h"
 #include "txnCommon.h"
+#include "transaction.h"
+#include "supporter.h"
+#include "states.h"
+
+static TxnFlow* gflow;
 
 static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
         settings()->save();
     }
-    commonDone(flow, st, flow->owner->parent, flow->owner->parent, true);
+    Supporter* state = (Supporter*)STATE_SUPPORTER;
+    commonDone(flow, st, state->substate.supervisor->substate.configuration,
+               state->substate.supervisor->substate.configuration, true);
 }
 
 static const uint8_t isoFeilds[] = {
@@ -36,4 +43,18 @@ const TxnFlowConfig cfgTxn = {
     .compose = NULL,
 
     .done = cfgDone,
-};
+
+    .digitalReceipt = false};
+
+STATE_DEF_ENTER(Config) {
+    DEFINE_STRING(ip, 32);
+    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+    txnRun(gflow, state, ip, settings()->server.mainServerPort, &cfgTxn);
+}
+
+OOP_CTOR(Config, State* parent, const char* name) {
+    OOP_CALL_CTOR(Transaction, self, parent, name);
+    self->base.state.vtable.enter = STATE_ENTER(Config);
+
+    gflow = self->base.flow;
+}

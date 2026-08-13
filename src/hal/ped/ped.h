@@ -11,10 +11,10 @@
 #define PED_PIN_ENTRY_TIME_OUT SECS(10)
 
 typedef enum PedKeyType_t {
-    PED_MASTER_KEY,
-    PED_PIN_KEY,
-    PED_DATA_KEY,
-    PED_MAC_KEY
+    PED_KEY_MASTER,
+    PED_KEY_PIN,
+    PED_KEY_DATA,
+    PED_KEY_MAC
 } PedKeyType_t;
 
 typedef enum PedKeyEv_t {
@@ -37,6 +37,7 @@ OOP_VTABLE(Ped) {
                 uint8_t* out);
     OOP_IMETHOD(PedErr_t, Ped, encryptAccountData, void* buffer, int bufLen,
                 void* decryptedData);
+    OOP_IMETHOD(PedErr_t, Ped, getKcv, PedKeyType_t, char*, size_t);
     OOP_IMETHOD(PedKeyEv_t, Ped, poll);
 };
 

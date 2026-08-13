@@ -31,6 +31,6 @@ void financeTxnDone(TxnFlow* flow, const TxnFlowStatus* st);
 #define TXN_FLOW_COMMON                                                        \
     .build = buildCommon, .parse = parseCommon,                                \
     .onConnecting = showConnecting, .onSending = showSending,                  \
-    .onReceiving = showReceiving
+    .onReceiving = showReceiving, .digitalReceipt = true
 
 #endif

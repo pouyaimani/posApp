@@ -456,6 +456,14 @@ OOP_CTOR(Supervisor, State* parent, const char* name) {
     OOP_CALL_CTOR(DefaultSettings, subStates[SUBS_DEFAULT_SETTINGS],
                   supervisorMenu, "default settings");
 
+    self->substate.networkSettings   = subStates[SUBS_NET_SETTINGS];
+    self->substate.KeyInjection      = subStates[SUBS_KEY_INJECTION];
+    self->substate.configuration     = subStates[SUBS_CONFIGURATION];
+    self->substate.FARA              = subStates[SUBS_FARA];
+    self->substate.merchantPassReset = subStates[SUBS_MERCHANT_PASS_RESET];
+    self->substate.updateApp         = subStates[SUBS_UPDATE_APP];
+    self->substate.DefaultSettings   = subStates[SUBS_DEFAULT_SETTINGS];
+
     sslMenu       = MEM_ALLOC(sizeof(*sslMenu));
     serverSetMenu = MEM_ALLOC(sizeof(*serverSetMenu));
     menu          = MEM_ALLOC(sizeof(*menu));

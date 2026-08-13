@@ -124,13 +124,17 @@ IsoStatus_t getBin(uint16_t field, void* out, size_t* len) {
 
 void dump(const DL_ISO8583_HANDLER* iHandler, const DL_ISO8583_MSG* iMsg) {
     DL_UINT16 i;
-    char      line[256];
+    char      line[512];
 
     LOG_DEBUG("--------------- ISO8583 MSG DUMP ---------------");
-
-    for (i = 0; i < iHandler->fieldItems; i++) {
+    LOG_DEBUG("--------------- Fields count  = %d ---------------",
+              iHandler->fieldItems);
+    uint16_t fieldCnt = iHandler->fieldItems;
+    for (i = 0; i < fieldCnt; i++) {
         if (iMsg->field[i].ptr != NULL) {
-            snprintf(line, sizeof(line), "[%03d] %s", (int)i,
+            RESET_STRING(line);
+            snprintf(line, sizeof(line), "[%03d] [%03d] %.*s", (int)i,
+                     (int)iMsg->field[i].len, (int)iMsg->field[i].len,
                      iMsg->field[i].ptr);
 
             LOG_DEBUG(line);
@@ -238,7 +242,6 @@ IsoStatus_t parse(const uint8_t* data, size_t len) {
 
     uint8_t* ptr  = NULL;
     uint16_t flen = 0;
-
     if (DL_ISO8583_MSG_GetField_Str(0, &self->msg, &ptr) == 0) {
 
         memcpy(self->mti, ptr, 4);
