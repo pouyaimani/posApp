@@ -10,6 +10,7 @@
 enum {
     TAG_MERCHANT_NAME      = 31,
     TAG_MERCHANT_PHONE     = 34,
+    TAG_VOUCHER_SERIAL     = 40,
     TAG_VOUCHER_PIN        = 41,
     TAG_SWITCH_DATETIME    = 50,
     TAG_FORCE_TMS          = 94,
@@ -88,7 +89,13 @@ static void handleSwitchDateTime(LtvStructInfo* tag) {
     LOG_DEBUG("dtSetSystemDateTime(%s) -> %d", tempBuf, ret);
 }
 
-static void handleVoucherPin(LtvStructInfo* tag) {
+static void handleVoucherSerial(LtvStructInfo* tag, TxnData* txn) {
+    hexStringToBytes(tag->data, tag->len - 1,
+                     txn->extention.charge.chargeSerial);
+    LOG_DEBUG("charge serial = %s", txn->extention.charge.chargeSerial);
+}
+
+static void handleVoucherPin(LtvStructInfo* tag, TxnData* txn) {
     char          temp[128] = {0};
     int           pinLen    = 0;
     unsigned char pinTemp[64];
@@ -97,19 +104,15 @@ static void handleVoucherPin(LtvStructInfo* tag) {
     unsigned int  outLen = 0;
     strcpy(temp, tag->data);
     pinLen = strlen(temp) / 2;
-    LOG_DEBUG("parseVoucherTransactionSIPA::temp[%s]pinLen[%d]", temp, pinLen);
     memset(pinTemp, 0x00, sizeof(pinTemp));
     memset(pinBytes, 0x00, sizeof(pinBytes));
     memset(pinData, 0x00, sizeof(pinData));
     hexStringToBytes(temp, pinLen, pinTemp); // Pin
     pinLen /= 2;
     hex2data(pinBytes, pinTemp, pinLen);
-    LOG_DEBUG("parseVoucherTransactionSIPA::pinLen[%d]", pinLen);
     pedDecrypt(pinBytes, 16, pinData);
-    // TODO
-    // strcpy(currentTransaction.sqlTrx.PaymentId, (const char *)pinData);
-    // TraceExt(pinTemp, 16, "VoucherPin [%s]",
-    // currentTransaction.sqlTrx.PaymentId);
+    strcpy(txn->extention.charge.chargePin, (const char*)pinData);
+    LOG_DEBUG("charge pin = %s", pinData);
 }
 
 static void handleMerchantUniqueId(LtvStructInfo* tag) {
@@ -121,7 +124,7 @@ static void handleMerchantUniqueId(LtvStructInfo* tag) {
               settings()->terminal.merchantUniqueId);
 }
 
-void decodeMerchantDesc(char* buffer) {
+void decodeMerchantDesc(char* buffer, TxnData* txn) {
     LtvStructInfo tags[15] = {0};
 
     int count = unpackLtv(buffer, tags);
@@ -143,9 +146,10 @@ void decodeMerchantDesc(char* buffer) {
         case TAG_SWITCH_DATETIME:
             handleSwitchDateTime(&tags[i]);
             break;
-
+        case TAG_VOUCHER_SERIAL:
+            handleVoucherSerial(&tags[i], txn);
         case TAG_VOUCHER_PIN:
-            handleVoucherPin(&tags[i]);
+            handleVoucherPin(&tags[i], txn);
             break;
 
         case TAG_FORCE_TMS:
@@ -304,7 +308,8 @@ static int8_t setBit42(TxnData* data) {
 static int8_t buildChargeF48(TxnData* data, const char* sn, char* privateData) {
     DEFINE_STRING(code, 32);
     DEFINE_STRING(opCode, 4);
-    U16_TO_STRING((uint16_t*)&data->extention.charge.op, opCode);
+    uint16_t op = data->extention.charge.op;
+    U16_TO_STRING((uint16_t*)&op, opCode);
     if (data->core.processCode == PRC_VOUCHER) {
         uint64_t amount = data->core.amount;
         int      count  = 0;
@@ -320,6 +325,7 @@ static int8_t buildChargeF48(TxnData* data, const char* sn, char* privateData) {
         setVoucherLtv(sn, PNA_APP_VERSION, 0 /*language*/, code, privateData);
     } else if (data->core.processCode == PRC_TOPUP) {
         sprintf(code, "%s0", opCode);
+        LOG_TRACE("Phone number = %s", data->extention.charge.phoneNumber);
         setTopupLtv(sn, PNA_APP_VERSION, 0 /*language*/, code,
                     data->extention.charge.phoneNumber, privateData);
     }
@@ -381,7 +387,7 @@ static int8_t setBit53(TxnData* data) {
 static int8_t getBit48(TxnData* data) {
     DEFINE_STRING(feild, 1028);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
-    decodeMerchantDesc(feild);
+    decodeMerchantDesc(feild, data);
     return ERR_OK;
 }
 

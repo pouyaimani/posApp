@@ -122,7 +122,7 @@ static Error_t isoParseLogOnResponse(TxnData* txn, ByteArray* buf) {
 #endif
     DEFINE_STRING(feild, 1028);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
-    decodeMerchantDesc(feild);
+    decodeMerchantDesc(feild, txn);
     memset(feild, 0, sizeof(feild));
     iso8583()->getStr(ELEMENT_TERMINAL_ID, feild);
     size_t terminalNumSize = sizeof(settings()->terminal.terminalId);
@@ -155,7 +155,7 @@ static Error_t isoParseCfgResponse(TxnData* txn, ByteArray* buf) {
     LOG_TRACE("Merchant Id = %s", settings()->terminal.merchantId);
     RESET_STRING(feild);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
-    decodeMerchantDesc(feild);
+    decodeMerchantDesc(feild, txn);
     // compareMac(TAK_INDEX, buf);
     settings()->terminal.isCfgDone = true;
     return ERR_OK;
@@ -163,16 +163,12 @@ static Error_t isoParseCfgResponse(TxnData* txn, ByteArray* buf) {
 
 static Error_t isoParseDefault(TxnData* txn, ByteArray* buf) { return ERR_OK; }
 
-static Error_t isoParsePurchaseResponse(TxnData* txn, ByteArray* buf) {
-    return ERR_OK;
-}
-
 static Error_t isoParseBillResponse(TxnData* txn, ByteArray* buf) {}
 
 static Error_t isoParseBalanceResponse(TxnData* txn, ByteArray* buf) {
     DEFINE_STRING(feild, 1028);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
-    decodeMerchantDesc(feild);
+    decodeMerchantDesc(feild, txn);
     RESET_STRING(feild);
     DEFINE_STRING(available, 16);
     DEFINE_STRING(ledger, 16);
@@ -193,6 +189,13 @@ static Error_t isoParseBalanceResponse(TxnData* txn, ByteArray* buf) {
 }
 
 static Error_t isoParsePayResponse(TxnData* txn, ByteArray* buf) {}
+
+static Error_t isoParseVoucherResponse(TxnData* txn, ByteArray* buf) {
+    DEFINE_STRING(feild, 1028);
+    iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
+    decodeMerchantDesc(feild, txn);
+    return ERR_OK;
+}
 
 /*********************************************************************************************
  *                                                                                           *
@@ -267,7 +270,7 @@ static const IsoTransaction templates[] = {
     {.mti     = MTI_FIN_REQ,
      .prcode  = PRC_PURCHASE,
      .builder = NULL,
-     .parser  = isoParsePurchaseResponse},
+     .parser  = isoParseDefault},
     /******************************************************************/
     /*Bill Payment*/
     /******************************************************************/
@@ -275,6 +278,20 @@ static const IsoTransaction templates[] = {
      .prcode  = PRC_BILL_PAYMENT,
      .builder = NULL,
      .parser  = isoParseBillResponse},
+    /******************************************************************/
+    /*Topup*/
+    /******************************************************************/
+    {.mti     = MTI_FIN_REQ,
+     .prcode  = PRC_TOPUP,
+     .builder = NULL,
+     .parser  = isoParseDefault},
+    /******************************************************************/
+    /*Voucher*/
+    /******************************************************************/
+    {.mti     = MTI_FIN_REQ,
+     .prcode  = PRC_VOUCHER,
+     .builder = NULL,
+     .parser  = isoParseVoucherResponse},
     /******************************************************************/
     /*Balance Inquiry*/
     /******************************************************************/

@@ -420,6 +420,8 @@ X(PHRASE_PENDED_TXN_FAILURE            ,   "خطا در تسویه تراکنش 
 )
 X(PHRASE_VERSION                       ,   "نسخه"              ,   ""
 )
+X(PHRASE_ENTER_CHARGE_AMNT             ,   "ورود مبلغ دلخواه"              ,   ""
+)
 /**********************************************************************
  *
  *                  Report and Transaction Types

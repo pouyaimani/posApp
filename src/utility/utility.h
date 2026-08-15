@@ -372,4 +372,6 @@ void getCurrentNetRouteName(char* out, size_t size);
 
 bool isStringEmpty(const char* str);
 
+int maskPhoneNumber(const char* phone, char* output, size_t outputSize);
+
 #endif

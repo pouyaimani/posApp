@@ -139,22 +139,30 @@ static int8_t receiptSectionAmount(Receipt* rec, const uint64_t* amount) {
 }
 
 static int8_t receiptSectionFailure(Receipt* rec, uint16_t respCode) {
+    DEFINE_STRING(failure, 128);
+    snprintf(failure, sizeof(failure), "*** %s ***",
+             phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION));
+    RecColumn_t row[] = {{failure, LV_TEXT_ALIGN_CENTER, 1}};
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addText, REC_FONT_BOLD, 1, row), ERR_OK, ;
+                        , ERR_NOK);
     DEFINE_STRING(dsc, 128);
     getResponseCode(respCode, dsc, sizeof(dsc));
     DEFINE_STRING(fdsc, 128);
     snprintf(fdsc, sizeof(fdsc), "%s (%d)", dsc, respCode);
-    RecColumn_t row[] = {{fdsc, LV_TEXT_ALIGN_CENTER, 1}};
-    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 1, row),
-                        ERR_OK,
-                        ;, ERR_NOK);
+    RecColumn_t row1[] = {{fdsc, LV_TEXT_ALIGN_CENTER, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 1, row1), ERR_OK, ;
+        , ERR_NOK);
 }
 
 static int8_t receiptSectionOperatorPhone(Receipt* rec, const char* phone,
                                           SimCardOp_t op) {
     DEFINE_STRING(opDsc, 32);
+    DEFINE_STRING(maskedPhone, 32);
     getSimOpName(op, opDsc, sizeof(opDsc));
-    RecColumn_t row[] = {{opDsc, LV_TEXT_ALIGN_LEFT, 1},
-                         {phone, LV_TEXT_ALIGN_RIGHT, 1}};
+    maskPhoneNumber(phone, maskedPhone, sizeof(maskedPhone));
+    RecColumn_t row[] = {{maskedPhone, LV_TEXT_ALIGN_LEFT, 1},
+                         {opDsc, LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 }
@@ -195,8 +203,12 @@ static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
         , ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
-                        , ERR_NOK);
+    if (data->txn.core.respCode != RESP_CODE_SUCESS) {
+        receiptSectionFailure(rec, data->txn.core.respCode);
+    } else {
+        RETURN_VALUE_IF_NOT(
+            receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;, ERR_NOK);
+    }
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -229,8 +241,12 @@ static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
                                     txn->extention.charge.op),
         ERR_OK,
         ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
-                        , ERR_NOK);
+    if (data->txn.core.respCode != RESP_CODE_SUCESS) {
+        receiptSectionFailure(rec, data->txn.core.respCode);
+    } else {
+        RETURN_VALUE_IF_NOT(
+            receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;, ERR_NOK);
+    }
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -279,8 +295,12 @@ static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
         , ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;
-                        , ERR_NOK);
+    if (data->txn.core.respCode != RESP_CODE_SUCESS) {
+        receiptSectionFailure(rec, data->txn.core.respCode);
+    } else {
+        RETURN_VALUE_IF_NOT(
+            receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;, ERR_NOK);
+    }
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }

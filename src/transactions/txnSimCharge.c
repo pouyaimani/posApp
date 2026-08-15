@@ -7,6 +7,7 @@
 #include "phrases/phrases.h"
 #include "input/inputMgr.h"
 #include "txnCommon.h"
+#include "utility/convert.h"
 
 /******************************************************************
  *                           Substates
@@ -14,6 +15,7 @@
 
 static SubState* selectOperator;
 static SubState* selectAmount;
+static SubState* enterAmount;
 static SubState* enterPhone;
 static SubState* enterPass;
 static SubState* communication;
@@ -40,6 +42,7 @@ static char phoneNum[LEN_MAX_PHONE_NUMBER + 1];
 
 void setOperator(void* arg) {
     int idx = *(((int*)arg));
+    LOG_DEBUG("setOperator(): idx = %d", idx);
     switch (idx) {
     case 0:
         selectedOp = OPERATOR_MCI;
@@ -78,13 +81,35 @@ static void SelectOperator(State* parent) {
  *                   Select amount sub state
  ******************************************************************/
 
+/******************************************************************
+ *                Enter amount sub state
+ ******************************************************************/
+
+static desiredAmnt[LEN_MAX_AMOUNT + 1];
+
+STATE_DEF_ENTER(EnterAmount) {
+    memset(desiredAmnt, 0, sizeof(desiredAmnt));
+    inmgr()->run(
+        &(InputCfg){
+            .mode   = INMD_ENTER_AMOUNT,
+            .title  = phraseGetDef(PHRASE_AMOUNT),
+            .info   = phraseGetDef(PHRASE_TO_RIAL_1),
+            .maxLen = LEN_MAX_AMOUNT,
+        },
+        STATE_IDLE, txn == TXN_VOUCHER ? enterPass : enterPhone);
+    inmgr()->setOut(desiredAmnt, NULL, sizeof(desiredAmnt));
+}
+
+static void EnterAmount(State* parent) {
+    enterAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
+    OOP_CALL_CTOR(State, enterAmount, parent, "enter operator");
+    enterAmount->vtable.enter = STATE_ENTER(EnterAmount);
+}
+
 static const uint64_t amnt[] = {
-    20000,  // 0
-    50000,  // 1
-    100000, // 2
-    200000, // 3
-    500000, // 4
-    1000000 // 5
+    200000, // 0
+    500000, // 1
+    1000000 // 2
 };
 
 static uint64_t selectedAmnt;
@@ -94,63 +119,22 @@ static void setAmnt(void* arg) {
     SM_GOTO(txn == TXN_VOUCHER ? enterPass : enterPhone);
 }
 
-void setMtnChargeAmnt() {
-    // 5-10-20-50-100
-    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[4]);
-    ui_menu_addItem(&amntSelectionMenu, "1,000,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[5]);
-}
-
-void setMciChargeAmnt() {
+void setChargeAmnt() {
     // 5-10-20-50
-    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[2]);
     ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[3]);
-    ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[4]);
-}
-
-void setRightelChargeAmnt() {
-    // 2-5-10-20-50
-    ui_menu_addItem(&amntSelectionMenu, "20,000", LV_TEXT_ALIGN_LEFT, NULL,
                     setAmnt, &amnt[0]);
-    ui_menu_addItem(&amntSelectionMenu, "50,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[1]);
-    ui_menu_addItem(&amntSelectionMenu, "100,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[2]);
-    ui_menu_addItem(&amntSelectionMenu, "200,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[3]);
     ui_menu_addItem(&amntSelectionMenu, "500,000", LV_TEXT_ALIGN_LEFT, NULL,
-                    setAmnt, &amnt[4]);
+                    setAmnt, &amnt[1]);
+    ui_menu_addItem(&amntSelectionMenu, "1,000,000", LV_TEXT_ALIGN_LEFT, NULL,
+                    setAmnt, &amnt[2]);
+    ui_menu_addItem(&amntSelectionMenu, phraseGetDef(PHRASE_ENTER_CHARGE_AMNT),
+                    LV_TEXT_ALIGN_LEFT, enterAmount, NULL, NULL);
 }
 
 STATE_DEF_ENTER(SelectAmount) {
     ui_menu_create(&amntSelectionMenu, disp()->screen);
     LOG_TRACE("Operator = %d", selectedOp);
-    switch (selectedOp) {
-    case OPERATOR_MCI:
-        setMciChargeAmnt();
-        break;
-    case OPERATOR_MTN:
-        setMtnChargeAmnt();
-        break;
-    case OPERATOR_RIGHTEL:
-        setRightelChargeAmnt();
-        break;
-
-    default:
-        break;
-    }
+    setChargeAmnt();
     GOTO_MENU(selectOperator, &amntSelectionMenu, NULL, NULL);
 }
 
@@ -189,6 +173,7 @@ static void EnterPhone(State* parent) {
  ******************************************************************/
 
 STATE_DEF_ENTER(EnterPassword) {
+    STRING_TO_U64(desiredAmnt, &selectedAmnt);
     inmgr()->run(
         &(InputCfg){
             .type   = INPUT_TYPE_PED,
@@ -219,8 +204,8 @@ static void Communication(State* parent) {
 }
 
 static void createCommonStates(State* state) {
-    CALL_ONCE(SelectOperator(state); SelectAmount(state); EnterPassword(state);
-              Communication(state); EnterPhone(state););
+    CALL_ONCE(SelectOperator(state); SelectAmount(state); EnterAmount(state);
+              EnterPassword(state); Communication(state); EnterPhone(state););
 }
 
 /******************************************************************
@@ -254,29 +239,23 @@ static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
 
 const TxnFlowConfig voucherTxn = {
 
+    TXN_FLOW_COMMON,
+
     .type = TXN_VOUCHER,
 
     .mti = MTI_FIN_REQ,
 
-    .prcode = PRC_PURCHASE,
+    .prcode = PRC_VOUCHER,
 
     .feilds = isoFeildsVoucher,
 
     .feildsCnt = sizeof(isoFeildsVoucher),
 
+    .needSettlement = true,
+
     .compose = composeVoucher,
 
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
-    .done = financeTxnDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+    .done = financeTxnDone};
 
 STATE_DEF_ENTER(Voucher) {
     memset(flow, 0, sizeof(*flow));
@@ -326,29 +305,23 @@ static const uint8_t isoFeildsTopUp[] = {ELEMENT_PAN,
 
 const TxnFlowConfig topupTxn = {
 
+    TXN_FLOW_COMMON,
+
     .type = TXN_TOPUP,
 
     .mti = MTI_FIN_REQ,
 
-    .prcode = PRC_PURCHASE,
+    .prcode = PRC_TOPUP,
 
     .feilds = isoFeildsTopUp,
 
     .feildsCnt = sizeof(isoFeildsTopUp),
 
+    .needSettlement = true,
+
     .compose = composeTopUp,
 
-    .build = buildCommon,
-
-    .parse = parseCommon,
-
-    .done = financeTxnDone,
-
-    .onConnecting = showConnecting,
-
-    .onSending = showSending,
-
-    .onReceiving = showReceiving};
+    .done = financeTxnDone};
 
 STATE_DEF_ENTER(TopUp) {
     memset(flow, 0, sizeof(*flow));

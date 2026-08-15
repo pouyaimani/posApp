@@ -14,7 +14,7 @@ typedef struct {
     FeildGetter get;
 } IsoFeildsFunc;
 
-void decodeMerchantDesc(char* buffer);
+void decodeMerchantDesc(char* buffer, TxnData* txn);
 
 Error_t setMti(uint16_t mti);
 

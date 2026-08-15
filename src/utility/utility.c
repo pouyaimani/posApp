@@ -839,18 +839,14 @@ void normalizeSsid(char* in, char* out) {
 void getSimOpName(SimCardOp_t op, char* out, size_t size) {
     Phrases_t phrase;
     switch (op) {
-    case 11:
+    case OPERATOR_MCI:
         phrase = PHRASE_SIM_OP_MCI;
         break;
-    case 35:
+    case OPERATOR_MTN:
         phrase = PHRASE_SIM_OP_MTN;
         break;
-    case 20:
+    case OPERATOR_RIGHTEL:
         phrase = PHRASE_SIM_OP_RIGHTEL;
-        break;
-    case 8:
-        phrase = PHRASE_SIM_OP_RIGHTEL;
-        // LV_SET_TEXT(operator, "STL");
         break;
     default:
         phrase = PHRASE_NKN_OPERATOR;
@@ -877,3 +873,15 @@ void getCurrentNetRouteName(char* out, size_t size) {
 }
 
 bool isStringEmpty(const char* str) { return str == NULL || str[0] == '\0'; }
+
+int maskPhoneNumber(const char* phone, char* output, size_t outputSize) {
+    if (!phone || !output || outputSize < 13)
+        return -1;
+
+    if (strlen(phone) != 11)
+        return -1;
+
+    snprintf(output, outputSize, "%.4s-***-%.4s", phone, phone + 7);
+
+    return 0;
+}
