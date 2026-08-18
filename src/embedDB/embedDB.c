@@ -2010,7 +2010,6 @@ int8_t embedDBNext(embedDBState* state, embedDBIterator* it, void* key,
                     debug_log("ERROR: Failed to read index page %i (%i)\n",
                               indexPage, indexPage % state->numIndexPages);
 #endif
-                    debug_log("************************");
                     return 0;
                 }
 
@@ -2036,7 +2035,6 @@ int8_t embedDBNext(embedDBState* state, embedDBIterator* it, void* key,
             debug_log("ERROR: Failed to read data page %i (%i)\n",
                       it->nextDataPage, it->nextDataPage % state->numDataPages);
 #endif
-            debug_log("************************");
             return 0;
         }
 

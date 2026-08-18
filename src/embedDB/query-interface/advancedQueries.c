@@ -167,7 +167,10 @@ void initTableScan(embedDBOperator* op) {
         (embedDBstate->keySize + embedDBstate->dataSize)) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: Size of provided schema doesn't match the size that "
-                  "will be returned by the provided iterator\n");
+                  "will be returned by the provided iterator. schema size = "
+                  "%lu, iterator size = %lu",
+                  getRecordSizeFromSchema(op->schema),
+                  (embedDBstate->keySize + embedDBstate->dataSize));
 #endif
         return;
     }

@@ -20,6 +20,7 @@ OOP_VTABLE(InfoPage) {
     OOP_IMETHOD(void, InfoPage, setData, InfoType_t, const char*, const char*);
     OOP_IMETHOD(void, InfoPage, show);
     OOP_IMETHOD(void, InfoPage, hide);
+    OOP_IMETHOD(void, InfoPage, forceUpdate);
 };
 OOP_CLASS(InfoPage) {
     OOP_IMPLEMENTS(InfoPage);
@@ -29,7 +30,6 @@ OOP_CLASS(InfoPage) {
     lv_obj_t*  body;
     lv_obj_t*  img;
     lv_obj_t*  line;
-    bool*      forceUpdate;
 };
 
 InfoPage* infoPage();

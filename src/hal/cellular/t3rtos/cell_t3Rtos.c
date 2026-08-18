@@ -25,7 +25,9 @@ static CellErr_t init(Cellular* self) { return open(self); }
 
 static CellErr_t close(Cellular* self) {
     VAR_UNUSED(self);
-    return translateSdkErr(sdkCellularClose());
+    int ret = sdkCellularClose();
+    LOG_DEBUG("Cellular close return : %d", ret);
+    return translateSdkErr(ret);
 }
 
 static int8_t getImei(Cellular* dev, char* imei, size_t size) {
@@ -140,12 +142,19 @@ static CellNeyType_t getNetType(Cellular* self) {
     return netType;
 }
 
+static SimStatus_t simSt;
+
 static SimStatus_t getSimStatus(Cellular* self) {
     VAR_UNUSED(self);
-    return sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0) ==
-                   SDK_CELLULAR_ERR_SIM
-               ? SIM_STATUS_ERR
-               : SIM_STATUS_OK;
+    return simSt;
+}
+
+static SimStatus_t checkSimStatus(Cellular* self) {
+    VAR_UNUSED(self);
+    simSt = sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0) ==
+                    SDK_CELLULAR_ERR_SIM
+                ? SIM_STATUS_ERR
+                : SIM_STATUS_OK;
 }
 
 OOP_CTOR(CellT3Rtos) {
@@ -166,6 +175,7 @@ OOP_CTOR(CellT3Rtos) {
     self->base.vtable.selectSim         = selectSim;
     self->base.vtable.getSimStatus      = getSimStatus;
     self->base.vtable.getImei           = getImei;
+    self->base.vtable.checkSimStatus    = checkSimStatus;
 }
 
 #endif

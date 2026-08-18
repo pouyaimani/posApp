@@ -52,6 +52,7 @@ STATE_DEF_ENTER(EnterBillId) {
  ******************************************************************/
 
 STATE_DEF_ENTER(EnterPayId) {
+    LOG_TRACE("Bill id = %s", data.bill.billId);
     if (!isBillIdValid(data.bill.billId)) {
         GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
                   phraseGetDef(PHRASE_BILL_INVALID), "");
@@ -74,12 +75,6 @@ STATE_DEF_ENTER(EnterPayId) {
 static uint64_t amount;
 
 STATE_DEF_ENTER(EnterPassword) {
-    // if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
-    //     GOTO_INFO(enterAmount, enterAmount, INFO_ERROR,
-    //               phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
-    //     return;
-    // }
-
     if (!isBillValid(data.bill.billId, data.bill.paymentId)) {
         GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
                   phraseGetDef(PHRASE_BILL_INVALID), "");

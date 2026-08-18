@@ -114,6 +114,7 @@ static void setTextIfChanged(lv_obj_t* label, const char* txt) {
 }
 
 STATE_DEF_ENTER(Idle) {
+    OOP_CALL(cellular(), checkSimStatus);
     netAutoConnect();
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
@@ -193,29 +194,30 @@ static void rand_letters(char* buf, size_t len) {
 }
 
 void generate_random_txn(TxnData* t) {
-    t->core.txnType = my_rand_range(255);
+    t->core.txnType     = my_rand_range(255);
+    t->core.processCode = my_rand_range(255);
+    t->core.rrn         = my_rand_range(255);
+    t->core.trace       = my_rand_range(255);
+    t->core.stan        = my_rand_range(255);
+    t->core.respCode    = my_rand_range(255);
 
-    rand_digits(t->core.processCode, 6);
-    rand_digits(t->core.amount, 12);
-    rand_digits(t->core.rrn, 6);
-    rand_digits(t->core.trace, 6);
     uint32_t date, time;
     getDateTimeUint(&date, &time);
     LOG_DEBUG("date = %u, time = %u", date, time);
     t->dateTime = packDateTime(date, time);
-    rand_digits(t->core.stan, 12);
-    rand_digits(t->core.respCode, 2);
 }
 
 static void insertTxn() {
     TxnData txn;
     generate_random_txn(&txn);
+    TRACE_POINT;
     txnrecord()->insert(&txn);
+    TRACE_POINT;
 }
 
 static bool txnHand(const TxnData* txn, void* userData) {
     uint32_t date, time;
-    unpackDateTime(txn->dateTime, &date, &time);
+    unpackDateTime(&txn->dateTime, &date, &time);
     LOG_DEBUG(
         "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = %s, "
         "amount = %s",
@@ -318,7 +320,7 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
         QueryOperator op;
         txnquery()->init(&op);
         uint64_t dt = 3683180498412;
-        txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_EQ, &dt);
+        // txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_EQ, &dt);
         txnrecord()->select(&op, txnHand, NULL);
     }
 }

@@ -23,8 +23,7 @@ static uint8_t* buffer;
 
 static volatile bool isFlushEnabled;
 
-static lv_display_t* lv_disp;
-static lv_indev_t*   indevTp;
+static lv_indev_t* indevTp;
 
 static void initBuffer() {
     buffer = MEM_ALLOC(LV_BUFFER_SIZE);
@@ -71,7 +70,7 @@ static void displayInit() {
     lv_init();
 
     LOG_TRACE("Creating display ...");
-    lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
+    lv_display_t* lv_disp = lv_display_create(DISP_HOR_RES, DISP_VER_RES);
     lv_display_set_default(lv_disp);
     lv_display_set_buffers(lv_disp, buffer, NULL, (DISP_HOR_RES * 60),
                            LV_DISPLAY_RENDER_MODE_PARTIAL);
@@ -84,6 +83,8 @@ static void displayInit() {
     lv_indev_set_type(indevTp, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(indevTp, tpCb);
     lv_indev_set_display(indevTp, lv_disp);
+
+    display.lvDispDrv = lv_disp;
 
     LOG_TRACE("Loading main screen ...");
     display.fscreen = lv_obj_create(NULL);
@@ -132,11 +133,14 @@ static void displayUpdate() {
     lv_task_handler();
 }
 
+static void refreshNow() { lv_refr_now(display.lvDispDrv); }
+
 OOP_CTOR(Display) {
     LOG_TRACE("Display constructor ...");
-    self->init   = displayInit;
-    self->update = displayUpdate;
-    tp           = touchpad();
+    self->init       = displayInit;
+    self->update     = displayUpdate;
+    self->refreshNow = refreshNow;
+    tp               = touchpad();
 }
 
 Display* disp(void) {

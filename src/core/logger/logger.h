@@ -133,4 +133,8 @@ Logger* logger();
     } while (0)
 #endif /*USE_LOG*/
 
+#define TRACE_POINT                                                            \
+    for (int i = 0; i < 5; i++)                                                \
+    LOG_DEBUG("========== %s:%d ==========", __func__, __LINE__)
+
 #endif

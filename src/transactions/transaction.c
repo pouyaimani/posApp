@@ -89,3 +89,24 @@ OOP_CTOR(Transaction, State* parent, const char* name) {
     self->flow = &flow;
     snprintf(self->name, sizeof(self->name), "%s", name);
 }
+
+void logTxnCore(TxnData* data) {
+    uint32_t idate, itime;
+    unpackDateTime(&data->dateTime, &idate, &itime);
+    LOG_TRACE("=============== Transaction core data ===============");
+    LOG_TRACE("[## datetime    ##]    = %llu", data->dateTime);
+    LOG_TRACE("[## date        ##]    = %lu", idate);
+    LOG_TRACE("[## time        ##]    = %lu", itime);
+    LOG_TRACE("[## status      ##]    = %d", data->status);
+    LOG_TRACE("[## txnType     ##]    = %d", data->core.txnType);
+    LOG_TRACE("[## mti         ##]    = %d", data->core.mti);
+    LOG_TRACE("[## processCode ##]    = %d", data->core.processCode);
+    LOG_TRACE("[## pan         ##]    = %s", data->core.pan);
+    LOG_TRACE("[## amount      ##]    = %llu", data->core.amount);
+    LOG_TRACE("[## rrn         ##]    = %llu", data->core.rrn);
+    LOG_TRACE("[## trace       ##]    = %lu", data->core.trace);
+    LOG_TRACE("[## stan        ##]    = %lu", data->core.stan);
+    LOG_TRACE("[## respCode    ##]    = %lu", data->core.respCode);
+
+    LOG_TRACE("=====================================================");
+}

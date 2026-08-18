@@ -168,7 +168,7 @@ OOP_CLASS(TxnResult) {
     OOP_EXTENDS(State);
     TxnData        data;
     TxnFlowConfig* txnCfg;
-    TxnFlowStatus* st;
+    TxnFlowStatus  st;
     State*         onSuccess;
     State*         onFailure;
 };

@@ -21,33 +21,33 @@ typedef enum {
     REP_FILTER_REF_NUM   = (1u << 1),
     REP_FILTER_TRACE     = (1u << 2),
     REP_FILTER_SERVICE   = (1u << 3),
+    REP_FILTER_LATEST    = (1u << 4)
 } ReportsFilter_t;
 
 typedef enum {
     REP_RESULT_DETAIL     = 0,
     REP_RESULT_AGGREGATED = 1,
-    REP_RESULT_NORM
+    REP_RESULT_TXN
 } ReportResultMode_t;
 
 #define QUERY_FILTER_RESET(x) (x = 0)
 
-#define QUERY_IS_USING_DATE_TIME(x)  ((x & REP_FILTER_DATE_TIME) > 0 ? 1 : 0)
-#define QUERY_IS_USING_REF_NUM(x)    ((x & REP_FILTER_REF_NUM) > 0 ? 1 : 0)
-#define QUERY_IS_USING_TRACE(x)      ((x & REP_FILTER_TRACE) > 0 ? 1 : 0)
-#define QUERY_IS_USING_SERVICE_ID(x) ((x & REP_FILTER_SERVICE) > 0 ? 1 : 0)
-
-#define QUERY_FILTER_DATE_TIME(x)  (x |= REP_FILTER_DATE_TIME)
-#define QUERY_FILTER_REF_NUM(x)    (x |= REP_FILTER_REF_NUM)
-#define QUERY_FILTER_TRACE(x)      (x |= REP_FILTER_TRACE)
-#define QUERY_FILTER_SERVICE_ID(x) (x |= REP_FILTER_SERVICE)
-
-#define REPORT_RESULT_DETAIL(x)     (x = REP_RESULT_DETAIL)
-#define REPORT_RESULT_AGGREGATED(x) (x = REP_RESULT_DETAIL)
-#define REPORT_RESULT_NORM(x)       (x = REP_RESULT_NORM)
-
+#define QUERY_IS_USING_DATE_TIME(x)    ((x & REP_FILTER_DATE_TIME) > 0 ? 1 : 0)
+#define QUERY_IS_USING_REF_NUM(x)      ((x & REP_FILTER_REF_NUM) > 0 ? 1 : 0)
+#define QUERY_IS_USING_TRACE(x)        ((x & REP_FILTER_TRACE) > 0 ? 1 : 0)
+#define QUERY_IS_USING_TXN_TYPE(x)     ((x & REP_FILTER_SERVICE) > 0 ? 1 : 0)
+#define QUERY_IS_USING_LATEST(x)       ((x & REP_FILTER_LATEST) > 0 ? 1 : 0)
+#define QUERY_FILTER_DATE_TIME(x)      (x |= REP_FILTER_DATE_TIME)
+#define QUERY_FILTER_REF_NUM(x)        (x |= REP_FILTER_REF_NUM)
+#define QUERY_FILTER_TRACE(x)          (x |= REP_FILTER_TRACE)
+#define QUERY_FILTER_TXN_TYPE(x)       (x |= REP_FILTER_SERVICE)
+#define QUERY_FILTER_LATEST(x)         (x |= REP_FILTER_LATEST)
+#define REPORT_RESULT_DETAIL(x)        (x = REP_RESULT_DETAIL)
+#define REPORT_RESULT_AGGREGATED(x)    (x = REP_RESULT_DETAIL)
+#define REPORT_RESULT_TXN(x)           (x = REP_RESULT_TXN)
 #define REPORT_RESULT_IS_DETAIL(x)     (x == REP_RESULT_DETAIL)
 #define REPORT_RESULT_IS_AGGREGATED(x) (x == REP_RESULT_DETAIL)
-#define REPORT_RESULT_IS_NORM(x)       (x == REP_RESULT_NORM)
+#define REPORT_RESULT_IS_TXN(x)        (x == REP_RESULT_TXN)
 
 typedef enum {
     REP_ITEM_REPRINT = 0,
@@ -78,7 +78,7 @@ typedef struct {
     char               endTime[16];
     char               refNum[16];
     char               trace[16];
-    uint8_t            serviceId;
+    uint8_t            txnType;
 } ReportQuery_t;
 
 ReportQuery_t rquery;
@@ -90,10 +90,10 @@ static const Phrases_t reportsItemTxt[REP_ITEM_ALL] = {
 /******************** re print sub state **********************/
 typedef enum {
     REPRINT_ALL = 0,
-    REPRINT_SALE,
+    REPRINT_PURCHASE,
     REPRINT_BILL,
-    REPRINT_CHARGE,
-    REPRINT_PIN,
+    REPRINT_VOUCHER,
+    REPRINT_TOPUP,
     REPRINT_TRACE,
     REPRINT_REF,
     REPRINT_END
@@ -102,7 +102,8 @@ typedef enum {
 static PrintItem_t pItem;
 
 void setReprintItem(void* arg) {
-    pItem = (PrintItem_t)(uintptr_t)arg;
+    pItem = (PrintItem_t)(*((uint16_t*)arg));
+    LOG_TRACE("Print Item = %d", pItem);
     switch (pItem) {
     case REPRINT_TRACE:
         QUERY_FILTER_TRACE(rquery.filter);
@@ -137,10 +138,23 @@ void setReprintItem(void* arg) {
         //            LEN_MAX_REF_NUM_IN, IN_MODE_NUMBERS, rquery.refNum);
         break;
     case REPRINT_BILL:
-    case REPRINT_CHARGE:
-    case REPRINT_SALE:
-    case REPRINT_PIN:
-        QUERY_FILTER_SERVICE_ID(rquery.filter);
+        rquery.txnType = TXN_BILL;
+        QUERY_FILTER_TXN_TYPE(rquery.filter);
+        SM_GOTO(extractData);
+        break;
+    case REPRINT_VOUCHER:
+        rquery.txnType = TXN_VOUCHER;
+        QUERY_FILTER_TXN_TYPE(rquery.filter);
+        SM_GOTO(extractData);
+        break;
+    case REPRINT_PURCHASE:
+        rquery.txnType = TXN_PURCHASE;
+        QUERY_FILTER_TXN_TYPE(rquery.filter);
+        SM_GOTO(extractData);
+        break;
+    case REPRINT_TOPUP:
+        rquery.txnType = TXN_TOPUP;
+        QUERY_FILTER_TXN_TYPE(rquery.filter);
         SM_GOTO(extractData);
         break;
     default:
@@ -163,12 +177,13 @@ static const Phrases_t printItemTxt[REPRINT_END] = {
 static Menu* printMenu;
 
 STATE_DEF_ENTER(RePrint) {
-    REPORT_RESULT_NORM(rquery.resMode);
+    docType = DOC_TXN;
+    QUERY_FILTER_LATEST(rquery.filter);
+    REPORT_RESULT_TXN(rquery.resMode);
     ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_END; i++) {
         ui_menu_addItem(printMenu, phraseGetDef(printItemTxt[i]),
-                        LV_TEXT_ALIGN_RIGHT, NULL, setReprintItem,
-                        (void*)(uintptr_t)i);
+                        LV_TEXT_ALIGN_RIGHT, NULL, setReprintItem, NULL);
     }
     GOTO_MENU(state->parent, printMenu, NULL, NULL);
 }
@@ -302,8 +317,9 @@ STATE_DEF_ENTER(GetEndTime) {
 /******************** extract data sub state **********************/
 
 static bool handleExtractedData(const TxnData* txn, void* userData) {
+    logTxnCore(txn);
     ReceiptData* data = (ReceiptData*)userData;
-    data->txn         = *txn;
+    memcpy(&data->txn, txn, sizeof(*txn));
     Receipt  rec;
     Result_t res = buildReceipt(&rec, data);
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
@@ -327,8 +343,6 @@ static int8_t checkPrinterStatus() {
 }
 
 STATE_DEF_ENTER(ExtractData) {
-    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_EXTRACTING_DATA),
-              phraseGetDef(PHRASE_PLEASE_WAIT));
     LOG_DEBUG("start date = %s", rquery.startDate);
     LOG_DEBUG("start time = %s", rquery.startTime);
     LOG_DEBUG("end date = %s", rquery.endDate);
@@ -336,6 +350,7 @@ STATE_DEF_ENTER(ExtractData) {
     ReceiptData recData;
     recData.headerApplied = false;
     recData.type          = docType;
+    LOG_TRACE("Extract report data: doc type = %d", docType);
     switch (docType) {
     case DOC_TXN:
         break;
@@ -375,9 +390,15 @@ STATE_DEF_ENTER(ExtractData) {
         break;
     }
     QueryOperator op;
-    txnquery()->init(&op);
+    Result_t      res = txnquery()->init(&op);
+    if (res.err != ERR_DSC_OK) {
+        LOG_ERROR("query initialization failed.");
+        SM_GOTO(mainMenu);
+        return;
+    }
 
     if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
+        TRACE_POINT;
         uint32_t sdate;
         uint32_t stime;
         uint32_t edate;
@@ -388,23 +409,37 @@ STATE_DEF_ENTER(ExtractData) {
         STRING_TO_U32(rquery.endTime, &etime);
         uint64_t sdt = packDateTime(sdate, stime);
         uint64_t ldt = packDateTime(edate, etime);
-        txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_GTE, &sdt);
-        txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_LTE, &ldt);
+        txnquery()->where(&op, TXN_REC_COL_KEY, SELECT_GTE, &sdt);
+        txnquery()->where(&op, TXN_REC_COL_KEY, SELECT_LTE, &ldt);
     }
     if (QUERY_IS_USING_REF_NUM(rquery.filter)) {
-        txnquery()->where(&op, TXN_REC_FIELD_CORE_REF_NUM, SELECT_EQ,
-                          &rquery.refNum);
+        TRACE_POINT;
+        txnquery()->where(&op, TXN_REC_COL_REFNUM, SELECT_EQ, &rquery.refNum);
     }
-    if (QUERY_IS_USING_SERVICE_ID(rquery.filter)) {
-        txnquery()->where(&op, TXN_REC_FIELD_CORE_ID, SELECT_EQ,
-                          &rquery.serviceId);
+    if (QUERY_IS_USING_TXN_TYPE(rquery.filter)) {
+        TRACE_POINT;
+        txnquery()->where(&op, TXN_REC_COL_TYPE, SELECT_EQ, &rquery.txnType);
     }
     if (QUERY_IS_USING_TRACE(rquery.filter)) {
-        txnquery()->where(&op, TXN_REC_FIELD_CORE_TRACE, SELECT_EQ,
-                          &rquery.trace);
+        TRACE_POINT;
+        txnquery()->where(&op, TXN_REC_COL_TRACE, SELECT_EQ, &rquery.trace);
     }
-
-    txnrecord()->select(&op, handleExtractedData, (void*)&recData);
+    if (QUERY_IS_USING_LATEST(rquery.filter)) {
+        TRACE_POINT;
+        txnquery()->limit(&op,
+                          (QueryLimit){.mode = QUERY_LIMIT_LATEST, .count = 1});
+    }
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_EXTRACTING_DATA),
+              phraseGetDef(PHRASE_PLEASE_WAIT));
+    OOP_CALL(infoPage(), forceUpdate);
+    res = txnrecord()->select(&op, handleExtractedData, (void*)&recData);
+    OOP_CALL(infoPage(), hide);
+    if (res.err != ERR_DSC_OK) {
+        GOTO_INFO(mainMenu, mainMenu, INFO_ERROR,
+                  phraseGetDef(PHRASE_TXN_NOT_FND), "");
+        return;
+    }
+    SM_GOTO(mainMenu);
 }
 
 STATE_DEF_EXIT(ExtractData) {}

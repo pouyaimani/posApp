@@ -184,4 +184,6 @@ typedef struct {
 
 int8_t getTxnName(TxnType type, char* name, size_t size);
 
+void logTxnCore(TxnData* data);
+
 #endif

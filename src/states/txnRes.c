@@ -15,16 +15,17 @@
 static int pendMgrDone(const TxnData* data) {
     if (data->status == TXN_STATUS_APPROVED) {
         LOG_TRACE("Txn pending manager: transaction is approved.");
-        // Result_t res = txnrecord()->insert(data);
-        // if (res.err != ERR_DSC_OK) {
-        //     LOG_ERROR("Inserting transaction to database is failed. error =
-        //     %d "
-        //               "detail code = %d",
-        //               res.err, res.detail.db);
-        // } else {
-        //     LOG_TRACE(
-        //         "Inserting transaction to database is successfully done.");
-        // }
+        logTxnCore(data);
+        Result_t res = txnrecord()->insert(data);
+        if (res.err != ERR_DSC_OK) {
+            LOG_ERROR("Inserting transaction to database is failed. error = "
+                      " % d "
+                      "detail code = %d",
+                      res.err, res.detail.db);
+        } else {
+            LOG_TRACE(
+                "Inserting transaction to database is successfully done.");
+        }
     } else if (data->status == TXN_STATUS_REVERSED) {
         LOG_TRACE("Txn pending manager: transaction is reversed.");
     } else {
@@ -41,10 +42,10 @@ STATE_DEF_ENTER(TxnResult) {
         showDigitalRec(&self->data);
     } else {
         DEFINE_STRING(dsc, 128);
-        if (self->st->code != 0) {
-            getResponseCode(self->st->code, dsc, sizeof(dsc));
+        if (self->st.code != 0) {
+            getResponseCode(self->st.code, dsc, sizeof(dsc));
         }
-        if (self->st->code == 0) {
+        if (self->st.code == 0) {
             OOP_CALL(infoPage(), setData, INFO_SUCCESS,
                      phraseGetDef(PHRASE_SUC_DONME), dsc);
             OOP_CALL(infoPage(), show);
@@ -60,15 +61,15 @@ STATE_DEF_ENTER(TxnResult) {
             //           phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
         }
         OOP_CALL(infoPage(), setData, INFO_ERROR,
-                 phraseGetDef(self->st->code == 0
+                 phraseGetDef(self->st.code == 0
                                   ? PHRASE_SUC_DONME
                                   : PHRASE_UNSUCCESSFUL_OPERATION),
                  dsc);
         OOP_CALL(infoPage(), show);
-        // GOTO_INFO(self->st->code == 0 ? self->onSuccess : self->onFailure,
-        //           self->st->code == 0 ? self->onSuccess : self->onFailure,
-        //           self->st->code == 0 ? INFO_SUCCESS : INFO_ERROR,
-        //           phraseGetDef(self->st->code == 0
+        // GOTO_INFO(self->st.code == 0 ? self->onSuccess : self->onFailure,
+        //           self->st.code == 0 ? self->onSuccess : self->onFailure,
+        //           self->st.code == 0 ? INFO_SUCCESS : INFO_ERROR,
+        //           phraseGetDef(self->st.code == 0
         //                            ? PHRASE_SUC_DONME
         //                            : PHRASE_UNSUCCESSFUL_OPERATION),
         //           dsc);

@@ -47,6 +47,40 @@ static inline uint32_t calcNumIndexPages(uint32_t numPages) {
     return n;
 }
 
+static logDetails(embedDBState* state) {
+    debug_log("====================== Database details ======================");
+    debug_log("|##  buffer size in blocks               ##|    = (%lu)",
+              state->bufferSizeInBlocks);
+    debug_log("|##  page size                           ##|    = (%lu)",
+              state->pageSize);
+    debug_log("|##  record size                         ##|    = (%lu)",
+              state->recordSize);
+    debug_log("|##  key size                            ##|    = (%lu)",
+              state->keySize);
+    debug_log("|##  data size                           ##|    = (%lu)",
+              state->dataSize);
+    debug_log("|##  number of data pages                ##|    = (%lu)",
+              state->numDataPages);
+    debug_log("|##  number of index pages               ##|    = (%lu)",
+              state->numIndexPages);
+    debug_log("|##  max records per page                ##|    = (%lu)",
+              state->maxRecordsPerPage);
+    debug_log("|##  max records                         ##|    = (%lu)",
+              state->maxRecordsPerPage * state->numDataPages);
+    debug_log("|##  number of available data Pages      ##|    = (%lu)",
+              state->maxRecordsPerPage * state->numAvailDataPages);
+    debug_log("|##  use bitmab                          ##|    = (%lu)",
+              EMBEDDB_USING_BMAP(state->parameters));
+    debug_log("|##  use index                           ##|    = (%lu)",
+              EMBEDDB_USING_INDEX(state->parameters));
+    debug_log("|##  bitmap size                         ##|    = (%lu)",
+              state->bitmapSize);
+    debug_log("|##  header size                         ##|    = (%lu)",
+              state->headerSize);
+    debug_log(
+        "===============================================================");
+}
+
 int8_t embedDBSetup(embedDBState* state, const char* dbPath,
                     const char* dbIndexPath, uint16_t keySize,
                     uint16_t dataSize, uint32_t pageSize, uint16_t pageNum,
@@ -116,10 +150,7 @@ int8_t embedDBSetup(embedDBState* state, const char* dbPath,
         return -1;
     }
     debug_log("db: %s", dbPath);
-    embedDBPrintInit(state);
-    debug_log("state->numIndexPages, %d", state->numIndexPages);
-    debug_log("state->bufferSizeInBlocks, %d", state->bufferSizeInBlocks);
-    debug_log("state->bitmapSize, %d", state->bitmapSize);
+    logDetails(state);
     return 0;
 }
 

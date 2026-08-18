@@ -6,14 +6,6 @@
 #include "utility/utility.h"
 #include "common.h"
 
-typedef struct {
-    TxnCore      core;
-    TxnExtention extention;
-} TxnRec_t;
-
-static TxnRecord __txnrecord;
-static TxnQuery  __txnquery;
-
 #define TRANS_RECORD_PATH "/mtd0/txn_records.bin"
 #define TRANS_IDX_PATH    "/mtd0/txn_idx.bin"
 
@@ -21,30 +13,122 @@ static TxnQuery  __txnquery;
 
 #define MAX_RECORDS 6000
 
-static embedDBState*  state;
-static embedDBSchema* schema;
+#define TXN_RECORD_SIZE                                                        \
+    (sizeof(((TxnData*)0)->status) + sizeof(((TxnData*)0)->core.txnType) +     \
+     sizeof(((TxnData*)0)->core.mti) +                                         \
+     sizeof(((TxnData*)0)->core.processCode) +                                 \
+     sizeof(((TxnData*)0)->core.pan) + sizeof(((TxnData*)0)->core.amount) +    \
+     sizeof(((TxnData*)0)->core.rrn) + sizeof(((TxnData*)0)->core.trace) +     \
+     sizeof(((TxnData*)0)->core.stan) + sizeof(((TxnData*)0)->core.respCode) + \
+     sizeof(((TxnData*)0)->extention))
+
+static embedDBState*  state  = NULL;
+static embedDBSchema* schema = NULL;
+
+static TxnRecord __txnrecord;
+static TxnQuery  __txnquery;
+
+static void serialize(uint8_t* buf, TxnData* txn) {
+    uint8_t* p = buf;
+
+    memcpy(p, &txn->status, sizeof(txn->status));
+    p += sizeof(txn->status);
+
+    memcpy(p, &txn->core.txnType, sizeof(txn->core.txnType));
+    p += sizeof(txn->core.txnType);
+
+    memcpy(p, &txn->core.mti, sizeof(txn->core.mti));
+    p += sizeof(txn->core.mti);
+
+    memcpy(p, &txn->core.processCode, sizeof(txn->core.processCode));
+    p += sizeof(txn->core.processCode);
+
+    memcpy(p, txn->core.pan, sizeof(txn->core.pan));
+    p += sizeof(txn->core.pan);
+
+    memcpy(p, &txn->core.amount, sizeof(txn->core.amount));
+    p += sizeof(txn->core.amount);
+
+    memcpy(p, &txn->core.rrn, sizeof(txn->core.rrn));
+    p += sizeof(txn->core.rrn);
+
+    memcpy(p, &txn->core.trace, sizeof(txn->core.trace));
+    p += sizeof(txn->core.trace);
+
+    memcpy(p, &txn->core.stan, sizeof(txn->core.stan));
+    p += sizeof(txn->core.stan);
+
+    memcpy(p, &txn->core.respCode, sizeof(txn->core.respCode));
+    p += sizeof(txn->core.respCode);
+
+    memcpy(p, &txn->extention, sizeof(txn->extention));
+}
+
+static void deserialize(const uint8_t* buf, uint64_t* key, TxnData* txn) {
+    const uint8_t* p = buf;
+
+    txn->dateTime = *key;
+
+    memcpy(&txn->status, p, sizeof(txn->status));
+    p += sizeof(txn->status);
+
+    memcpy(&txn->core.txnType, p, sizeof(txn->core.txnType));
+    p += sizeof(txn->core.txnType);
+
+    memcpy(&txn->core.mti, p, sizeof(txn->core.mti));
+    p += sizeof(txn->core.mti);
+
+    memcpy(&txn->core.processCode, p, sizeof(txn->core.processCode));
+    p += sizeof(txn->core.processCode);
+
+    memcpy(txn->core.pan, p, sizeof(txn->core.pan));
+    p += sizeof(txn->core.pan);
+
+    memcpy(&txn->core.amount, p, sizeof(txn->core.amount));
+    p += sizeof(txn->core.amount);
+
+    memcpy(&txn->core.rrn, p, sizeof(txn->core.rrn));
+    p += sizeof(txn->core.rrn);
+
+    memcpy(&txn->core.trace, p, sizeof(txn->core.trace));
+    p += sizeof(txn->core.trace);
+
+    memcpy(&txn->core.stan, p, sizeof(txn->core.stan));
+    p += sizeof(txn->core.stan);
+
+    memcpy(&txn->core.respCode, p, sizeof(txn->core.respCode));
+    p += sizeof(txn->core.respCode);
+
+    memcpy(&txn->extention, p, sizeof(txn->extention));
+}
+
+static ErrorDsc_t logRecord(uint8_t* rec, uint64_t* key) {
+    TxnData txn;
+    deserialize(rec, key, &txn);
+    logTxnCore(&txn);
+}
 
 static Result_t txnInsert(TxnData* txn) {
+    TRACE_POINT;
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(txn, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_INVALID_ARG, res);
-    LOG_DEBUG("time stamp = %llu", txn->dateTime);
+    TRACE_POINT;
+    LOG_DEBUG("Txn Record insert: time stamp = %llu", txn->dateTime);
+    TRACE_POINT;
     uint32_t date, time;
-    unpackDateTime(txn->dateTime, &date, &time);
-    TxnRec_t rec;
-    rec.core      = txn->core;
-    rec.extention = txn->extention;
-    if (embedDBPut(state, &txn->dateTime, &rec) != 0) {
+    unpackDateTime(&txn->dateTime, &date, &time);
+    uint8_t rec[TXN_RECORD_SIZE];
+    TRACE_POINT;
+    serialize(rec, txn);
+    TRACE_POINT;
+    logTxnCore(txn);
+    if (embedDBPut(state, &txn->dateTime, rec) != 0) {
         LOG_ERROR("Transaction record: error in inserting record.");
         res.err       = ERR_DSC_DATABASE;
         res.detail.db = DB_ERR_INSERT_FAILURE;
         return res;
     }
-    LOG_DEBUG(
-        "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = %s, "
-        "amount = %s",
-        date, time, txn->core.trace, txn->core.rrn, txn->core.stan,
-        txn->core.amount);
     return res;
 }
 
@@ -54,15 +138,9 @@ static Result_t iterateThrough() {
     embedDBIterator it;
     embedDBInitIterator(state, &it);
     uint64_t timeStamp;
-    TxnRec_t rec;
-    while (embedDBNext(state, &it, &timeStamp, &rec)) {
-        uint32_t date, time;
-        unpackDateTime(timeStamp, &date, &time);
-        LOG_DEBUG(
-            "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = "
-            "%s, amount = %s",
-            date, time, rec.core.trace, rec.core.rrn, rec.core.stan,
-            rec.core.amount);
+    uint8_t  rec[TXN_RECORD_SIZE];
+    while (embedDBNext(state, &it, &timeStamp, rec)) {
+        logRecord(rec, &timeStamp);
     }
     return res;
 }
@@ -82,7 +160,9 @@ static Result_t txnReset() {
 static Result_t queryInit(QueryOperator* qo) {
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
-    qo->it = (embedDBIterator*)MEM_ALLOC(sizeof(embedDBIterator));
+    qo->limit.mode  = QUERY_LIMIT_NO;
+    qo->limit.count = 0;
+    qo->it          = (embedDBIterator*)MEM_ALLOC(sizeof(embedDBIterator));
     RETURN_VALUE_IF_NULL(qo->it, res.err = ERR_DSC_MEMORY, res);
     memset(qo->it, 0, sizeof(embedDBIterator));
     embedDBInitIterator(state, qo->it);
@@ -107,25 +187,134 @@ static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
         createSelectionOperator(qo->op, column, comparison, value);
     RETURN_VALUE_IF_NULL(newOp, res.err = ERR_DSC_MEMORY, res);
     qo->op = newOp;
+    return res;
 }
+
+// static Result_t orderBy(QueryOperator* qo, int column, int limit) {
+//     Result_t res = {.err = ERR_DSC_OK};
+//     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
+//     embedDBOperator* orderByOp = createOrderByOperator(state, qo->op, column,
+//     limit, int32Comparator); return res;
+// }
+
+static Result_t limit(QueryOperator* qo, QueryLimit limit) {
+    Result_t res = {.err = ERR_DSC_OK};
+    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
+    qo->limit = limit;
+    return res;
+}
+
+static void insertKey(uint64_t* keys, uint32_t* count, uint32_t limitCount,
+                      uint64_t key, QueryLimitMode mode) {
+    if (keys == NULL || count == NULL || limitCount == 0 ||
+        mode == QUERY_LIMIT_NO) {
+        return;
+    }
+
+    uint32_t n = *count;
+
+    if (mode == QUERY_LIMIT_EARLIEST) {
+        /* Ascending: smallest -> largest */
+
+        uint32_t pos = 0;
+        while (pos < n && keys[pos] < key) {
+            pos++;
+        }
+
+        /* key is larger than everything we keep. */
+        if (n == limitCount && pos == n) {
+            return;
+        }
+
+        if (n < limitCount) {
+            n++;
+        }
+
+        for (uint32_t i = n - 1; i > pos; --i) {
+            keys[i] = keys[i - 1];
+        }
+
+        keys[pos] = key;
+        *count    = n;
+    } else if (mode == QUERY_LIMIT_LATEST) {
+        /* Descending: largest -> smallest */
+
+        uint32_t pos = 0;
+        while (pos < n && keys[pos] > key) {
+            pos++;
+        }
+
+        /* key is smaller than everything we keep. */
+        if (n == limitCount && pos == n) {
+            return;
+        }
+
+        if (n < limitCount) {
+            n++;
+        }
+
+        for (uint32_t i = n - 1; i > pos; --i) {
+            keys[i] = keys[i - 1];
+        }
+
+        keys[pos] = key;
+        *count    = n;
+    }
+}
+
+static uint64_t sortedkeys[10];
 
 static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
                           void* userData) {
-    Result_t res = {.err = ERR_DSC_OK};
+    Result_t res;
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(handler, res.err = ERR_DSC_INVALID_ARG, res);
     (qo->op)->init(qo->op);
-    while (exec(qo->op)) {
-        TxnData  data;
-        uint8_t* buf = (uint8_t*)qo->op->recordBuffer;
-        memcpy(&data, buf + state->keySize, sizeof(TxnData));
-        if (!handler(&data, userData))
-            break;
+    LOG_TRACE("Txn select: limit mode = %d, limit count = %lu", qo->limit.mode,
+              qo->limit.count);
+    bool txnFound = false;
+    if (qo->limit.mode == QUERY_LIMIT_NO) {
+        while (exec(qo->op)) {
+            txnFound = true;
+            res.err  = ERR_DSC_OK;
+            uint8_t  rec[TXN_RECORD_SIZE];
+            uint64_t key;
+            uint8_t* buf = (uint8_t*)qo->op->recordBuffer;
+            memcpy(&key, buf, state->keySize);
+            memcpy(rec, buf + state->keySize, TXN_RECORD_SIZE);
+            TxnData data;
+            deserialize(rec, &key, &data);
+            if (!handler(&data, userData))
+                break;
+        }
+    } else {
+        uint32_t count = 0;
+        LOG_TRACE("Txn select: limit mode = %d, limit count = %lu",
+                  qo->limit.mode, qo->limit.count);
+        // uint64_t keys[qo->limit.count];
+        while (exec(qo->op)) {
+            txnFound = true;
+            uint64_t key;
+            uint8_t* buf = (uint8_t*)qo->op->recordBuffer;
+            memcpy(&key, buf, state->keySize);
+            insertKey(sortedkeys, &count, qo->limit.count, key, qo->limit.mode);
+        }
+        if (txnFound)
+            for (int i = 0; i < qo->limit.count; i++) {
+                uint8_t rec[TXN_RECORD_SIZE];
+                TxnData data;
+                TRACE_POINT;
+                embedDBGet(state, &sortedkeys[i], rec);
+                deserialize(rec, &sortedkeys[i], &data);
+                if (!handler(&data, userData))
+                    break;
+            }
     }
     embedDBCloseIterator(qo->it);
     (qo->op)->close((qo->op));
     EMDB_MEM_FREE(qo->it);
-    embedDBFreeOperatorRecursive(qo->op);
+    embedDBFreeOperatorRecursive(&qo->op);
+    res.err = txnFound ? ERR_DSC_OK : ERR_DSC_NOT_FOUND;
     return res;
 }
 
@@ -136,10 +325,10 @@ static Result_t init(TxnRecord* self) {
 
     uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY |
                           (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
-    LOG_ERROR("size of txnData = %u.", sizeof(TxnRec_t));
+    LOG_ERROR("size of txnData = %u.", TXN_RECORD_SIZE);
 
     if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(uint64_t),
-                     sizeof(TxnRec_t), PAGE_SIZE_512, PAGE_NUMBER,
+                     TXN_RECORD_SIZE, PAGE_SIZE_512, PAGE_NUMBER,
                      parameters) != 0) {
         embedDBClose(state);
         embedDBtearDown(state);
@@ -152,21 +341,25 @@ static Result_t init(TxnRecord* self) {
     }
 
     int8_t colSizes[] = {
-        state->keySize,                                  // key
-        sizeof(sizeof(((TxnData*)0)->core.txnType)),     // type
-        sizeof(sizeof(((TxnData*)0)->core.processCode)), // processCode
-        sizeof(sizeof(((TxnData*)0)->core.pan)),         // maskedPan
-        sizeof(sizeof(((TxnData*)0)->core.amount)),      // amount
-        sizeof(sizeof(((TxnData*)0)->core.rrn)),         // refNum
-        sizeof(sizeof(((TxnData*)0)->core.trace)),       // trace
-        sizeof(sizeof(((TxnData*)0)->core.stan)),        // RRN
-        sizeof(sizeof(((TxnData*)0)->core.respCode)),    // responseCode
-        sizeof(sizeof(((TxnData*)0)->extention))         // extention
+        state->keySize,                          // key
+        sizeof(((TxnData*)0)->status),           // status
+        sizeof(((TxnData*)0)->core.txnType),     // type
+        sizeof(((TxnData*)0)->core.mti),         // mti
+        sizeof(((TxnData*)0)->core.processCode), // processCode
+        sizeof(((TxnData*)0)->core.pan),         // maskedPan
+        sizeof(((TxnData*)0)->core.amount),      // amount
+        sizeof(((TxnData*)0)->core.rrn),         // refNum
+        sizeof(((TxnData*)0)->core.trace),       // trace
+        sizeof(((TxnData*)0)->core.stan),        // RRN
+        sizeof(((TxnData*)0)->core.respCode),    // responseCode
+        sizeof(((TxnData*)0)->extention)         // extention
     };
 
     int8_t colSignedness[] = {
         embedDB_COLUMN_UNSIGNED, // key
-        embedDB_COLUMN_UNSIGNED, // id
+        embedDB_COLUMN_UNSIGNED, // status
+        embedDB_COLUMN_UNSIGNED, // type
+        embedDB_COLUMN_UNSIGNED, // mti
         embedDB_COLUMN_UNSIGNED, // processCode
         embedDB_COLUMN_UNSIGNED, // maskedPan
         embedDB_COLUMN_UNSIGNED, // amount
@@ -176,14 +369,38 @@ static Result_t init(TxnRecord* self) {
         embedDB_COLUMN_UNSIGNED, // responseCode
         embedDB_COLUMN_UNSIGNED  // extention
     };
-    ColumnType colTypes[] = {embedDB_COLUMN_UINT64, embedDB_COLUMN_UINT32,
-                             embedDB_COLUMN_UINT32, embedDB_COLUMN_UINT32,
-                             embedDB_COLUMN_UINT32, embedDB_COLUMN_UINT32,
-                             embedDB_COLUMN_UINT32, embedDB_COLUMN_UINT32,
-                             embedDB_COLUMN_UINT32, embedDB_COLUMN_UINT32};
 
-    schema = embedDBCreateSchema((sizeof(colSizes) / colSizes[0]), colSizes,
-                                 colSignedness, colTypes);
+    ColumnType colTypes[] = {
+        embedDB_COLUMN_UINT64, // key
+        embedDB_COLUMN_UINT32, // status
+        embedDB_COLUMN_UINT32, // type
+        embedDB_COLUMN_UINT32, // mti
+        embedDB_COLUMN_UINT32, // processCode
+        embedDB_COLUMN_UINT32, // pan
+        embedDB_COLUMN_UINT64, // amount
+        embedDB_COLUMN_UINT64, // rrn
+        embedDB_COLUMN_UINT32, // trace
+        embedDB_COLUMN_UINT32, // stan
+        embedDB_COLUMN_UINT32, // responseCode (uint16_t)
+        embedDB_COLUMN_UINT32  // extention
+    };
+
+    uint8_t columnNum = (sizeof(colSizes) / sizeof(colSizes[0]));
+    LOG_TRACE("Schema: culomn size = %d,", columnNum);
+
+    size_t schemaRecordSize =
+        sizeof(((TxnData*)0)->status) + sizeof(((TxnData*)0)->core.txnType) +
+        sizeof(((TxnData*)0)->core.mti) +
+        sizeof(((TxnData*)0)->core.processCode) +
+        sizeof(((TxnData*)0)->core.pan) + sizeof(((TxnData*)0)->core.amount) +
+        sizeof(((TxnData*)0)->core.rrn) + sizeof(((TxnData*)0)->core.trace) +
+        sizeof(((TxnData*)0)->core.stan) +
+        sizeof(((TxnData*)0)->core.respCode) + sizeof(((TxnData*)0)->extention);
+
+    LOG_DEBUG("TxnDbRecord size = %zu, schema data size = %zu", TXN_RECORD_SIZE,
+              schemaRecordSize);
+
+    schema = embedDBCreateSchema(columnNum, colSizes, colSignedness, colTypes);
     if (!schema) {
         LOG_ERROR("Txn query error: failed to create schema.");
         embedDBClose(state);
@@ -213,6 +430,7 @@ TxnRecord* txnrecord() {
 OOP_CTOR(TxnQuery) {
     self->init  = queryInit;
     self->where = queryWhere;
+    self->limit = limit;
 }
 
 TxnQuery* txnquery() {

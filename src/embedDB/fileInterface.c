@@ -52,7 +52,8 @@ int8_t FILE_REMOVE(void* finfo) {
 
 int8_t FILE_READ(void* buffer, uint32_t pageNum, uint32_t pageSize,
                  void* finfo) {
-    LOG_DEBUG("FILE_READ: page num = %d, page size = %d.", pageNum, pageSize);
+    // LOG_DEBUG("FILE_READ: page num = %d, page size = %d.", pageNum,
+    // pageSize);
     FILE_INFO* fileInfo = (FILE_INFO*)finfo;
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum,
              FILE_SEEK_ORG_SET);
@@ -63,7 +64,8 @@ int8_t FILE_READ(void* buffer, uint32_t pageNum, uint32_t pageSize,
 
 int8_t FILE_WRITE(void* buffer, uint32_t pageNum, uint32_t pageSize,
                   void* finfo) {
-    LOG_DEBUG("FILE_WRITE: page num = %d, page size = %d.", pageNum, pageSize);
+    // LOG_DEBUG("FILE_WRITE: page num = %d, page size = %d.", pageNum,
+    // pageSize);
     FILE_INFO* fileInfo = (FILE_INFO*)finfo;
     OOP_CALL(file(), seek, (FileHandle*)fileInfo->file, pageSize * pageNum,
              FILE_SEEK_ORG_SET);

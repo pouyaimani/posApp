@@ -322,9 +322,9 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
     RecColumn_t row1[] = {
         {skcv, LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_KEY_MASTER), LV_TEXT_ALIGN_RIGHT, 1}};
+        {phraseGetDef(PHRASE_KEY_MASTER), LV_TEXT_ALIGN_RIGHT, 2}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     RESET_STRING(kcv);
     RESET_STRING(skcv);
 
@@ -333,9 +333,9 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
     RecColumn_t row2[] = {
         {skcv, LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_KEY_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
+        {phraseGetDef(PHRASE_KEY_PIN), LV_TEXT_ALIGN_RIGHT, 2}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
     RESET_STRING(kcv);
     RESET_STRING(skcv);
 
@@ -344,9 +344,9 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
     RecColumn_t row3[] = {
         {skcv, LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_KEY_MAC), LV_TEXT_ALIGN_RIGHT, 1}};
+        {phraseGetDef(PHRASE_KEY_MAC), LV_TEXT_ALIGN_RIGHT, 2}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
     RESET_STRING(kcv);
     RESET_STRING(skcv);
 
@@ -355,9 +355,9 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     sprintf(skcv, "%02X-%02X-%02X-%02X", kcv[0], kcv[1], kcv[2], kcv[3]);
     RecColumn_t row4[] = {
         {skcv, LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_KEY_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
+        {phraseGetDef(PHRASE_KEY_PIN), LV_TEXT_ALIGN_RIGHT, 2}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row4), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addLineHorizontal, 2, 2, 2), ERR_OK, ;
                         , ERR_NOK);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
@@ -482,7 +482,7 @@ static int8_t buildDailyRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     TxnData* txn = &data->txn;
     uint32_t date, time;
     DEFINE_STRING(dtStr, 24);
-    unpackDateTime(txn->dateTime, &date, &time);
+    unpackDateTime(&txn->dateTime, &date, &time);
     dateTimeToStr(date, time, dtStr, sizeof(dtStr));
     // TODO" service name
     DEFINE_STRING(title, 32);
@@ -623,7 +623,7 @@ static int8_t buildDetailRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     TxnData* txn = &data->txn;
     DATE_TIME_STR(dt);
     uint16_t date, time;
-    unpackDateTime(txn->dateTime, &date, &time);
+    unpackDateTime(&txn->dateTime, &date, &time);
     shortDateTimeToStr(date, time, dt, sizeof(dt));
     DEFINE_STRING(traceStr, 16);
     snprintf(traceStr, sizeof(traceStr), "%u", txn->core.trace);

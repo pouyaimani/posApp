@@ -8,7 +8,7 @@
 #include "utility/utility.h"
 #include "error.h"
 
-#define SETTINGS_FILE_MAX_SIZE   1024
+#define SETTINGS_FILE_MAX_SIZE   2048
 #define SETTINGS_FILE_HEADER_LEN 4
 
 static Storage __storage;

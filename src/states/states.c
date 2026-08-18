@@ -88,7 +88,7 @@ void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
     TxnResult* res = getState(STATE_ID_TXN_RES);
     res->data      = *data;
     res->txnCfg    = cfg;
-    res->st        = st;
+    res->st        = *st;
     res->onSuccess = onSuccess;
     res->onFailure = onFailure;
     SM_GOTO(getState(STATE_ID_TXN_RES));

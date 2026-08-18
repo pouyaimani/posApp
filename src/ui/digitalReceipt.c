@@ -8,8 +8,8 @@
 #define DETAIL_HEIGHT             100
 #define DETAIL_ROW_TITLE_MAX_SIZE 120
 #define BUTTON_HEIGHT             40
-#define HEADER_DT_WIDTH           100
-#define HEADER_RS_WIDTH           190
+#define HEADER_DT_WIDTH           110
+#define HEADER_RS_WIDTH           180
 #define HEADER_TEXT_WIDTH         130
 
 typedef struct {

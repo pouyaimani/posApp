@@ -57,7 +57,7 @@ static void saveWifiInfo(State* parent, WifiApInfo_t* ap, const char* pwd) {
                   phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
-    settings()->terminal.netRoute = NET_ROUTE_WIFI;
+    // settings()->terminal.netRoute = NET_ROUTE_WIFI;
     settings()->save();
 }
 
@@ -114,6 +114,12 @@ static void WifiEnterPass(State* parent) {
 static Menu* wifiMenu = NULL;
 
 STATE_DEF_ENTER(WifiScan) {
+    Result_t res                  = network()->init(NET_ROUTE_WIFI);
+    settings()->terminal.netRoute = NET_ROUTE_WIFI;
+    settings()->save();
+    if (res.err != ERR_DSC_OK) {
+        LOG_DEBUG("Network init error = %d", res.err);
+    }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SEARCHING_4_WIFI),
               phraseGetDef(PHRASE_PLEASE_WAIT));
     if (wifi()->startScan() != WIFI_ERR_OK) {
@@ -178,8 +184,15 @@ static void WifiScan(State* parent) {
 /******************** Cellular connect sub state **********************/
 
 STATE_DEF_ENTER(CellularLogin) {
+    Result_t res                  = network()->init(NET_ROUTE_CELLULAR);
+    settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
+    settings()->save();
+    if (res.err != ERR_DSC_OK) {
+        LOG_DEBUG("Network init error = %d", res.err);
+    }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING_2_NET),
               phraseGetDef(PHRASE_PLEASE_WAIT));
+    OOP_CALL(cel, checkSimStatus);
     if (OOP_CALL(cel, getSimStatus) != SIM_STATUS_OK) {
         GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                   phraseGetDef(PHRASE_CONNECTION_ERR),
@@ -193,15 +206,15 @@ STATE_DEF_EXIT(CellularLogin) {}
 
 STATE_DEF_HANDLE(CellularLogin, CellEvent) {
     if (ev->pppSt == CELL_PPP_SUCESS) {
-        Result_t res = network()->setRoute(NET_ROUTE_CELLULAR);
-        if (res.err != ERR_DSC_OK) {
-            LOG_TRACE("Unable to set device route.");
-            GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                      phraseGetDef(PHRASE_CONNECTION_ERR), "");
-            return;
-        }
-        settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
-        settings()->save();
+        // Result_t res = network()->setRoute(NET_ROUTE_CELLULAR);
+        // if (res.err != ERR_DSC_OK) {
+        //     LOG_TRACE("Unable to set device route.");
+        //     GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+        //               phraseGetDef(PHRASE_CONNECTION_ERR), "");
+        //     return;
+        // }
+        // settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
+        // settings()->save();
         GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
                   phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
     } else if (ev->pppSt == CELL_PPP_FAILURE) {

@@ -168,6 +168,7 @@ typedef enum {
     ERR_DSC_ALREADY_EXISTS,
     ERR_DSC_BAD_PARAMETER,
     ERR_DSC_NOT_FOUND,
+    ERR_DSC_IS_NOT_INIT,
 
     /* Device */
     ERR_DSC_DEVICE,

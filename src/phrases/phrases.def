@@ -422,6 +422,8 @@ X(PHRASE_VERSION                       ,   "نسخه"              ,   ""
 )
 X(PHRASE_ENTER_CHARGE_AMNT             ,   "ورود مبلغ دلخواه"              ,   ""
 )
+X(PHRASE_TXN_NOT_FND                   ,   "تراکنش یافت نشد"              ,   ""
+)
 /**********************************************************************
  *
  *                  Report and Transaction Types
