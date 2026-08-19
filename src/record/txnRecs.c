@@ -6,13 +6,33 @@
 #include "utility/utility.h"
 #include "common.h"
 
+/**
+ * @brief Path to the transaction record data file.
+ */
 #define TRANS_RECORD_PATH "/mtd0/txn_records.bin"
-#define TRANS_IDX_PATH    "/mtd0/txn_idx.bin"
 
+/**
+ * @brief Path to the transaction database index file.
+ */
+#define TRANS_IDX_PATH "/mtd0/txn_idx.bin"
+
+/**
+ * @brief Number of pages allocated to the transaction database.
+ */
 #define PAGE_NUMBER 10
 
+/**
+ * @brief Maximum number of transaction records supported by the database.
+ */
 #define MAX_RECORDS 6000
 
+/**
+ * @brief Serialized size of a transaction record excluding its database key.
+ *
+ * This value is calculated from the individual TxnData members instead of
+ * using sizeof(TxnData), because TxnData may contain fields that are not
+ * persisted and may also contain compiler-dependent padding.
+ */
 #define TXN_RECORD_SIZE                                                        \
     (sizeof(((TxnData*)0)->status) + sizeof(((TxnData*)0)->core.txnType) +     \
      sizeof(((TxnData*)0)->core.mti) +                                         \
@@ -22,12 +42,51 @@
      sizeof(((TxnData*)0)->core.stan) + sizeof(((TxnData*)0)->core.respCode) + \
      sizeof(((TxnData*)0)->extention))
 
-static embedDBState*  state  = NULL;
+/**
+ * @brief Global embedDB database state.
+ *
+ * Created by init() and shared by transaction record operations.
+ */
+static embedDBState* state = NULL;
+
+/**
+ * @brief Schema describing the serialized transaction record layout.
+ *
+ * Created during transaction database initialization and used by query
+ * operators.
+ */
 static embedDBSchema* schema = NULL;
 
+/**
+ * @brief Singleton instance of the transaction record service.
+ */
 static TxnRecord __txnrecord;
-static TxnQuery  __txnquery;
 
+/**
+ * @brief Singleton instance of the transaction query service.
+ */
+static TxnQuery __txnquery;
+
+/**
+ * @brief Temporary key buffer used for limited transaction queries.
+ *
+ * The keys are maintained in sorted order by insertKey().
+ *
+ * For QUERY_LIMIT_EARLIEST, keys are stored in ascending order.
+ * For QUERY_LIMIT_LATEST, keys are stored in descending order.
+ */
+static uint64_t sortedkeys[10];
+
+/**
+ * @brief Serialize a transaction into its database record representation.
+ *
+ * Only the persistent fields of TxnData are copied. The database key
+ * (dateTime) is stored separately by embedDB and is therefore not included
+ * in the serialized record.
+ *
+ * @param[out] buf Destination buffer.
+ * @param[in] txn Transaction to serialize.
+ */
 static void serialize(uint8_t* buf, TxnData* txn) {
     uint8_t* p = buf;
 
@@ -64,6 +123,16 @@ static void serialize(uint8_t* buf, TxnData* txn) {
     memcpy(p, &txn->extention, sizeof(txn->extention));
 }
 
+/**
+ * @brief Deserialize a database record into a TxnData structure.
+ *
+ * The supplied key is assigned to txn->dateTime and the serialized
+ * transaction fields are restored from the record buffer.
+ *
+ * @param[in]  buf  Serialized transaction record.
+ * @param[in]  key  Database key associated with the record.
+ * @param[out] txn  Destination transaction structure.
+ */
 static void deserialize(const uint8_t* buf, uint64_t* key, TxnData* txn) {
     const uint8_t* p = buf;
 
@@ -102,12 +171,32 @@ static void deserialize(const uint8_t* buf, uint64_t* key, TxnData* txn) {
     memcpy(&txn->extention, p, sizeof(txn->extention));
 }
 
+/**
+ * @brief Deserialize and log a transaction record.
+ *
+ * Convenience helper used by iterateThrough().
+ *
+ * @param[in] rec Serialized transaction record.
+ * @param[in] key Database key associated with the record.
+ *
+ * @return Error descriptor indicating the logging status.
+ */
 static ErrorDsc_t logRecord(uint8_t* rec, uint64_t* key) {
     TxnData txn;
     deserialize(rec, key, &txn);
     logTxnCore(&txn);
 }
 
+/**
+ * @brief Insert a transaction into embedDB.
+ *
+ * The transaction is serialized and inserted using txn->dateTime as
+ * its primary key.
+ *
+ * @param[in] txn Transaction to insert.
+ *
+ * @return Result_t containing the insertion status.
+ */
 static Result_t txnInsert(TxnData* txn) {
     TRACE_POINT;
     Result_t res = {.err = ERR_DSC_OK};
@@ -132,6 +221,14 @@ static Result_t txnInsert(TxnData* txn) {
     return res;
 }
 
+/**
+ * @brief Iterate through all records in the transaction database.
+ *
+ * Records are read sequentially using an embedDB iterator and logged using
+ * logRecord().
+ *
+ * @return Result_t containing the iteration status.
+ */
 static Result_t iterateThrough() {
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_INVALID_ARG, res);
@@ -145,6 +242,13 @@ static Result_t iterateThrough() {
     return res;
 }
 
+/**
+ * @brief Reset the transaction database.
+ *
+ * Clears the database files and resets embedDB to its initial state.
+ *
+ * @return Result_t containing the reset status.
+ */
 static Result_t txnReset() {
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_INVALID_ARG, res);
@@ -157,6 +261,15 @@ static Result_t txnReset() {
     return res;
 }
 
+/**
+ * @brief Initialize an empty query operator.
+ *
+ * Creates the query iterator and initial table-scan operator.
+ *
+ * @param[out] qo Query operator to initialize.
+ *
+ * @return Result_t containing the initialization status.
+ */
 static Result_t queryInit(QueryOperator* qo) {
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
@@ -178,6 +291,15 @@ static Result_t queryInit(QueryOperator* qo) {
     return res;
 }
 
+/**
+ * @brief Release resources associated with a query operator.
+ *
+ * Closes and frees the embedDB operator chain and iterator.
+ *
+ * @param[in,out] qo Query operator to close.
+ *
+ * @return Result_t containing the cleanup status.
+ */
 static Result_t queryClose(QueryOperator* qo) {
     Result_t res = {.err = ERR_DSC_OK};
 
@@ -197,6 +319,18 @@ static Result_t queryClose(QueryOperator* qo) {
     return res;
 }
 
+/**
+ * @brief Add a selection condition to a query.
+ *
+ * Wraps the current query operator with an embedDB selection operator.
+ *
+ * @param[in,out] qo Query operator.
+ * @param[in] column Column on which the condition is applied.
+ * @param[in] comparison Comparison operation.
+ * @param[in] value Value used by the comparison.
+ *
+ * @return Result_t containing the operation status.
+ */
 static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
                            void* value) {
     Result_t res = {.err = ERR_DSC_OK};
@@ -216,6 +350,14 @@ static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
 //     limit, int32Comparator); return res;
 // }
 
+/**
+ * @brief Configure the result limit for a query.
+ *
+ * @param[in,out] qo Query operator.
+ * @param[in] limit Limit configuration.
+ *
+ * @return Result_t containing the operation status.
+ */
 static Result_t limit(QueryOperator* qo, QueryLimit limit) {
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
@@ -223,6 +365,23 @@ static Result_t limit(QueryOperator* qo, QueryLimit limit) {
     return res;
 }
 
+/**
+ * @brief Insert a key into a bounded sorted key list.
+ *
+ * The function maintains at most limitCount keys.
+ *
+ * For QUERY_LIMIT_EARLIEST, keys are kept in ascending order and the
+ * smallest keys are retained.
+ *
+ * For QUERY_LIMIT_LATEST, keys are kept in descending order and the
+ * largest keys are retained.
+ *
+ * @param[in,out] keys       Sorted key array.
+ * @param[in,out] count      Current number of stored keys.
+ * @param[in]     limitCount Maximum number of keys to retain.
+ * @param[in]     key        Key to insert.
+ * @param[in]     mode       Ordering/selection mode.
+ */
 static void insertKey(uint64_t* keys, uint32_t* count, uint32_t limitCount,
                       uint64_t key, QueryLimitMode mode) {
     if (keys == NULL || count == NULL || limitCount == 0 ||
@@ -279,10 +438,20 @@ static void insertKey(uint64_t* keys, uint32_t* count, uint32_t limitCount,
         keys[pos] = key;
         *count    = n;
     }
-}
+};
 
-static uint64_t sortedkeys[10];
-
+/**
+ * @brief Deserialize and process a transaction from a query result buffer.
+ *
+ * The query operator buffer contains the database key followed by the
+ * serialized transaction payload.
+ *
+ * @param[in] buf      Query result buffer.
+ * @param[in] handler  Transaction callback.
+ * @param[in] userData User-defined callback context.
+ *
+ * @return true if query processing should continue, false otherwise.
+ */
 static bool processTxnRecord(const uint8_t* buf, TxnHandler handler,
                              void* userData) {
     uint64_t key;
@@ -297,6 +466,17 @@ static bool processTxnRecord(const uint8_t* buf, TxnHandler handler,
     return handler(&data, userData);
 }
 
+/**
+ * @brief Execute an unlimited transaction query.
+ *
+ * Each matching record is deserialized and passed directly to the handler.
+ *
+ * @param[in,out] qo       Query operator.
+ * @param[in]     handler  Transaction callback.
+ * @param[in]     userData User-defined callback context.
+ *
+ * @return true if at least one transaction was found.
+ */
 static bool selectAllTransactions(QueryOperator* qo, TxnHandler handler,
                                   void* userData) {
     bool found = false;
@@ -313,6 +493,16 @@ static bool selectAllTransactions(QueryOperator* qo, TxnHandler handler,
     return found;
 }
 
+/**
+ * @brief Execute a limited query and collect matching transaction keys.
+ *
+ * All matching records are scanned, but only the keys required by the
+ * configured limit are retained in sortedkeys.
+ *
+ * @param[in,out] qo Query operator containing the limit configuration.
+ *
+ * @return Number of keys retained in sortedkeys.
+ */
 static uint32_t collectLimitedKeys(QueryOperator* qo) {
     uint32_t count = 0;
 
@@ -329,6 +519,16 @@ static uint32_t collectLimitedKeys(QueryOperator* qo) {
     return count;
 }
 
+/**
+ * @brief Retrieve and process transactions identified by sorted keys.
+ *
+ * Each key is retrieved from embedDB, deserialized, and passed to the
+ * transaction handler in the order maintained by insertKey().
+ *
+ * @param[in] count Number of keys to process.
+ * @param[in] handler Transaction callback.
+ * @param[in] userData User-defined callback context.
+ */
 static void processLimitedTransactions(uint32_t count, TxnHandler handler,
                                        void* userData) {
     uint8_t rec[TXN_RECORD_SIZE];
@@ -350,6 +550,18 @@ static void processLimitedTransactions(uint32_t count, TxnHandler handler,
     }
 }
 
+/**
+ * @brief Execute a configured transaction query.
+ *
+ * Handles both unlimited queries and limited earliest/latest queries.
+ *
+ * @param[in,out] qo       Configured query operator.
+ * @param[in]     handler  Callback invoked for each selected transaction.
+ * @param[in]     userData User-defined callback context.
+ *
+ * @return ERR_DSC_OK when matching records are found, ERR_DSC_NOT_FOUND
+ *         when no records match, or an appropriate error code on failure.
+ */
 static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
                           void* userData) {
     Result_t res;
@@ -382,6 +594,16 @@ static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
     return res;
 }
 
+/**
+ * @brief Initialize the transaction database and its schema.
+ *
+ * Allocates the embedDB state, configures the database, and creates the
+ * transaction record schema used by query operators.
+ *
+ * @param[in,out] self Transaction record service instance.
+ *
+ * @return Result_t containing the initialization status.
+ */
 static Result_t init(TxnRecord* self) {
     Result_t res = {.err = ERR_DSC_OK};
     state        = (embedDBState*)EMDB_MEM_ALLOC(sizeof(embedDBState));
@@ -478,6 +700,13 @@ static Result_t init(TxnRecord* self) {
     return res;
 }
 
+/**
+ * @brief Construct the TxnRecord service.
+ *
+ * Assigns the implementation functions to the TxnRecord interface.
+ *
+ * @param[in,out] self Transaction record service instance.
+ */
 OOP_CTOR(TxnRecord) {
     self->init    = init;
     self->insert  = txnInsert;
