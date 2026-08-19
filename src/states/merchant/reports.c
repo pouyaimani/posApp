@@ -343,6 +343,8 @@ static int8_t checkPrinterStatus() {
 }
 
 STATE_DEF_ENTER(ExtractData) {
+    uint64_t rrn;
+    uint32_t trace;
     LOG_DEBUG("start date = %s", rquery.startDate);
     LOG_DEBUG("start time = %s", rquery.startTime);
     LOG_DEBUG("end date = %s", rquery.endDate);
@@ -393,6 +395,7 @@ STATE_DEF_ENTER(ExtractData) {
     Result_t      res = txnquery()->init(&op);
     if (res.err != ERR_DSC_OK) {
         LOG_ERROR("query initialization failed.");
+        txnquery()->close(&op);
         SM_GOTO(mainMenu);
         return;
     }
@@ -414,7 +417,9 @@ STATE_DEF_ENTER(ExtractData) {
     }
     if (QUERY_IS_USING_REF_NUM(rquery.filter)) {
         TRACE_POINT;
-        txnquery()->where(&op, TXN_REC_COL_REFNUM, SELECT_EQ, &rquery.refNum);
+        STRING_TO_U64(rquery.refNum, &rrn);
+        LOG_TRACE("extracting txn with rrn = %llu", rrn);
+        txnquery()->where(&op, TXN_REC_COL_RRN, SELECT_EQ, &rrn);
     }
     if (QUERY_IS_USING_TXN_TYPE(rquery.filter)) {
         TRACE_POINT;
@@ -422,7 +427,9 @@ STATE_DEF_ENTER(ExtractData) {
     }
     if (QUERY_IS_USING_TRACE(rquery.filter)) {
         TRACE_POINT;
-        txnquery()->where(&op, TXN_REC_COL_TRACE, SELECT_EQ, &rquery.trace);
+        STRING_TO_U32(rquery.trace, &trace);
+        LOG_TRACE("extracting txn with trace = %lu", trace);
+        txnquery()->where(&op, TXN_REC_COL_TRACE, SELECT_EQ, &trace);
     }
     if (QUERY_IS_USING_LATEST(rquery.filter)) {
         TRACE_POINT;
@@ -433,6 +440,7 @@ STATE_DEF_ENTER(ExtractData) {
               phraseGetDef(PHRASE_PLEASE_WAIT));
     OOP_CALL(infoPage(), forceUpdate);
     res = txnrecord()->select(&op, handleExtractedData, (void*)&recData);
+    txnquery()->close(&op);
     OOP_CALL(infoPage(), hide);
     if (res.err != ERR_DSC_OK) {
         GOTO_INFO(mainMenu, mainMenu, INFO_ERROR,

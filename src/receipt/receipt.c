@@ -30,15 +30,15 @@ static int safe_shape(const char* in, char* out, size_t max) {
     if (!in || !out) {
         return ERR_BAD_PARAMETER;
     }
-    uint32_t tick = OOP_CALL(sys(), getTick);
-    size_t   len  = strlen(in);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
+    size_t len = strlen(in);
     if (len >= max) {
         LOG_ERROR("Text too long for shaping buffer");
         return ERR_NOK;
     }
     lv_text_ap_proc(in, out);
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("safe_shape process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("safe_shape process time = %u ms", elapsed);
     return ERR_OK;
 }
 
@@ -47,7 +47,7 @@ static Result_t flushReceipt(Receipt* rec) {
     RETURN_VALUE_IF_NULL(rec, res.err = ERR_DSC_INVALID_ARG;, res);
     if (rec->height == 0)
         return res;
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
     // Send current buffer to printer
     res.detail.printer = printer()->print(rec->bitmap, rec->width, rec->height);
 
@@ -59,9 +59,9 @@ static Result_t flushReceipt(Receipt* rec) {
     lv_canvas_fill_bg(rec->canvas, lv_color_white(), LV_OPA_COVER);
 
     // Reset cursor
-    rec->height      = 0;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("flushReceipt process time = %u ms", elapsed);
+    rec->height = 0;
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("flushReceipt process time = %u ms", elapsed);
     return res;
 }
 
@@ -83,7 +83,7 @@ static void draw_text_line(lv_layer_t* layer, int x, int y, int w, int height,
                            const char* txt, lv_text_align_t align,
                            const lv_font_t* font) {
     lv_draw_label_dsc_t dsc;
-    uint32_t            tick = OOP_CALL(sys(), getTick);
+    // uint32_t            tick = OOP_CALL(sys(), getTick);
     lv_draw_label_dsc_init(&dsc);
     dsc.color    = lv_color_black();
     dsc.flag     = 0;
@@ -96,17 +96,17 @@ static void draw_text_line(lv_layer_t* layer, int x, int y, int w, int height,
         .x1 = x, .y1 = y, .x2 = x + w - 1, .y2 = y + height - 1};
 
     lv_draw_label(layer, &dsc, &coords);
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("draw_text_line process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("draw_text_line process time = %u ms", elapsed);
 }
 
 static uint16_t measure_text_height(const char* txt, int width,
                                     const lv_font_t* font) {
     lv_point_t size;
-    uint32_t   tick = OOP_CALL(sys(), getTick);
+    // uint32_t   tick = OOP_CALL(sys(), getTick);
     lv_text_get_size(&size, txt, font, 0, 0, width, LV_TEXT_FLAG_NONE);
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("measure_text_height process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("measure_text_height process time = %u ms", elapsed);
     return size.y;
 }
 
@@ -118,7 +118,7 @@ static int8_t addText(Receipt* r, RecFont_t font, int count,
 
     lv_font_t* lvFont = font == REC_FONT_REGULAR ? &FONT_16 : &FONT_20;
 
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
 
     int totalWeight = 0;
     if (count > MAX_CULOMN_CNT) {
@@ -168,8 +168,8 @@ static int8_t addText(Receipt* r, RecFont_t font, int count,
     }
     lv_canvas_finish_layer(r->canvas, &layer);
     r->height += height;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addText process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("addText process time = %u ms", elapsed);
     return ERR_OK;
 }
 
@@ -178,7 +178,7 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
     RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
     if (count > MAX_CULOMN_CNT) {
         LOG_ERROR("Too many columns");
         count = MAX_CULOMN_CNT;
@@ -263,8 +263,8 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
     lv_canvas_finish_layer(r->canvas, &layer);
 
     r->height += max_h;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addTable process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("addTable process time = %u ms", elapsed);
     return ERR_OK;
 }
 
@@ -275,7 +275,7 @@ static int8_t addImage(Receipt* r, int count, const RecColumn_t* cols) {
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(cols, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT((count <= 0), false, ;, ERR_BAD_PARAMETER);
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
     if (count > MAX_CULOMN_CNT) {
         LOG_ERROR("Too many columns");
         count = MAX_CULOMN_CNT;
@@ -376,8 +376,8 @@ static int8_t addImage(Receipt* r, int count, const RecColumn_t* cols) {
     lv_canvas_finish_layer(r->canvas, &layer);
 
     r->height += maxHeight;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addImage process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("addImage process time = %u ms", elapsed);
     return ERR_OK;
 }
 
@@ -387,7 +387,7 @@ static int8_t addTextWithBorder(Receipt* r, RecFont_t font, int count,
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(cols, ;, ERR_BAD_PARAMETER);
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
     if (count <= 0) {
         return ERR_BAD_PARAMETER;
     }
@@ -486,8 +486,8 @@ static int8_t addTextWithBorder(Receipt* r, RecFont_t font, int count,
     lv_canvas_finish_layer(r->canvas, &layer);
 
     r->height += max_h;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addTextWithBorder process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("addTextWithBorder process time = %u ms", elapsed);
     return ERR_OK;
 }
 
@@ -497,10 +497,10 @@ static int8_t addSpace(Receipt* r, uint16_t h) {
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(flushIfNeeded(r, h), true, ;, ERR_NOK);
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
     r->height += h;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addSpace process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("addSpace process time = %u ms", elapsed);
     return ERR_OK;
 }
 
@@ -512,7 +512,7 @@ static int8_t addHighlightedText(Receipt* r, const char* text, RecFont_t font,
 
     lv_font_t* lvFont = font == REC_FONT_REGULAR ? &FONT_16 : &FONT_20;
 
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
 
     // Measure text ---
     uint16_t text_h = measure_text_height(text, PRINTER_WIDTH_PIX, lvFont);
@@ -567,8 +567,8 @@ static int8_t addHighlightedText(Receipt* r, const char* text, RecFont_t font,
     lv_canvas_finish_layer(r->canvas, &layer);
 
     r->height += height;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addHighlightedText process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("addHighlightedText process time = %u ms", elapsed);
     return ERR_OK;
 }
 
@@ -615,7 +615,7 @@ static int8_t addLineHorizontal(Receipt* r, uint16_t thickness,
     RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
-    uint32_t tick = OOP_CALL(sys(), getTick);
+    // uint32_t tick = OOP_CALL(sys(), getTick);
     if (thickness == 0) {
         thickness = 1;
     }
@@ -646,8 +646,8 @@ static int8_t addLineHorizontal(Receipt* r, uint16_t thickness,
     lv_canvas_finish_layer(r->canvas, &layer);
 
     r->height += total_h;
-    uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
-    LOG_DEBUG("addLineHorizontal process time = %u ms", elapsed);
+    // uint32_t elapsed = OOP_CALL(sys(), getTick) - tick;
+    // LOG_DEBUG("addLineHorizontal process time = %u ms", elapsed);
     return ERR_OK;
 }
 

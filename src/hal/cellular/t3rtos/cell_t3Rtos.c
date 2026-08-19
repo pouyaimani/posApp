@@ -149,12 +149,15 @@ static SimStatus_t getSimStatus(Cellular* self) {
     return simSt;
 }
 
-static SimStatus_t checkSimStatus(Cellular* self) {
+static void checkSimStatus(Cellular* self) {
     VAR_UNUSED(self);
-    simSt = sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0) ==
-                    SDK_CELLULAR_ERR_SIM
-                ? SIM_STATUS_ERR
-                : SIM_STATUS_OK;
+    int ret = sdkCellularIoctl(SDK_CELLULAR_CTL_CHECKSIM, 0, 0);
+    LOG_TRACE("checkSimStatus: sdkCellularIoctl() ret = %d", ret);
+    if (ret == SDK_CELLULAR_ERR_BASE || ret == SDK_CELLULAR_ERR_SIM) {
+        simSt = SIM_STATUS_ERR;
+        return;
+    }
+    simSt = SIM_STATUS_OK;
 }
 
 OOP_CTOR(CellT3Rtos) {

@@ -178,6 +178,25 @@ static Result_t queryInit(QueryOperator* qo) {
     return res;
 }
 
+static Result_t queryClose(QueryOperator* qo) {
+    Result_t res = {.err = ERR_DSC_OK};
+
+    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
+
+    if (qo->op) {
+        qo->op->close(qo->op);
+        embedDBFreeOperatorRecursive(&qo->op);
+    }
+
+    if (qo->it) {
+        embedDBCloseIterator(qo->it);
+        EMDB_MEM_FREE(qo->it);
+        qo->it = NULL;
+    }
+
+    return res;
+}
+
 static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
                            void* value) {
     Result_t res = {.err = ERR_DSC_OK};
@@ -264,57 +283,102 @@ static void insertKey(uint64_t* keys, uint32_t* count, uint32_t limitCount,
 
 static uint64_t sortedkeys[10];
 
+static bool processTxnRecord(const uint8_t* buf, TxnHandler handler,
+                             void* userData) {
+    uint64_t key;
+    uint8_t  rec[TXN_RECORD_SIZE];
+    TxnData  data;
+
+    memcpy(&key, buf, state->keySize);
+    memcpy(rec, buf + state->keySize, TXN_RECORD_SIZE);
+
+    deserialize(rec, &key, &data);
+
+    return handler(&data, userData);
+}
+
+static bool selectAllTransactions(QueryOperator* qo, TxnHandler handler,
+                                  void* userData) {
+    bool found = false;
+
+    while (exec(qo->op)) {
+        found = true;
+
+        if (!processTxnRecord((const uint8_t*)qo->op->recordBuffer, handler,
+                              userData)) {
+            break;
+        }
+    }
+
+    return found;
+}
+
+static uint32_t collectLimitedKeys(QueryOperator* qo) {
+    uint32_t count = 0;
+
+    memset(sortedkeys, 0, sizeof(sortedkeys));
+
+    while (exec(qo->op)) {
+        uint64_t key;
+
+        memcpy(&key, qo->op->recordBuffer, state->keySize);
+
+        insertKey(sortedkeys, &count, qo->limit.count, key, qo->limit.mode);
+    }
+
+    return count;
+}
+
+static void processLimitedTransactions(uint32_t count, TxnHandler handler,
+                                       void* userData) {
+    uint8_t rec[TXN_RECORD_SIZE];
+    TxnData data;
+
+    for (uint32_t i = 0; i < count; ++i) {
+        uint64_t key = sortedkeys[i];
+
+        if (embedDBGet(state, &key, rec) != 0) {
+            LOG_ERROR("Failed to get transaction with key = %llu", key);
+            continue;
+        }
+
+        deserialize(rec, &key, &data);
+
+        if (!handler(&data, userData)) {
+            break;
+        }
+    }
+}
+
 static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
                           void* userData) {
     Result_t res;
+
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(handler, res.err = ERR_DSC_INVALID_ARG, res);
+
     (qo->op)->init(qo->op);
+
     LOG_TRACE("Txn select: limit mode = %d, limit count = %lu", qo->limit.mode,
               qo->limit.count);
-    bool txnFound = false;
+
     if (qo->limit.mode == QUERY_LIMIT_NO) {
-        while (exec(qo->op)) {
-            txnFound = true;
-            res.err  = ERR_DSC_OK;
-            uint8_t  rec[TXN_RECORD_SIZE];
-            uint64_t key;
-            uint8_t* buf = (uint8_t*)qo->op->recordBuffer;
-            memcpy(&key, buf, state->keySize);
-            memcpy(rec, buf + state->keySize, TXN_RECORD_SIZE);
-            TxnData data;
-            deserialize(rec, &key, &data);
-            if (!handler(&data, userData))
-                break;
-        }
-    } else {
-        uint32_t count = 0;
-        LOG_TRACE("Txn select: limit mode = %d, limit count = %lu",
-                  qo->limit.mode, qo->limit.count);
-        // uint64_t keys[qo->limit.count];
-        while (exec(qo->op)) {
-            txnFound = true;
-            uint64_t key;
-            uint8_t* buf = (uint8_t*)qo->op->recordBuffer;
-            memcpy(&key, buf, state->keySize);
-            insertKey(sortedkeys, &count, qo->limit.count, key, qo->limit.mode);
-        }
-        if (txnFound)
-            for (int i = 0; i < qo->limit.count; i++) {
-                uint8_t rec[TXN_RECORD_SIZE];
-                TxnData data;
-                TRACE_POINT;
-                embedDBGet(state, &sortedkeys[i], rec);
-                deserialize(rec, &sortedkeys[i], &data);
-                if (!handler(&data, userData))
-                    break;
-            }
+        bool found = selectAllTransactions(qo, handler, userData);
+
+        res.err = found ? ERR_DSC_OK : ERR_DSC_NOT_FOUND;
+        return res;
     }
-    embedDBCloseIterator(qo->it);
-    (qo->op)->close((qo->op));
-    EMDB_MEM_FREE(qo->it);
-    embedDBFreeOperatorRecursive(&qo->op);
-    res.err = txnFound ? ERR_DSC_OK : ERR_DSC_NOT_FOUND;
+
+    uint32_t count = collectLimitedKeys(qo);
+
+    if (count == 0) {
+        res.err = ERR_DSC_NOT_FOUND;
+        return res;
+    }
+
+    processLimitedTransactions(count, handler, userData);
+
+    res.err = ERR_DSC_OK;
     return res;
 }
 
@@ -348,9 +412,9 @@ static Result_t init(TxnRecord* self) {
         sizeof(((TxnData*)0)->core.processCode), // processCode
         sizeof(((TxnData*)0)->core.pan),         // maskedPan
         sizeof(((TxnData*)0)->core.amount),      // amount
-        sizeof(((TxnData*)0)->core.rrn),         // refNum
+        sizeof(((TxnData*)0)->core.rrn),         // rrn
         sizeof(((TxnData*)0)->core.trace),       // trace
-        sizeof(((TxnData*)0)->core.stan),        // RRN
+        sizeof(((TxnData*)0)->core.stan),        // stan
         sizeof(((TxnData*)0)->core.respCode),    // responseCode
         sizeof(((TxnData*)0)->extention)         // extention
     };
@@ -363,9 +427,9 @@ static Result_t init(TxnRecord* self) {
         embedDB_COLUMN_UNSIGNED, // processCode
         embedDB_COLUMN_UNSIGNED, // maskedPan
         embedDB_COLUMN_UNSIGNED, // amount
-        embedDB_COLUMN_UNSIGNED, // refNum
+        embedDB_COLUMN_UNSIGNED, // rrn
         embedDB_COLUMN_UNSIGNED, // trace
-        embedDB_COLUMN_UNSIGNED, // RRN
+        embedDB_COLUMN_UNSIGNED, // stan
         embedDB_COLUMN_UNSIGNED, // responseCode
         embedDB_COLUMN_UNSIGNED  // extention
     };
@@ -431,6 +495,7 @@ OOP_CTOR(TxnQuery) {
     self->init  = queryInit;
     self->where = queryWhere;
     self->limit = limit;
+    self->close = queryClose;
 }
 
 TxnQuery* txnquery() {

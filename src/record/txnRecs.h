@@ -17,9 +17,9 @@ typedef enum {
     TXN_REC_COL_PRCODE,    // processCode
     TXN_REC_COL_PAN,       // pan
     TXN_REC_COL_AMNT,      // amount
-    TXN_REC_COL_REFNUM,    // rrn
+    TXN_REC_COL_RRN,       // rrn
     TXN_REC_COL_TRACE,     // trace
-    TXN_REC_COL_RRN,       // stan
+    TXN_REC_COL_STAN,      // stan
     TXN_REC_COL_RESP_CODE, // responseCode
     TXN_REC_COL_EXTENTION, // extention
 } TxnRecColumns_t;
@@ -52,6 +52,7 @@ OOP_CLASS(TxnQuery) {
     OOP_METHOD(Result_t, where, QueryOperator * operator, int column, int,
                void* value);
     OOP_METHOD(Result_t, limit, QueryOperator * op, QueryLimit limit);
+    OOP_METHOD(Result_t, close, QueryOperator*);
 };
 
 TxnQuery* txnquery(void);
