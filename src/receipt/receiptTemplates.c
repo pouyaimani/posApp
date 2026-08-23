@@ -49,12 +49,12 @@ static int8_t receiptSectionBankName(Receipt* rec, const char* pan) {
 }
 
 static int8_t receiptSectionRefTrace(Receipt* rec, const uint32_t* trace,
-                                     const uint32_t* refNum) {
+                                     const uint64_t* refNum) {
     DEFINE_STRING(traceStr, 64);
-    snprintf(traceStr, sizeof(traceStr), "%s:%d", phraseGetDef(PHRASE_TRACE),
+    snprintf(traceStr, sizeof(traceStr), "%s:%lu", phraseGetDef(PHRASE_TRACE),
              *trace);
     DEFINE_STRING(refStr, 64);
-    snprintf(refStr, sizeof(refStr), "%s:%d", phraseGetDef(PHRASE_REFERENCE),
+    snprintf(refStr, sizeof(refStr), "%s:%llu", phraseGetDef(PHRASE_REFERENCE),
              *refNum);
     RecColumn_t row[] = {{refStr, LV_TEXT_ALIGN_LEFT, 1},
                          {traceStr, LV_TEXT_ALIGN_RIGHT, 1}};
@@ -189,9 +189,7 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 }
 
-static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
-    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
+static int8_t financialTxnCommonRwos(Receipt* rec, const ReceiptData* data) {
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
@@ -203,6 +201,14 @@ static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NOT(
         receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
         , ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
+    TxnData* txn = &data->txn;
+    RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
     if (data->txn.core.respCode != RESP_CODE_SUCESS) {
         receiptSectionFailure(rec, data->txn.core.respCode);
     } else {
@@ -216,7 +222,34 @@ static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
 static int8_t buildBillReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
+    TxnData* txn = &data->txn;
+    RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
+    BillType_t  btype   = getBillType(txn->extention.bill.billId);
+    char*       orgName = getBillOrgName(btype);
+    RecColumn_t row[]   = {
+        {orgName, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_BILL_ORG), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+
+    RecColumn_t row1[] = {
+        {txn->extention.bill.billId, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_BILL_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
+
+    RecColumn_t row2[] = {
+        {txn->extention.bill.paymentId, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_PAYMENT_ID), LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
+
+    if (data->txn.core.respCode != RESP_CODE_SUCESS) {
+        receiptSectionFailure(rec, data->txn.core.respCode);
+    } else {
+        RETURN_VALUE_IF_NOT(
+            receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;, ERR_NOK);
+    }
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -225,16 +258,7 @@ static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
-    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
-        ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
-                        ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
-        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
 
     RETURN_VALUE_IF_NOT(
         receiptSectionOperatorPhone(rec, txn->extention.charge.phoneNumber,
@@ -255,16 +279,7 @@ static int8_t buildBalanceReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
-    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
-        ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
-                        ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
-        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionBalance(rec,
                                               &txn->extention.balance.available,
                                               &txn->extention.balance.ledger),
@@ -285,16 +300,7 @@ static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
-    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionTxnHeader(rec, &txn->dateTime, txn->core.txnType), ERR_OK,
-        ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBankName(rec, data->txn.core.pan), ERR_OK,
-                        ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(
-        receiptSectionRefTrace(rec, &txn->core.trace, &txn->core.rrn), ERR_OK, ;
-        , ERR_NOK);
+    RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
     if (data->txn.core.respCode != RESP_CODE_SUCESS) {
         receiptSectionFailure(rec, data->txn.core.respCode);
     } else {

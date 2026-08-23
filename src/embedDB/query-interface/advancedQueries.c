@@ -1114,7 +1114,8 @@ embedDBAggregateFunc* createSumAggregate(uint8_t colNum) {
     aggFunc->compute = sumCompute;
     aggFunc->state   = EMDB_MEM_ALLOC(sizeof(int8_t) + sizeof(int64_t));
     *((uint8_t*)aggFunc->state + sizeof(int64_t)) = colNum;
-    aggFunc->colSize                              = -8;
+    aggFunc->colSize                              = 8;
+    // aggFunc->colSize                              = -8;
     return aggFunc;
 }
 

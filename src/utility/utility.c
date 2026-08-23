@@ -660,8 +660,12 @@ void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
  *
  * @return Bill type code.
  */
-int getBillType(const char* billId, size_t len) {
-    char    digit = billId[len - 2];
+int getBillType(const char* billId) {
+    size_t len = strlen(billId);
+    LOG_TRACE("getBillType: billId = %s", billId);
+    DEFINE_STRING(digit, 4);
+    digit[0] = billId[len - 2];
+    LOG_TRACE("getBillType: bill type digit = %s", digit);
     uint8_t type;
     STRING_TO_U8(&digit, &type);
     return type;
@@ -675,6 +679,7 @@ int getBillType(const char* billId, size_t len) {
  * @return Localized organization name string.
  */
 const char* getBillOrgName(BillType_t id) {
+    LOG_TRACE("getBillOrgName: bill id = %d", id);
     Phrases_t phrase = PHRASE_BILL_INVALID;
     switch (id) {
     //  Public Services | Pasargad Life Insurance
@@ -723,103 +728,363 @@ const char* getBillOrgName(BillType_t id) {
 }
 
 /**
- * @brief Calculate Mod-11 check digit.
- *
- * Uses weights 2..7 repeatedly.
+ * @brief Check whether a string contains only decimal digits.
  *
  * @param digits Numeric string.
+ * @param len    String length.
  *
- * @return Computed check digit.
+ * @return true if all characters are decimal digits.
  */
-static int calculateMod11(const char* digits) {
-    int    sum = 0;
-    size_t len = strlen(digits);
-
-    for (int i = (int)len - 1, weight = 2; i >= 0; --i) {
-        sum += (digits[i] - '0') * weight;
-        weight = (weight == 7) ? 2 : weight + 1;
+static bool isNumeric(const char* digits, size_t len) {
+    for (size_t i = 0U; i < len; ++i) {
+        if (digits[i] < '0' || digits[i] > '9') {
+            return false;
+        }
     }
 
-    int digit = 11 - (sum % 11);
+    return true;
+}
 
-    return (digit > 9) ? 0 : digit;
+/**
+ * @brief Calculate Mod-11 check digit for a numeric string.
+ *
+ * The supplied string must NOT contain the check digit.
+ *
+ * Weights are applied from right to left:
+ *
+ *     2, 3, 4, 5, 6, 7, 2, 3, ...
+ *
+ * The resulting remainder is converted according to the
+ * Iranian Mod-11 check-digit rule:
+ *
+ *     remainder 0 or 1 -> check digit 0
+ *     otherwise        -> 11 - remainder
+ *
+ * @param digits Numeric string without check digit.
+ * @param len    Number of digits to process.
+ *
+ * @return Calculated check digit.
+ */
+static uint8_t calculateMod11(const char* digits, size_t len) {
+    uint32_t sum    = 0U;
+    uint32_t weight = 2U;
+
+    while (len > 0U) {
+        --len;
+
+        sum += (uint32_t)(digits[len] - '0') * weight;
+
+        ++weight;
+
+        if (weight > 7U) {
+            weight = 2U;
+        }
+    }
+
+    const uint32_t remainder = sum % 11U;
+
+    return (remainder == 0U || remainder == 1U) ? 0U
+                                                : (uint8_t)(11U - remainder);
+}
+
+/**
+ * @brief Validate the check digit of a numeric string.
+ *
+ * The last digit is treated as the check digit and is not included
+ * in the Mod-11 calculation.
+ *
+ * @param digits Numeric string containing check digit.
+ *
+ * @return true if the check digit is valid.
+ */
+static bool isCheckDigitValid(const char* digits) {
+    if (digits == NULL) {
+        return false;
+    }
+
+    const size_t len = strlen(digits);
+
+    if (len < 2U) {
+        return false;
+    }
+
+    if (!isNumeric(digits, len)) {
+        return false;
+    }
+
+    const uint8_t expected = (uint8_t)(digits[len - 1U] - '0');
+
+    const uint8_t calculated = calculateMod11(digits, len - 1U);
+
+    return expected == calculated;
+}
+
+/**
+ * @brief Validate a bill identifier.
+ *
+ * Validates the format and Mod-11 check digit of the bill ID.
+ *
+ * @param billId Bill identifier.
+ *
+ * @return true if the bill ID is valid.
+ */
+bool isBillIdValid(const char* billId) {
+    if (billId == NULL) {
+        return false;
+    }
+
+    const size_t len = strlen(billId);
+
+    if (len < LEN_MIN_BILL_ID || len > LEN_MAX_BILL_ID) {
+        return false;
+    }
+
+    return isCheckDigitValid(billId);
+}
+
+/**
+ * @brief Validate payment ID control digit #1.
+ *
+ * Control digit #1 is the second-last digit of the payment ID.
+ * It is calculated using all payment ID digits preceding it.
+ *
+ * @param paymentId Payment identifier.
+ *
+ * @return true if control digit #1 is valid.
+ */
+static bool isPaymentControlDigit1Valid(const char* paymentId) {
+    const size_t len = strlen(paymentId);
+
+    if (len < 3U) {
+        return false;
+    }
+
+    const uint8_t expected = (uint8_t)(paymentId[len - 2U] - '0');
+
+    const uint8_t calculated = calculateMod11(paymentId, len - 2U);
+
+    return expected == calculated;
+}
+
+/**
+ * @brief Remove leading zeroes from a numeric string.
+ *
+ * The input string is not modified.
+ *
+ * At least one digit is always retained.
+ *
+ * Example:
+ *
+ *     "0001234" -> "1234"
+ *     "0000"    -> "0"
+ *
+ * @param value  Input string.
+ * @param length Input length.
+ */
+static void trimLeadingZeros(const char** value, size_t* length) {
+    while (*length > 1U && **value == '0') {
+        ++(*value);
+        --(*length);
+    }
+}
+
+/**
+ * @brief Calculate payment ID control digit #2.
+ *
+ * The calculation is performed over:
+ *
+ *     trim(billId) +
+ *     trim(paymentId without control digit #2)
+ *
+ * The two strings are processed from right to left without
+ * constructing a temporary concatenated buffer.
+ *
+ * @param billId     Bill identifier.
+ * @param paymentId  Payment identifier.
+ *
+ * @return Calculated control digit #2.
+ */
+static uint8_t calculatePaymentControlDigit2(const char* billId,
+                                             const char* paymentId) {
+    const char* bill    = billId;
+    const char* payment = paymentId;
+
+    size_t billLen    = strlen(billId);
+    size_t paymentLen = strlen(paymentId);
+
+    /*
+     * Leading zeroes must be removed independently.
+     */
+    trimLeadingZeros(&bill, &billLen);
+    trimLeadingZeros(&payment, &paymentLen);
+
+    /*
+     * Remove payment control digit #2.
+     */
+    --paymentLen;
+
+    uint32_t sum    = 0U;
+    uint32_t weight = 2U;
+
+    /*
+     * Payment ID is on the right side of:
+     *
+     *     bill + payment
+     *
+     * Therefore process it first.
+     */
+    while (paymentLen > 0U) {
+        --paymentLen;
+
+        sum += (uint32_t)(payment[paymentLen] - '0') * weight;
+
+        ++weight;
+
+        if (weight > 7U) {
+            weight = 2U;
+        }
+    }
+
+    /*
+     * Continue into the bill ID.
+     */
+    while (billLen > 0U) {
+        --billLen;
+
+        sum += (uint32_t)(bill[billLen] - '0') * weight;
+
+        ++weight;
+
+        if (weight > 7U) {
+            weight = 2U;
+        }
+    }
+
+    const uint32_t remainder = sum % 11U;
+
+    return (remainder == 0U || remainder == 1U) ? 0U
+                                                : (uint8_t)(11U - remainder);
+}
+
+/**
+ * @brief Validate payment ID control digit #2.
+ *
+ * @param billId     Bill identifier.
+ * @param paymentId  Payment identifier.
+ *
+ * @return true if control digit #2 is valid.
+ */
+static bool isPaymentControlDigit2Valid(const char* billId,
+                                        const char* paymentId) {
+    const size_t paymentLen = strlen(paymentId);
+
+    if (paymentLen < 2U) {
+        return false;
+    }
+
+    const uint8_t expected = (uint8_t)(paymentId[paymentLen - 1U] - '0');
+
+    const uint8_t calculated = calculatePaymentControlDigit2(billId, paymentId);
+
+    return expected == calculated;
+}
+
+/**
+ * @brief Validate a bill ID and its corresponding payment ID.
+ *
+ * Validation consists of:
+ *
+ * 1. Bill ID format and check digit.
+ * 2. Payment ID format.
+ * 3. Payment ID control digit #1.
+ * 4. Payment ID control digit #2 using bill ID + payment ID.
+ *
+ * @param billId     Bill identifier.
+ * @param paymentId  Payment identifier.
+ *
+ * @return true if the complete bill/payment pair is valid.
+ */
+bool isBillValid(const char* billId, const char* paymentId) {
+    if (billId == NULL || paymentId == NULL) {
+        return false;
+    }
+
+    const size_t paymentLen = strlen(paymentId);
+
+    if (paymentLen < LEN_MIN_PAYMENT_ID || paymentLen > LEN_MAX_PAYMENT_ID) {
+        return false;
+    }
+
+    if (!isNumeric(paymentId, paymentLen)) {
+        return false;
+    }
+
+    if (!isBillIdValid(billId)) {
+        return false;
+    }
+
+    if (!isPaymentControlDigit1Valid(paymentId)) {
+        return false;
+    }
+
+    if (!isPaymentControlDigit2Valid(billId, paymentId)) {
+        return false;
+    }
+
+    return true;
 }
 
 /**
  * @brief Extract bill amount from payment identifier.
  *
- * Amount is derived from payment ID and multiplied by 1000.
+ * The amount is represented by the payment ID payload before
+ * its final five digits and is expressed in the smallest monetary
+ * unit by appending three zeroes.
  *
  * @param paymentId Payment identifier.
- * @param amount Output amount string.
- * @param alen Output buffer size.
+ * @param amount    Output amount string.
+ * @param alen      Size of amount buffer in bytes.
  *
- * @return true.
+ * @return true on success, false on invalid input or insufficient
+ *         output buffer capacity.
  */
 bool billExtractAmount(const char* paymentId, char* amount, size_t alen) {
-    size_t len = strlen(paymentId);
-    // TODO: check size of amount
-    memset(amount, 0, alen);
-    memcpy(amount, paymentId, len - 5);
-    strcat(amount, "000");
+    if (paymentId == NULL || amount == NULL || alen == 0U) {
+        return false;
+    }
+
+    const size_t len = strlen(paymentId);
+
+    if (len < LEN_MIN_PAYMENT_ID || len > LEN_MAX_PAYMENT_ID) {
+        return false;
+    }
+
+    if (!isNumeric(paymentId, len)) {
+        return false;
+    }
+
+    /*
+     * Number of digits representing the amount.
+     */
+    const size_t amountDigits = len - 5U;
+
+    /*
+     * +3 for the appended "000"
+     * +1 for '\0'
+     */
+    const size_t requiredSize = amountDigits + 3U + 1U;
+
+    if (alen < requiredSize) {
+        return false;
+    }
+
+    memcpy(amount, paymentId, amountDigits);
+
+    memcpy(amount + amountDigits, "000", 3U);
+
+    amount[amountDigits + 3U] = '\0';
+
     return true;
-}
-
-/**
- * @brief Validate a bill identifier using Mod-11 checksum.
- *
- * @param billId Bill identifier.
- *
- * @return true if bill ID checksum is valid.
- */
-bool isBillIdValid(const char* billId) {
-    size_t inputlen = strlen(billId);
-    if (inputlen < LEN_MIN_BILL_ID || inputlen > LEN_MAX_BILL_ID) {
-        return false;
-    }
-
-    DEFINE_STRING(paddedBillId, LEN_MAX_BILL_ID);
-    padLeft(billId, inputlen, LEN_MAX_BILL_ID, paddedBillId, '0');
-
-    const size_t len = strlen(paddedBillId);
-
-    int sum = 0;
-
-    for (int i = (int)len - 2, weight = 2; i >= 0; --i) {
-        sum += (paddedBillId[i] - '0') * weight;
-        weight = (weight == 7) ? 2 : weight + 1;
-    }
-
-    int checkDigit = 11 - (sum % 11);
-    checkDigit     = (checkDigit > 9) ? 0 : checkDigit;
-
-    return checkDigit != (paddedBillId[len - 1] - '0');
-}
-
-/**
- * @brief Validate bill ID and payment ID pair.
- *
- * Verifies Mod-11 checksum of payment ID and the combined
- * bill ID + payment ID value.
- *
- * @param billId Bill identifier.
- * @param paymentId Payment identifier.
- *
- * @return true if both validations succeed.
- */
-bool isBillValid(const char* billId, const char* paymentId) {
-    size_t len = strlen(paymentId);
-
-    if (len < 6 || len > 13) {
-        return false;
-    }
-    bool res = calculateMod11(paymentId) == (paymentId[len - 1] - '0');
-    RETURN_VALUE_IF_NOT(res, true, ;, false);
-    DEFINE_STRING(tmp, (LEN_MAX_PAYMENT_ID * 2 + 1));
-    strcpy(tmp, billId);
-    strcat(tmp, paymentId);
-    len = strlen(tmp);
-    return calculateMod11(tmp) == (tmp[len - 1] - '0');
 }
 
 void normalizeSsid(char* in, char* out) {

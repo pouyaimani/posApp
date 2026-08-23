@@ -33,6 +33,8 @@
 #define LEN_MAX_PAYMENT_ID       13
 #define LEN_MIN_BILL_ID          6
 #define LEN_MAX_BILL_ID          13
+#define LEN_MIN_PAYMENT_ID       6
+#define LEN_MAX_PAYMENT_ID       13
 #define LEN_MAX_STAN             6
 #define LEN_MAX_PRCODE           6
 #define LEN_MAX_MTI              4

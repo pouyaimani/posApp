@@ -345,10 +345,15 @@ static int8_t checkPrinterStatus() {
 STATE_DEF_ENTER(ExtractData) {
     uint64_t rrn;
     uint32_t trace;
-    LOG_DEBUG("start date = %s", rquery.startDate);
-    LOG_DEBUG("start time = %s", rquery.startTime);
-    LOG_DEBUG("end date = %s", rquery.endDate);
-    LOG_DEBUG("end time = %s", rquery.endTime);
+    uint32_t sdate;
+    uint32_t stime;
+    uint32_t edate;
+    uint32_t etime;
+    uint64_t sdt;
+    uint64_t ldt;
+    LOG_DEBUG("start date = %s, start time = %s, end date = %s, end time = %s",
+              rquery.startDate, rquery.startTime, rquery.endDate,
+              rquery.endTime);
     ReceiptData recData;
     recData.headerApplied = false;
     recData.type          = docType;
@@ -402,16 +407,12 @@ STATE_DEF_ENTER(ExtractData) {
 
     if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
         TRACE_POINT;
-        uint32_t sdate;
-        uint32_t stime;
-        uint32_t edate;
-        uint32_t etime;
         STRING_TO_U32(rquery.startDate, &sdate);
         STRING_TO_U32(rquery.startTime, &stime);
         STRING_TO_U32(rquery.endDate, &edate);
         STRING_TO_U32(rquery.endTime, &etime);
-        uint64_t sdt = packDateTime(sdate, stime);
-        uint64_t ldt = packDateTime(edate, etime);
+        packDateTime(sdate, stime);
+        packDateTime(edate, etime);
         txnquery()->where(&op, TXN_REC_COL_KEY, SELECT_GTE, &sdt);
         txnquery()->where(&op, TXN_REC_COL_KEY, SELECT_LTE, &ldt);
     }

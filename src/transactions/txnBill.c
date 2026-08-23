@@ -61,7 +61,7 @@ STATE_DEF_ENTER(EnterPayId) {
     inmgr()->run(
         &(InputCfg){
             .mode   = INMD_ENTER_NUMBERS,
-            .title  = phraseGetDef(PHRASE_BILL_ID),
+            .title  = phraseGetDef(PHRASE_PAYMENT_ID),
             .info   = "",
             .maxLen = LEN_MAX_PAYMENT_ID,
         },
@@ -140,7 +140,7 @@ const TxnFlowConfig billTxn = {
 
     .mti = MTI_FIN_REQ,
 
-    .prcode = PRC_PURCHASE,
+    .prcode = PRC_BILL_PAYMENT,
 
     .feilds = isoFeilds,
 

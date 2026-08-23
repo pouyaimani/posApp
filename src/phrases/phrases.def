@@ -302,10 +302,6 @@ X(PHRASE_INVALID_TRANSACTION            ,   "invalidTransaction"            ,   
 )
 X(PHRASE_PREPAID_PIN                    ,   "prepaidPin"                    ,   ""
 )
-X(PHRASE_BILL_ID                        ,   "شماره قبض"                        ,   ""
-)
-X(PHRASE_PAYMENT_ID                     ,   "paymentId"                     ,   ""
-)
 X(PHRASE_DEBIT_CARD                     ,   "debitCard"                     ,   ""
 )
 X(PHRASE_CREDIT_CARD                    ,   "creditCard"                    ,   ""
@@ -613,6 +609,12 @@ X(PHRASE_BILL_DRIVE_POLICY      ,    "راهنمایی رانندگی"  ,  "mci"
 X(PHRASE_PUBLIC_SERVICE         ,    "خدمات عمومی"  ,       "mci"  
 )
 X(PHRASE_BILL_INVALID           ,    "قبض نامعتبر"  ,       "mci"  
+)
+X(PHRASE_BILL_ORG               ,    "سازمان قبض"  ,       "mci"  
+)
+X(PHRASE_BILL_ID                ,   "شناسه قبض"                        ,   ""
+)
+X(PHRASE_PAYMENT_ID             ,   "شناسه پرداخت"                     ,   ""
 )
 
 /**********************************************************************

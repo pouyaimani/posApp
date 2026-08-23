@@ -10,14 +10,15 @@
 
 typedef enum {
     BILL_PUBLIC_SERVICE = 0,
-    BILL_WATER,
-    BILL_ELECTRICITY,
-    BILL_GAS,
-    BILL_TELEPHONE,
-    BILL_MOBILE,
-    BILL_MUNICIPALIT,
-    BILL_TAX = 8,
-    BILL_DRIVE_POLIC,
+    BILL_WATER          = 1,
+    BILL_ELECTRICITY    = 2,
+    BILL_GAS            = 3,
+    BILL_TELEPHONE      = 4,
+    BILL_MOBILE         = 5,
+    BILL_MUNICIPALIT    = 6,
+    BILL_MUNICIPALIT_1  = 7,
+    BILL_TAX            = 8,
+    BILL_DRIVE_POLIC    = 9,
     BILL_INVALID,
 } BillType_t;
 
@@ -314,11 +315,9 @@ void padLeft(const char* unpadded, int unpadlength, int len, char* padded,
  * Bill type is encoded in the second last digit.
  *
  * @param billId Bill identifier.
- * @param len Length of bill identifier.
- *
  * @return Bill type code.
  */
-int getBillType(const char* billId, size_t len);
+int getBillType(const char* billId);
 
 /**
  * @brief Get organization name associated with a bill type.

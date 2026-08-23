@@ -9,6 +9,12 @@
 #include "txn.h"
 #include "error.h"
 
+typedef struct {
+    uint32_t  groupValue;
+    uint32_t  count;
+    uint64_t* sums;
+} TxnAggregateResult;
+
 /**
  * @brief Column indices used by the transaction database query interface.
  *
@@ -87,6 +93,10 @@ typedef struct {
  * @return true to continue processing records, false to stop processing.
  */
 typedef bool (*TxnHandler)(const TxnData* rec, void* userData);
+
+typedef bool (*TxnAggregateHandler)(TxnType txnType, uint32_t count,
+                                    const uint64_t* sums, uint32_t sumCount,
+                                    void* userData);
 
 /**
  * @brief Transaction query builder.
@@ -229,6 +239,9 @@ OOP_CLASS(TxnRecord) {
      */
     OOP_METHOD(Result_t, select, QueryOperator*, TxnHandler handler,
                void* userData);
+
+    OOP_METHOD(Result_t, aggregate, QueryOperator * qo, const int* columns,
+               uint32_t columnCount, uint32_t* count, uint64_t* sums);
 
     /**
      * @brief Reset the transaction database.
