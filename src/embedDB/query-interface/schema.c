@@ -119,6 +119,9 @@ void* createBufferFromSchema(embedDBSchema* schema) {
         totalSize += abs(schema->columnSizes[i]);
     }
     uint8_t* buf = EMDB_MEM_ALLOC(totalSize);
+    if (buf == NULL && totalSize != 0) {
+        return NULL;
+    }
     memset(buf, 0, totalSize);
     return buf;
 }

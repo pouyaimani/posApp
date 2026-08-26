@@ -81,6 +81,11 @@ typedef struct {
     QueryLimit       limit; /**< Result limit and ordering configuration. */
 } QueryOperator;
 
+typedef struct AggData {
+    uint64_t sum;
+    uint64_t count;
+} AggData;
+
 /**
  * @brief Callback invoked for each transaction returned by a query.
  *
@@ -94,8 +99,7 @@ typedef struct {
  */
 typedef bool (*TxnHandler)(const TxnData* rec, void* userData);
 
-typedef bool (*TxnAggregateHandler)(TxnType txnType, uint32_t count,
-                                    const uint64_t* sums, uint32_t sumCount,
+typedef bool (*TxnAggregateHandler)(TxnType txnType, const AggData* aggData,
                                     void* userData);
 
 /**
@@ -240,8 +244,8 @@ OOP_CLASS(TxnRecord) {
     OOP_METHOD(Result_t, select, QueryOperator*, TxnHandler handler,
                void* userData);
 
-    OOP_METHOD(Result_t, aggregate, QueryOperator * qo, const int* columns,
-               uint32_t columnCount, uint32_t* count, uint64_t* sums);
+    OOP_METHOD(Result_t, aggregate, QueryOperator * qo, TxnType txntype,
+               TxnAggregateHandler handler, void* userData);
 
     /**
      * @brief Reset the transaction database.

@@ -519,6 +519,15 @@ embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum,
 }
 
 void initOrderBy(embedDBOperator* op) {
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
     if (op == NULL || op->input == NULL) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: ORDER BY: NULL input operator\n");
@@ -526,7 +535,27 @@ void initOrderBy(embedDBOperator* op) {
         return;
     }
 
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
     op->input->init(op->input);
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
 
     if (op->schema == NULL) {
         op->schema = copySchema(op->input->schema);
@@ -583,6 +612,10 @@ embedDBOperator* createOrderByOperator(embedDBState*    dbState,
                                        embedDBOperator* input, int8_t colNum,
                                        int32_t limit,
                                        int8_t (*compareFn)(void* a, void* b)) {
+
+    TRACE_POINT;
+    TRACE_POINT;
+    TRACE_POINT;
     if (input == NULL || dbState == NULL || compareFn == NULL || colNum < 0) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: ORDER BY: Invalid Input data\n");
@@ -614,6 +647,10 @@ embedDBOperator* createOrderByOperator(embedDBState*    dbState,
     op->next         = nextOrderBy;
     op->close        = closeOrderBy;
 
+    TRACE_POINT;
+    TRACE_POINT;
+    TRACE_POINT;
+
     return op;
 }
 
@@ -635,6 +672,19 @@ struct aggregateInfo {
 };
 
 void initAggregate(embedDBOperator* op) {
+
+    LOG_TRACE("=== initAggregate BEGIN ===");
+    LOG_TRACE("op = %p", (void*)op);
+
+    if (op == NULL) {
+        LOG_ERROR("op == NULL");
+        return;
+    }
+
+    LOG_TRACE("op->input = %p", (void*)op->input);
+    LOG_TRACE("op->state = %p", (void*)op->state);
+    LOG_TRACE("op->schema = %p", (void*)op->schema);
+
     if (op->input == NULL) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: Aggregate operator needs an input operator\n");
@@ -642,8 +692,43 @@ void initAggregate(embedDBOperator* op) {
         return;
     }
 
+    LOG_TRACE("input->init = %p", (void*)op->input->init);
+    LOG_TRACE("input->schema = %p", (void*)op->input->schema);
+
+    if (op->input->init == NULL) {
+        LOG_ERROR("input->init == NULL");
+        return;
+    }
+
+    LOG_TRACE("Calling input->init()");
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
     // Init input
     op->input->init(op->input);
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
+
+    TRACE_POINT;
 
     struct aggregateInfo* state = op->state;
     state->isLastRecordUsable   = 0;

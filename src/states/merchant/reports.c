@@ -13,41 +13,15 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
+#include "record/txnQuery.h"
 
 static ReceiptDocType docType;
 
-typedef enum {
-    REP_FILTER_DATE_TIME = (1u << 0),
-    REP_FILTER_REF_NUM   = (1u << 1),
-    REP_FILTER_TRACE     = (1u << 2),
-    REP_FILTER_SERVICE   = (1u << 3),
-    REP_FILTER_LATEST    = (1u << 4)
-} ReportsFilter_t;
+static TxnQueryDsc rquery;
 
-typedef enum {
-    REP_RESULT_DETAIL     = 0,
-    REP_RESULT_AGGREGATED = 1,
-    REP_RESULT_TXN
-} ReportResultMode_t;
+static TxnQueryFilter qfilter;
 
-#define QUERY_FILTER_RESET(x) (x = 0)
-
-#define QUERY_IS_USING_DATE_TIME(x)    ((x & REP_FILTER_DATE_TIME) > 0 ? 1 : 0)
-#define QUERY_IS_USING_REF_NUM(x)      ((x & REP_FILTER_REF_NUM) > 0 ? 1 : 0)
-#define QUERY_IS_USING_TRACE(x)        ((x & REP_FILTER_TRACE) > 0 ? 1 : 0)
-#define QUERY_IS_USING_TXN_TYPE(x)     ((x & REP_FILTER_SERVICE) > 0 ? 1 : 0)
-#define QUERY_IS_USING_LATEST(x)       ((x & REP_FILTER_LATEST) > 0 ? 1 : 0)
-#define QUERY_FILTER_DATE_TIME(x)      (x |= REP_FILTER_DATE_TIME)
-#define QUERY_FILTER_REF_NUM(x)        (x |= REP_FILTER_REF_NUM)
-#define QUERY_FILTER_TRACE(x)          (x |= REP_FILTER_TRACE)
-#define QUERY_FILTER_TXN_TYPE(x)       (x |= REP_FILTER_SERVICE)
-#define QUERY_FILTER_LATEST(x)         (x |= REP_FILTER_LATEST)
-#define REPORT_RESULT_DETAIL(x)        (x = REP_RESULT_DETAIL)
-#define REPORT_RESULT_AGGREGATED(x)    (x = REP_RESULT_DETAIL)
-#define REPORT_RESULT_TXN(x)           (x = REP_RESULT_TXN)
-#define REPORT_RESULT_IS_DETAIL(x)     (x == REP_RESULT_DETAIL)
-#define REPORT_RESULT_IS_AGGREGATED(x) (x == REP_RESULT_DETAIL)
-#define REPORT_RESULT_IS_TXN(x)        (x == REP_RESULT_TXN)
+#define REPORT_RESULT_TXN(x) (x = REP_RESULT_TXN)
 
 typedef enum {
     REP_ITEM_REPRINT = 0,
@@ -69,25 +43,39 @@ static SubState* getEndTime;
 static State* prev;
 static State* mainMenu;
 
-typedef struct {
-    ReportsFilter_t    filter;
-    ReportResultMode_t resMode;
-    char               startDate[16];
-    char               endDate[16];
-    char               startTime[16];
-    char               endTime[16];
-    char               refNum[16];
-    char               trace[16];
-    uint8_t            txnType;
-} ReportQuery_t;
-
-ReportQuery_t rquery;
-
 static const Phrases_t reportsItemTxt[REP_ITEM_ALL] = {
     PHRASE_REPRINT, PHRASE_DAILY_REPORT, PHRASE_SUMMARY_REPORT,
     PHRASE_TRANACTION_DETAILS};
 
-/******************** re print sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Helpers
+ *                                                                                           *
+ ********************************************************************************************/
+
+static void startReprintByTxnType(TxnType txnType) {
+    rquery.txnType = txnType;
+    queryFilterSet(&qfilter, REP_FILTER_TXN_TYPE);
+    SM_GOTO(extractData);
+}
+
+static void runReportInput(InputMode_t mode, const char* title, char* output,
+                           size_t outputSize, uint16_t max, SubState* next) {
+    inmgr()->run(&(InputCfg){.type   = INPUT_TYPE_KEYPAD,
+                             .mode   = mode,
+                             .title  = title,
+                             .info   = "",
+                             .maxLen = max},
+                 mainMenu, next);
+
+    inmgr()->setOut(output, NULL, outputSize);
+}
+
+/*********************************************************************************************
+ *                                                                                           *
+ *                                Re print sub state
+ *                                                                                           *
+ ********************************************************************************************/
 typedef enum {
     REPRINT_ALL = 0,
     REPRINT_PURCHASE,
@@ -106,56 +94,28 @@ void setReprintItem(void* arg) {
     LOG_TRACE("Print Item = %d", pItem);
     switch (pItem) {
     case REPRINT_TRACE:
-        QUERY_FILTER_TRACE(rquery.filter);
-        inmgr()->run(
-            &(InputCfg){
-                .type   = INPUT_TYPE_KEYPAD,
-                .mode   = INMD_ENTER_NUMBERS,
-                .title  = phraseGetDef(PHRASE_ENTER_TRACE),
-                .info   = "",
-                .maxLen = LEN_MAX_TRACE_IN,
-            },
-            subReports[REP_ITEM_REPRINT], extractData);
-        inmgr()->setOut(rquery.trace, NULL, sizeof(rquery.trace));
-        // GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-        //            phraseGetDef(PHRASE_ENTER_TRACE), "", LEN_MAX_TRACE_IN,
-        //            IN_MODE_NUMBERS, rquery.trace);
+        queryFilterSet(&qfilter, REP_FILTER_TRACE);
+        runReportInput(INMD_ENTER_NUMBERS, phraseGetDef(PHRASE_ENTER_TRACE),
+                       rquery.trace, sizeof(rquery.trace), LEN_MAX_TRACE_IN,
+                       extractData);
         break;
     case REPRINT_REF:
-        QUERY_FILTER_REF_NUM(rquery.filter);
-        inmgr()->run(
-            &(InputCfg){
-                .type   = INPUT_TYPE_KEYPAD,
-                .mode   = INMD_ENTER_NUMBERS,
-                .title  = phraseGetDef(PHRASE_ENTER_REF_NUM),
-                .info   = "",
-                .maxLen = LEN_MAX_REF_NUM_IN,
-            },
-            subReports[REP_ITEM_REPRINT], extractData);
-        inmgr()->setOut(rquery.refNum, NULL, sizeof(rquery.refNum));
-        // GOTO_INPUT(subReports[REP_ITEM_REPRINT], extractData,
-        //            phraseGetDef(PHRASE_ENTER_REF_NUM), "",
-        //            LEN_MAX_REF_NUM_IN, IN_MODE_NUMBERS, rquery.refNum);
+        queryFilterSet(&qfilter, REP_FILTER_REF_NUM);
+        runReportInput(INMD_ENTER_NUMBERS, phraseGetDef(PHRASE_ENTER_REF_NUM),
+                       rquery.refNum, sizeof(rquery.refNum), LEN_MAX_REF_NUM_IN,
+                       extractData);
         break;
     case REPRINT_BILL:
-        rquery.txnType = TXN_BILL;
-        QUERY_FILTER_TXN_TYPE(rquery.filter);
-        SM_GOTO(extractData);
+        startReprintByTxnType(TXN_BILL);
         break;
     case REPRINT_VOUCHER:
-        rquery.txnType = TXN_VOUCHER;
-        QUERY_FILTER_TXN_TYPE(rquery.filter);
-        SM_GOTO(extractData);
+        startReprintByTxnType(TXN_VOUCHER);
         break;
     case REPRINT_PURCHASE:
-        rquery.txnType = TXN_PURCHASE;
-        QUERY_FILTER_TXN_TYPE(rquery.filter);
-        SM_GOTO(extractData);
+        startReprintByTxnType(TXN_PURCHASE);
         break;
     case REPRINT_TOPUP:
-        rquery.txnType = TXN_TOPUP;
-        QUERY_FILTER_TXN_TYPE(rquery.filter);
-        SM_GOTO(extractData);
+        startReprintByTxnType(TXN_TOPUP);
         break;
     default:
         if (rItem != REP_ITEM_DETAILS) {
@@ -178,7 +138,7 @@ static Menu* printMenu;
 
 STATE_DEF_ENTER(RePrint) {
     docType = DOC_TXN;
-    QUERY_FILTER_LATEST(rquery.filter);
+    queryFilterSet(&qfilter, REP_FILTER_LATEST);
     REPORT_RESULT_TXN(rquery.resMode);
     ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_END; i++) {
@@ -194,7 +154,11 @@ static void RePrint(State* parent) {
     subReports[REP_ITEM_REPRINT]->vtable.enter = STATE_ENTER(RePrint);
 }
 
-/******************** daily reports sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                                Daily reports sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
 STATE_DEF_ENTER(DailyReport) {
     docType = DOC_DAILY_REPORT;
@@ -207,7 +171,11 @@ static void DailyReport(State* parent) {
     subReports[REP_ITEM_DAILY]->vtable.enter = STATE_ENTER(DailyReport);
 }
 
-/******************** summary report sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                                Summary report sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
 STATE_DEF_ENTER(SummaryReport) {
     docType = DOC_SUMMARY_REPORT;
@@ -221,7 +189,11 @@ static void SummaryReport(State* parent) {
     subReports[REP_ITEM_SUMMARY]->vtable.enter = STATE_ENTER(SummaryReport);
 }
 
-/******************** detail report sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                                Detail report sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
 STATE_DEF_ENTER(DetailsReport) {
     docType = DOC_DETAILED_REPORT;
@@ -246,77 +218,76 @@ static void DetailsReport(State* parent) {
         STATE_HANDLE(DetailsReport, KeypadEvent);
 }
 
-/******************** Get Start Date sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                                Get Start Date sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
 STATE_DEF_ENTER(GetStartDate) {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_DATE,
-            .title  = phraseGetDef(PHRASE_FROM_DATE),
-            .info   = "",
-            .maxLen = LEN_MAX_DATE_IN,
-        },
-        mainMenu, getStartTime);
-    inmgr()->setOut(rquery.startDate, NULL, sizeof(rquery.startDate));
-    // GOTO_INPUT(mainMenu, getStartTime, phraseGetDef(PHRASE_FROM_DATE), "",
-    //            LEN_MAX_DATE_IN, IN_MODE_DATE, rquery.startDate);
+    runReportInput(INMD_ENTER_DATE, phraseGetDef(PHRASE_FROM_DATE),
+                   rquery.startDate, sizeof(rquery.startDate), LEN_MAX_DATE_IN,
+                   getStartTime);
 }
 
-/******************** Get End Date sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                               Get End Date sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
 STATE_DEF_ENTER(GetEndDate) {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_DATE,
-            .title  = phraseGetDef(PHRASE_TO_DATE),
-            .info   = "",
-            .maxLen = LEN_MAX_DATE_IN,
-        },
-        mainMenu, getEndTime);
-    inmgr()->setOut(rquery.endDate, NULL, sizeof(rquery.endDate));
-    // GOTO_INPUT(mainMenu, getEndTime, phraseGetDef(PHRASE_TO_DATE), "",
-    //            LEN_MAX_DATE_IN, IN_MODE_DATE, rquery.endDate);
+    runReportInput(INMD_ENTER_DATE, phraseGetDef(PHRASE_TO_DATE),
+                   rquery.endDate, sizeof(rquery.endDate), LEN_MAX_DATE_IN,
+                   getEndTime);
 }
 
-/******************** Get Start Time sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                               Get Start Time sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
 STATE_DEF_ENTER(GetStartTime) {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_TIME,
-            .title  = phraseGetDef(PHRASE_FROM_TIME),
-            .info   = "",
-            .maxLen = LEN_MAX_TIME_IN,
-        },
-        mainMenu, getEndDate);
-    inmgr()->setOut(rquery.startTime, NULL, sizeof(rquery.startTime));
-    // GOTO_INPUT(mainMenu, getEndDate, phraseGetDef(PHRASE_FROM_TIME), "",
-    //            LEN_MAX_TIME_IN, IN_MODE_TIME, rquery.startTime);
+    runReportInput(INMD_ENTER_TIME, phraseGetDef(PHRASE_FROM_TIME),
+                   rquery.startTime, sizeof(rquery.startTime), LEN_MAX_TIME_IN,
+                   getEndDate);
 }
 
-/******************** Get End Time sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                               Get End Time sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
 STATE_DEF_ENTER(GetEndTime) {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_TIME,
-            .title  = phraseGetDef(PHRASE_TO_TIME),
-            .info   = "",
-            .maxLen = LEN_MAX_TIME_IN,
-        },
-        mainMenu, extractData);
-    inmgr()->setOut(rquery.endTime, NULL, sizeof(rquery.endTime));
-    // GOTO_INPUT(mainMenu, extractData, phraseGetDef(PHRASE_TO_TIME), "",
-    //            LEN_MAX_TIME_IN, IN_MODE_TIME, rquery.endTime);
+    runReportInput(INMD_ENTER_TIME, phraseGetDef(PHRASE_TO_TIME),
+                   rquery.endTime, sizeof(rquery.endTime), LEN_MAX_TIME_IN,
+                   extractData);
 }
 
-/******************** extract data sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                               extract data sub state
+ *                                                                                           *
+ ********************************************************************************************/
 
-static bool handleExtractedData(const TxnData* txn, void* userData) {
+typedef ErrorDsc_t (*ExtractHandlerFn)(ReceiptData* rec, QueryOperator* op);
+
+typedef struct {
+    ReceiptDocType   doc;
+    ExtractHandlerFn handler;
+} ExtractHandler;
+
+static uint64_t            rrn;
+static uint32_t            trace;
+static uint32_t            fdate;
+static uint32_t            ftime;
+static uint32_t            tdate;
+static uint32_t            ttime;
+static QueryDateTimeFilter dtFilter;
+
+static bool handleTxnExtractedData(const TxnData* txn, void* userData) {
     logTxnCore(txn);
     ReceiptData* data = (ReceiptData*)userData;
     memcpy(&data->txn, txn, sizeof(*txn));
@@ -327,6 +298,30 @@ static bool handleExtractedData(const TxnData* txn, void* userData) {
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
     OOP_CALL(&rec, destroy);
     return true;
+}
+
+static bool handleSummaryExtractedData(TxnType txnType, const AggData* aggData,
+                                       void* userData) {
+    LOG_DEBUG("Summary report: txn type = %d, number of txns = %llu, total "
+              "amount = %llu",
+              txnType, aggData->count, aggData->sum);
+    return true;
+}
+
+static bool handleDailyExtractedData(TxnType txnType, uint32_t count,
+                                     const uint64_t* sums, uint32_t sumCount,
+                                     void* userData) {
+    LOG_DEBUG("Summary report: txn type = %d, number of txns = %lu, total "
+              "amount = %llu",
+              txnType, count, sums[0]);
+}
+
+static bool handleDetailedExtractedData(TxnType txnType, uint32_t count,
+                                        const uint64_t* sums, uint32_t sumCount,
+                                        void* userData) {
+    LOG_DEBUG("Summary report: txn type = %d, number of txns = %lu, total "
+              "amount = %llu",
+              txnType, count, sums[0]);
 }
 
 static int8_t checkPrinterStatus() {
@@ -342,60 +337,69 @@ static int8_t checkPrinterStatus() {
     }
 }
 
+static ErrorDsc_t handleTxnExtracting(ReceiptData* rec, QueryOperator* op) {
+    Result_t res = txnrecord()->select(op, handleTxnExtractedData, (void*)rec);
+    return res.err;
+}
+
+static ErrorDsc_t handleSummaryExtracting(ReceiptData* rec, QueryOperator* op) {
+    static int col[] = {TXN_REC_COL_AMNT};
+    Result_t   res   = txnrecord()->aggregate(
+        op, TXN_PURCHASE, handleSummaryExtractedData, (void*)rec);
+    return res.err;
+}
+
+static ErrorDsc_t handleDailyExtracting(ReceiptData* rec, QueryOperator* op) {
+    if (queryFilterIsSet(qfilter, REP_FILTER_DATE_TIME)) {
+        // TODO
+        rec->dailyHeader.date    = 0;
+        rec->dailyHeader.time    = 0;
+        rec->dailyHeader.txnType = 0;
+    }
+    return ERR_DSC_OK;
+}
+
+static ErrorDsc_t handleDetailExtracting(ReceiptData* rec, QueryOperator* op) {
+    return ERR_DSC_OK;
+}
+
+static const ExtractHandler exTemplates[] = {
+    /******************************************************************/
+    /*Txn Reports*/
+    /******************************************************************/
+    {.doc = DOC_TXN, .handler = handleTxnExtracting},
+    /******************************************************************/
+    /*Summary Reports*/
+    /******************************************************************/
+    {.doc = DOC_SUMMARY_REPORT, .handler = handleSummaryExtracting},
+    /******************************************************************/
+    /*Daily Reports*/
+    /******************************************************************/
+    {.doc = DOC_DAILY_REPORT, .handler = handleDailyExtracting},
+    /******************************************************************/
+    /*Detialed Reports*/
+    /******************************************************************/
+    {.doc = DOC_DETAILED_REPORT, .handler = handleDetailExtracting},
+};
+
+const ExtractHandler* findExtracter(ReceiptDocType doc) {
+    for (size_t i = 0; i < ARRAY_SIZE(exTemplates); i++) {
+        if (exTemplates[i].doc == doc) {
+            return &exTemplates[i];
+        }
+    }
+    return NULL;
+}
+
 STATE_DEF_ENTER(ExtractData) {
-    uint64_t rrn;
-    uint32_t trace;
-    uint32_t sdate;
-    uint32_t stime;
-    uint32_t edate;
-    uint32_t etime;
-    uint64_t sdt;
-    uint64_t ldt;
-    LOG_DEBUG("start date = %s, start time = %s, end date = %s, end time = %s",
-              rquery.startDate, rquery.startTime, rquery.endDate,
-              rquery.endTime);
     ReceiptData recData;
     recData.headerApplied = false;
     recData.type          = docType;
     LOG_TRACE("Extract report data: doc type = %d", docType);
-    switch (docType) {
-    case DOC_TXN:
-        break;
-    case DOC_SUMMARY_REPORT:
-        if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
-            // TODO
-            STRING_TO_U32(rquery.startDate, &recData.summaryHeader.dateFrom);
-            STRING_TO_U32(rquery.endDate, &recData.summaryHeader.dateTo);
-            STRING_TO_U32(rquery.startTime, &recData.summaryHeader.timeFrom);
-            STRING_TO_U32(rquery.endTime, &recData.summaryHeader.timeTo);
-            recData.summaryHeader.dateNow = OOP_CALL(sys(), getDate);
-            recData.summaryHeader.timeNow = OOP_CALL(sys(), getTime);
-            recData.summaryHeader.txnType = 0;
-        }
-        break;
-    case DOC_DAILY_REPORT:
-        if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
-            // TODO
-            recData.dailyHeader.date    = 0;
-            recData.dailyHeader.time    = 0;
-            recData.dailyHeader.txnType = 0;
-        }
-        break;
-    case DOC_DETAILED_REPORT:
-        if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
-            // TODO
-            STRING_TO_U32(rquery.startDate, &recData.summaryHeader.dateFrom);
-            STRING_TO_U32(rquery.endDate, &recData.summaryHeader.dateTo);
-            STRING_TO_U32(rquery.startTime, &recData.summaryHeader.timeFrom);
-            STRING_TO_U32(rquery.endTime, &recData.summaryHeader.timeTo);
-            recData.detailedHeader.dateNow = OOP_CALL(sys(), getDate);
-            recData.detailedHeader.timeNow = OOP_CALL(sys(), getTime);
-            recData.detailedHeader.txnType = 0;
-        }
-        break;
-    default:
-        break;
-    }
+    LOG_DEBUG("start date = %s, start time = %s, end date = %s, end time = %s",
+              rquery.startDate, rquery.startTime, rquery.endDate,
+              rquery.endTime);
+
     QueryOperator op;
     Result_t      res = txnquery()->init(&op);
     if (res.err != ERR_DSC_OK) {
@@ -405,42 +409,30 @@ STATE_DEF_ENTER(ExtractData) {
         return;
     }
 
-    if (QUERY_IS_USING_DATE_TIME(rquery.filter)) {
-        TRACE_POINT;
-        STRING_TO_U32(rquery.startDate, &sdate);
-        STRING_TO_U32(rquery.startTime, &stime);
-        STRING_TO_U32(rquery.endDate, &edate);
-        STRING_TO_U32(rquery.endTime, &etime);
-        packDateTime(sdate, stime);
-        packDateTime(edate, etime);
-        txnquery()->where(&op, TXN_REC_COL_KEY, SELECT_GTE, &sdt);
-        txnquery()->where(&op, TXN_REC_COL_KEY, SELECT_LTE, &ldt);
-    }
-    if (QUERY_IS_USING_REF_NUM(rquery.filter)) {
-        TRACE_POINT;
-        STRING_TO_U64(rquery.refNum, &rrn);
-        LOG_TRACE("extracting txn with rrn = %llu", rrn);
-        txnquery()->where(&op, TXN_REC_COL_RRN, SELECT_EQ, &rrn);
-    }
-    if (QUERY_IS_USING_TXN_TYPE(rquery.filter)) {
-        TRACE_POINT;
-        txnquery()->where(&op, TXN_REC_COL_TYPE, SELECT_EQ, &rquery.txnType);
-    }
-    if (QUERY_IS_USING_TRACE(rquery.filter)) {
-        TRACE_POINT;
-        STRING_TO_U32(rquery.trace, &trace);
-        LOG_TRACE("extracting txn with trace = %lu", trace);
-        txnquery()->where(&op, TXN_REC_COL_TRACE, SELECT_EQ, &trace);
-    }
-    if (QUERY_IS_USING_LATEST(rquery.filter)) {
-        TRACE_POINT;
-        txnquery()->limit(&op,
-                          (QueryLimit){.mode = QUERY_LIMIT_LATEST, .count = 1});
-    }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_EXTRACTING_DATA),
               phraseGetDef(PHRASE_PLEASE_WAIT));
     OOP_CALL(infoPage(), forceUpdate);
-    res = txnrecord()->select(&op, handleExtractedData, (void*)&recData);
+
+    STRING_TO_U64(rquery.refNum, &rrn);
+    STRING_TO_U32(rquery.trace, &trace);
+    STRING_TO_U64(rquery.refNum, &rrn);
+    dtFilter.fdt = packDateTime(fdate, ftime);
+    dtFilter.tdt = packDateTime(tdate, ttime);
+
+    applyFilter(REP_FILTER_DATE_TIME, qfilter, &op, &dtFilter);
+    applyFilter(REP_FILTER_REF_NUM, qfilter, &op, &rrn);
+    applyFilter(REP_FILTER_TRACE, qfilter, &op, &trace);
+    applyFilter(REP_FILTER_TXN_TYPE, qfilter, &op, &rquery.txnType);
+    applyFilter(REP_FILTER_LATEST, qfilter, &op, NULL);
+
+    ExtractHandler* extracter = findExtracter(docType);
+    if (!extracter) {
+        LOG_TRACE("extracter not found");
+        GOTO_INFO(mainMenu, mainMenu, INFO_ERROR,
+                  phraseGetDef(PHRASE_TXN_NOT_FND), "");
+        return;
+    }
+    res.err = extracter->handler(&recData, &op);
     txnquery()->close(&op);
     OOP_CALL(infoPage(), hide);
     if (res.err != ERR_DSC_OK) {
@@ -450,8 +442,6 @@ STATE_DEF_ENTER(ExtractData) {
     }
     SM_GOTO(mainMenu);
 }
-
-STATE_DEF_EXIT(ExtractData) {}
 
 STATE_DEF_HANDLE(ExtractData, KeypadEvent) {
     if (ev->key == KEY_ESC) {
@@ -463,11 +453,14 @@ static void ExtractData(State* parent) {
     extractData = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, extractData, parent, "extract data");
     extractData->vtable.enter        = STATE_ENTER(ExtractData);
-    extractData->vtable.exit         = STATE_EXIT(ExtractData);
     extractData->vtable.handleKeypad = STATE_HANDLE(ExtractData, KeypadEvent);
 }
 
-/******************** Settings sub state **********************/
+/*********************************************************************************************
+ *                                                                                           *
+ *                               Settings sub state
+ *                                                                                           *
+ ********************************************************************************************/
 static Menu* reportsMenu;
 
 static void setReportItem(void* arg) {
@@ -476,7 +469,7 @@ static void setReportItem(void* arg) {
 }
 
 STATE_DEF_ENTER(Reports) {
-    QUERY_FILTER_RESET(rquery.filter);
+    queryFilterClear(&qfilter);
     ui_menu_create(reportsMenu, disp()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL; i++) {
         ui_menu_addItem(reportsMenu, phraseGetDef(reportsItemTxt[i]),

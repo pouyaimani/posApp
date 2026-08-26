@@ -134,7 +134,7 @@ Logger* logger();
 #endif /*USE_LOG*/
 
 #define TRACE_POINT                                                            \
-    for (int i = 0; i < 5; i++)                                                \
+    for (int i = 0; i < 10; i++)                                               \
     LOG_DEBUG("========== %s:%d ==========", __func__, __LINE__)
 
 #endif

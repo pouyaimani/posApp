@@ -38,8 +38,8 @@ typedef int8_t Error_t;
         __typeof__(expected) __exp = (expected);                               \
                                                                                \
         if (__val == __exp) {                                                  \
-            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
-                      (int)__exp);                                             \
+            LOG_ERROR("Error: %s returns %d (error expected value %d)", #expr, \
+                      (int)__val, (int)__exp);                                 \
                                                                                \
             on_error;                                                          \
             return (retval);                                                   \

@@ -286,7 +286,6 @@ static Result_t queryInit(QueryOperator* qo) {
         EMDB_MEM_FREE(qo->it);
         res.err       = ERR_DSC_DATABASE;
         res.detail.db = DB_ERR_CREATING_OP_FAILURE;
-        return res;
     }
     return res;
 }
@@ -333,6 +332,8 @@ static Result_t queryClose(QueryOperator* qo) {
  */
 static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
                            void* value) {
+    LOG_TRACE("Query where: column = %d, comparison = %d, value = %llu", column,
+              comparison, *(int64_t*)value);
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(value, res.err = ERR_DSC_INVALID_ARG, res);
@@ -343,211 +344,17 @@ static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
     return res;
 }
 
-static int8_t sameGroup(const void* lastRecord, const void* record) {
-    (void)lastRecord;
-    (void)record;
-    return 1;
-}
+// static Result_t orderBy(QueryOperator* qo, int column) {
+//     Result_t res = {.err = ERR_DSC_OK};
+//     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
+//     embedDBOperator* orderByOp = createOrderByOperator(
+//         state, qo->op, column, -1, getColumnComparator(column));
+//     LOG_TRACE("orderByOp = %p", (void*)orderByOp);
+//     RETURN_VALUE_IF_NULL(orderByOp, res.err = ERR_DSC_MEMORY, res);
+//     qo->op = orderByOp;
+//     return res;
+// }
 
-static int8_t sameGroupInt32(const void* lastRecord, const void* record) {
-    int32_t t1 = *(int32_t*)((char*)lastRecord + 4);
-    int32_t t2 = *(int32_t*)((char*)record + 4);
-    return t1 == t2;
-}
-
-typedef int8_t (*embedDBComparator)(void*, void*);
-
-static embedDBComparator getColumnComparator(int column) {
-    switch (column) {
-    case TXN_REC_COL_KEY:
-    case TXN_REC_COL_AMNT:
-    case TXN_REC_COL_RRN:
-        return int64Comparator;
-
-    case TXN_REC_COL_STATUS:
-    case TXN_REC_COL_TYPE:
-    case TXN_REC_COL_MTI:
-    case TXN_REC_COL_PRCODE:
-    case TXN_REC_COL_PAN:
-    case TXN_REC_COL_TRACE:
-    case TXN_REC_COL_STAN:
-    case TXN_REC_COL_RESP_CODE:
-    case TXN_REC_COL_EXTENTION:
-        return int32Comparator;
-
-    default:
-        return NULL;
-    }
-}
-
-static Result_t orderBy(QueryOperator* qo, int column) {
-    Result_t res = {.err = ERR_DSC_OK};
-    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
-    embedDBOperator* orderByOp = createOrderByOperator(
-        state, qo->op, column, -1, getColumnComparator(column));
-    RETURN_VALUE_IF_NULL(orderByOp, res.err = ERR_DSC_MEMORY, res);
-    qo->op = orderByOp;
-    return res;
-}
-
-static int8_t sameTxnTypeGroup(const void* lastRecord, const void* record) {
-    uint32_t type1;
-    uint32_t type2;
-
-    uint16_t offset = getColOffsetFromSchema(schema, TXN_REC_COL_TYPE);
-
-    memcpy(&type1, (const uint8_t*)lastRecord + offset, sizeof(type1));
-    memcpy(&type2, (const uint8_t*)record + offset, sizeof(type2));
-
-    return type1 == type2;
-}
-
-static void writeTxnTypeGroup(embedDBAggregateFunc* aggFunc,
-                              embedDBSchema* aggschema, void* recordBuffer,
-                              const void* lastRecord) {
-    uint32_t txnType;
-
-    uint16_t inputOffset = getColOffsetFromSchema(schema, TXN_REC_COL_TYPE);
-
-    memcpy(&txnType, (const uint8_t*)lastRecord + inputOffset, sizeof(txnType));
-
-    uint16_t outputOffset = getColOffsetFromSchema(schema, aggFunc->colNum);
-
-    memcpy((uint8_t*)recordBuffer + outputOffset, &txnType, sizeof(txnType));
-}
-
-static Result_t aggregate(QueryOperator* qo, int groupColumn,
-                          const int* columns, uint32_t columnCount,
-                          TxnAggregateHandler handler, void* userData) {
-    Result_t res = {.err = ERR_DSC_OK};
-
-    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
-    RETURN_VALUE_IF_NULL(columns, res.err = ERR_DSC_INVALID_ARG, res);
-    RETURN_VALUE_IF_NULL(handler, res.err = ERR_DSC_INVALID_ARG, res);
-
-    if (columnCount == 0) {
-        res.err = ERR_DSC_INVALID_ARG;
-        return res;
-    }
-
-    /*
-     * For now this implementation supports grouping by txnType.
-     */
-    if (groupColumn != TXN_REC_COL_TYPE) {
-        res.err = ERR_DSC_INVALID_ARG;
-        return res;
-    }
-
-    /*
-     * The input must be ordered by the grouping column.
-     *
-     * GROUP BY txnType
-     *      =>
-     * ORDER BY txnType
-     */
-    res = orderBy(qo, groupColumn);
-    if (res.err != ERR_DSC_OK) {
-        return res;
-    }
-
-    /*
-     * Aggregate functions:
-     *
-     *   0 -> GROUP(txnType)
-     *   1 -> COUNT
-     *   2 -> SUM(columns[0])
-     *   3 -> SUM(columns[1])
-     *   ...
-     */
-    const uint32_t functionCount = columnCount + 2;
-
-    embedDBAggregateFunc* counter = createCountAggregate();
-
-    RETURN_VALUE_IF_NULL(counter, res.err = ERR_DSC_MEMORY, res);
-
-    embedDBAggregateFunc aggFunctions[functionCount];
-
-    /*
-     * Aggregate #0 = group key.
-     */
-    aggFunctions[0] =
-        (embedDBAggregateFunc){NULL, NULL, writeTxnTypeGroup, NULL, 0};
-
-    /*
-     * Aggregate #1 = COUNT.
-     */
-    aggFunctions[1] = *counter;
-
-    /*
-     * Aggregate #2... = SUMs.
-     */
-    for (uint32_t i = 0; i < columnCount; ++i) {
-        embedDBAggregateFunc* sum = createSumAggregate(columns[i]);
-
-        if (sum == NULL) {
-            res.err = ERR_DSC_MEMORY;
-            return res;
-        }
-
-        aggFunctions[i + 2] = *sum;
-    }
-
-    embedDBOperator* aggOp = createAggregateOperator(
-        qo->op, sameTxnTypeGroup, aggFunctions, functionCount);
-
-    if (aggOp == NULL) {
-        res.err = ERR_DSC_MEMORY;
-        return res;
-    }
-
-    qo->op = aggOp;
-
-    aggOp->init(aggOp);
-
-    /*
-     * Each exec() produces one group.
-     */
-    while (exec(aggOp)) {
-        uint8_t* p = (uint8_t*)aggOp->recordBuffer;
-
-        TxnType  txnType;
-        uint32_t count;
-
-        /*
-         * Column 0 = group.
-         */
-        memcpy(&txnType, p + getColOffsetFromSchema(aggOp->schema, 0),
-               sizeof(txnType));
-
-        /*
-         * Column 1 = COUNT.
-         */
-        memcpy(&count, p + getColOffsetFromSchema(aggOp->schema, 1),
-               sizeof(count));
-
-        /*
-         * Column 2... = SUMs.
-         */
-        uint64_t groupSums[columnCount];
-
-        for (uint32_t i = 0; i < columnCount; ++i) {
-            memcpy(&groupSums[i],
-                   p + getColOffsetFromSchema(aggOp->schema, i + 2),
-                   sizeof(groupSums[i]));
-        }
-
-        /*
-         * Notify the caller about this group.
-         *
-         * Returning false stops aggregation.
-         */
-        if (!handler(txnType, count, groupSums, columnCount, userData)) {
-            break;
-        }
-    }
-
-    return res;
-}
 /**
  * @brief Configure the result limit for a query.
  *
@@ -789,6 +596,41 @@ static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
     processLimitedTransactions(count, handler, userData);
 
     res.err = ERR_DSC_OK;
+    return res;
+}
+
+static bool handleAggData(const TxnData* txn, void* userData) {
+    AggData* aggData = (AggData*)userData;
+    LOG_TRACE("aggregate: txn count = %lu, txn sum = %llu", aggData->count,
+              aggData->sum);
+    aggData->count++;
+    aggData->sum += txn->core.amount;
+    LOG_TRACE("aggregate: txn count = %lu, txn sum = %llu", aggData->count,
+              aggData->sum);
+    return true;
+}
+
+static Result_t aggregate(QueryOperator* qo, TxnType txntype,
+                          TxnAggregateHandler handler, void* userData) {
+    Result_t res = {.err = ERR_DSC_OK};
+
+    RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
+    RETURN_VALUE_IF_NULL(qo->op, res.err = ERR_DSC_INVALID_ARG, res);
+    LOG_TRACE("aggregate: txn type = %d", txntype);
+    uint32_t txntype32 = txntype;
+    res = queryWhere(qo, TXN_REC_COL_TYPE, SELECT_EQ, &txntype32);
+    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, res);
+    AggData aggData;
+    memset(&aggData, 0, sizeof(AggData));
+    (qo->op)->init(qo->op);
+    bool found = selectAllTransactions(qo, handleAggData, &aggData);
+    RETURN_VALUE_IF(found, false, res.err = ERR_DSC_NOT_FOUND;, res);
+    LOG_TRACE("aggregate: txn count = %llu, txn sum = %llu", aggData.count,
+              aggData.sum);
+    if (handler) {
+        handler(txntype, &aggData, userData);
+    }
+    TRACE_POINT;
     return res;
 }
 
