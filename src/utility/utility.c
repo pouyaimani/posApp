@@ -207,16 +207,7 @@ int8_t getNameofDay(uint32_t date, char* out, size_t size) {
     uint32_t y = date / 10000;
     uint32_t m = (date % 10000) / 100;
     uint32_t d = date % 100;
-    if (m < 3) {
-        m += 12;
-        y -= 1;
-    }
-
-    int K = y % 100;
-    int J = y / 100;
-
-    int h = (d + (13 * (m + 1)) / 5 + K + (K / 4) + (J / 4) + 5 * J) % 7;
-    snprintf(out, size, "s", day_names[h]);
+    snprintf(out, size, "s", getDayName(y, m, d));
     return ERR_OK;
 }
 

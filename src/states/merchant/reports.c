@@ -300,11 +300,24 @@ static bool handleTxnExtractedData(const TxnData* txn, void* userData) {
     return true;
 }
 
-static bool handleSummaryExtractedData(TxnType txnType, const AggData* aggData,
-                                       void* userData) {
-    LOG_DEBUG("Summary report: txn type = %d, number of txns = %llu, total "
-              "amount = %llu",
-              txnType, aggData->count, aggData->sum);
+static bool handleSummaryExtractedData(TxnType               txnType,
+                                       const AggDataSummary* aggDataSum,
+                                       void*                 userData) {
+    ReceiptData* data = (ReceiptData*)userData;
+    Receipt      rec;
+    Result_t     res = buildReceipt(&rec, data);
+    for (size_t i = 0; i < aggDataSum->txnCount; i++) {
+        LOG_TRACE("aggregate: txn type = %d, txn count = %llu, txn sum = %llu",
+                  aggDataSum->data[i].txn, aggDataSum->data[i].count,
+                  aggDataSum->data[i].sum);
+        data->summaryBody.txnType = aggDataSum->data[i].txn;
+        data->summaryBody.count   = aggDataSum->data[i].count;
+        data->summaryBody.amntSum = aggDataSum->data[i].sum;
+        buildReceipt(&rec, data);
+    }
+    res = OOP_CALL(&rec, flush);
+    // RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    OOP_CALL(&rec, destroy);
     return true;
 }
 
@@ -343,9 +356,14 @@ static ErrorDsc_t handleTxnExtracting(ReceiptData* rec, QueryOperator* op) {
 }
 
 static ErrorDsc_t handleSummaryExtracting(ReceiptData* rec, QueryOperator* op) {
-    static int col[] = {TXN_REC_COL_AMNT};
-    Result_t   res   = txnrecord()->aggregate(
-        op, TXN_PURCHASE, handleSummaryExtractedData, (void*)rec);
+    rec->summaryHeader.dateFrom = fdate;
+    rec->summaryHeader.dateTo   = tdate;
+    rec->summaryHeader.timeFrom = ftime;
+    rec->summaryHeader.timeTo   = ttime;
+    rec->summaryHeader.dateNow  = OOP_CALL(sys(), getDate);
+    rec->summaryHeader.timeNow  = OOP_CALL(sys(), getTime);
+    Result_t res                = txnrecord()->aggregate(
+        op, TXN_ALL, handleSummaryExtractedData, (void*)rec);
     return res.err;
 }
 
@@ -416,6 +434,12 @@ STATE_DEF_ENTER(ExtractData) {
     STRING_TO_U64(rquery.refNum, &rrn);
     STRING_TO_U32(rquery.trace, &trace);
     STRING_TO_U64(rquery.refNum, &rrn);
+
+    STRING_TO_U32(rquery.startDate, &fdate);
+    STRING_TO_U32(rquery.startTime, &ftime);
+    STRING_TO_U32(rquery.endDate, &tdate);
+    STRING_TO_U32(rquery.endTime, &ttime);
+
     dtFilter.fdt = packDateTime(fdate, ftime);
     dtFilter.tdt = packDateTime(tdate, ttime);
 

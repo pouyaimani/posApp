@@ -20,6 +20,10 @@ typedef struct {
 
 int amountSeparator(const char* in, char* out, size_t out_size);
 
+void formatJalDateTimeStr(char* date, char* day, size_t out_size);
+
+void dateTimeToStrJal(uint32_t date, uint32_t time, char* str, size_t size);
+
 // Date time utilities
 void formatDateTimeStr(char* date, char* day, size_t out_size);
 

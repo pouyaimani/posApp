@@ -102,8 +102,30 @@ void dateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
     tmp     = (time % 10000);
     int min = tmp / 100;
     int ss  = tmp % 100;
-    snprintf(str, size, "%02d:%02d:%02d-%04d/%02d/%02d", hh, min, ss, yy, mm,
-             dd);
+    snprintf(str, size, "%04d/%02d/%02d-%02d:%02d:%02d", yy, mm, dd, hh, min,
+             ss);
+}
+
+void dateTimeToStrJal(uint32_t date, uint32_t time, char* str, size_t size) {
+    int yy  = date / 10000;
+    int tmp = (date % 10000);
+    int mm  = tmp / 100;
+    int dd  = tmp % 100;
+
+    int    full_year = 2000 + yy; // adjust if needed
+    Date_t greg;
+    greg.day   = dd;
+    greg.month = mm;
+    greg.year  = full_year;
+    Date_t jalali;
+    gregorianToJalali(greg, &jalali);
+
+    int hh  = time / 10000;
+    tmp     = (time % 10000);
+    int min = tmp / 100;
+    int ss  = tmp % 100;
+    snprintf(str, size, "%04d/%02d/%02d-%02d:%02d:%02d", jalali.year,
+             jalali.month, jalali.day, hh, min, ss);
 }
 
 void dateToStr(uint32_t date, char* str, size_t size) {
@@ -185,6 +207,24 @@ void extractDatetimeInt(const char* buf, uint32_t* date, uint32_t* time) {
     memcpy(tmp, buf + 8, 6);
     tmp[6] = '\0';
     *time  = toInt(tmp);
+}
+
+void formatJalDateTimeStr(char* date, char* day, size_t out_size) {
+    DateTime* dt = OOP_CALL(sys(), getDateTime);
+
+    int yy, mm, dd;
+    sscanf(dt->date, "%2d%2d%2d", &yy, &mm, &dd);
+
+    int full_year = 2000 + yy; // adjust if needed
+    snprintf(day, out_size, "%s", getDayName(full_year, mm, dd));
+    Date_t greg;
+    greg.day   = dd;
+    greg.month = mm;
+    greg.year  = full_year;
+    Date_t jalali;
+    gregorianToJalali(greg, &jalali);
+    snprintf(date, out_size, "%04d/%02d/%02d", jalali.year, jalali.month,
+             jalali.day);
 }
 
 void formatDateTimeStr(char* date, char* day, size_t out_size) {

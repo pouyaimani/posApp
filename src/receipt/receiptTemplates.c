@@ -189,7 +189,7 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
 }
 
-static int8_t financialTxnCommonRwos(Receipt* rec, const ReceiptData* data) {
+static int8_t financialTxnCommonRwos(Receipt* rec, ReceiptData* data) {
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(
@@ -204,7 +204,7 @@ static int8_t financialTxnCommonRwos(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildPurchaseReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -219,7 +219,7 @@ static int8_t buildPurchaseReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildBillReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildBillReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -254,7 +254,7 @@ static int8_t buildBillReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildTopupReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -275,7 +275,7 @@ static int8_t buildTopupReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildBalanceReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildBalanceReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -289,14 +289,14 @@ static int8_t buildBalanceReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildPaymentReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildPaymentReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
-static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildChargeCodeReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -310,7 +310,7 @@ static int8_t buildChargeCodeReceipt(Receipt* rec, const ReceiptData* data) {
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
-static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildLogonReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -370,7 +370,7 @@ static int8_t buildLogonReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildNetSpec(Receipt* rec, const ReceiptData* data) {
+static int8_t buildNetSpec(Receipt* rec, ReceiptData* data) {
     VAR_UNUSED(data);
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
 
@@ -424,7 +424,7 @@ static int8_t buildNetSpec(Receipt* rec, const ReceiptData* data) {
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row4), ERR_OK, ;, ERR_NOK);
 }
 
-static int8_t buildCfgReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildCfgReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -463,8 +463,7 @@ static int8_t buildCfgReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildDailyRepHeaderReceipt(Receipt*           rec,
-                                         const ReceiptData* data) {
+static int8_t buildDailyRepHeaderReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     DailyReportHeader* header = &data->dailyHeader;
@@ -482,7 +481,7 @@ static int8_t buildDailyRepHeaderReceipt(Receipt*           rec,
     return ERR_OK;
 }
 
-static int8_t buildDailyRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildDailyRepBodyReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -508,7 +507,7 @@ static int8_t buildDailyRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildSumRepHeaderReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildSumRepHeaderReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     SummaryReportHeader* header = &data->summaryHeader;
@@ -518,40 +517,40 @@ static int8_t buildSumRepHeaderReceipt(Receipt* rec, const ReceiptData* data) {
         OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
         , ERR_NOK);
     DATE_TIME_STR(dt);
-    dateTimeToStr(header->dateNow, header->timeNow, dt, sizeof(dt));
+    dateTimeToStrJal(header->dateNow, header->timeNow, dt, sizeof(dt));
     DEFINE_STRING(day, 24);
     uint32_t date = OOP_CALL(sys(), getDate);
     getNameofDay(date, day, sizeof(day));
     RecColumn_t row1[] = {
-        {day, LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
+        {day, LV_TEXT_ALIGN_RIGHT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateFrom, header->timeFrom, dt, sizeof(dt));
     RecColumn_t row2[] = {
-        {phraseGetDef(PHRASE_FROM_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_FROM_DATE), LV_TEXT_ALIGN_RIGHT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateTo, header->timeTo, dt, sizeof(dt));
     RecColumn_t row3[] = {
-        {phraseGetDef(PHRASE_TO_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_TO_DATE), LV_TEXT_ALIGN_RIGHT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
     RecColumn_t row4[] = {{phraseGetDef(PHRASE_TO_RIAL), LV_TEXT_ALIGN_LEFT, 1},
-                          {phraseGetDef(PHRASE_COUNT), LV_TEXT_ALIGN_LEFT, 1},
-                          {phraseGetDef(PHRASE_TXN), LV_TEXT_ALIGN_LEFT, 1}};
+                          {phraseGetDef(PHRASE_COUNT), LV_TEXT_ALIGN_CENTER, 1},
+                          {phraseGetDef(PHRASE_TXN), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addTable, REC_FONT_REGULAR, 3, row4), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
-static int8_t buildSumRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildSumRepBodyReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     SummaryReportBody* body = &data->summaryBody;
@@ -564,17 +563,16 @@ static int8_t buildSumRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     DEFINE_STRING(txnName, 64);
     getTxnName(body->txnType, txnName, sizeof(txnName));
     RecColumn_t row[] = {
-        {amntStr, LV_TEXT_ALIGN_LEFT, 1},
-        {countStr, LV_TEXT_ALIGN_LEFT, 1},
-        {txnName, LV_TEXT_ALIGN_LEFT, 1},
+        {amntStrSep, LV_TEXT_ALIGN_LEFT, 1},
+        {countStr, LV_TEXT_ALIGN_CENTER, 1},
+        {txnName, LV_TEXT_ALIGN_RIGHT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addTable, REC_FONT_REGULAR, 3, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
-static int8_t buildDetailtRepHeaderReceipt(Receipt*           rec,
-                                           const ReceiptData* data) {
+static int8_t buildDetailtRepHeaderReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
@@ -587,13 +585,13 @@ static int8_t buildDetailtRepHeaderReceipt(Receipt*           rec,
         OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
         , ERR_NOK);
     DATE_TIME_STR(dt);
-    dateTimeToStr(header->dateNow, header->timeNow, dt, sizeof(dt));
-    uint32_t date = OOP_CALL(sys(), getDate);
+    // dateTimeToStr(header->dateNow, header->timeNow, dt, sizeof(dt));
+    DEFINE_STRING(jaldt, 24);
     DEFINE_STRING(today, 24);
-    getNameofDay(date, today, sizeof(today));
+    formatJalDateTimeStr(jaldt, today, sizeof(dt));
     RecColumn_t row1[] = {
         {today, LV_TEXT_ALIGN_RIGHT, 1},
-        {dt, LV_TEXT_ALIGN_LEFT, 1},
+        {jaldt, LV_TEXT_ALIGN_LEFT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
@@ -623,7 +621,7 @@ static int8_t buildDetailtRepHeaderReceipt(Receipt*           rec,
     return ERR_OK;
 }
 
-static int8_t buildDetailRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
+static int8_t buildDetailRepBodyReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
@@ -650,11 +648,20 @@ static int8_t buildDetailRepBodyReceipt(Receipt* rec, const ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildDetailRepReceipt(Receipt* rec, const ReceiptData* data) {}
+static int8_t buildDetailRepReceipt(Receipt* rec, ReceiptData* data) {}
 
-static int8_t buildDailyRepReceipt(Receipt* rec, const ReceiptData* data) {}
+static int8_t buildDailyRepReceipt(Receipt* rec, ReceiptData* data) {}
 
-static int8_t buildSumRepReceipt(Receipt* rec, const ReceiptData* data) {}
+static int8_t buildSumRepReceipt(Receipt* rec, ReceiptData* data) {
+    if (!data->headerApplied) {
+        RETURN_VALUE_IF_NOT(buildSumRepHeaderReceipt(rec, data), ERR_OK, ;
+                            , ERR_NOK);
+        data->headerApplied = true;
+        return ERR_OK;
+    }
+    RETURN_VALUE_IF_NOT(buildSumRepBodyReceipt(rec, data), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
+}
 
 static void handleError(Result_t res) {
     if (res.err == ERR_DSC_PRINTER) {
@@ -678,7 +685,7 @@ static void handleError(Result_t res) {
     }
 }
 
-Result_t buildReceipt(Receipt* rec, const ReceiptData* data) {
+Result_t buildReceipt(Receipt* rec, ReceiptData* data) {
     Result_t res;
     RETURN_VALUE_IF_NULL(rec, res.err = ERR_DSC_INVALID_ARG;, res);
     RETURN_VALUE_IF_NULL(data, res.err = ERR_DSC_INVALID_ARG;, res);

@@ -82,9 +82,15 @@ typedef struct {
 } QueryOperator;
 
 typedef struct AggData {
+    TxnType  txn;
     uint64_t sum;
     uint64_t count;
 } AggData;
+
+typedef struct AggDataSummary {
+    AggData* data;
+    uint32_t txnCount;
+} AggDataSummary;
 
 /**
  * @brief Callback invoked for each transaction returned by a query.
@@ -99,8 +105,9 @@ typedef struct AggData {
  */
 typedef bool (*TxnHandler)(const TxnData* rec, void* userData);
 
-typedef bool (*TxnAggregateHandler)(TxnType txnType, const AggData* aggData,
-                                    void* userData);
+typedef bool (*TxnAggregateHandler)(TxnType               txnType,
+                                    const AggDataSummary* aggDataSum,
+                                    void*                 userData);
 
 /**
  * @brief Transaction query builder.

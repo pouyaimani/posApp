@@ -332,8 +332,9 @@ static Result_t queryClose(QueryOperator* qo) {
  */
 static Result_t queryWhere(QueryOperator* qo, int column, int comparison,
                            void* value) {
-    LOG_TRACE("Query where: column = %d, comparison = %d, value = %llu", column,
-              comparison, *(int64_t*)value);
+    uint32_t* val = (uint32_t*)value;
+    LOG_TRACE("Query where: column = %d, comparison = %d, value = %lu", column,
+              comparison, *val);
     Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(value, res.err = ERR_DSC_INVALID_ARG, res);
@@ -457,16 +458,16 @@ static void insertKey(uint64_t* keys, uint32_t* count, uint32_t limitCount,
  *
  * @return true if query processing should continue, false otherwise.
  */
-static bool processTxnRecord(const uint8_t* buf, TxnHandler handler,
-                             void* userData) {
+static uint8_t ptRec[TXN_RECORD_SIZE];
+static bool    processTxnRecord(const uint8_t* buf, TxnHandler handler,
+                                void* userData) {
     uint64_t key;
-    uint8_t  rec[TXN_RECORD_SIZE];
     TxnData  data;
 
     memcpy(&key, buf, state->keySize);
-    memcpy(rec, buf + state->keySize, TXN_RECORD_SIZE);
+    memcpy(ptRec, buf + state->keySize, TXN_RECORD_SIZE);
 
-    deserialize(rec, &key, &data);
+    deserialize(ptRec, &key, &data);
 
     return handler(&data, userData);
 }
@@ -599,14 +600,25 @@ static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
     return res;
 }
 
+static TxnType activeTxns[] = {
+    TXN_PURCHASE,
+    TXN_BILL,
+    TXN_TOPUP,
+    TXN_VOUCHER,
+};
+
 static bool handleAggData(const TxnData* txn, void* userData) {
-    AggData* aggData = (AggData*)userData;
-    LOG_TRACE("aggregate: txn count = %lu, txn sum = %llu", aggData->count,
-              aggData->sum);
-    aggData->count++;
-    aggData->sum += txn->core.amount;
-    LOG_TRACE("aggregate: txn count = %lu, txn sum = %llu", aggData->count,
-              aggData->sum);
+    AggDataSummary* summary = (AggDataSummary*)userData;
+    LOG_TRACE("aggregate: summary->txnCount = %lu", summary->txnCount);
+    for (size_t i = 0; i < summary->txnCount; i++) {
+        LOG_TRACE("aggregate: txn type = %d, txn count = %llu, txn sum = %llu",
+                  summary->data[i].txn, summary->data[i].count,
+                  summary->data[i].sum);
+        if (summary->data[i].txn == txn->core.txnType) {
+            summary->data[i].count++;
+            summary->data[i].sum += txn->core.amount;
+        }
+    }
     return true;
 }
 
@@ -616,21 +628,27 @@ static Result_t aggregate(QueryOperator* qo, TxnType txntype,
 
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(qo->op, res.err = ERR_DSC_INVALID_ARG, res);
-    LOG_TRACE("aggregate: txn type = %d", txntype);
-    uint32_t txntype32 = txntype;
-    res = queryWhere(qo, TXN_REC_COL_TYPE, SELECT_EQ, &txntype32);
-    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, res);
-    AggData aggData;
-    memset(&aggData, 0, sizeof(AggData));
-    (qo->op)->init(qo->op);
-    bool found = selectAllTransactions(qo, handleAggData, &aggData);
-    RETURN_VALUE_IF(found, false, res.err = ERR_DSC_NOT_FOUND;, res);
-    LOG_TRACE("aggregate: txn count = %llu, txn sum = %llu", aggData.count,
-              aggData.sum);
-    if (handler) {
-        handler(txntype, &aggData, userData);
+    size_t   size    = ARRAY_SIZE(activeTxns);
+    AggData* aggData = MEM_ALLOC(sizeof(AggData) * size);
+    RETURN_VALUE_IF_NULL(aggData, res.err = ERR_DSC_NO_SPACE, res);
+    memset(aggData, 0, sizeof(AggData) * size);
+    for (size_t i = 0; i < size; i++) {
+        aggData[i].txn = activeTxns[i];
     }
-    TRACE_POINT;
+    uint32_t txntype32 = txntype;
+    if (txntype != TXN_ALL) {
+        res = queryWhere(qo, TXN_REC_COL_TYPE, SELECT_EQ, &txntype32);
+        RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, res);
+    }
+
+    AggDataSummary summary = {.data = aggData, .txnCount = size};
+    (qo->op)->init(qo->op);
+    bool found = selectAllTransactions(qo, handleAggData, &summary);
+    RETURN_VALUE_IF(found, false, res.err = ERR_DSC_NOT_FOUND;, res);
+    if (handler) {
+        handler(txntype, &summary, userData);
+    }
+    MEM_FREE(aggData);
     return res;
 }
 

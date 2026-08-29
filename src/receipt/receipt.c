@@ -197,7 +197,7 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
         RETURN_VALUE_IF_NOT(safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX),
                             ERR_OK,
                             ;, ERR_NOK);
-        uint16_t h = measure_text_height(cols[i].src, w - 4, lvFont);
+        uint16_t h = measure_text_height(r->shaped[i], w - 4, lvFont);
         if (h > max_h)
             max_h = h;
     }
@@ -247,7 +247,7 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
         lv_draw_line(&layer, &line);
 
         // Draw text (with padding)
-        draw_text_line(&layer, x + 2, r->height + 2, w - 4, max_h, cols[i].src,
+        draw_text_line(&layer, x + 2, r->height + 2, w - 4, max_h, r->shaped[i],
                        cols[i].align, lvFont);
 
         x += w;
