@@ -53,7 +53,6 @@ typedef struct NthTransaction {
 OOP_CLASS(Nth) {
     OOP_METHOD(void, init);
     OOP_METHOD(NthTransaction*, alloc);
-    OOP_METHOD(NthResult, start, NthTransaction*, ByteArray * dtx);
     OOP_METHOD(NthResult, connect, NthTransaction * tx, const char* host,
                uint16_t port);
     OOP_METHOD(NthResult, send, NthTransaction * tx, ByteArray * ba);

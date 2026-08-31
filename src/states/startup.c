@@ -28,7 +28,7 @@ STATE_DEF_ENTER(Startup) {
     // settings()->reset();
     settings()->load();
     disp()->init();
-    nth()->init();
+    // nth()->init();
     Core* core = smCore();
     core->registerCallback(disp()->update);
     core->registerCallback(getEventloop()->runCycle);

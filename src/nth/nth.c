@@ -109,11 +109,20 @@ void nth_disconnect(NthTransaction* tx) {
         g_transport->close(tx->socketFd);
     }
     tx->socketFd = -1;
+
+    if (tx->state == NTH_TX_CONNECTING || tx->state == NTH_TX_SENDING ||
+        tx->state == NTH_TX_RECEIVING) {
+
+        tx->prevState = tx->state;
+        tx->state     = NTH_TX_FAILED;
+        tx->lastError = NTH_ERR_DISCONNECTED;
+    }
 }
 
 void nth_releaseTransaction(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
     NTH_LOG("nth: releasing transaction ...");
+    tx->active = false;
     nth_disconnect(tx);
     memset(tx, 0, sizeof(*tx));
 }
@@ -129,8 +138,8 @@ NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
 
     NTH_LOG("NTH: connect to socket = %d", tx->socketFd);
 
-    RETURN_VALUE_IF_LE(tx->socketFd, 0, nth_fail(tx, NTH_ERR_CONNECT);
-                       , NTH_ERR_CONNECT);
+    RETURN_VALUE_IF_LIITLE(tx->socketFd, 0, nth_fail(tx, NTH_ERR_CONNECT);
+                           , NTH_ERR_CONNECT);
 
     tx->state = NTH_TX_CONNECTING;
 
@@ -140,6 +149,11 @@ NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
 NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(ba, ;, NTH_ERR_INVALID_ARG);
+
+    if (tx->socketFd < 0) {
+        nth_fail(tx, NTH_ERR_DISCONNECTED);
+        return NTH_ERR_DISCONNECTED;
+    }
 
     tx->startTick = nth_getTick();
 
@@ -178,6 +192,11 @@ NthResult nth_setTx(NthTransaction* tx, ByteArray* ba) {
 
 NthResult nth_sendProvidedTx(NthTransaction* tx) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
+
+    if (tx->socketFd < 0) {
+        nth_fail(tx, NTH_ERR_DISCONNECTED);
+        return NTH_ERR_DISCONNECTED;
+    }
     tx->txOffset  = 0;
     tx->state     = NTH_TX_SENDING;
     tx->startTick = nth_getTick();
@@ -262,6 +281,10 @@ static void nth_handleSending(NthTransaction* tx) {
     ret = g_transport->send(tx->socketFd, tx->txBuffer.data + tx->txOffset,
                             remain);
 
+    if (ret == 0) {
+        return;
+    }
+
     if (ret < 0) {
         NTH_LOG("nth: sending data failed.");
         nth_fail(tx, NTH_ERR_SEND);
@@ -293,6 +316,11 @@ static void nth_handleReceiving(NthTransaction* tx) {
 
     remain = tx->rxBuffer.capacity - tx->rxOffset;
 
+    if (remain == 0) {
+        nth_fail(tx, NTH_ERR_OVERFLOW);
+        return;
+    }
+
     ret = g_transport->recv(tx->socketFd, tx->rxBuffer.data + tx->rxOffset,
                             remain);
 
@@ -309,8 +337,10 @@ static void nth_handleReceiving(NthTransaction* tx) {
 
     tx->rxBuffer.len = tx->rxOffset;
 
-    if (!tx->isComplete(tx, NULL))
-        return;
+    if (tx->isComplete) {
+        if (!tx->isComplete(tx, tx->userData))
+            return;
+    }
 
     tx->state = NTH_TX_COMPLETED;
 
@@ -338,7 +368,7 @@ static void nth_checkTimeout(NthTransaction* tx) {
 
     now = nth_getTick();
 
-    if ((now - tx->startTick) > tx->timeoutMs) {
+    if ((now - tx->startTick) >= tx->timeoutMs) {
         NTH_LOG("nth: time out occured.");
         tx->prevState = tx->state;
         tx->state     = NTH_TX_FAILED;
@@ -408,10 +438,6 @@ void nth_tick(void) {
     }
 }
 
-static NthResult nth_process(NthTransaction* tx, ByteArray* dtx) {
-    // SM_GOTO(tx->procState);
-}
-
 OOP_CTOR(Nth) {
     self->alloc          = nth_allocTransaction;
     self->connect        = nth_connect;
@@ -425,6 +451,6 @@ OOP_CTOR(Nth) {
 }
 
 Nth* nth() {
-    CALL_ONCE(OOP_CALL_CTOR(Nth, &__nth););
+    CALL_ONCE(OOP_CALL_CTOR(Nth, &__nth); nth_init(););
     return &__nth;
 }

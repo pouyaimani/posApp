@@ -1,4 +1,4 @@
-#ifdef 0
+#ifdef 1
 /*
   Copyright (c) 2009 Dave Gamble
 

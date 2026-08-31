@@ -41,7 +41,7 @@ static NetError_t setRoute(Network* self, NetRoute_t route) {
     return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
 }
 
-static void setAddr(Network* self, const char* ip, uint16_t port) {
+static NetError_t setAddr(Network* self, const char* ip, uint16_t port) {
     SockAddr addr;
     int      ret = sdkNetAddrSet(&addr, ip, port);
     return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
@@ -50,7 +50,7 @@ static void setAddr(Network* self, const char* ip, uint16_t port) {
 static const SocketAddr_t* getAddr(Network* self) {
     SockAddr addr;
     int ret = sdkNetAddrGet(&addr, self->address.ip, 64, self->address.port);
-    return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
+    return &self->address;
 }
 
 static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
@@ -68,6 +68,8 @@ static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
     case NET_RAW:
         sdkst = SOCKET_RAW;
         break;
+    default:
+        return -1;
     }
     SockAddr sadrr;
     if (sdkNetAddrSet(&sadrr, addr->ip, addr->port) != SDK_NET_OK) {
@@ -107,7 +109,7 @@ static int32_t send(Network* self, int32_t socketID, const uint8_t* data,
     return sdkNetSocketSend(socketID, data, dataLen, timeOut);
 }
 
-static int32_t receive(Network* self, int32_t socketID, const uint8_t* data,
+static int32_t receive(Network* self, int32_t socketID, uint8_t* data,
                        uint32_t dataLen) {
     return sdkNetSocketRecv(socketID, data, dataLen);
 }

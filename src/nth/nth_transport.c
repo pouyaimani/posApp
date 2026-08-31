@@ -35,15 +35,27 @@ static int sys_sock_poll(int fd, uint32_t timeoutMs) {
     return 0;
 }
 
+// static int sys_sock_close(int fd) {
+//     int            ret;
+//     SocketStatus_t st = OOP_CALL(network(), getStatus, fd);
+//     while (st == NET_STATUS_CONNECTED) {
+//         ret = OOP_CALL(network(), close, fd);
+//         st  = OOP_CALL(network(), getStatus, fd);
+//     }
+//     NTH_LOG("socket connect status = %d", st);
+//     return ret;
+// }
+
 static int sys_sock_close(int fd) {
-    int            ret;
+    if (fd < 0)
+        return -1;
+
     SocketStatus_t st = OOP_CALL(network(), getStatus, fd);
-    while (st == NET_STATUS_CONNECTED) {
-        ret = OOP_CALL(network(), close, fd);
-        st  = OOP_CALL(network(), getStatus, fd);
-    }
-    NTH_LOG("socket connect status = %d", st);
-    return ret;
+
+    if (st == NET_STATUS_DISCONNECTED)
+        return 0;
+
+    return OOP_CALL(network(), close, fd);
 }
 
 NthTransport sysTransport = {.connect = sys_sock_connect,
