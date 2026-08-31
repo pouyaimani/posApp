@@ -185,15 +185,21 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
     }
     RETURN_VALUE_IF_NOT(count == 0, false, ;, ERR_NOK);
     RETURN_VALUE_IF_NULL(cols, ;, ERR_NOK);
-    int      totalWeight = count; // equal width columns
-    int      x           = 0;
-    uint16_t max_h       = 0;
+
+    uint32_t totalWeight = 0;
+
+    for (int i = 0; i < count; i++) {
+        totalWeight += cols[i].weight;
+    }
+
+    int      x     = 0;
+    uint16_t max_h = 0;
 
     lv_font_t* lvFont = font == REC_FONT_REGULAR ? &FONT_16 : &FONT_20;
 
     // Calculate row height
     for (int i = 0; i < count; i++) {
-        uint32_t w = PRINTER_WIDTH_PIX / totalWeight;
+        uint32_t w = (PRINTER_WIDTH_PIX / totalWeight) * cols[i].weight;
         RETURN_VALUE_IF_NOT(safe_shape(cols[i].src, r->shaped[i], SHAPED_MAX),
                             ERR_OK,
                             ;, ERR_NOK);
@@ -237,7 +243,7 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
     // Draw vertical lines + text ---
     x = 0;
     for (int i = 0; i < count; i++) {
-        int w = PRINTER_WIDTH_PIX / totalWeight;
+        uint32_t w = (PRINTER_WIDTH_PIX / totalWeight) * cols[i].weight;
 
         // Draw vertical line (left border + separators)
         line.p1.x = x;

@@ -204,10 +204,10 @@ const char* getDayName(int y, int m, int d) {
  */
 int8_t getNameofDay(uint32_t date, char* out, size_t size) {
     RETURN_VALUE_IF_NULL(out, ;, ERR_BAD_PARAMETER);
-    uint32_t y = date / 10000;
-    uint32_t m = (date % 10000) / 100;
-    uint32_t d = date % 100;
-    snprintf(out, size, "s", getDayName(y, m, d));
+    int y = (int)(date / 10000);
+    int m = (int)((date % 10000) / 100);
+    int d = (int)(date % 100);
+    snprintf(out, size, "%s", getDayName(y, m, d));
     return ERR_OK;
 }
 

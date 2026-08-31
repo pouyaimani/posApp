@@ -572,49 +572,51 @@ static int8_t buildSumRepBodyReceipt(Receipt* rec, ReceiptData* data) {
     return ERR_OK;
 }
 
+#define DET_TXN_W   9
+#define DET_AMNT_W  14
+#define DET_TRACE_W 12
+#define DET_DT_W    15
+
 static int8_t buildDetailtRepHeaderReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
-    RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
     DetailedReportHeader* header = &data->detailedHeader;
-    DEFINE_STRING(txt, 36);
-    snprintf(txt, sizeof(txt), "%s %s", phraseGetDef(PHRASE_DETAILED_REPORT),
-             phraseGetDef(PHRASE_TXN_ALL));
-    RecColumn_t row[] = {{txt, LV_TEXT_ALIGN_CENTER, 1}};
+    RecColumn_t           row[]  = {
+        {phraseGetDef(PHRASE_DETAILED_REPORT), LV_TEXT_ALIGN_CENTER, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addTextWithBorder, REC_FONT_REGULAR, 1, row), ERR_OK, ;
         , ERR_NOK);
     DATE_TIME_STR(dt);
-    // dateTimeToStr(header->dateNow, header->timeNow, dt, sizeof(dt));
-    DEFINE_STRING(jaldt, 24);
-    DEFINE_STRING(today, 24);
-    formatJalDateTimeStr(jaldt, today, sizeof(dt));
+    dateTimeToStrJal(header->dateNow, header->timeNow, dt, sizeof(dt));
+    DEFINE_STRING(day, 24);
+    uint32_t date = OOP_CALL(sys(), getDate);
+    getNameofDay(date, day, sizeof(day));
     RecColumn_t row1[] = {
-        {today, LV_TEXT_ALIGN_RIGHT, 1},
-        {jaldt, LV_TEXT_ALIGN_LEFT, 1},
+        {dt, LV_TEXT_ALIGN_LEFT, 1},
+        {day, LV_TEXT_ALIGN_RIGHT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateFrom, header->timeFrom, dt, sizeof(dt));
     RecColumn_t row2[] = {
-        {phraseGetDef(PHRASE_FROM_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_FROM_DATE), LV_TEXT_ALIGN_RIGHT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
     dateTimeToStr(header->dateTo, header->timeTo, dt, sizeof(dt));
     RecColumn_t row3[] = {
-        {phraseGetDef(PHRASE_TO_DATE), LV_TEXT_ALIGN_RIGHT, 1},
         {dt, LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_TO_DATE), LV_TEXT_ALIGN_RIGHT, 1},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row3), ERR_OK, ;, ERR_NOK);
     RETURN_VALUE_IF_NOT(receiptSectionTerminalInfo(rec), ERR_OK, ;, ERR_NOK);
     RecColumn_t row4[] = {
-        {phraseGetDef(PHRASE_DATE), LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_TRACE), LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_TO_RIAL), LV_TEXT_ALIGN_LEFT, 1},
-        {phraseGetDef(PHRASE_TXN), LV_TEXT_ALIGN_LEFT, 1},
+        {phraseGetDef(PHRASE_DATE), LV_TEXT_ALIGN_LEFT, DET_DT_W},
+        {phraseGetDef(PHRASE_TRACE), LV_TEXT_ALIGN_CENTER, DET_TRACE_W},
+        {phraseGetDef(PHRASE_TO_RIAL), LV_TEXT_ALIGN_CENTER, DET_AMNT_W},
+        {phraseGetDef(PHRASE_TXN), LV_TEXT_ALIGN_RIGHT, DET_TXN_W},
     };
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addTable, REC_FONT_REGULAR, 4, row4), ERR_OK, ;, ERR_NOK);
@@ -626,9 +628,14 @@ static int8_t buildDetailRepBodyReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
     DATE_TIME_STR(dt);
+    DATE_TIME_STR(fdt);
     uint16_t date, time;
     unpackDateTime(&txn->dateTime, &date, &time);
-    shortDateTimeToStr(date, time, dt, sizeof(dt));
+    LOG_DEBUG("date = %lu, time = %lu", date, time);
+    dateTimeToStrJal(date, time, fdt, sizeof(fdt));
+    LOG_DEBUG("full dt = %s", fdt);
+    dateTimeToStrJalShort(date, time, dt, sizeof(dt));
+    LOG_DEBUG("short dt = %s", dt);
     DEFINE_STRING(traceStr, 16);
     snprintf(traceStr, sizeof(traceStr), "%u", txn->core.trace);
     AMOUNT_STR(amntStr);
@@ -637,24 +644,33 @@ static int8_t buildDetailRepBodyReceipt(Receipt* rec, ReceiptData* data) {
     amountSeparator(amntStr, amntStrSep, sizeof(amntStrSep));
     DEFINE_STRING(txnName, 64);
     getTxnName(txn->core.txnType, txnName, sizeof(txnName));
-    RecColumn_t row4[] = {
-        {dt, LV_TEXT_ALIGN_LEFT, 1},
-        {traceStr, LV_TEXT_ALIGN_LEFT, 1},
-        {amntStr, LV_TEXT_ALIGN_LEFT, 1},
-        {txnName, LV_TEXT_ALIGN_LEFT, 1},
+    RecColumn_t row[] = {
+        {dt, LV_TEXT_ALIGN_LEFT, DET_DT_W},
+        {traceStr, LV_TEXT_ALIGN_CENTER, DET_TRACE_W},
+        {amntStrSep, LV_TEXT_ALIGN_CENTER, DET_AMNT_W},
+        {txnName, LV_TEXT_ALIGN_RIGHT, DET_TXN_W},
     };
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addTable, REC_FONT_REGULAR, 4, row4), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addTable, REC_FONT_REGULAR, 4, row), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 
-static int8_t buildDetailRepReceipt(Receipt* rec, ReceiptData* data) {}
+static int8_t buildDetailRepReceipt(Receipt* rec, ReceiptData* data) {
+    if (!data->headerApplied) {
+        RETURN_VALUE_IF_NOT(buildDetailtRepHeaderReceipt(rec, data), ERR_OK, ;
+                            , ERR_NOK);
+        data->headerApplied = true;
+    }
+    RETURN_VALUE_IF_NOT(buildDetailRepBodyReceipt(rec, data), ERR_OK, ;
+                        , ERR_NOK);
+    return ERR_OK;
+}
 
 static int8_t buildDailyRepReceipt(Receipt* rec, ReceiptData* data) {}
 
 static int8_t buildSumRepReceipt(Receipt* rec, ReceiptData* data) {
     if (!data->headerApplied) {
-        RETURN_VALUE_IF_NOT(buildSumRepHeaderReceipt(rec, data), ERR_OK, ;
+        RETURN_VALUE_IF_NOT(buildDetailtRepHeaderReceipt(rec, data), ERR_OK, ;
                             , ERR_NOK);
         data->headerApplied = true;
         return ERR_OK;
@@ -685,57 +701,49 @@ static void handleError(Result_t res) {
     }
 }
 
-Result_t buildReceipt(Receipt* rec, ReceiptData* data) {
-    Result_t res;
-    RETURN_VALUE_IF_NULL(rec, res.err = ERR_DSC_INVALID_ARG;, res);
-    RETURN_VALUE_IF_NULL(data, res.err = ERR_DSC_INVALID_ARG;, res);
-    RETURN_VALUE_IF_NOT(createReceipt(rec), ERR_OK, res.err = ERR_DSC_MEMORY;
-                        , res);
-    ReceiptBuilder builder = NULL;
+ReceiptBuilder getReceiptBuilder(Receipt* rec, ReceiptData* data) {
+    RETURN_VALUE_IF_NULL(rec, ;, NULL);
+    RETURN_VALUE_IF_NULL(data, ;, NULL);
+    RETURN_VALUE_IF_NOT(createReceipt(rec), ERR_OK, ;, NULL);
     if (data->type == DOC_TXN) {
         switch (data->txn.core.txnType) {
         case TXN_LOGON:
-            builder = buildLogonReceipt;
-            break;
+            return buildLogonReceipt;
         case TXN_CFG:
-            builder = buildCfgReceipt;
-            break;
+            return buildCfgReceipt;
         case TXN_PURCHASE:
-            builder = buildPurchaseReceipt;
-            break;
+            return buildPurchaseReceipt;
         case TXN_BILL:
-            builder = buildBillReceipt;
-            break;
+            return buildBillReceipt;
         case TXN_TOPUP:
-            builder = buildTopupReceipt;
-            break;
+            return buildTopupReceipt;
         case TXN_BALANCE:
-            builder = buildBalanceReceipt;
-            break;
+            return buildBalanceReceipt;
         case TXN_PAY:
-            builder = buildPaymentReceipt;
-            break;
-            // case TXN_SIM_CHARGE:
-            //     builder = buildChargeCodeReceipt;
-            break;
+            return buildPaymentReceipt;
         default:
-            break;
+            return NULL;
         }
     } else {
         switch (data->type) {
         case DOC_DAILY_REPORT:
-            builder = buildDailyRepReceipt;
-            break;
+            return buildDailyRepReceipt;
         case DOC_SUMMARY_REPORT:
-            builder = buildSumRepReceipt;
-            break;
+            return buildSumRepReceipt;
         case DOC_DETAILED_REPORT:
-            builder = buildDetailRepReceipt;
-            break;
+            return buildDetailRepReceipt;
         default:
-            break;
+            return NULL;
         }
     }
+    return NULL;
+}
+
+Result_t buildReceipt(Receipt* rec, ReceiptData* data) {
+    Result_t res;
+    RETURN_VALUE_IF_NULL(rec, res.err = ERR_DSC_INVALID_ARG;, res);
+    RETURN_VALUE_IF_NULL(data, res.err = ERR_DSC_INVALID_ARG;, res);
+    ReceiptBuilder builder = getReceiptBuilder(rec, data);
 
     RETURN_VALUE_IF_NULL(builder, res.err = ERR_DSC_NOT_SUPPORTED;, res);
     RETURN_VALUE_IF_NOT(builder(rec, data), ERR_OK, ;, res);

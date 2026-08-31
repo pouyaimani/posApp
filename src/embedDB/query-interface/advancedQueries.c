@@ -520,14 +520,6 @@ embedDBOperator* createSelectionOperator(embedDBOperator* input, int8_t colNum,
 
 void initOrderBy(embedDBOperator* op) {
 
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
     if (op == NULL || op->input == NULL) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: ORDER BY: NULL input operator\n");
@@ -535,27 +527,7 @@ void initOrderBy(embedDBOperator* op) {
         return;
     }
 
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
     op->input->init(op->input);
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
 
     if (op->schema == NULL) {
         op->schema = copySchema(op->input->schema);
@@ -613,9 +585,6 @@ embedDBOperator* createOrderByOperator(embedDBState*    dbState,
                                        int32_t limit,
                                        int8_t (*compareFn)(void* a, void* b)) {
 
-    TRACE_POINT;
-    TRACE_POINT;
-    TRACE_POINT;
     if (input == NULL || dbState == NULL || compareFn == NULL || colNum < 0) {
 #ifdef PRINT_ERRORS
         debug_log("ERROR: ORDER BY: Invalid Input data\n");
@@ -646,10 +615,6 @@ embedDBOperator* createOrderByOperator(embedDBState*    dbState,
     op->init         = initOrderBy;
     op->next         = nextOrderBy;
     op->close        = closeOrderBy;
-
-    TRACE_POINT;
-    TRACE_POINT;
-    TRACE_POINT;
 
     return op;
 }
@@ -701,34 +666,8 @@ void initAggregate(embedDBOperator* op) {
     }
 
     LOG_TRACE("Calling input->init()");
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
     // Init input
     op->input->init(op->input);
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
-
-    TRACE_POINT;
 
     struct aggregateInfo* state = op->state;
     state->isLastRecordUsable   = 0;

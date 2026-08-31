@@ -486,10 +486,12 @@ static bool    processTxnRecord(const uint8_t* buf, TxnHandler handler,
 static bool selectAllTransactions(QueryOperator* qo, TxnHandler handler,
                                   void* userData) {
     bool found = false;
-
+    TRACE_POINT;
+    TRACE_POINT;
     while (exec(qo->op)) {
         found = true;
-
+        TRACE_POINT;
+        TRACE_POINT;
         if (!processTxnRecord((const uint8_t*)qo->op->recordBuffer, handler,
                               userData)) {
             break;
@@ -571,14 +573,18 @@ static void processLimitedTransactions(uint32_t count, TxnHandler handler,
 static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
                           void* userData) {
     Result_t res;
-
+    TRACE_POINT;
+    TRACE_POINT;
     RETURN_VALUE_IF_NULL(qo, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(handler, res.err = ERR_DSC_INVALID_ARG, res);
 
     (qo->op)->init(qo->op);
-
+    TRACE_POINT;
+    TRACE_POINT;
     LOG_TRACE("Txn select: limit mode = %d, limit count = %lu", qo->limit.mode,
               qo->limit.count);
+    TRACE_POINT;
+    TRACE_POINT;
 
     if (qo->limit.mode == QUERY_LIMIT_NO) {
         bool found = selectAllTransactions(qo, handler, userData);
@@ -586,14 +592,16 @@ static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
         res.err = found ? ERR_DSC_OK : ERR_DSC_NOT_FOUND;
         return res;
     }
-
+    TRACE_POINT;
+    TRACE_POINT;
     uint32_t count = collectLimitedKeys(qo);
 
     if (count == 0) {
         res.err = ERR_DSC_NOT_FOUND;
         return res;
     }
-
+    TRACE_POINT;
+    TRACE_POINT;
     processLimitedTransactions(count, handler, userData);
 
     res.err = ERR_DSC_OK;

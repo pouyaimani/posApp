@@ -210,9 +210,7 @@ void generate_random_txn(TxnData* t) {
 static void insertTxn() {
     TxnData txn;
     generate_random_txn(&txn);
-    TRACE_POINT;
     txnrecord()->insert(&txn);
-    TRACE_POINT;
 }
 
 static bool txnHand(const TxnData* txn, void* userData) {

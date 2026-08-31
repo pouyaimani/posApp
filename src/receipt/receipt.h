@@ -6,7 +6,7 @@
 #include "logger.h"
 #include "error.h"
 
-#define MAX_CULOMN_CNT 3
+#define MAX_CULOMN_CNT 4
 
 typedef struct {
     const char* src;

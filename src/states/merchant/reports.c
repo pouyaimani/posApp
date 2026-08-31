@@ -194,13 +194,12 @@ static void SummaryReport(State* parent) {
  *                                Detail report sub state
  *                                                                                           *
  ********************************************************************************************/
-
 STATE_DEF_ENTER(DetailsReport) {
     docType = DOC_DETAILED_REPORT;
     ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE; i++) {
-        ui_menu_addItem(printMenu, printItemTxt[i], LV_TEXT_ALIGN_RIGHT, NULL,
-                        setReprintItem, (void*)(uintptr_t)i);
+        ui_menu_addItem(printMenu, phraseGetDef(printItemTxt[i]),
+                        LV_TEXT_ALIGN_RIGHT, NULL, setReprintItem, NULL);
     }
     GOTO_MENU(state->parent, printMenu, NULL, NULL);
 }
@@ -303,21 +302,17 @@ static bool handleTxnExtractedData(const TxnData* txn, void* userData) {
 static bool handleSummaryExtractedData(TxnType               txnType,
                                        const AggDataSummary* aggDataSum,
                                        void*                 userData) {
-    ReceiptData* data = (ReceiptData*)userData;
-    Receipt      rec;
-    Result_t     res = buildReceipt(&rec, data);
+    ReceiptElements* recElm = (ReceiptElements*)userData;
+    recElm->builder(recElm->receipt, recElm->data);
     for (size_t i = 0; i < aggDataSum->txnCount; i++) {
         LOG_TRACE("aggregate: txn type = %d, txn count = %llu, txn sum = %llu",
                   aggDataSum->data[i].txn, aggDataSum->data[i].count,
                   aggDataSum->data[i].sum);
-        data->summaryBody.txnType = aggDataSum->data[i].txn;
-        data->summaryBody.count   = aggDataSum->data[i].count;
-        data->summaryBody.amntSum = aggDataSum->data[i].sum;
-        buildReceipt(&rec, data);
+        recElm->data->summaryBody.txnType = aggDataSum->data[i].txn;
+        recElm->data->summaryBody.count   = aggDataSum->data[i].count;
+        recElm->data->summaryBody.amntSum = aggDataSum->data[i].sum;
+        recElm->builder(recElm->receipt, recElm->data);
     }
-    res = OOP_CALL(&rec, flush);
-    // RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
-    OOP_CALL(&rec, destroy);
     return true;
 }
 
@@ -329,12 +324,11 @@ static bool handleDailyExtractedData(TxnType txnType, uint32_t count,
               txnType, count, sums[0]);
 }
 
-static bool handleDetailedExtractedData(TxnType txnType, uint32_t count,
-                                        const uint64_t* sums, uint32_t sumCount,
-                                        void* userData) {
-    LOG_DEBUG("Summary report: txn type = %d, number of txns = %lu, total "
-              "amount = %llu",
-              txnType, count, sums[0]);
+static bool handleDetailedExtractedData(const TxnData* txn, void* userData) {
+    ReceiptElements* recElm = (ReceiptElements*)userData;
+    memcpy(&recElm->data->txn, txn, sizeof(*txn));
+    recElm->builder(recElm->receipt, recElm->data);
+    return true;
 }
 
 static int8_t checkPrinterStatus() {
@@ -355,15 +349,23 @@ static ErrorDsc_t handleTxnExtracting(ReceiptData* rec, QueryOperator* op) {
     return res.err;
 }
 
-static ErrorDsc_t handleSummaryExtracting(ReceiptData* rec, QueryOperator* op) {
-    rec->summaryHeader.dateFrom = fdate;
-    rec->summaryHeader.dateTo   = tdate;
-    rec->summaryHeader.timeFrom = ftime;
-    rec->summaryHeader.timeTo   = ttime;
-    rec->summaryHeader.dateNow  = OOP_CALL(sys(), getDate);
-    rec->summaryHeader.timeNow  = OOP_CALL(sys(), getTime);
-    Result_t res                = txnrecord()->aggregate(
-        op, TXN_ALL, handleSummaryExtractedData, (void*)rec);
+static ErrorDsc_t handleSummaryExtracting(ReceiptData*   recData,
+                                          QueryOperator* op) {
+    recData->summaryHeader.dateFrom = fdate;
+    recData->summaryHeader.dateTo   = tdate;
+    recData->summaryHeader.timeFrom = ftime;
+    recData->summaryHeader.timeTo   = ttime;
+    recData->summaryHeader.dateNow  = OOP_CALL(sys(), getDate);
+    recData->summaryHeader.timeNow  = OOP_CALL(sys(), getTime);
+    Receipt         receipt;
+    ReceiptElements recElm = {.data    = recData,
+                              .receipt = &receipt,
+                              .builder = getReceiptBuilder(&receipt, recData)};
+    Result_t        res    = txnrecord()->aggregate(
+        op, TXN_ALL, handleSummaryExtractedData, (void*)&recElm);
+    res = OOP_CALL(&receipt, flush);
+    // RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    OOP_CALL(&receipt, destroy);
     return res.err;
 }
 
@@ -377,8 +379,24 @@ static ErrorDsc_t handleDailyExtracting(ReceiptData* rec, QueryOperator* op) {
     return ERR_DSC_OK;
 }
 
-static ErrorDsc_t handleDetailExtracting(ReceiptData* rec, QueryOperator* op) {
-    return ERR_DSC_OK;
+static ErrorDsc_t handleDetailExtracting(ReceiptData*   recData,
+                                         QueryOperator* op) {
+    recData->detailedHeader.dateFrom = fdate;
+    recData->detailedHeader.dateTo   = tdate;
+    recData->detailedHeader.timeFrom = ftime;
+    recData->detailedHeader.timeTo   = ttime;
+    recData->detailedHeader.dateNow  = OOP_CALL(sys(), getDate);
+    recData->detailedHeader.timeNow  = OOP_CALL(sys(), getTime);
+    Receipt         receipt;
+    ReceiptElements recElm = {.data    = recData,
+                              .receipt = &receipt,
+                              .builder = getReceiptBuilder(&receipt, recData)};
+    Result_t        res =
+        txnrecord()->select(op, handleDetailedExtractedData, (void*)&recElm);
+    res = OOP_CALL(&receipt, flush);
+    // RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    OOP_CALL(&receipt, destroy);
+    return res.err;
 }
 
 static const ExtractHandler exTemplates[] = {

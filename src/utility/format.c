@@ -107,25 +107,39 @@ void dateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
 }
 
 void dateTimeToStrJal(uint32_t date, uint32_t time, char* str, size_t size) {
-    int yy  = date / 10000;
-    int tmp = (date % 10000);
-    int mm  = tmp / 100;
-    int dd  = tmp % 100;
+    int year  = (int)(date / 10000U);
+    int month = (int)((date / 100U) % 100U);
+    int day   = (int)(date % 100U);
 
-    int    full_year = 2000 + yy; // adjust if needed
-    Date_t greg;
-    greg.day   = dd;
-    greg.month = mm;
-    greg.year  = full_year;
+    Date_t greg = {.year = year, .month = month, .day = day};
+
     Date_t jalali;
     gregorianToJalali(greg, &jalali);
 
-    int hh  = time / 10000;
-    tmp     = (time % 10000);
-    int min = tmp / 100;
-    int ss  = tmp % 100;
+    int hour   = (int)(time / 10000U);
+    int minute = (int)((time / 100U) % 100U);
+    int second = (int)(time % 100U);
+
     snprintf(str, size, "%04d/%02d/%02d-%02d:%02d:%02d", jalali.year,
-             jalali.month, jalali.day, hh, min, ss);
+             jalali.month, jalali.day, hour, minute, second);
+}
+
+void dateTimeToStrJalShort(uint32_t date, uint32_t time, char* str,
+                           size_t size) {
+    int year  = (int)(date / 10000U);
+    int month = (int)((date / 100U) % 100U);
+    int day   = (int)(date % 100U);
+
+    Date_t greg = {.year = year, .month = month, .day = day};
+
+    Date_t jalali;
+    gregorianToJalali(greg, &jalali);
+
+    int hour   = (int)(time / 10000U);
+    int minute = (int)((time / 100U) % 100U);
+
+    snprintf(str, size, "%02d/%02d-%02d:%02d", jalali.month, jalali.day, hour,
+             minute);
 }
 
 void dateToStr(uint32_t date, char* str, size_t size) {
@@ -162,13 +176,14 @@ void timeToStr(uint32_t time, char* str, size_t size) {
 }
 
 void shortDateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
-    int mm = (date % 10000) / 100;
-    int dd = date % 100;
+    int tmp = (date % 10000);
+    int mm  = tmp / 100;
+    int dd  = tmp % 100;
 
     int hh  = time / 10000;
     int min = (time % 10000) / 100;
 
-    snprintf(str, size, "%02d/%02d-%02d/%02d", mm, dd, hh, min);
+    snprintf(str, size, "%02d/%02d-%02d:%02d", mm, dd, hh, min);
 }
 
 void extractDatetimeStr(const char* buf, char* date, char* time) {

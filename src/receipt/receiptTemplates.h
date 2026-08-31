@@ -60,7 +60,16 @@ typedef int8_t (*ReceiptBuilder)(Receipt*, ReceiptData*);
 
 typedef int8_t (*DigitalReceiptBuilder)(const TxnData*);
 
+typedef struct {
+    Receipt*              receipt;
+    ReceiptData*          data;
+    ReceiptBuilder        builder;
+    DigitalReceiptBuilder digBuilder;
+} ReceiptElements;
+
 Result_t buildReceipt(Receipt* rec, ReceiptData* data);
+
+ReceiptBuilder getReceiptBuilder(Receipt* rec, ReceiptData* data);
 
 Result_t showDigitalRec(const TxnData* data);
 void     hideDigitalRec();
