@@ -6,6 +6,8 @@
 #include "network/network.h"
 #include "error.h"
 
+#define ZERO_TIME_OUT 0
+
 static int sys_sock_connect(const char* host, uint16_t port) {
     RETURN_VALUE_IF_NULL(host, ;, ERR_NULL_PARAMETER);
     SocketAddr_t addr;
@@ -19,7 +21,7 @@ static int sys_sock_connect(const char* host, uint16_t port) {
 }
 
 static int sys_sock_send(int fd, const void* buf, size_t len) {
-    return OOP_CALL(network(), send, fd, buf, len, NT_DEFAULT_TIMEOUT_MS);
+    return OOP_CALL(network(), send, fd, buf, len, ZERO_TIME_OUT);
 }
 
 static int sys_sock_recv(int fd, void* buf, size_t len) {

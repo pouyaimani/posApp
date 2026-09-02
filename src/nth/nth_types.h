@@ -16,16 +16,27 @@ typedef enum {
     NTH_ERR_RECEIVE,
     NTH_ERR_DISCONNECTED,
     NTH_ERR_OVERFLOW,
-    NTH_ERR_INTERNAL
+    NTH_ERR_INTERNAL,
+    NTH_ERR_INVALID_STATE,
+    NTH_ERR_BUSY,
+    NTH_ERR_PROTOCOL
 } NthResult;
 
 typedef enum {
     NTH_TX_IDLE = 0,
+    NTH_TX_READY,
     NTH_TX_CONNECTING,
     NTH_TX_SENDING,
     NTH_TX_RECEIVING,
     NTH_TX_COMPLETED,
     NTH_TX_FAILED,
 } NthTxState;
+
+typedef enum {
+    NTH_IO_WOULD_BLOCK,
+    NTH_IO_DATA,
+    NTH_IO_CLOSED,
+    NTH_IO_ERROR
+} NthIoStatus;
 
 #endif

@@ -11,7 +11,17 @@
 #include "nth_types.h"
 #include "byteArray.h"
 
+#define NTH_SOCKET_CLOSE -1
+
 struct NthTransaction;
+
+typedef enum { NTH_RX_MORE = 0, NTH_RX_COMPLETE, NTH_RX_ERROR } NthRxDecision;
+
+typedef void (*NthReceiveChunkCallback)(struct NthTransaction* tx,
+                                        ByteArray* chunk, void* userData);
+
+typedef NthRxDecision (*NthCompletionCallback)(struct NthTransaction* tx,
+                                               void*                  userData);
 
 typedef int8_t (*NthCallback)(struct NthTransaction* tx, void* userData);
 
@@ -26,8 +36,9 @@ typedef struct NthTransaction {
     ByteArray  txBuffer;
     ByteArray  rxBuffer;
 
-    uint8_t txStorage[NT_TX_BUFFER_SIZE];
-    uint8_t rxStorage[NT_RX_BUFFER_SIZE];
+    // TODO: 2048-byte RX architecture will become a problem for HTTP
+    uint8_t txStorage[NT_BUFFER_SIZE];
+    uint8_t rxStorage[NT_BUFFER_SIZE];
 
     size_t txOffset;
     size_t rxOffset;
@@ -39,14 +50,15 @@ typedef struct NthTransaction {
 
     void* userData;
 
-    NthCallback onConnect;
-    NthCallback onReceive;
-    NthCallback onFailure;
-    NthCallback onTimeout;
-    NthCallback onSent;
-    NthCallback isComplete;
+    NthCallback             onConnect;
+    NthCallback             onReceive;
+    NthCallback             onFailure;
+    NthCallback             onTimeout;
+    NthCallback             onSent;
+    NthCompletionCallback   isComplete;
+    NthReceiveChunkCallback onChunk;
 
-    int lastError;
+    NthResult lastError;
 
 } NthTransaction;
 

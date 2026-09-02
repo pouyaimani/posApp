@@ -83,8 +83,10 @@ NthTransaction* nth_allocTransaction(void) {
         if (!tx->active) {
 
             memset(tx, 0, sizeof(*tx));
-            tx->socketFd = -1;
+            tx->socketFd = NTH_SOCKET_CLOSE;
             tx->active   = true;
+
+            tx->state = NTH_TX_IDLE;
 
             tx->txBuffer.data     = tx->txStorage;
             tx->txBuffer.capacity = sizeof(tx->txStorage);
@@ -104,11 +106,12 @@ NthTransaction* nth_allocTransaction(void) {
 void nth_disconnect(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
 
+    // TODO:13. Close errors are currently thrown away
     if (tx->socketFd >= 0) {
         NTH_LOG("NTH: closing socekt = %d", tx->socketFd);
         g_transport->close(tx->socketFd);
     }
-    tx->socketFd = -1;
+    tx->socketFd = NTH_SOCKET_CLOSE;
 
     if (tx->state == NTH_TX_CONNECTING || tx->state == NTH_TX_SENDING ||
         tx->state == NTH_TX_RECEIVING) {
@@ -122,15 +125,18 @@ void nth_disconnect(NthTransaction* tx) {
 void nth_releaseTransaction(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
     NTH_LOG("nth: releasing transaction ...");
-    tx->active = false;
     nth_disconnect(tx);
+    tx->active = false;
     memset(tx, 0, sizeof(*tx));
 }
 
 NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(host, ;, NTH_ERR_INVALID_ARG);
-    RETURN_VALUE_IF_NOT(isValidIPv4(host), true, ;, NTH_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NOT(isValidIPv4(host), true, ;, NTH_ERR_INVALID_HOST);
+
+    if (tx->socketFd >= 0)
+        return NTH_ERR_INVALID_STATE;
 
     tx->startTick = nth_getTick();
 
@@ -149,6 +155,7 @@ NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
 NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(ba, ;, NTH_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(ba->data, ;, NTH_ERR_INVALID_ARG);
 
     if (tx->socketFd < 0) {
         nth_fail(tx, NTH_ERR_DISCONNECTED);
@@ -160,7 +167,7 @@ NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
     if (ba->len > tx->txBuffer.capacity) {
         NTH_LOG("NTH: buffer overfllow.data len = %d, buffer capacity = %d",
                 ba->len, tx->txBuffer.capacity);
-        nth_fail(tx, NTH_TX_SENDING);
+        nth_fail(tx, NTH_ERR_OVERFLOW);
         return NTH_ERR_OVERFLOW;
     }
     memcpy(tx->txBuffer.data, ba->data, ba->len);
@@ -176,11 +183,12 @@ NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
 NthResult nth_setTx(NthTransaction* tx, ByteArray* ba) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(ba, ;, NTH_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(ba->data, ;, NTH_ERR_INVALID_ARG);
 
     if (ba->len > tx->txBuffer.capacity) {
         NTH_LOG("NTH: buffer overfllow.data len = %d, buffer capacity = %d",
                 ba->len, tx->txBuffer.capacity);
-        nth_fail(tx, NTH_TX_SENDING);
+        nth_fail(tx, NTH_ERR_OVERFLOW);
         return NTH_ERR_OVERFLOW;
     }
 
@@ -258,7 +266,7 @@ static void nth_handleConnecting(NthTransaction* tx) {
 
     if (ret > 0) {
         NTH_LOG("nth: socket is connected.");
-        tx->state = NTH_TX_IDLE;
+        tx->state = NTH_TX_READY;
         if (tx->onConnect) {
             NTH_LOG("nth: calling connect callback.");
             tx->onConnect(tx, tx->userData);
@@ -330,16 +338,38 @@ static void nth_handleReceiving(NthTransaction* tx) {
         return;
     }
 
-    if (ret == 0)
-        return;
+    // TODO:
+    /*
+     * recv:
+     *   > 0 : number of bytes received
+     *   ==0 : no data currently available
+     *   < 0 : transport error
+     */
+    // if (ret == 0)
+    //     return;
 
     tx->rxOffset += ret;
 
     tx->rxBuffer.len = tx->rxOffset;
 
-    if (tx->isComplete) {
-        if (!tx->isComplete(tx, tx->userData))
-            return;
+    if (!tx->isComplete) {
+        nth_fail(tx, NTH_ERR_INTERNAL);
+        return;
+    }
+
+    NthRxDecision result = tx->isComplete(tx, tx->userData);
+
+    switch (result) {
+    case NTH_RX_MORE:
+        return;
+
+    case NTH_RX_COMPLETE:
+        break;
+
+    case NTH_RX_ERROR:
+    default:
+        nth_fail(tx, NTH_ERR_PROTOCOL);
+        return;
     }
 
     tx->state = NTH_TX_COMPLETED;
@@ -389,6 +419,8 @@ static void nth_fail(NthTransaction* tx, NthResult error) {
     if (!tx)
         return;
 
+    nth_disconnect(tx);
+
     tx->prevState = tx->state;
     tx->state     = NTH_TX_FAILED;
     tx->lastError = error;
@@ -411,6 +443,10 @@ void nth_tick(void) {
 
         case NTH_TX_IDLE:
             NTH_LOG("nth: state idle.");
+            break;
+
+        case NTH_TX_READY:
+            NTH_LOG("nth: state ready.");
             break;
 
         case NTH_TX_COMPLETED:

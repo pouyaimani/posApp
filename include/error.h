@@ -170,6 +170,10 @@ typedef enum {
     ERR_DSC_NOT_FOUND,
     ERR_DSC_IS_NOT_INIT,
 
+    /* Json */
+    ERR_DSC_CJSON_OK,
+    ERR_DSC_CJSON_NOK,
+
     /* Device */
     ERR_DSC_DEVICE,
     ERR_DSC_BUSY,

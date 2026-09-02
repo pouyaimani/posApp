@@ -15,7 +15,7 @@ static int8_t onFailure(NthTransaction* tx, void* ctx);
 
 static int8_t onTimeout(NthTransaction* tx, void* ctx);
 
-static int8_t isComplete(NthTransaction* tx, void* ctx);
+static NthRxDecision isComplete(NthTransaction* tx, void* ctx);
 
 void txnFlowRelease(TxnFlow* flow) {
     RETURN_VALUE_IF_NULL(flow, ;, false);
@@ -121,7 +121,7 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_DEBUG("Txn flow: on connect ...");
     TxnFlow* flow = ctx;
-    ByteArray(ba, NT_TX_BUFFER_SIZE);
+    ByteArray(ba, NT_BUFFER_SIZE);
 
     /* Compose transaction related data */
     if (flow->cfg->compose) {
@@ -182,7 +182,7 @@ static int8_t onFailure(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_DEBUG("Txn flow: on failure ...");
     TxnFlow* flow = ctx;
-    nth()->disconnect(flow->tx);
+    // nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_FAILED, 0);
     return 0;
 }
@@ -191,15 +191,14 @@ static int8_t onTimeout(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_DEBUG("Txn flow: on timeout ...");
     TxnFlow* flow = ctx;
-    nth()->disconnect(flow->tx);
+    // nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_TIMEOUT, 0);
     return 0;
 }
 
-static int8_t isComplete(NthTransaction* tx, void* ctx) {
+static NthRxDecision isComplete(NthTransaction* tx, void* ctx) {
     if (tx->rxBuffer.len < 2)
         return false;
     uint16_t len = (tx->rxBuffer.data[0] << 8) | tx->rxBuffer.data[1];
-
-    return tx->rxBuffer.len >= len + 2;
+    return tx->rxBuffer.len >= len + 2 ? NTH_RX_COMPLETE : NTH_RX_MORE;
 }
