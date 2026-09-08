@@ -1,8 +1,10 @@
-#ifndef NT_TRANSPORT_H
-#define NT_TRANSPORT_H
+#ifndef NTH_TRANSPORT_H
+#define NTH_TRANSPORT_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
+#include "nth_types.h"
 
 typedef struct {
 
@@ -10,7 +12,11 @@ typedef struct {
 
     int (*send)(int fd, const void* buf, size_t len);
 
-    int (*recv)(int fd, void* buf, size_t len);
+    /*
+     * bytesReceived is meaningful only for NTH_IO_DATA.
+     */
+    NthIoStatus (*recv)(int fd, void* buf, size_t capacity,
+                        size_t* bytesReceived);
 
     int (*poll)(int fd, uint32_t timeoutMs);
 

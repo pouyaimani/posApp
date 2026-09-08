@@ -6,9 +6,17 @@
 #include "sys/sys.h"
 #include "logger.h"
 
-#define NT_MAX_TRANSACTIONS   1
-#define NT_MAX_EVENTS         32
-#define NT_BUFFER_SIZE        2048
+#define NT_MAX_TRANSACTIONS 1
+#define NT_MAX_EVENTS       32
+#define NT_TX_BUFFER_SIZE   2048U
+#define NT_RX_BUFFER_SIZE   6144U
+
+/*
+ * Compatibility for older TX-oriented code.
+ * New code should use the explicit names.
+ */
+#define NT_BUFFER_SIZE NT_TX_BUFFER_SIZE
+
 #define NT_DEFAULT_TIMEOUT_MS 30000
 
 #define NTH_GET_TICK() GET_TICK()

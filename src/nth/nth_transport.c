@@ -24,8 +24,46 @@ static int sys_sock_send(int fd, const void* buf, size_t len) {
     return OOP_CALL(network(), send, fd, buf, len, ZERO_TIME_OUT);
 }
 
-static int sys_sock_recv(int fd, void* buf, size_t len) {
-    return OOP_CALL(network(), receive, fd, buf, len);
+// static int sys_sock_recv(int fd, void* buf, size_t len) {
+//     return OOP_CALL(network(), receive, fd, buf, len);
+// }
+
+static NthIoStatus sys_sock_recv(int fd, void* buf, size_t capacity,
+                                 size_t* bytesReceived) {
+    int ret;
+
+    if (fd < 0 || buf == NULL || bytesReceived == NULL || capacity == 0U)
+        return NTH_IO_ERROR;
+
+    *bytesReceived = 0U;
+
+    ret = OOP_CALL(network(), receive, fd, buf, capacity);
+
+    if (ret > 0) {
+
+        if ((size_t)ret > capacity)
+            return NTH_IO_ERROR;
+
+        *bytesReceived = (size_t)ret;
+
+        return NTH_IO_DATA;
+    }
+
+    if (ret < 0)
+        return NTH_IO_ERROR;
+
+    /*
+     * Your network receive contract says zero can mean
+     * "nothing available yet", so inspect socket state.
+     */
+    {
+        SocketStatus_t status = OOP_CALL(network(), getStatus, fd);
+
+        if (status == NET_STATUS_DISCONNECTED)
+            return NTH_IO_CLOSED;
+    }
+
+    return NTH_IO_WOULD_BLOCK;
 }
 
 static int sys_sock_poll(int fd, uint32_t timeoutMs) {

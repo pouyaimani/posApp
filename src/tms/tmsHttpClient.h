@@ -25,6 +25,9 @@ struct TmsHttpClient {
     TmsHttpDoneCallback onDone;
     void*               userData;
     bool                busy;
+    bool                starting;
+    bool                completionDuringStart;
+    HttpFlowStatus      deferredStatus;
 };
 
 void tmsHttpClientInit(TmsHttpClient* client, const char* host, uint16_t port);

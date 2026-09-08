@@ -7,6 +7,14 @@
 #include "error.h"
 #include "logger.h"
 
+#if !defined(NT_RX_BUFFER_SIZE)
+#error "NT_RX_BUFFER_SIZE must be defined"
+#endif
+
+#if (HTTP_MAX_HEADER_BYTES + HTTP_MAX_BODY_SIZE) > NT_RX_BUFFER_SIZE
+#error "NTH RX buffer cannot contain maximum HTTP headers and body"
+#endif
+
 /*
  * NTH callbacks
  */
@@ -14,8 +22,9 @@ static int8_t httpFlowOnConnect(NthTransaction* tx, void* userData);
 
 static int8_t httpFlowOnSent(NthTransaction* tx, void* userData);
 
-static int8_t httpFlowOnReceiveChunk(NthTransaction* tx, ByteArray* chunk,
-                                     void* userData);
+static NthRxDecision httpFlowNthIsComplete(NthTransaction* tx, void* userData);
+
+static int8_t httpFlowNthReceive(NthTransaction* tx, void* userData);
 
 static int8_t httpFlowOnFailure(NthTransaction* tx, void* userData);
 
@@ -37,17 +46,36 @@ static void httpFlowSetState(HttpFlow* flow, HttpFlowState state) {
     flow->state = state;
 }
 
-static void httpFlowFail(HttpFlow* flow, HttpFlowResult result) {
+static bool httpFlowIsTerminalState(const HttpFlow* flow) {
     if (flow == NULL)
+        return true;
+
+    return flow->state == HTTP_FLOW_COMPLETED ||
+           flow->state == HTTP_FLOW_FAILED;
+}
+
+static void httpFlowFail(HttpFlow* flow, HttpFlowResult result) {
+    if (flow == NULL || httpFlowIsTerminalState(flow))
         return;
 
     flow->status.result = result;
 
     httpFlowSetState(flow, HTTP_FLOW_FAILED);
 
-    if (flow->callbacks.onDone) {
+    if (flow->callbacks.onDone != NULL)
         flow->callbacks.onDone(flow, &flow->status);
-    }
+}
+
+static void httpFlowComplete(HttpFlow* flow) {
+    if (flow == NULL || httpFlowIsTerminalState(flow))
+        return;
+
+    flow->status.result = HTTP_FLOW_OK;
+
+    httpFlowSetState(flow, HTTP_FLOW_COMPLETED);
+
+    if (flow->callbacks.onDone != NULL)
+        flow->callbacks.onDone(flow, &flow->status);
 }
 
 static bool httpIsValidHeaderName(const char* name) {
@@ -196,8 +224,24 @@ static HttpFlowResult httpBuildRequest(HttpFlow* flow) {
     /*
      * Mandatory HTTP/1.1 Host
      */
-    if (!httpAppendHeader(buffer, "Host", req->host)) {
-        return HTTP_FLOW_ERR_REQUEST;
+    {
+        char hostValue[HTTP_MAX_HEADER_VALUE_LEN + 1U];
+        int  written;
+
+        if (req->port == 80U) {
+            written = snprintf(hostValue, sizeof(hostValue), "%s", req->host);
+        } else {
+            written = snprintf(hostValue, sizeof(hostValue), "%s:%u", req->host,
+                               (unsigned int)req->port);
+        }
+
+        if (written < 0 || (size_t)written >= sizeof(hostValue)) {
+            return HTTP_FLOW_ERR_REQUEST;
+        }
+
+        if (!httpAppendHeader(buffer, "Host", hostValue)) {
+            return HTTP_FLOW_ERR_REQUEST;
+        }
     }
 
     /*
@@ -292,8 +336,15 @@ HttpFlowResult httpFlowStart(HttpFlow* flow, State* owner, const char* host,
 
     flow->request.port = port;
 
-    if (callbacks) {
-        memcpy(&flow->callbacks, callbacks, sizeof(HttpFlowCallbacks));
+    memset(&flow->status, 0, sizeof(flow->status));
+    memset(&flow->callbacks, 0, sizeof(flow->callbacks));
+
+    flow->status.result = HTTP_FLOW_OK;
+
+    httpParserInit(&flow->parser);
+
+    if (callbacks != NULL) {
+        memcpy(&flow->callbacks, callbacks, sizeof(flow->callbacks));
     }
 
     flow->owner = owner;
@@ -316,7 +367,11 @@ HttpFlowResult httpFlowStart(HttpFlow* flow, State* owner, const char* host,
 
     flow->tx->onSent = httpFlowOnSent;
 
-    flow->tx->onChunk = httpFlowOnReceiveChunk;
+    flow->tx->isComplete = httpFlowNthIsComplete;
+
+    flow->tx->onReceive = httpFlowNthReceive;
+
+    flow->tx->onChunk = NULL;
 
     flow->tx->onFailure = httpFlowOnFailure;
 
@@ -408,159 +463,168 @@ static int8_t httpFlowOnSent(NthTransaction* tx, void* userData) {
     return 0;
 }
 
-/*
- * This is the important HTTP path.
- *
- * NTH gives us received bytes.
- *
- * We feed them into:
- *
- *      HTTP parser
- *
- *      |
- *      +-- headers callback
- *
- *      |
- *      +-- body callback
- */
-static int8_t httpFlowOnReceiveChunk(NthTransaction* tx, ByteArray* chunk,
-                                     void* userData) {
-    if (tx == NULL || chunk == NULL || userData == NULL) {
-        return -1;
-    }
+static NthRxDecision httpFlowNthIsComplete(NthTransaction* tx, void* userData) {
+    HttpFlow*       flow;
+    HttpParseResult parseResult;
 
-    HttpFlow* flow = (HttpFlow*)userData;
+    if (tx == NULL || userData == NULL)
+        return NTH_RX_ERROR;
+
+    flow = (HttpFlow*)userData;
+
+    if (httpFlowIsTerminalState(flow))
+        return flow->state == HTTP_FLOW_COMPLETED ? NTH_RX_COMPLETE
+                                                  : NTH_RX_ERROR;
 
     /*
-     * The HTTP parser works on
-     * accumulated response bytes.
-     *
-     * In a production version I recommend
-     * adding a parser streaming API.
-     *
-     * For now we use the NTH RX buffer.
+     * Only a clean peer closure may finish a close-delimited body.
+     * Socket errors and timeouts arrive through separate callbacks.
      */
-    HttpParseResult parseResult = httpParserParseResponse(
-        &flow->parser, tx->rxBuffer.data, tx->rxBuffer.len);
+    if (tx->peerClosed) {
+        parseResult = httpParserFinish(&flow->parser);
+    } else {
+        parseResult = httpParserParseResponse(&flow->parser, tx->rxBuffer.data,
+                                              tx->rxBuffer.len);
+    }
 
     flow->status.parseResult = parseResult;
 
+    if (httpParserIsHeaderComplete(&flow->parser)) {
+
+        const HttpResponse* response = httpParserGetResponse(&flow->parser);
+
+        if (response != NULL)
+            flow->status.httpStatus = response->statusCode;
+
+        if (!httpParserIsMessageComplete(&flow->parser))
+            httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
+    }
+
     switch (parseResult) {
 
-    case HTTP_PARSE_ERROR:
-
-        httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
-
-        return -1;
-
-    case HTTP_PARSE_OVERFLOW:
-
-        httpFlowFail(flow, HTTP_FLOW_ERR_BODY);
-
-        return -1;
-
-    case HTTP_PARSE_UNSUPPORTED:
-
-        httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
-
-        return -1;
+    case HTTP_PARSE_OK:
+        return httpParserIsMessageComplete(&flow->parser) ? NTH_RX_COMPLETE
+                                                          : NTH_RX_MORE;
 
     case HTTP_PARSE_INCOMPLETE:
 
         /*
-         * Header or body still incomplete.
+         * EOF means no more bytes can arrive.
          */
-        if (flow->parser.headerComplete) {
-            httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
-        }
+        return tx->peerClosed ? NTH_RX_ERROR : NTH_RX_MORE;
 
-        return 0;
-
-    case HTTP_PARSE_OK:
-
-        break;
-
+    case HTTP_PARSE_ERROR:
+    case HTTP_PARSE_OVERFLOW:
+    case HTTP_PARSE_UNSUPPORTED:
     default:
+        return NTH_RX_ERROR;
+    }
+}
+
+static int8_t httpFlowNthReceive(NthTransaction* tx, void* userData) {
+    HttpFlow*           flow;
+    const HttpResponse* response;
+    const uint8_t*      body;
+    size_t              bodyLength;
+
+    if (tx == NULL || userData == NULL)
+        return -1;
+
+    flow = (HttpFlow*)userData;
+
+    if (httpFlowIsTerminalState(flow))
+        return 0;
+
+    if (!httpParserIsMessageComplete(&flow->parser)) {
+        httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
+        return -1;
+    }
+
+    response = httpParserGetResponse(&flow->parser);
+
+    if (response == NULL) {
+        httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
+        return -1;
+    }
+
+    flow->status.httpStatus = response->statusCode;
+
+    if (flow->callbacks.onHeaders != NULL)
+        flow->callbacks.onHeaders(flow, response);
+
+    if (httpFlowIsTerminalState(flow))
+        return 0;
+
+    body =
+        httpParserGetBody(&flow->parser, tx->rxBuffer.data, tx->rxBuffer.len);
+
+    bodyLength = httpParserGetBodyLength(&flow->parser, tx->rxBuffer.len);
+
+    if (body != NULL && bodyLength > 0U && flow->callbacks.onBody != NULL) {
+
+        httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
+
+        if (flow->callbacks.onBody(flow, body, bodyLength) != 0) {
+
+            httpFlowFail(flow, HTTP_FLOW_ERR_BODY);
+            return -1;
+        }
+    }
+
+    if (httpFlowIsTerminalState(flow))
+        return 0;
+
+    /*
+     * Preserve your current policy:
+     * non-2xx responses complete as HTTP errors.
+     * Status 206 is included in the successful range.
+     */
+    if (response->statusCode < 200 || response->statusCode >= 300) {
+
+        httpFlowFail(flow, HTTP_FLOW_ERR_HTTP_STATUS);
 
         return 0;
     }
 
-    /*
-     * Headers are ready.
-     */
-    if (flow->parser.headerComplete) {
-
-        flow->status.httpStatus = flow->parser.response.statusCode;
-
-        if (flow->callbacks.onHeaders) {
-            flow->callbacks.onHeaders(flow, &flow->parser.response);
-        }
-    }
-
-    /*
-     * Deliver body.
-     */
-    if (flow->parser.headerComplete) {
-
-        const uint8_t* body = httpParserGetBody(
-            &flow->parser, tx->rxBuffer.data, tx->rxBuffer.len);
-
-        size_t bodyLength =
-            httpParserGetBodyLength(&flow->parser, tx->rxBuffer.len);
-
-        if (body != NULL && bodyLength > 0) {
-
-            httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
-
-            if (flow->callbacks.onBody) {
-
-                int rc = flow->callbacks.onBody(flow, body, bodyLength);
-
-                if (rc != 0) {
-
-                    httpFlowFail(flow, HTTP_FLOW_ERR_BODY);
-
-                    return -1;
-                }
-            }
-        }
-    }
-
-    if (httpParserIsMessageComplete(&flow->parser)) {
-
-        /*
-         * HTTP status handling.
-         */
-        if (flow->status.httpStatus < 200 || flow->status.httpStatus >= 300) {
-
-            httpFlowFail(flow, HTTP_FLOW_ERR_HTTP_STATUS);
-
-            return 0;
-        }
-
-        httpFlowSetState(flow, HTTP_FLOW_COMPLETED);
-
-        flow->status.result = HTTP_FLOW_OK;
-
-        if (flow->callbacks.onDone) {
-            flow->callbacks.onDone(flow, &flow->status);
-        }
-    }
+    httpFlowComplete(flow);
 
     return 0;
 }
 
 static int8_t httpFlowOnFailure(NthTransaction* tx, void* userData) {
+    HttpFlow*      flow;
+    HttpFlowResult result = HTTP_FLOW_ERR_RECEIVE;
+
     if (userData == NULL)
         return -1;
 
-    HttpFlow* flow = (HttpFlow*)userData;
+    flow = (HttpFlow*)userData;
 
-    if (tx) {
+    if (httpFlowIsTerminalState(flow))
+        return 0;
+
+    if (tx != NULL)
         flow->status.nthResult = tx->lastError;
+
+    switch (flow->status.parseResult) {
+
+    case HTTP_PARSE_OVERFLOW:
+        result = HTTP_FLOW_ERR_BODY;
+        break;
+
+    case HTTP_PARSE_ERROR:
+    case HTTP_PARSE_UNSUPPORTED:
+        result = HTTP_FLOW_ERR_PARSE;
+        break;
+
+    case HTTP_PARSE_OK:
+    case HTTP_PARSE_INCOMPLETE:
+    default:
+        result = HTTP_FLOW_ERR_RECEIVE;
+        break;
     }
 
-    httpFlowFail(flow, HTTP_FLOW_ERR_RECEIVE);
+    httpFlowFail(flow, result);
 
     return 0;
 }

@@ -174,14 +174,66 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, const uint8_t* data,
         return HTTP_PARSE_INCOMPLETE;
 
     /*
+     * Once headers have been parsed, do not call phr_parse_response() again.
+     *
+     * This API receives the same accumulated buffer with an increasing length.
+     * Header metadata is already available, so only body progress needs
+     * updating.
+     */
+    if (parser->headerComplete) {
+        size_t availableBody;
+
+        /*
+         * The accumulated buffer must never become shorter.
+         */
+        if (len < parser->parsedBytesPreviously || parser->headerBytes > len) {
+            return HTTP_PARSE_ERROR;
+        }
+
+        parser->parsedBytesPreviously = len;
+
+        if (parser->response.bodyForbidden) {
+            parser->bodyReceived    = 0u;
+            parser->messageComplete = true;
+            return HTTP_PARSE_OK;
+        }
+
+        if (parser->chunked) {
+            parser->messageComplete = false;
+            return HTTP_PARSE_UNSUPPORTED;
+        }
+
+        availableBody = len - parser->headerBytes;
+
+        if (parser->hasContentLength) {
+            if (availableBody >= parser->contentLength) {
+                parser->bodyReceived    = parser->contentLength;
+                parser->messageComplete = true;
+                return HTTP_PARSE_OK;
+            }
+
+            if (availableBody > HTTP_MAX_BODY_SIZE)
+                return HTTP_PARSE_OVERFLOW;
+
+            parser->bodyReceived    = availableBody;
+            parser->messageComplete = false;
+
+            return HTTP_PARSE_INCOMPLETE;
+        }
+
+        /*
+         * A connection-close-delimited body cannot be marked complete until
+         * the transport explicitly reports a clean EOF.
+         */
+        parser->bodyReceived    = availableBody;
+        parser->messageComplete = false;
+        return HTTP_PARSE_INCOMPLETE;
+    }
+
+    /*
      * PicoHTTPParser writes pointers into the supplied buffer.
      * No HTTP data is copied here.
      */
-    const char* method    = NULL;
-    size_t      methodLen = 0;
-
-    const char* path    = NULL;
-    size_t      pathLen = 0;
 
     int minorVersion = 0;
     int status       = 0;
@@ -189,9 +241,12 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, const uint8_t* data,
     const char* msg    = NULL;
     size_t      msgLen = 0;
 
-    struct phr_header headers[HTTP_MAX_HEADERS];
-
-    size_t headerCount = HTTP_MAX_HEADERS;
+    /*
+     * One extra slot lets us distinguish “too many headers” from malformed
+     * HTTP.
+     */
+    struct phr_header headers[HTTP_MAX_HEADERS + 1U];
+    size_t            headerCount = HTTP_MAX_HEADERS + 1U;
 
     int ret = phr_parse_response((const char*)data, len, &minorVersion, &status,
                                  &msg, &msgLen, headers, &headerCount,
@@ -205,16 +260,27 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, const uint8_t* data,
     parser->parsedBytesPreviously = len;
 
     /*
-     * Incomplete HTTP response.
+     * Once the buffer reaches the configured header limit without
+     * producing a valid complete header, classify it as overflow.
+     *
+     * Check this before distinguishing Pico's -2 and -1 results.
      */
+    if (ret < 0 && len >= HTTP_MAX_HEADER_BYTES)
+        return HTTP_PARSE_OVERFLOW;
+
     if (ret == -2)
         return HTTP_PARSE_INCOMPLETE;
-
     /*
      * Invalid HTTP response.
      */
     if (ret < 0)
         return HTTP_PARSE_ERROR;
+
+    if ((size_t)ret > HTTP_MAX_HEADER_BYTES)
+        return HTTP_PARSE_OVERFLOW;
+
+    if (msgLen > HTTP_MAX_TARGET_LEN)
+        return HTTP_PARSE_OVERFLOW;
 
     /*
      * Header has been parsed successfully.
@@ -284,6 +350,18 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, const uint8_t* data,
     }
 
     /*
+     * Track bytes for a response whose body will be delimited by EOF.
+     */
+    {
+        size_t availableBody = len - (size_t)ret;
+
+        if (availableBody > HTTP_MAX_BODY_SIZE)
+            return HTTP_PARSE_OVERFLOW;
+
+        parser->bodyReceived = availableBody;
+    }
+
+    /*
      * No Content-Length and not chunked.
      *
      * For HTTP/1.0/Connection: close responses the body is
@@ -305,6 +383,38 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, const uint8_t* data,
     parser->messageComplete = false;
 
     return HTTP_PARSE_INCOMPLETE;
+}
+
+HttpParseResult httpParserFinish(HttpParser* parser) {
+    if (parser == NULL)
+        return HTTP_PARSE_ERROR;
+
+    if (!parser->headerComplete)
+        return HTTP_PARSE_ERROR;
+
+    if (parser->messageComplete)
+        return HTTP_PARSE_OK;
+
+    if (parser->chunked)
+        return HTTP_PARSE_UNSUPPORTED;
+
+    /*
+     * EOF before the declared Content-Length is a truncated response.
+     */
+    if (parser->hasContentLength) {
+        if (parser->bodyReceived != parser->contentLength)
+            return HTTP_PARSE_ERROR;
+
+        parser->messageComplete = true;
+        return HTTP_PARSE_OK;
+    }
+
+    /*
+     * Without Transfer-Encoding or Content-Length, a response body is
+     * delimited by the clean closing of the connection.
+     */
+    parser->messageComplete = true;
+    return HTTP_PARSE_OK;
 }
 
 bool httpParserIsHeaderComplete(const HttpParser* parser) {
@@ -336,6 +446,9 @@ const uint8_t* httpParserGetBody(const HttpParser* parser, const uint8_t* data,
     if (!parser->headerComplete)
         return NULL;
 
+    if (parser->response.bodyForbidden)
+        return NULL;
+
     if (parser->headerBytes > len)
         return NULL;
 
@@ -349,13 +462,17 @@ size_t httpParserGetBodyLength(const HttpParser* parser, size_t totalLen) {
     if (!parser->headerComplete)
         return 0;
 
+    if (parser->response.bodyForbidden)
+        return 0u;
+
     if (parser->headerBytes > totalLen)
         return 0;
 
     size_t available = totalLen - parser->headerBytes;
 
-    if (parser->contentLength < available)
+    if (parser->hasContentLength && parser->contentLength < available) {
         return parser->contentLength;
+    }
 
     return available;
 }

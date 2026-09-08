@@ -36,12 +36,16 @@ typedef struct NthTransaction {
     ByteArray  txBuffer;
     ByteArray  rxBuffer;
 
-    // TODO: 2048-byte RX architecture will become a problem for HTTP
-    uint8_t txStorage[NT_BUFFER_SIZE];
-    uint8_t rxStorage[NT_BUFFER_SIZE];
+    // uint8_t txStorage[NT_TX_BUFFER_SIZE];
+    // uint8_t rxStorage[NT_RX_BUFFER_SIZE];
+
+    uint8_t* txStorage;
+    uint8_t* rxStorage;
 
     size_t txOffset;
     size_t rxOffset;
+
+    bool peerClosed;
 
     uint32_t timeoutMs;
     uint32_t startTick;

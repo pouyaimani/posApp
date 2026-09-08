@@ -1,7 +1,5 @@
 #include "nth.h"
 #include <string.h>
-#include "event.h"
-#include "core.h"
 #include "error.h"
 
 static Nth __nth;
@@ -13,6 +11,64 @@ static NthTransaction g_transactions[NT_MAX_TRANSACTIONS];
 static NthTransport* g_transport;
 
 static void nth_fail(NthTransaction* tx, NthResult error);
+
+#ifndef NTH_ENABLE_EVENT_BRIDGE
+#define NTH_ENABLE_EVENT_BRIDGE 0
+#endif
+
+#if NTH_ENABLE_EVENT_BRIDGE
+
+#include "event.h"
+#include "core.h"
+
+static void nth_emitConnectEvent(NthTransaction* tx, bool connected) {
+    RETURN_IF_NULL(tx, ;);
+    SocketConnectEvent* ev = createEvent(SM_EVENT_SOCKET_CONNECT);
+
+    RETURN_IF_NULL(ev, ;);
+
+    ev->isConnected = connected;
+
+    ev->base.target = tx->owner;
+
+    DISPATCH_EVENT(ev);
+}
+
+static void nth_emitSendEvent(NthTransaction* tx) {
+    RETURN_IF_NULL(tx, ;);
+    SocketSentEvent* ev = createEvent(SM_EVENT_SOCKET_SENT);
+
+    RETURN_IF_NULL(ev, ;);
+    ev->base.target = tx->owner;
+
+    DISPATCH_EVENT(ev);
+}
+
+static void nth_emitReadEvent(NthTransaction* tx) {
+    RETURN_IF_NULL(tx, ;);
+    SocketReadyReadEvent* ev = createEvent(SM_EVENT_SOCKET_READY_READ);
+
+    RETURN_IF_NULL(ev, ;);
+
+    ev->ba.data = tx->rxBuffer.data;
+    ev->ba.len  = tx->rxBuffer.len;
+
+    ev->base.target = tx->owner;
+
+    DISPATCH_EVENT(ev);
+}
+
+static void nth_emitTimeout(NthTransaction* tx) {
+    RETURN_IF_NULL(tx, ;);
+    SocketTimeOutEvent* ev = createEvent(SM_EVENT_SOCKET_TIME_OUT);
+
+    RETURN_IF_NULL(ev, ;);
+    ev->base.target = tx->owner;
+
+    DISPATCH_EVENT(ev);
+}
+
+#endif
 
 static bool isValidIPv4(const char* ip) {
     RETURN_VALUE_IF_NULL(ip, ;, false);
@@ -57,8 +113,9 @@ static bool isValidIPv4(const char* ip) {
 }
 
 static void nth_resetRx(NthTransaction* tx) {
-    tx->rxOffset     = 0;
-    tx->rxBuffer.len = 0;
+    tx->rxOffset     = 0U;
+    tx->rxBuffer.len = 0U;
+    tx->peerClosed   = false;
 }
 
 static void nth_resetTx(NthTransaction* tx) {
@@ -69,8 +126,9 @@ static void nth_resetTx(NthTransaction* tx) {
 static uint32_t nth_getTick(void) { return NTH_GET_TICK(); }
 
 void nth_init() {
-    g_transport = &sysTransport;
-
+    g_transport                 = &sysTransport;
+    g_transactions[0].txStorage = MEM_ALLOC(NT_TX_BUFFER_SIZE);
+    g_transactions[0].rxStorage = MEM_ALLOC(NT_RX_BUFFER_SIZE);
     memset(g_transactions, 0, sizeof(g_transactions));
 }
 
@@ -211,53 +269,6 @@ NthResult nth_sendProvidedTx(NthTransaction* tx) {
     return NTH_OK;
 }
 
-static void nth_emitConnectEvent(NthTransaction* tx, bool connected) {
-    RETURN_IF_NULL(tx, ;);
-    SocketConnectEvent* ev = createEvent(SM_EVENT_SOCKET_CONNECT);
-
-    RETURN_IF_NULL(ev, ;);
-
-    ev->isConnected = connected;
-
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
-static void nth_emitSendEvent(NthTransaction* tx) {
-    RETURN_IF_NULL(tx, ;);
-    SocketSentEvent* ev = createEvent(SM_EVENT_SOCKET_SENT);
-
-    RETURN_IF_NULL(ev, ;);
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
-static void nth_emitReadEvent(NthTransaction* tx) {
-    RETURN_IF_NULL(tx, ;);
-    SocketReadyReadEvent* ev = createEvent(SM_EVENT_SOCKET_READY_READ);
-
-    RETURN_IF_NULL(ev, ;);
-
-    ev->ba.data = tx->rxBuffer.data;
-    ev->ba.len  = tx->rxBuffer.len;
-
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
-static void nth_emitTimeout(NthTransaction* tx) {
-    RETURN_IF_NULL(tx, ;);
-    SocketTimeOutEvent* ev = createEvent(SM_EVENT_SOCKET_TIME_OUT);
-
-    RETURN_IF_NULL(ev, ;);
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
 static void nth_handleConnecting(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
     int ret;
@@ -317,69 +328,132 @@ static void nth_handleSending(NthTransaction* tx) {
 }
 
 static void nth_handleReceiving(NthTransaction* tx) {
+    size_t        remain;
+    size_t        received = 0U;
+    size_t        chunkOffset;
+    NthIoStatus   ioStatus;
+    NthRxDecision decision;
+
     RETURN_IF_NULL(tx, ;);
-    int ret;
 
-    size_t remain;
-
-    remain = tx->rxBuffer.capacity - tx->rxOffset;
-
-    if (remain == 0) {
-        nth_fail(tx, NTH_ERR_OVERFLOW);
-        return;
-    }
-
-    ret = g_transport->recv(tx->socketFd, tx->rxBuffer.data + tx->rxOffset,
-                            remain);
-
-    if (ret < 0) {
-        NTH_LOG("nth: receiving data failed.");
-        nth_fail(tx, NTH_ERR_RECEIVE);
-        return;
-    }
-
-    // TODO:
-    /*
-     * recv:
-     *   > 0 : number of bytes received
-     *   ==0 : no data currently available
-     *   < 0 : transport error
-     */
-    // if (ret == 0)
-    //     return;
-
-    tx->rxOffset += ret;
-
-    tx->rxBuffer.len = tx->rxOffset;
-
-    if (!tx->isComplete) {
+    if (tx->rxOffset > tx->rxBuffer.capacity) {
         nth_fail(tx, NTH_ERR_INTERNAL);
         return;
     }
 
-    NthRxDecision result = tx->isComplete(tx, tx->userData);
+    remain = tx->rxBuffer.capacity - tx->rxOffset;
 
-    switch (result) {
+    if (remain == 0U) {
+        nth_fail(tx, NTH_ERR_OVERFLOW);
+        return;
+    }
+
+    chunkOffset = tx->rxOffset;
+
+    ioStatus = g_transport->recv(tx->socketFd, tx->rxBuffer.data + tx->rxOffset,
+                                 remain, &received);
+
+    switch (ioStatus) {
+
+    case NTH_IO_WOULD_BLOCK:
+        return;
+
+    case NTH_IO_ERROR:
+        NTH_LOG("nth: receiving data failed.");
+        nth_fail(tx, NTH_ERR_RECEIVE);
+        return;
+
+    case NTH_IO_CLOSED:
+
+        NTH_LOG("nth: peer closed connection.");
+
+        tx->peerClosed = true;
+
+        if (tx->isComplete == NULL) {
+            nth_fail(tx, NTH_ERR_DISCONNECTED);
+            return;
+        }
+
+        decision = tx->isComplete(tx, tx->userData);
+
+        /*
+         * No additional bytes can arrive after EOF.
+         */
+        if (decision != NTH_RX_COMPLETE) {
+            nth_fail(tx, NTH_ERR_PROTOCOL);
+            return;
+        }
+
+        tx->prevState = tx->state;
+        tx->state     = NTH_TX_COMPLETED;
+
+        if (tx->onReceive != NULL)
+            tx->onReceive(tx, tx->userData);
+
+        return;
+
+    case NTH_IO_DATA:
+        break;
+
+    default:
+        nth_fail(tx, NTH_ERR_INTERNAL);
+        return;
+    }
+
+    if (received == 0U || received > remain) {
+        nth_fail(tx, NTH_ERR_PROTOCOL);
+        return;
+    }
+
+    tx->rxOffset += received;
+    tx->rxBuffer.len = tx->rxOffset;
+
+    /*
+     * Notify observers about only the newly received bytes.
+     */
+    if (tx->onChunk != NULL) {
+        ByteArray chunk;
+
+        chunk.data     = tx->rxBuffer.data + chunkOffset;
+        chunk.len      = received;
+        chunk.capacity = received;
+
+        tx->onChunk(tx, &chunk, tx->userData);
+
+        /*
+         * The callback may have cancelled the transaction.
+         */
+        if (tx->state != NTH_TX_RECEIVING)
+            return;
+    }
+
+    if (tx->isComplete == NULL) {
+        nth_fail(tx, NTH_ERR_INTERNAL);
+        return;
+    }
+
+    decision = tx->isComplete(tx, tx->userData);
+
+    switch (decision) {
+
     case NTH_RX_MORE:
         return;
 
     case NTH_RX_COMPLETE:
-        break;
+
+        tx->prevState = tx->state;
+        tx->state     = NTH_TX_COMPLETED;
+
+        if (tx->onReceive != NULL)
+            tx->onReceive(tx, tx->userData);
+
+        return;
 
     case NTH_RX_ERROR:
     default:
         nth_fail(tx, NTH_ERR_PROTOCOL);
         return;
     }
-
-    tx->state = NTH_TX_COMPLETED;
-
-    if (tx->onReceive) {
-        NTH_LOG("nth: calling receive callback.");
-        tx->onReceive(tx, tx->userData);
-    }
-    // nth_emitReadEvent(tx);
-    NTH_LOG("nth: receiving data succeed.");
 }
 
 static void nth_checkTimeout(NthTransaction* tx) {

@@ -139,6 +139,11 @@ const uint8_t* httpParserGetBody(const HttpParser* parser, const uint8_t* data,
 
 size_t httpParserGetBodyLength(const HttpParser* parser, size_t totalLen);
 
+/*
+ * Notify the parser that the transport reached a clean EOF.
+ */
+HttpParseResult httpParserFinish(HttpParser* parser);
+
 #ifdef __cplusplus
 }
 #endif
