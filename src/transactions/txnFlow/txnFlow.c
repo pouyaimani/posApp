@@ -19,7 +19,7 @@ static NthRxDecision isComplete(NthTransaction* tx, void* ctx);
 
 void txnFlowRelease(TxnFlow* flow) {
     RETURN_VALUE_IF_NULL(flow, ;, false);
-    LOG_DEBUG("Txn flow: rleasing flow ...");
+    LOG_TRACE("Txn flow: rleasing flow ...");
     if (flow && flow->tx) {
         nth()->release(flow->tx);
         flow->tx = NULL;
@@ -29,7 +29,7 @@ void txnFlowRelease(TxnFlow* flow) {
 
 static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     RETURN_VALUE_IF_NULL(flow, ;, false);
-    LOG_DEBUG("Txn flow: complete. result = %d, code = %d", result, code);
+    LOG_TRACE("Txn flow: complete. result = %d, code = %d", result, code);
     TxnFlowStatus st;
 
     st.result = result;
@@ -50,14 +50,14 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     txnFlowRelease(flow);
 
     if (flow->cfg && flow->cfg->done) {
-        LOG_DEBUG("Txn flow: calling config done.");
+        LOG_TRACE("Txn flow: calling config done.");
         flow->cfg->done(flow, &st);
     }
 }
 
 void txnFlowInit(TxnFlow* flow) {
     RETURN_VALUE_IF_NULL(flow, ;, false);
-    LOG_DEBUG("Txn flow: initing flow");
+    LOG_TRACE("Txn flow: initing flow");
     memset(flow, 0, sizeof(*flow));
     flow->stage = TXN_STAGE_IDLE;
 }
@@ -68,7 +68,7 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
     RETURN_VALUE_IF_NULL(flow, ;, false);
     // RETURN_VALUE_IF_NULL(owner, ;, false);
     RETURN_VALUE_IF_NULL(host, ;, false);
-    LOG_DEBUG("Txn flow: running flow ..., host = %s, port = %d", host, port);
+    LOG_TRACE("Txn flow: running flow ..., host = %s, port = %d", host, port);
 
     txnFlowInit(flow);
 
@@ -119,7 +119,7 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
 
 static int8_t onConnect(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_DEBUG("Txn flow: on connect ...");
+    LOG_TRACE("Txn flow: on connect ...");
     TxnFlow* flow = ctx;
     ByteArray(ba, NT_BUFFER_SIZE);
 
@@ -180,7 +180,7 @@ static int8_t onReceive(NthTransaction* tx, void* ctx) {
 
 static int8_t onFailure(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_DEBUG("Txn flow: on failure ...");
+    LOG_TRACE("Txn flow: on failure ...");
     TxnFlow* flow = ctx;
     // nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_FAILED, 0);
@@ -189,7 +189,7 @@ static int8_t onFailure(NthTransaction* tx, void* ctx) {
 
 static int8_t onTimeout(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_DEBUG("Txn flow: on timeout ...");
+    LOG_TRACE("Txn flow: on timeout ...");
     TxnFlow* flow = ctx;
     // nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_TIMEOUT, 0);

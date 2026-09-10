@@ -62,7 +62,6 @@ static void infoHide(InfoPage* pinfo) {
 
 static void infoShow(InfoPage* pinfo) {
     RETURN_IF_NULL(pinfo, ;);
-    LOG_DEBUG("pinfo->type = %d", pinfo->type);
     if (pinfo->type == INFO_IMG) {
         LV_SHOW(pinfo->body);
         if (pinfo->img) {

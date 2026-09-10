@@ -26,7 +26,6 @@ static CellErr_t init(Cellular* self) { return open(self); }
 static CellErr_t close(Cellular* self) {
     VAR_UNUSED(self);
     int ret = sdkCellularClose();
-    LOG_DEBUG("Cellular close return : %d", ret);
     return translateSdkErr(ret);
 }
 

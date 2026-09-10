@@ -6,7 +6,7 @@
 #include "network/network.h"
 #include "error.h"
 
-#define ZERO_TIME_OUT 0
+#define ZERO_TIME_OUT 30000
 
 static int sys_sock_connect(const char* host, uint16_t port) {
     RETURN_VALUE_IF_NULL(host, ;, ERR_NULL_PARAMETER);

@@ -13,7 +13,7 @@ static TxnFlow*       txnFlow;
 static State*         txnOwnerState;
 
 static int pendMgrDone(TxnData* data) {
-    LOG_DEBUG("Pending manager done callback is called.");
+    LOG_TRACE("Pending manager done callback is called.");
     if (data) {
         if (data->core.respCode != RESP_CODE_SUCESS) {
             GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
@@ -72,14 +72,14 @@ void showReceiving(TxnFlow* f) {
 
 void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
                 State* onFail, bool showSucMsg) {
-    LOG_DEBUG("transaction result = %d", st->result);
+    LOG_TRACE("transaction result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
         GOTO_TXN_RES(flow->cfg, &flow->data, st, onSuc, onFail);
         return;
     }
 
     Phrases_t body = PHRASE_CONNECTION_ERR;
-    LOG_DEBUG("transaction stage = %d", st->stage);
+    LOG_TRACE("transaction stage = %d", st->stage);
     switch (st->stage) {
     case TXN_STAGE_SENDING:
         body = PHRASE_SENDING_DATA_ERR;

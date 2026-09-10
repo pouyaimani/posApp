@@ -93,7 +93,6 @@ static int removeFile(File* self, const char* path) {
 static size_t overwrite(File* self, const void* buffer, size_t size,
                         size_t count, FileHandle* handle) {
     size_t bytesToWrite = size * count;
-    LOG_DEBUG("path = %s, size = %u", handle->path, bytesToWrite);
     // removeFile(self, handle->path);
     s32 r = sdkFileWrite(handle->path, (u8*)buffer, (u32)bytesToWrite);
     if (r != SDK_FILE_OK)

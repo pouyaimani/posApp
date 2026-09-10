@@ -13,7 +13,7 @@ static const char* finput = pedCtrl.finput;
 static uint8_t len;
 
 static bool start() {
-    LOG_DEBUG("input provider started");
+    LOG_TRACE("input provider started");
     keypad()->unregisterIo();
     RETURN_IF_NOT(ped()->enterPinEntryMode(), PED_ERR_OK, ;);
 }
@@ -21,13 +21,12 @@ static bool start() {
 static bool poll(InputProvider* self, InputEvent* ev) {}
 
 static void stop() {
-    LOG_DEBUG("input provider stoped");
+    LOG_TRACE("input provider stoped");
     keypad()->registerIo();
     RETURN_IF_NOT(ped()->exitPinEntryMode(), PED_ERR_OK, ;);
 }
 
 static InputResult handlePedEv(InputEvent* ev, InputCfg cfg) {
-    LOG_DEBUG("ev->ped.type = %d", ev->ped.type);
     if (ev->ped.type == PED_CANCEL) {
         return INPUT_RES_CANCELED;
     } else if (ev->ped.type == PED_ENTER) {

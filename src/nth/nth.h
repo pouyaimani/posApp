@@ -36,11 +36,10 @@ typedef struct NthTransaction {
     ByteArray  txBuffer;
     ByteArray  rxBuffer;
 
-    // uint8_t txStorage[NT_TX_BUFFER_SIZE];
-    // uint8_t rxStorage[NT_RX_BUFFER_SIZE];
+    uint8_t ioStorage[NT_IO_BUFFER_SIZE];
 
-    uint8_t* txStorage;
-    uint8_t* rxStorage;
+    // uint8_t* txStorage;
+    // uint8_t* rxStorage;
 
     size_t txOffset;
     size_t rxOffset;

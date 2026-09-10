@@ -140,6 +140,8 @@ X(PHRASE_INVALID_DATE           ,   "تاریخ نامعتبر است"          
 )
 X(PHRASE_INVALID_TIME           ,   "زمان نامعتبر است"                    ,   "invalid time"
 )
+X(PHRASE_INVALID_DATE_TIME      ,   "تاریخ و زمان شروع و پایان به درستی وارد نشده است"                    ,   "invalid time"
+)
 X(PHRASE_WANNA_EXIT             ,   "قصد خروج دارید؟"                ,   "would you like to exit?"
 )
 X(PHRASE_POWERING_OFF           ,   "در حال خاموش شدن ..."           ,   "powering off ..."

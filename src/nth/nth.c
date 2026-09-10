@@ -2,6 +2,13 @@
 #include <string.h>
 #include "error.h"
 
+/*********************************************************************************************
+ *                                                                                           *
+ *                                      Warning
+ *                  using heap for io storage does not work for t3rtos
+ *                                                                                           *
+ ********************************************************************************************/
+
 static Nth __nth;
 
 extern NthTransport sysTransport;
@@ -126,9 +133,7 @@ static void nth_resetTx(NthTransaction* tx) {
 static uint32_t nth_getTick(void) { return NTH_GET_TICK(); }
 
 void nth_init() {
-    g_transport                 = &sysTransport;
-    g_transactions[0].txStorage = MEM_ALLOC(NT_TX_BUFFER_SIZE);
-    g_transactions[0].rxStorage = MEM_ALLOC(NT_RX_BUFFER_SIZE);
+    g_transport = &sysTransport;
     memset(g_transactions, 0, sizeof(g_transactions));
 }
 
@@ -146,11 +151,11 @@ NthTransaction* nth_allocTransaction(void) {
 
             tx->state = NTH_TX_IDLE;
 
-            tx->txBuffer.data     = tx->txStorage;
-            tx->txBuffer.capacity = sizeof(tx->txStorage);
+            tx->txBuffer.data     = tx->ioStorage;
+            tx->txBuffer.capacity = sizeof(tx->ioStorage);
 
-            tx->rxBuffer.data     = tx->rxStorage;
-            tx->rxBuffer.capacity = sizeof(tx->rxStorage);
+            tx->rxBuffer.data     = tx->ioStorage;
+            tx->rxBuffer.capacity = sizeof(tx->ioStorage);
 
             tx->timeoutMs = NT_DEFAULT_TIMEOUT_MS;
             NTH_LOG("nth: allocating transaction succeed.");
@@ -291,21 +296,19 @@ static void nth_handleConnecting(NthTransaction* tx) {
 
 static void nth_handleSending(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
-    int ret;
 
-    size_t remain;
+    size_t remain = tx->txBuffer.len - tx->txOffset;
 
-    remain = tx->txBuffer.len - tx->txOffset;
-
-    ret = g_transport->send(tx->socketFd, tx->txBuffer.data + tx->txOffset,
-                            remain);
+    int32_t ret = g_transport->send(tx->socketFd,
+                                    tx->txBuffer.data + tx->txOffset, remain);
 
     if (ret == 0) {
         return;
     }
-
+    NTH_LOG("nth: tx->socketFd = %d, tx->txOffset = %d, remian %d",
+            tx->socketFd, tx->txOffset, remain);
     if (ret < 0) {
-        NTH_LOG("nth: sending data failed.");
+        NTH_LOG("nth: sending data failed. sent data len = %d", ret);
         nth_fail(tx, NTH_ERR_SEND);
         return;
     }
@@ -323,6 +326,7 @@ static void nth_handleSending(NthTransaction* tx) {
             tx->onSent(tx, tx->userData);
         }
         // nth_emitSendEvent(tx);
+        nth_resetTx(tx);
         NTH_LOG("nth: sending data succeed.");
     }
 }

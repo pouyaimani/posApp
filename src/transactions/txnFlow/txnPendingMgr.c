@@ -59,9 +59,8 @@ static Error_t updateTxnData(TxnData* data) {
     RETURN_IF_NULL(data, ;);
     LOG_TRACE("TxnPendingMgr: updating transaction data ...");
     memcpy(&pendTxnData, data, sizeof(*data));
-    LOG_DEBUG("amount = %llu", pendTxnData.core.amount);
-    LOG_DEBUG("rrn = %llu", pendTxnData.core.rrn);
-    LOG_DEBUG("trace = %lu", pendTxnData.core.trace);
+    LOG_TRACE("amount = %llu, rrn = %llu, trace = %lu", pendTxnData.core.amount,
+              pendTxnData.core.rrn, pendTxnData.core.trace);
     return storage()->save(pendingTxnDsc,
                            sizeof(pendingTxnDsc) / sizeof(DataDescriptor),
                            RECOVERY_TXN_DATA_ADDR);

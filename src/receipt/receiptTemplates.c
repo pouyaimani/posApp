@@ -136,6 +136,7 @@ static int8_t receiptSectionAmount(Receipt* rec, const uint64_t* amount) {
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 2, row),
                         ERR_OK,
                         ;, ERR_NOK);
+    return ERR_OK;
 }
 
 static int8_t receiptSectionFailure(Receipt* rec, uint16_t respCode) {
@@ -153,6 +154,7 @@ static int8_t receiptSectionFailure(Receipt* rec, uint16_t respCode) {
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addTextWithBorder, REC_FONT_BOLD, 1, row1), ERR_OK, ;
         , ERR_NOK);
+    return ERR_OK;
 }
 
 static int8_t receiptSectionOperatorPhone(Receipt* rec, const char* phone,
@@ -165,6 +167,7 @@ static int8_t receiptSectionOperatorPhone(Receipt* rec, const char* phone,
                          {opDsc, LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
         OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
 }
 
 static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
@@ -178,7 +181,7 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
         {pin, LV_TEXT_ALIGN_LEFT, 1},
         {phraseGetDef(PHRASE_SIM_CHARGE_PIN), LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
     DEFINE_STRING(command, 16);
     snprintf(command, sizeof(command), "%s %s", "", "*رمز شارژ#");
     DEFINE_STRING(opDsc, 32);
@@ -186,7 +189,8 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
     RecColumn_t row2[] = {{command, LV_TEXT_ALIGN_LEFT, 1},
                           {opDsc, LV_TEXT_ALIGN_RIGHT, 1}};
     RETURN_VALUE_IF_NOT(
-        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row2), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
 }
 
 static int8_t financialTxnCommonRwos(Receipt* rec, ReceiptData* data) {
@@ -629,13 +633,10 @@ static int8_t buildDetailRepBodyReceipt(Receipt* rec, ReceiptData* data) {
     TxnData* txn = &data->txn;
     DATE_TIME_STR(dt);
     DATE_TIME_STR(fdt);
-    uint16_t date, time;
+    uint32_t date, time;
     unpackDateTime(&txn->dateTime, &date, &time);
-    LOG_DEBUG("date = %lu, time = %lu", date, time);
     dateTimeToStrJal(date, time, fdt, sizeof(fdt));
-    LOG_DEBUG("full dt = %s", fdt);
     dateTimeToStrJalShort(date, time, dt, sizeof(dt));
-    LOG_DEBUG("short dt = %s", dt);
     DEFINE_STRING(traceStr, 16);
     snprintf(traceStr, sizeof(traceStr), "%u", txn->core.trace);
     AMOUNT_STR(amntStr);
@@ -670,7 +671,7 @@ static int8_t buildDailyRepReceipt(Receipt* rec, ReceiptData* data) {}
 
 static int8_t buildSumRepReceipt(Receipt* rec, ReceiptData* data) {
     if (!data->headerApplied) {
-        RETURN_VALUE_IF_NOT(buildDetailtRepHeaderReceipt(rec, data), ERR_OK, ;
+        RETURN_VALUE_IF_NOT(buildSumRepHeaderReceipt(rec, data), ERR_OK, ;
                             , ERR_NOK);
         data->headerApplied = true;
         return ERR_OK;
@@ -740,7 +741,7 @@ ReceiptBuilder getReceiptBuilder(Receipt* rec, ReceiptData* data) {
 }
 
 Result_t buildReceipt(Receipt* rec, ReceiptData* data) {
-    Result_t res;
+    Result_t res = {.err = ERR_DSC_OK};
     RETURN_VALUE_IF_NULL(rec, res.err = ERR_DSC_INVALID_ARG;, res);
     RETURN_VALUE_IF_NULL(data, res.err = ERR_DSC_INVALID_ARG;, res);
     ReceiptBuilder builder = getReceiptBuilder(rec, data);

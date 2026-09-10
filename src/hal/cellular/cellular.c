@@ -31,14 +31,12 @@ static void checkCellLoginResult() {
         return;
     }
     CellPPPStatus_t st = OOP_CALL(__cellular, getPPPstatus);
-    LOG_DEBUG(" Cellular status = %d", st);
     if (st == CELL_PPP_DIALING || st == CELL_PPP_INIT) {
         return;
     } else if (st == CELL_PPP_READY) {
         OOP_CALL(__cellular, startPPPlogin, NULL, NULL, NULL, NULL);
         return;
     }
-    LOG_DEBUG("cellular status = %d", st);
     CellEvent* ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
     ev->pppSt     = st;
     DISPATCH_EVENT(ev);

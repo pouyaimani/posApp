@@ -289,7 +289,6 @@ STATE_DEF_ENTER(EnableSsl) {
 }
 
 STATE_DEF_ENTER(Success) {
-    LOG_DEBUG("ip = %s, port = %d", ip, port);
     if (serverItem == SERV_SET_MAIN) {
         snprintf(settings()->server.mainServerIp,
                  sizeof(settings()->server.mainServerIp), "%s", ip);

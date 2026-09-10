@@ -118,7 +118,7 @@ STATE_DEF_ENTER(WifiScan) {
     settings()->terminal.netRoute = NET_ROUTE_WIFI;
     settings()->save();
     if (res.err != ERR_DSC_OK) {
-        LOG_DEBUG("Network init error = %d", res.err);
+        LOG_ERROR("Network init error = %d", res.err);
     }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SEARCHING_4_WIFI),
               phraseGetDef(PHRASE_PLEASE_WAIT));
@@ -157,7 +157,7 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
         wifiMenu = MEM_ALLOC(sizeof(*wifiMenu));
         ui_menu_create(wifiMenu, disp()->screen);
-        LOG_DEBUG("wifi()->apList.size = %d", wifi()->apList.size);
+        LOG_TRACE("wifi()->apList.size = %d", wifi()->apList.size);
         for (uint8_t i = 0; i < wifi()->apList.size; i++) {
             DEFINE_STRING(safeSsid, 64);
             normalizeSsid(wifi()->apList.list[i].essid, safeSsid);
@@ -188,7 +188,7 @@ STATE_DEF_ENTER(CellularLogin) {
     settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
     settings()->save();
     if (res.err != ERR_DSC_OK) {
-        LOG_DEBUG("Network init error = %d", res.err);
+        LOG_ERROR("Network init error = %d", res.err);
     }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING_2_NET),
               phraseGetDef(PHRASE_PLEASE_WAIT));

@@ -9,6 +9,7 @@
 static NetError_t init(Network* self) {}
 
 static NetRoute_t getRoute(Network* self) {
+    VAR_UNUSED(self);
     SOCKET_ROUTE route = sdkNetGetRoute();
     switch (route) {
     case SOCKET_ROUTE_CELLULAR:
@@ -42,6 +43,7 @@ static NetError_t setRoute(Network* self, NetRoute_t route) {
 }
 
 static NetError_t setAddr(Network* self, const char* ip, uint16_t port) {
+    VAR_UNUSED(self);
     SockAddr addr;
     int      ret = sdkNetAddrSet(&addr, ip, port);
     return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
@@ -54,6 +56,7 @@ static const SocketAddr_t* getAddr(Network* self) {
 }
 
 static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
+    VAR_UNUSED(self);
     SDK_SOCKET_TYPE sdkst;
     switch (type) {
     case NET_STREAM:
@@ -85,12 +88,14 @@ static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
 }
 
 static NetError_t close(Network* self, int32_t id) {
+    VAR_UNUSED(self);
     LOG_TRACE("T3Rtos: closing socket = <%d>", id);
     int ret = sdkNetCloseSocket(id);
     return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
 }
 
 static SocketStatus_t getStatus(Network* self, int32_t id) {
+    VAR_UNUSED(self);
     SOCKET_STATUS st = sdkNetGetSocketStatus(id);
     switch (st) {
     case SOCKET_STATUS_CONNECTING:
@@ -106,11 +111,15 @@ static SocketStatus_t getStatus(Network* self, int32_t id) {
 
 static int32_t send(Network* self, int32_t socketID, const uint8_t* data,
                     uint32_t dataLen, uint32_t timeOut) {
+    VAR_UNUSED(self);
+    LOG_DEBUG("network_t3: socketID = %d, dataLen = %d, timeot = %d", socketID,
+              dataLen, timeOut);
     return sdkNetSocketSend(socketID, data, dataLen, timeOut);
 }
 
 static int32_t receive(Network* self, int32_t socketID, uint8_t* data,
                        uint32_t dataLen) {
+    VAR_UNUSED(self);
     return sdkNetSocketRecv(socketID, data, dataLen);
 }
 

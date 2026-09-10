@@ -28,18 +28,18 @@ static int8_t compareMac(int keyIndex, char* data) {
     if (iso8583()->getBin(ELEMENT_MAC_2, mac, &length) == ISO_OK) {
     } else if (iso8583()->getBin(ELEMENT_MAC, mac, &length) == ISO_OK) {
     } else {
-        LOG_DEBUG("mac:::::::::NO MAC !!!!");
+        LOG_TRACE("mac:::::::::NO MAC !!!!");
         return ERR_NOK;
     }
-    LOG_DEBUG("[mac (%d)] [%s]", length, mac);
+    LOG_TRACE("[mac (%d)] [%s]", length, mac);
     // pedGetMacAscii(keyIndex, 16, packBufTemp, packedSize - 8, (char
     // *)asciiMac);
     int8_t macCompare = memcmp(mac, asciiMac, 8);
     if (macCompare != 0) {
-        LOG_DEBUG("mac:::::::::check mac failed !!!!");
+        LOG_TRACE("mac:::::::::check mac failed !!!!");
         return ERR_NOK;
     }
-    LOG_DEBUG("mac:::::::::check mac succeed !!!!");
+    LOG_TRACE("mac:::::::::check mac succeed !!!!");
     return ERR_OK;
 }
 
@@ -49,7 +49,7 @@ static Error_t setWorkingKeys() {
     IsoStatus_t ret =
         iso8583()->getBin(ELEMENT_RESERVED_PRIVATE_62, keys, &size);
     RETURN_VALUE_IF_NOT(ret, ISO_OK, ;, ERR_NOK);
-    LOG_DEBUG("Keys length = %d, keys = %s", size, keys);
+    LOG_TRACE("Keys length = %d, keys = %s", size, keys);
     DEFINE_BYTE_ARRAY(tmpKey, 16);
     int keyLen = 16;
     memcpy(tmpKey, keys, keyLen);

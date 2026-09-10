@@ -43,7 +43,7 @@ int8_t FILE_REMOVE(void* finfo) {
         if (OOP_CALL(file(), remove, fileInfo->filename) != 0) {
             result = 0;
 #ifdef PRINT_ERRORS
-            LOG_DEBUG("ERROR: Failed to remove temp file");
+            LOG_ERROR("ERROR: Failed to remove temp file");
 #endif
         }
         return result;
@@ -102,7 +102,7 @@ int8_t FILE_OPEN(void* finfo, uint8_t mode) {
     }
     LOG_TRACE("file [%s] is opened", fileInfo->file->path);
     if (fileInfo->file == NULL) {
-        LOG_DEBUG("fileInfo->file is NULL", fileInfo->file->path);
+        LOG_ERROR("fileInfo->file is NULL", fileInfo->file->path);
         return 0;
     } else {
         return 1;

@@ -203,7 +203,7 @@ static Result_t txnInsert(TxnData* txn) {
     RETURN_VALUE_IF_NULL(txn, res.err = ERR_DSC_INVALID_ARG, res);
     RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_INVALID_ARG, res);
     TRACE_POINT;
-    LOG_DEBUG("Txn Record insert: time stamp = %llu", txn->dateTime);
+    LOG_TRACE("Txn Record insert: time stamp = %llu", txn->dateTime);
     TRACE_POINT;
     uint32_t date, time;
     unpackDateTime(&txn->dateTime, &date, &time);
@@ -469,6 +469,8 @@ static bool    processTxnRecord(const uint8_t* buf, TxnHandler handler,
 
     deserialize(ptRec, &key, &data);
 
+    logTxnCore(&data);
+
     return handler(&data, userData);
 }
 
@@ -579,8 +581,6 @@ static Result_t txnSelect(QueryOperator* qo, TxnHandler handler,
     RETURN_VALUE_IF_NULL(handler, res.err = ERR_DSC_INVALID_ARG, res);
 
     (qo->op)->init(qo->op);
-    TRACE_POINT;
-    TRACE_POINT;
     LOG_TRACE("Txn select: limit mode = %d, limit count = %lu", qo->limit.mode,
               qo->limit.count);
     TRACE_POINT;
@@ -749,7 +749,7 @@ static Result_t init(TxnRecord* self) {
         sizeof(((TxnData*)0)->core.stan) +
         sizeof(((TxnData*)0)->core.respCode) + sizeof(((TxnData*)0)->extention);
 
-    LOG_DEBUG("TxnDbRecord size = %zu, schema data size = %zu", TXN_RECORD_SIZE,
+    LOG_TRACE("TxnDbRecord size = %zu, schema data size = %zu", TXN_RECORD_SIZE,
               schemaRecordSize);
 
     schema = embedDBCreateSchema(columnNum, colSizes, colSignedness, colTypes);

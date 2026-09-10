@@ -74,7 +74,8 @@ static bool flushIfNeeded(Receipt* r, uint16_t next_h) {
         return false;
     }
     if (r->height + next_h > r->maxHeight) {
-        flushReceipt(r);
+        Result_t res = flushReceipt(r);
+        return (res.err == ERR_OK);
     }
     return true;
 }
@@ -192,6 +193,10 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
         totalWeight += cols[i].weight;
     }
 
+    if (totalWeight == 0) {
+        return ERR_BAD_PARAMETER;
+    }
+
     int      x     = 0;
     uint16_t max_h = 0;
 
@@ -220,7 +225,7 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
     lv_canvas_init_layer(r->canvas, &layer);
 
     int row_y1 = r->height;
-    int row_y2 = r->height + max_h;
+    int row_y2 = r->height + max_h - 1;
 
     // --- Draw outer horizontal lines ---
     lv_draw_line_dsc_t line;
@@ -243,7 +248,7 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
     // Draw vertical lines + text ---
     x = 0;
     for (int i = 0; i < count; i++) {
-        uint32_t w = (PRINTER_WIDTH_PIX / totalWeight) * cols[i].weight;
+        uint32_t w = (PRINTER_WIDTH_PIX * cols[i].weight) / totalWeight;
 
         // Draw vertical line (left border + separators)
         line.p1.x = x;
@@ -422,7 +427,7 @@ static int8_t addTextWithBorder(Receipt* r, RecFont_t font, int count,
                             ERR_OK,
                             ;, ERR_NOK);
 
-        uint16_t h = measure_text_height(r->shaped[i], w - 6, lvFont);
+        uint16_t h = measure_text_height(r->shaped[i], w - 4, lvFont);
 
         if (h > max_h) {
             max_h = h;
@@ -589,7 +594,7 @@ static int8_t addAmount(Receipt* r, const char* amount) {
     snprintf(buf, sizeof(buf), " %s: %s %s ", phraseGetDef(PHRASE_AMOUNT),
              amount, phraseGetDef(PHRASE_RIAL));
 
-    return addHighlightedText(r, buf, &FONT_16, LV_TEXT_ALIGN_CENTER);
+    return addHighlightedText(r, buf, REC_FONT_BOLD, LV_TEXT_ALIGN_CENTER);
 }
 
 /* -------- HEADER -------- */
@@ -597,7 +602,6 @@ static int8_t addHeader(Receipt* r, uint32_t date, uint32_t time) {
     RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
-    TerminalSettings* t = &settings()->terminal;
 
     RecColumn_t row1[] = {
         {"TODO", LV_TEXT_ALIGN_LEFT, 1},
@@ -723,10 +727,13 @@ OOP_CTOR(Receipt) {
 }
 
 int8_t createReceipt(Receipt* receipt) {
+    if (!receipt) {
+        return ERR_BAD_PARAMETER;
+    }
     OOP_CALL_CTOR(Receipt, receipt);
-    RETURN_VALUE_IF_NULL(receipt->canvas, MEM_FREE(receipt->buf),
+    RETURN_VALUE_IF_NULL(receipt->canvas, destroyReceipt(receipt),
                          ERR_MEMORY_ALLOCATION);
-    RETURN_VALUE_IF_NULL(receipt->buf, MEM_FREE(receipt->canvas),
+    RETURN_VALUE_IF_NULL(receipt->buf, destroyReceipt(receipt),
                          ERR_MEMORY_ALLOCATION);
     return ERR_OK;
 }

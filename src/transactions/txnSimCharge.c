@@ -42,7 +42,7 @@ static char phoneNum[LEN_MAX_PHONE_NUMBER + 1];
 
 void setOperator(void* arg) {
     int idx = *(((int*)arg));
-    LOG_DEBUG("setOperator(): idx = %d", idx);
+    LOG_TRACE("setOperator(): idx = %d", idx);
     switch (idx) {
     case 0:
         selectedOp = OPERATOR_MCI;

@@ -62,4 +62,48 @@ void dateToStr(uint32_t date, char* str, size_t size);
 
 void timeToStr(uint32_t time, char* str, size_t size);
 
+bool isValidJalaliDate(Date_t date);
+
+/*
+ * Converts a validated Jalali date to Gregorian.
+ *
+ * Returns:
+ *   0  success
+ *  -1  invalid argument/date
+ */
+int jalaliToGregorian(Date_t jalali, Date_t* gregorian);
+
+/*
+ * Input:
+ *   "14050619"
+ *
+ * Output:
+ *   20260910
+ *
+ * Returns:
+ *   0  success
+ *  -1  invalid format/date
+ */
+int jalaliDateStrToGregorianUint(const char* in, uint32_t* out);
+
+/*
+ * Accepts:
+ *   "1430"   -> 143000
+ *   "143025" -> 143025
+ *
+ * Returns:
+ *   0  success
+ *  -1  invalid format/time
+ */
+int timeStrToUint(const char* in, uint32_t* out);
+
+/*
+ * Returns:
+ *   < 0  dt1 < dt2
+ *     0  dt1 == dt2
+ *   > 0  dt1 > dt2
+ */
+int compareDateTimeUint(uint32_t date1, uint32_t time1, uint32_t date2,
+                        uint32_t time2);
+
 #endif

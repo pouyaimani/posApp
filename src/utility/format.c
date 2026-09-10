@@ -10,6 +10,23 @@
 #include <inttypes.h>
 #include "len.h"
 
+static int parseFixedDigits(const char* str, size_t len, int* value) {
+    if (!str || !value)
+        return -1;
+
+    int result = 0;
+
+    for (size_t i = 0; i < len; i++) {
+        if (!isDigit((unsigned char)str[i]))
+            return -1;
+
+        result = result * 10 + (str[i] - '0');
+    }
+
+    *value = result;
+    return 0;
+}
+
 void timeFormat(const char* in, char* out) {
     char digits[6] = {0};
     int  dcount    = 0;
@@ -460,7 +477,7 @@ int gregorianToJalaliStr(const char* in_date, char* out_date) {
     Date_t greg;
     greg.day   = gd;
     greg.month = gm;
-    greg.month = gy;
+    greg.year  = gy;
     Date_t jalali;
     gregorianToJalali(greg, &jalali);
 
@@ -485,4 +502,204 @@ Date_t getJalaliDate() {
     Date_t jalali;
     gregorianToJalali(greg, &jalali);
     return jalali;
+}
+
+static void jalaliToGregorianUnchecked(Date_t jalali, Date_t* gregorian) {
+    int jy = jalali.year;
+    int jm = jalali.month;
+    int jd = jalali.day;
+
+    jy += 1595;
+
+    int days =
+        -355668 + (365 * jy) + ((jy / 33) * 8) + (((jy % 33) + 3) / 4) + jd;
+
+    if (jm < 7)
+        days += (jm - 1) * 31;
+    else
+        days += ((jm - 7) * 30) + 186;
+
+    int gy = 400 * (days / 146097);
+    days %= 146097;
+
+    if (days > 36524) {
+        days--;
+
+        gy += 100 * (days / 36524);
+        days %= 36524;
+
+        if (days >= 365)
+            days++;
+    }
+
+    gy += 4 * (days / 1461);
+    days %= 1461;
+
+    if (days > 365) {
+        gy += (days - 1) / 365;
+        days = (days - 1) % 365;
+    }
+
+    int gd = days + 1;
+
+    bool leap = ((gy % 4 == 0) && (gy % 100 != 0)) || (gy % 400 == 0);
+
+    int monthDays[] = {0,  31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31,
+                       30, 31};
+
+    int gm;
+
+    for (gm = 1; gm <= 12; gm++) {
+        if (gd <= monthDays[gm])
+            break;
+
+        gd -= monthDays[gm];
+    }
+
+    gregorian->year  = gy;
+    gregorian->month = gm;
+    gregorian->day   = gd;
+}
+
+bool isValidJalaliDate(Date_t date) {
+    if (date.year <= 0)
+        return false;
+
+    if (date.month < 1 || date.month > 12)
+        return false;
+
+    if (date.day < 1)
+        return false;
+
+    if (date.month <= 6) {
+        if (date.day > 31)
+            return false;
+    } else if (date.month <= 11) {
+        if (date.day > 30)
+            return false;
+    } else {
+        /*
+         * Esfand can have 29 or 30 days.
+         * Reject > 30 here, then determine whether day 30
+         * actually exists using a round-trip conversion.
+         */
+        if (date.day > 30)
+            return false;
+    }
+
+    /*
+     * Dates except Esfand 30 are already fully validated.
+     */
+    if (!(date.month == 12 && date.day == 30))
+        return true;
+
+    Date_t greg;
+    Date_t check;
+
+    jalaliToGregorianUnchecked(date, &greg);
+    gregorianToJalali(greg, &check);
+
+    return check.year == date.year && check.month == date.month &&
+           check.day == date.day;
+}
+
+int jalaliToGregorian(Date_t jalali, Date_t* gregorian) {
+    if (!gregorian)
+        return -1;
+
+    if (!isValidJalaliDate(jalali))
+        return -1;
+
+    jalaliToGregorianUnchecked(jalali, gregorian);
+
+    return 0;
+}
+
+int jalaliDateStrToGregorianUint(const char* in, uint32_t* out) {
+    if (!in || !out)
+        return -1;
+
+    /*
+     * Financial/report input should be unambiguous:
+     *
+     * YYYYMMDD
+     */
+    if (strlen(in) != 8)
+        return -1;
+
+    Date_t jalali;
+
+    if (parseFixedDigits(in, 4, &jalali.year) != 0 ||
+        parseFixedDigits(in + 4, 2, &jalali.month) != 0 ||
+        parseFixedDigits(in + 6, 2, &jalali.day) != 0) {
+
+        return -1;
+    }
+
+    if (!isValidJalaliDate(jalali))
+        return -1;
+
+    Date_t gregorian;
+
+    if (jalaliToGregorian(jalali, &gregorian) != 0)
+        return -1;
+
+    *out = ((uint32_t)gregorian.year * 10000U) +
+           ((uint32_t)gregorian.month * 100U) + (uint32_t)gregorian.day;
+
+    return 0;
+}
+
+int compareDateTimeUint(uint32_t date1, uint32_t time1, uint32_t date2,
+                        uint32_t time2) {
+    if (date1 < date2)
+        return -1;
+
+    if (date1 > date2)
+        return 1;
+
+    if (time1 < time2)
+        return -1;
+
+    if (time1 > time2)
+        return 1;
+
+    return 0;
+}
+
+int timeStrToUint(const char* in, uint32_t* out) {
+    if (!in || !out)
+        return -1;
+
+    size_t len = strlen(in);
+
+    if (len != 4 && len != 6)
+        return -1;
+
+    int hh;
+    int mm;
+    int ss = 0;
+
+    if (parseFixedDigits(in, 2, &hh) != 0 ||
+        parseFixedDigits(in + 2, 2, &mm) != 0) {
+        return -1;
+    }
+
+    if (len == 6) {
+        if (parseFixedDigits(in + 4, 2, &ss) != 0)
+            return -1;
+    }
+
+    if (hh < 0 || hh > 23)
+        return -1;
+
+    if (mm < 0 || mm > 59)
+        return -1;
+
+    if (ss < 0 || ss > 59)
+        return -1;
+
+    *out = ((uint32_t)hh * 10000U) + ((uint32_t)mm * 100U) + (uint32_t)ss;
+
+    return 0;
 }

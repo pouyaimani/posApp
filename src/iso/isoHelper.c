@@ -54,12 +54,12 @@ static void handleMerchantName(LtvStructInfo* tag) {
     size_t len =
         end ? (size_t)(end - (char*)tmpBuffer) : strlen((char*)tmpBuffer);
 
-    LOG_DEBUG("merchantFa (%zu): %.*s", len, (int)len, tmpBuffer);
+    LOG_TRACE("merchantFa (%zu): %.*s", len, (int)len, tmpBuffer);
 
     convertStrNoNumber((char*)tmpBuffer, (int)len, 0, 4, 5,
                        settings()->terminal.merchantName);
 
-    LOG_DEBUG("merchantName (%zu): %s",
+    LOG_TRACE("merchantName (%zu): %s",
               strlen(settings()->terminal.merchantName),
               settings()->terminal.merchantName);
 }
@@ -69,14 +69,12 @@ static void handleMerchantPhone(LtvStructInfo* tag) {
            sizeof(settings()->terminal.merchantPhone));
     hexStringToBytes(tag->data, tag->len - 1,
                      (unsigned char*)settings()->terminal.merchantPhone);
-    LOG_DEBUG(" config.MerchantPhone [%s]", settings()->terminal.merchantPhone);
+    LOG_TRACE("MerchantPhone [%s]", settings()->terminal.merchantPhone);
 }
 
 static void handleSwitchDateTime(LtvStructInfo* tag) {
     int           dateTime[6] = {0};
     unsigned char tempBuf[64] = {0};
-
-    LOG_DEBUG("dateTime(%d) [%s]", tag->len, tag->data);
 
     hexStringToBytes(tag->data, tag->len - 1, tempBuf);
 
@@ -85,14 +83,12 @@ static void handleSwitchDateTime(LtvStructInfo* tag) {
     }
 
     int ret = dtSetSystemDateTime(dateTime);
-
-    LOG_DEBUG("dtSetSystemDateTime(%s) -> %d", tempBuf, ret);
 }
 
 static void handleVoucherSerial(LtvStructInfo* tag, TxnData* txn) {
     hexStringToBytes(tag->data, tag->len - 1,
                      txn->extention.charge.chargeSerial);
-    LOG_DEBUG("charge serial = %s", txn->extention.charge.chargeSerial);
+    LOG_TRACE("charge serial = %s", txn->extention.charge.chargeSerial);
 }
 
 static void handleVoucherPin(LtvStructInfo* tag, TxnData* txn) {
@@ -112,7 +108,7 @@ static void handleVoucherPin(LtvStructInfo* tag, TxnData* txn) {
     hex2data(pinBytes, pinTemp, pinLen);
     pedDecrypt(pinBytes, 16, pinData);
     strcpy(txn->extention.charge.chargePin, (const char*)pinData);
-    LOG_DEBUG("charge pin = %s", pinData);
+    LOG_TRACE("charge pin = %s", pinData);
 }
 
 static void handleMerchantUniqueId(LtvStructInfo* tag) {
@@ -120,7 +116,7 @@ static void handleMerchantUniqueId(LtvStructInfo* tag) {
            sizeof(settings()->terminal.merchantUniqueId));
     hexStringToBytes(tag->data, tag->len - 1,
                      (unsigned char*)settings()->terminal.merchantUniqueId);
-    LOG_DEBUG("settings()->terminal.merchantUniqueId = %s",
+    LOG_TRACE("settings()->terminal.merchantUniqueId = %s",
               settings()->terminal.merchantUniqueId);
 }
 
@@ -132,7 +128,7 @@ void decodeMerchantDesc(char* buffer, TxnData* txn) {
     for (int i = 0; i < count; i++) {
         uint16_t tag;
         STRING_TO_U16(tags[i].tag, (uint16_t*)&tag);
-        LOG_DEBUG("decodeMerchantDesc: i = %d, tag = %s , itag = %d", i,
+        LOG_TRACE("decodeMerchantDesc: i = %d, tag = %s , itag = %d", i,
                   tags[i].tag, tag);
         switch (tag) {
         case TAG_MERCHANT_NAME:
@@ -161,7 +157,7 @@ void decodeMerchantDesc(char* buffer, TxnData* txn) {
             break;
 
         default:
-            LOG_DEBUG("Unknown tag %d", tag);
+            LOG_TRACE("Unknown tag %d", tag);
             break;
         }
     }
@@ -271,7 +267,7 @@ static int8_t setBit35(TxnData* data) {
     TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
     DEFINE_STRING(t2, (LEN_MAX_TRACK2 + 10));
 
-    LOG_DEBUG("track2 len = %d", track2.len);
+    LOG_TRACE("track2 len = %d", track2.len);
     padRight(track2.data, track2.len, LEN_MAX_TRACK2, t2, '0');
     strcat(t2, "F");
     iso8583()->setStr(ELEMENT_TRACK2, t2);
