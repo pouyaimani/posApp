@@ -96,7 +96,7 @@ STATE_DEF_ENTER(EnterAmount) {
             .info   = phraseGetDef(PHRASE_TO_RIAL_1),
             .maxLen = LEN_MAX_AMOUNT,
         },
-        STATE_IDLE, txn == TXN_VOUCHER ? enterPass : enterPhone);
+        STATE_IDLE, txn == TXN_VOUCHER ? enterPass : enterPhone, NULL, NULL);
     inmgr()->setOut(desiredAmnt, NULL, sizeof(desiredAmnt));
 }
 
@@ -157,7 +157,7 @@ STATE_DEF_ENTER(EnterPhone) {
             .info   = "",
             .maxLen = LEN_MAX_PHONE_NUMBER,
         },
-        selectAmount, enterPass);
+        selectAmount, enterPass, NULL, NULL);
     inmgr()->set(INPUT_TYPE_KEYPAD, "09");
     inmgr()->setOut(phoneNum, phoneNum, sizeof(phoneNum));
 }
@@ -182,7 +182,7 @@ STATE_DEF_ENTER(EnterPassword) {
             .info   = phraseGetDef(PHRASE_BY_CUSTOMER),
             .maxLen = LEN_MAX_CARD_PIN,
         },
-        STATE_IDLE, communication);
+        STATE_IDLE, communication, NULL, NULL);
 }
 
 static void EnterPassword(State* parent) {

@@ -62,13 +62,6 @@ STATE_DEF_ENTER(Input) {
 
 STATE_DEF_EXIT(Input) {
     __inputmgr.ctrl->provider->stop();
-    if (__inputmgr.oraw) {
-        snprintf(__inputmgr.oraw, __inputmgr.outlen, "%s", __inputmgr.input);
-    }
-    if (__inputmgr.oformated) {
-        snprintf(__inputmgr.oformated, __inputmgr.outlen, "%s",
-                 __inputmgr.finput);
-    }
     ui_hide();
 }
 
@@ -81,7 +74,18 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
     event.keypad    = *ev;
     InputResult res = inputUpdate(__inputmgr.ctrl, &event);
     if (res == INPUT_RES_FINISHED) {
+        if (__inputmgr.oraw) {
+            snprintf(__inputmgr.oraw, __inputmgr.outlen, "%s",
+                     __inputmgr.input);
+        }
+        if (__inputmgr.oformated) {
+            snprintf(__inputmgr.oformated, __inputmgr.outlen, "%s",
+                     __inputmgr.finput);
+        }
         SM_GOTO(__inputmgr.next);
+        if (__inputmgr.cb) {
+            __inputmgr.cb(__inputmgr.cbData);
+        }
         return;
     } else if (res == INPUT_RES_CANCELED) {
         SM_GOTO(__inputmgr.back);
@@ -175,7 +179,8 @@ void setOut(char* oraw, char* oformated, uint16_t len) {
     __inputmgr.outlen    = len;
 }
 
-static void run(InputCfg* cfg, State* back, State* next) {
+static void run(InputCfg* cfg, State* back, State* next, InPutCallBack_t cb,
+                void* cbData) {
     reset(cfg->type);
     __inputmgr.oraw      = NULL;
     __inputmgr.oformated = NULL;
@@ -187,6 +192,8 @@ static void run(InputCfg* cfg, State* back, State* next) {
     __inputmgr.ctrl->cfg = *cfg;
     __inputmgr.next      = next;
     __inputmgr.back      = back;
+    __inputmgr.cb        = cb;
+    __inputmgr.cbData    = cbData;
     SM_GOTO(__inputmgr.state);
 }
 

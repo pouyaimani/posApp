@@ -49,7 +49,7 @@ STATE_DEF_ENTER(EnterPin) {
             .info   = wage,
             .maxLen = LEN_MAX_CARD_PIN,
         },
-        STATE_IDLE, commu);
+        STATE_IDLE, commu, NULL, NULL);
 }
 
 /******************************************************************

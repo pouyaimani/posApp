@@ -41,7 +41,7 @@ STATE_DEF_ENTER(SingleAmount) {
             .info   = "",
             .maxLen = LEN_MAX_AMOUNT,
         },
-        STATE_IDLE, STATE_IDLE);
+        STATE_IDLE, STATE_IDLE, NULL, NULL);
     // GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", LEN_MAX_AMOUNT,
     // IN_MODE_AMOUNT,
     //            NULL);
@@ -60,7 +60,7 @@ STATE_DEF_ENTER(VariantAmount) {
             .info   = phraseGetDef(PHRASE_ENTER_COUNT),
             .maxLen = 4,
         },
-        STATE_IDLE, STATE_IDLE);
+        STATE_IDLE, STATE_IDLE, NULL, NULL);
     // GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, phraseGetDef(PHRASE_ENTER_COUNT),
     // 4,
     //            IN_MODE_NUMBERS, NULL);

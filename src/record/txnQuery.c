@@ -16,14 +16,14 @@ void applyFilter(TxnQueryFilterType flag, TxnQueryFilter filter,
     if (!queryFilterIsSet(filter, flag)) {
         return;
     }
-
     switch (flag) {
-    case REP_FILTER_DATE_TIME:
+    case REP_FILTER_DATE_TIME: {
         QueryDateTimeFilter* dtfilter = (QueryDateTimeFilter*)value;
+        dtfilter->fdt = packDateTime(dtfilter->fdate, dtfilter->ftime);
+        dtfilter->tdt = packDateTime(dtfilter->tdate, dtfilter->ttime);
         txnquery()->where(op, TXN_REC_COL_KEY, SELECT_GTE, &dtfilter->fdt);
-
         txnquery()->where(op, TXN_REC_COL_KEY, SELECT_LTE, &dtfilter->tdt);
-        break;
+    } break;
     case REP_FILTER_TXN_TYPE:
         txnquery()->where(op, TXN_REC_COL_TYPE, SELECT_EQ, value);
         break;

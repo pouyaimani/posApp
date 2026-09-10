@@ -154,7 +154,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
                 .info   = phraseGetDef(PHRASE_RIAL),
                 .maxLen = LEN_MAX_AMOUNT,
             },
-            state->parent, state);
+            state->parent, state, NULL, NULL);
         inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[listCnt]);
         // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_TENTH_AMNT),
         //            phraseGetDef(PHRASE_RIAL), LEN_MAX_AMOUNT,
@@ -171,7 +171,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
                     .info   = phraseGetDef(PHRASE_RIAL),
                     .maxLen = LEN_MAX_AMOUNT,
                 },
-                state->parent, state);
+                state->parent, state, NULL, NULL);
             inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[10]);
             // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
             //            phraseGetDef(PHRASE_RIAL), LEN_MAX_AMOUNT,
@@ -192,7 +192,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
                     .info   = "",
                     .maxLen = LEN_MAX_AMOUNT,
                 },
-                state->parent, state);
+                state->parent, state, NULL, NULL);
             inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[11]);
             // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
             //            phraseGetDef(PHRASE_RIAL), LEN_MAX_AMOUNT,
@@ -249,7 +249,7 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
             .info   = rial,
             .maxLen = LEN_MAX_AMOUNT,
         },
-        state->parent, getMaxAmnt);
+        state->parent, getMaxAmnt, NULL, NULL);
     // GOTO_INPUT(state->parent, getMaxAmnt, phraseGetDef(PHRASE_AMNT_CEIL),
     // rial,
     //            12, IN_MODE_AMOUNT, NULL);

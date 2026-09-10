@@ -47,7 +47,7 @@ STATE_DEF_ENTER(EnterAmount) {
             .info   = phraseGetDef(PHRASE_TO_RIAL_1),
             .maxLen = LEN_MAX_AMOUNT,
         },
-        STATE_IDLE, enterPass);
+        STATE_IDLE, enterPass, NULL, NULL);
 }
 
 /******************************************************************
@@ -73,7 +73,7 @@ STATE_DEF_ENTER(EnterPassword) {
             .info   = phraseGetDef(PHRASE_BY_CUSTOMER),
             .maxLen = LEN_MAX_CARD_PIN,
         },
-        STATE_IDLE, commu);
+        STATE_IDLE, commu, NULL, NULL);
 }
 
 /******************************************************************

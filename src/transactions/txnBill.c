@@ -43,7 +43,7 @@ STATE_DEF_ENTER(EnterBillId) {
             .info   = "",
             .maxLen = LEN_MAX_BILL_ID,
         },
-        STATE_IDLE, enterPayId);
+        STATE_IDLE, enterPayId, NULL, NULL);
     inmgr()->setOut(data.bill.billId, NULL, sizeof(data.bill.billId));
 }
 
@@ -65,7 +65,7 @@ STATE_DEF_ENTER(EnterPayId) {
             .info   = "",
             .maxLen = LEN_MAX_PAYMENT_ID,
         },
-        STATE_IDLE, enterPass);
+        STATE_IDLE, enterPass, NULL, NULL);
     inmgr()->setOut(data.bill.paymentId, NULL, sizeof(data.bill.paymentId));
 }
 
@@ -94,7 +94,7 @@ STATE_DEF_ENTER(EnterPassword) {
             .info   = phraseGetDef(PHRASE_BY_CUSTOMER),
             .maxLen = LEN_MAX_CARD_PIN,
         },
-        STATE_IDLE, communication);
+        STATE_IDLE, communication, NULL, NULL);
 }
 
 /******************************************************************

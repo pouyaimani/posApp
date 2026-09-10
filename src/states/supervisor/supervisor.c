@@ -67,7 +67,7 @@ STATE_DEF_ENTER(EnterPassword) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        STATE_IDLE, checkPass);
+        STATE_IDLE, checkPass, NULL, NULL);
 }
 
 static void EnterPassword(State* parent) {
@@ -110,7 +110,7 @@ STATE_DEF_ENTER(EnterNewPin) {
             .info   = PHRASE_NONE,
             .maxLen = LEN_MAX_PASSWORD,
         },
-        state->parent, reEnterNewPin);
+        state->parent, reEnterNewPin, NULL, NULL);
 }
 
 STATE_DEF_ENTER(ReEnterNewPin) {
@@ -125,7 +125,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        supervisorMenu, checkNewPin);
+        supervisorMenu, checkNewPin, NULL, NULL);
     // GOTO_INPUT(supervisorMenu, checkNewPin,
     // phraseGetDef(PHRASE_REPEAT_NEW_PIN),
     //            "", 4, IN_MODE_PASSWORD, NULL);
@@ -155,7 +155,7 @@ STATE_DEF_ENTER(ChangeMerPin) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        state->parent, checkPin);
+        state->parent, checkPin, NULL, NULL);
     // GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "",
     // 4,
     //            IN_MODE_PASSWORD, NULL);
@@ -220,7 +220,7 @@ STATE_DEF_ENTER(EnterIp) {
             .info   = "",
             .maxLen = LEN_MAX_IP,
         },
-        state->parent, enterPort);
+        state->parent, enterPort, NULL, NULL);
     if (serverItem == SERV_SET_MAIN) {
         inmgr()->set(INPUT_TYPE_KEYPAD, settings()->server.mainServerIp);
     } else if (serverItem == SERV_SET_TMS) {
@@ -238,7 +238,7 @@ STATE_DEF_ENTER(EnterPort) {
             .info   = "",
             .maxLen = 4,
         },
-        state->parent, enterServerId);
+        state->parent, enterServerId, NULL, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(settings()->server.mainServerPort, str, sizeof(str));
@@ -258,7 +258,7 @@ STATE_DEF_ENTER(EnterServerId) {
             .info   = "",
             .maxLen = 4,
         },
-        state->parent, getServerId);
+        state->parent, getServerId, NULL, NULL);
     char str[5];
     if (serverItem == SERV_SET_MAIN) {
         intToStr(settings()->server.mainServerNii, str, sizeof(str));

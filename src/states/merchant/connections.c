@@ -97,7 +97,7 @@ STATE_DEF_ENTER(WifiEnterPass) {
             .info   = "",
             .maxLen = 32,
         },
-        state->parent, wifiConnect);
+        state->parent, wifiConnect, NULL, NULL);
 }
 
 STATE_DEF_EXIT(WifiEnterPass) {}

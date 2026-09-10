@@ -47,12 +47,9 @@ static const Phrases_t reportsItemTxt[REP_ITEM_ALL] = {
     PHRASE_REPRINT, PHRASE_DAILY_REPORT, PHRASE_SUMMARY_REPORT,
     PHRASE_TRANACTION_DETAILS};
 
-static uint64_t rrn;
-static uint32_t trace;
-static uint32_t fdate;
-static uint32_t ftime;
-static uint32_t tdate;
-static uint32_t ttime;
+static uint64_t            rrn;
+static uint32_t            trace;
+static QueryDateTimeFilter dtFilter;
 
 /*********************************************************************************************
  *                                                                                           *
@@ -67,13 +64,14 @@ static void startReprintByTxnType(TxnType txnType) {
 }
 
 static void runReportInput(InputMode_t mode, const char* title, char* output,
-                           size_t outputSize, uint16_t max, SubState* next) {
+                           size_t outputSize, uint16_t max, SubState* next,
+                           InPutCallBack_t cb, void* userData) {
     inmgr()->run(&(InputCfg){.type   = INPUT_TYPE_KEYPAD,
                              .mode   = mode,
                              .title  = title,
                              .info   = "",
                              .maxLen = max},
-                 mainMenu, next);
+                 mainMenu, next, cb, userData);
 
     inmgr()->setOut(output, NULL, outputSize);
 }
@@ -104,13 +102,13 @@ void setReprintItem(void* arg) {
         queryFilterSet(&qfilter, REP_FILTER_TRACE);
         runReportInput(INMD_ENTER_NUMBERS, phraseGetDef(PHRASE_ENTER_TRACE),
                        rquery.trace, sizeof(rquery.trace), LEN_MAX_TRACE_IN,
-                       extractData);
+                       extractData, NULL, NULL);
         break;
     case REPRINT_REF:
         queryFilterSet(&qfilter, REP_FILTER_REF_NUM);
         runReportInput(INMD_ENTER_NUMBERS, phraseGetDef(PHRASE_ENTER_REF_NUM),
                        rquery.refNum, sizeof(rquery.refNum), LEN_MAX_REF_NUM_IN,
-                       extractData);
+                       extractData, NULL, NULL);
         break;
     case REPRINT_BILL:
         startReprintByTxnType(TXN_BILL);
@@ -170,6 +168,10 @@ static void RePrint(State* parent) {
 STATE_DEF_ENTER(DailyReport) {
     docType = DOC_DAILY_REPORT;
     queryFilterSet(&qfilter, REP_FILTER_DATE_TIME);
+    dtFilter.fdate = OOP_CALL(sys(), getDate);
+    dtFilter.tdate = OOP_CALL(sys(), getDate);
+    dtFilter.ftime = 0;
+    dtFilter.ttime = 235959;
     SM_GOTO(extractData);
 }
 
@@ -233,10 +235,19 @@ static void DetailsReport(State* parent) {
  *                                                                                           *
  ********************************************************************************************/
 
+static void validateFdate(void* userData) {
+    if (jalaliDateStrToGregorianUint(rquery.startDate, &dtFilter.fdate) != 0) {
+        /* invalid start date */
+        GOTO_INFO(getStartDate, getStartDate, INFO_ERROR,
+                  phraseGetDef(PHRASE_INVALID_DATE), "");
+        return;
+    }
+}
+
 STATE_DEF_ENTER(GetStartDate) {
     runReportInput(INMD_ENTER_DATE, phraseGetDef(PHRASE_FROM_DATE),
                    rquery.startDate, sizeof(rquery.startDate), LEN_MAX_DATE_IN,
-                   getStartTime);
+                   getStartTime, validateFdate, NULL);
 }
 
 /*********************************************************************************************
@@ -245,16 +256,19 @@ STATE_DEF_ENTER(GetStartDate) {
  *                                                                                           *
  ********************************************************************************************/
 
-STATE_DEF_ENTER(GetEndDate) {
-    if (timeStrToUint(rquery.startTime, &ftime) != 0) {
+static void validateEdate(void* userData) {
+    if (jalaliDateStrToGregorianUint(rquery.endDate, &dtFilter.tdate) != 0) {
         /* invalid start date */
-        GOTO_INFO(getStartTime, getStartTime, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_TIME), "");
+        GOTO_INFO(getEndDate, getEndDate, INFO_ERROR,
+                  phraseGetDef(PHRASE_INVALID_DATE), "");
         return;
     }
+}
+
+STATE_DEF_ENTER(GetEndDate) {
     runReportInput(INMD_ENTER_DATE, phraseGetDef(PHRASE_TO_DATE),
                    rquery.endDate, sizeof(rquery.endDate), LEN_MAX_DATE_IN,
-                   getEndTime);
+                   getEndTime, validateEdate, NULL);
 }
 
 /*********************************************************************************************
@@ -263,16 +277,19 @@ STATE_DEF_ENTER(GetEndDate) {
  *                                                                                           *
  ********************************************************************************************/
 
-STATE_DEF_ENTER(GetStartTime) {
-    if (jalaliDateStrToGregorianUint(rquery.startDate, &fdate) != 0) {
+static void validateStime(void* userData) {
+    if (timeStrToUint(rquery.startTime, &dtFilter.ftime) != 0) {
         /* invalid start date */
-        GOTO_INFO(getStartDate, getStartDate, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_DATE), "");
+        GOTO_INFO(getStartTime, getStartTime, INFO_ERROR,
+                  phraseGetDef(PHRASE_INVALID_TIME), "");
         return;
     }
+}
+
+STATE_DEF_ENTER(GetStartTime) {
     runReportInput(INMD_ENTER_TIME, phraseGetDef(PHRASE_FROM_TIME),
                    rquery.startTime, sizeof(rquery.startTime), LEN_MAX_TIME_IN,
-                   getEndDate);
+                   getEndDate, validateStime, NULL);
 }
 
 /*********************************************************************************************
@@ -281,8 +298,17 @@ STATE_DEF_ENTER(GetStartTime) {
  *                                                                                           *
  ********************************************************************************************/
 
+static void validateEtime(void* userData) {
+    if (timeStrToUint(rquery.endTime, &dtFilter.ttime) != 0) {
+        /* invalid start date */
+        GOTO_INFO(getEndTime, getEndTime, INFO_ERROR,
+                  phraseGetDef(PHRASE_INVALID_TIME), "");
+        return;
+    }
+}
+
 STATE_DEF_ENTER(GetEndTime) {
-    if (jalaliDateStrToGregorianUint(rquery.endDate, &tdate) != 0) {
+    if (jalaliDateStrToGregorianUint(rquery.endDate, &dtFilter.tdate) != 0) {
         /* invalid start date */
         GOTO_INFO(getEndDate, getEndDate, INFO_ERROR,
                   phraseGetDef(PHRASE_INVALID_DATE), "");
@@ -290,7 +316,7 @@ STATE_DEF_ENTER(GetEndTime) {
     }
     runReportInput(INMD_ENTER_TIME, phraseGetDef(PHRASE_TO_TIME),
                    rquery.endTime, sizeof(rquery.endTime), LEN_MAX_TIME_IN,
-                   extractData);
+                   extractData, validateEtime, NULL);
 }
 
 /*********************************************************************************************
@@ -305,8 +331,6 @@ typedef struct {
     ReceiptDocType   doc;
     ExtractHandlerFn handler;
 } ExtractHandler;
-
-static QueryDateTimeFilter dtFilter;
 
 static bool handleTxnExtractedData(const TxnData* txn, void* userData) {
     logTxnCore(txn);
@@ -373,10 +397,10 @@ static ErrorDsc_t handleTxnExtracting(ReceiptData* rec, QueryOperator* op) {
 
 static ErrorDsc_t handleSummaryExtracting(ReceiptData*   recData,
                                           QueryOperator* op) {
-    recData->summaryHeader.dateFrom = fdate;
-    recData->summaryHeader.dateTo   = tdate;
-    recData->summaryHeader.timeFrom = ftime;
-    recData->summaryHeader.timeTo   = ttime;
+    recData->summaryHeader.dateFrom = dtFilter.fdate;
+    recData->summaryHeader.dateTo   = dtFilter.tdate;
+    recData->summaryHeader.timeFrom = dtFilter.ftime;
+    recData->summaryHeader.timeTo   = dtFilter.ttime;
     recData->summaryHeader.dateNow  = OOP_CALL(sys(), getDate);
     recData->summaryHeader.timeNow  = OOP_CALL(sys(), getTime);
     Receipt         receipt;
@@ -404,10 +428,10 @@ static ErrorDsc_t handleDailyExtracting(ReceiptData* rec, QueryOperator* op) {
 
 static ErrorDsc_t handleDetailExtracting(ReceiptData*   recData,
                                          QueryOperator* op) {
-    recData->detailedHeader.dateFrom = fdate;
-    recData->detailedHeader.dateTo   = tdate;
-    recData->detailedHeader.timeFrom = ftime;
-    recData->detailedHeader.timeTo   = ttime;
+    recData->detailedHeader.dateFrom = dtFilter.fdate;
+    recData->detailedHeader.dateTo   = dtFilter.tdate;
+    recData->detailedHeader.timeFrom = dtFilter.ftime;
+    recData->detailedHeader.timeTo   = dtFilter.ttime;
     recData->detailedHeader.dateNow  = OOP_CALL(sys(), getDate);
     recData->detailedHeader.timeNow  = OOP_CALL(sys(), getTime);
     Receipt         receipt;
@@ -435,7 +459,7 @@ static const ExtractHandler exTemplates[] = {
     /******************************************************************/
     /*Daily Reports*/
     /******************************************************************/
-    {.doc = DOC_DAILY_REPORT, .handler = handleDailyExtracting},
+    {.doc = DOC_DAILY_REPORT, .handler = handleSummaryExtracting},
     /******************************************************************/
     /*Detialed Reports*/
     /******************************************************************/
@@ -452,11 +476,15 @@ const ExtractHandler* findExtracter(ReceiptDocType doc) {
 }
 
 STATE_DEF_ENTER(ExtractData) {
-    if (timeStrToUint(rquery.endTime, &ttime) != 0) {
-        /* invalid start date */
-        GOTO_INFO(getEndTime, getEndTime, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_TIME), "");
-        return;
+    if (queryFilterIsSet(qfilter, REP_FILTER_DATE_TIME)) {
+        if (compareDateTimeUint(dtFilter.fdate, dtFilter.ftime, dtFilter.tdate,
+                                dtFilter.ttime) > 0) {
+
+            /* FROM > TO */
+            GOTO_INFO(getStartDate, getStartDate, INFO_ERROR,
+                      phraseGetDef(PHRASE_INVALID_DATE_TIME), "");
+            return;
+        }
     }
 
     ReceiptData recData;
@@ -484,19 +512,8 @@ STATE_DEF_ENTER(ExtractData) {
     STRING_TO_U32(rquery.trace, &trace);
     STRING_TO_U64(rquery.refNum, &rrn);
 
-    if (compareDateTimeUint(fdate, ftime, tdate, ttime) > 0) {
-
-        /* FROM > TO */
-        GOTO_INFO(getStartDate, getStartDate, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_DATE_TIME), "");
-        return;
-    }
-
-    LOG_TRACE("fdate = %lu, ftime = %lu, tdate = %lu, ttime = %lu,", fdate,
-              ftime, tdate, ttime);
-
-    dtFilter.fdt = packDateTime(fdate, ftime);
-    dtFilter.tdt = packDateTime(tdate, ttime);
+    LOG_TRACE("fdate = %lu, ftime = %lu, tdate = %lu, ttime = %lu,",
+              dtFilter.fdate, dtFilter.ftime, dtFilter.tdate, dtFilter.ttime);
 
     applyFilter(REP_FILTER_DATE_TIME, qfilter, &op, &dtFilter);
     applyFilter(REP_FILTER_REF_NUM, qfilter, &op, &rrn);

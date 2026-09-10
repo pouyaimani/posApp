@@ -65,7 +65,7 @@ STATE_DEF_ENTER(EnterPassword) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        STATE_IDLE, checkPass);
+        STATE_IDLE, checkPass, NULL, NULL);
     // GOTO_INPUT(STATE_IDLE, checkPass, phraseGetDef(PHRASE_PASS_ENTRY), "",
     //            LEN_MAX_PASSWORD, IN_MODE_PASSWORD, NULL);
 }
@@ -110,7 +110,7 @@ STATE_DEF_ENTER(EnterNewPin) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        state->parent, reEnterNewPin);
+        state->parent, reEnterNewPin, NULL, NULL);
     // GOTO_INPUT(state->parent, reEnterNewPin, phraseGetDef(PHRASE_NEW_PIN),
     // "",
     //            4, IN_MODE_PASSWORD, NULL);
@@ -128,7 +128,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        merchantMenu, checkNewPin);
+        merchantMenu, checkNewPin, NULL, NULL);
     // GOTO_INPUT(merchantMenu, checkNewPin,
     // phraseGetDef(PHRASE_REPEAT_NEW_PIN),
     //            "", 4, IN_MODE_PASSWORD, NULL);
@@ -157,7 +157,7 @@ STATE_DEF_ENTER(ChangeMerPin) {
             .info   = "",
             .maxLen = LEN_MAX_PASSWORD,
         },
-        state->parent, checkPin);
+        state->parent, checkPin, NULL, NULL);
     // GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "",
     // 4,
     //            IN_MODE_PASSWORD, NULL);

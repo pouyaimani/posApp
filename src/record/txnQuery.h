@@ -22,6 +22,10 @@ typedef enum {
 } TxnQueryResultMode_t;
 
 typedef struct {
+    uint32_t fdate;
+    uint32_t ftime;
+    uint32_t tdate;
+    uint32_t ttime;
     uint64_t fdt;
     uint64_t tdt;
 } QueryDateTimeFilter;

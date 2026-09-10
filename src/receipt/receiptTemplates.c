@@ -667,8 +667,6 @@ static int8_t buildDetailRepReceipt(Receipt* rec, ReceiptData* data) {
     return ERR_OK;
 }
 
-static int8_t buildDailyRepReceipt(Receipt* rec, ReceiptData* data) {}
-
 static int8_t buildSumRepReceipt(Receipt* rec, ReceiptData* data) {
     if (!data->headerApplied) {
         RETURN_VALUE_IF_NOT(buildSumRepHeaderReceipt(rec, data), ERR_OK, ;
@@ -679,6 +677,8 @@ static int8_t buildSumRepReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NOT(buildSumRepBodyReceipt(rec, data), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
+
+static int8_t buildDailyRepReceipt(Receipt* rec, ReceiptData* data) {}
 
 static void handleError(Result_t res) {
     if (res.err == ERR_DSC_PRINTER) {
@@ -728,7 +728,7 @@ ReceiptBuilder getReceiptBuilder(Receipt* rec, ReceiptData* data) {
     } else {
         switch (data->type) {
         case DOC_DAILY_REPORT:
-            return buildDailyRepReceipt;
+            return buildSumRepReceipt;
         case DOC_SUMMARY_REPORT:
             return buildSumRepReceipt;
         case DOC_DETAILED_REPORT:

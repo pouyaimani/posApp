@@ -105,7 +105,7 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
                     .info   = PHRASE_NONE,
                     .maxLen = 2,
                 },
-                state, getValue);
+                state, getValue, NULL, NULL);
         } else if (energyMenu->idx == 1) {
             inmgr()->run(
                 &(InputCfg){
@@ -115,7 +115,7 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
                     .info   = PHRASE_NONE,
                     .maxLen = 2,
                 },
-                state, getValue);
+                state, getValue, NULL, NULL);
         }
     }
 }
@@ -199,7 +199,7 @@ STATE_DEF_ENTER(SecPrintTime) {
             .info   = "",
             .maxLen = 2,
         },
-        state->parent, secPrintSuc);
+        state->parent, secPrintSuc, NULL, NULL);
     // GOTO_INPUT(state->parent, secPrintSuc, "زمان رسید دوم", "", 2,
     //            IN_MODE_NUMBERS, NULL);
 }

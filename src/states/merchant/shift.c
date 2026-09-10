@@ -317,7 +317,7 @@ STATE_DEF_ENTER(ShiftReports) {
             .info   = "",
             .maxLen = LEN_MAX_SHIFT_NUM,
         },
-        state->parent, handleReports);
+        state->parent, handleReports, NULL, NULL);
     // GOTO_INPUT(state->parent, handleReports,
     // phraseGetDef(PHRASE_SHIFT_SELECT),
     //            "", 3, IN_MODE_NUMBERS, NULL);
