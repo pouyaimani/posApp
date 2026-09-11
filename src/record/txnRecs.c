@@ -5,6 +5,7 @@
 #include "logger.h"
 #include "utility/utility.h"
 #include "common.h"
+#include "file/file.h"
 
 /**
  * @brief Path to the transaction record data file.
@@ -19,12 +20,7 @@
 /**
  * @brief Number of pages allocated to the transaction database.
  */
-#define PAGE_NUMBER 10
-
-/**
- * @brief Maximum number of transaction records supported by the database.
- */
-#define MAX_RECORDS 6000
+#define PAGE_NUMBER 50
 
 /**
  * @brief Serialized size of a transaction record excluding its database key.
@@ -670,17 +666,36 @@ static Result_t aggregate(QueryOperator* qo, TxnType txntype,
  *
  * @return Result_t containing the initialization status.
  */
+
+static Result_t getFileSize(uint32_t* size) {
+    FileHandle rec;
+    FileHandle idx;
+    strcpy(rec.path, TRANS_RECORD_PATH);
+    strcpy(idx.path, TRANS_IDX_PATH);
+
+    uint32_t recordFileSize = OOP_CALL(file(), size, &rec);
+    uint32_t indexFileSize  = OOP_CALL(file(), size, &idx);
+    *size                   = recordFileSize + indexFileSize;
+    LOG_TRACE("Txn record: records file size = %lu", recordFileSize);
+    LOG_TRACE("Txn record: indexs file size = %lu", indexFileSize);
+    LOG_TRACE("Txn record: total size = %lu", *size);
+    Result_t res = {.err = ERR_DSC_OK};
+    return res;
+}
+
 static Result_t init(TxnRecord* self) {
     Result_t res = {.err = ERR_DSC_OK};
     state        = (embedDBState*)EMDB_MEM_ALLOC(sizeof(embedDBState));
     RETURN_VALUE_IF_NULL(state, res.err = ERR_DSC_MEMORY, res);
+    uint32_t size;
+
+    getFileSize(&size);
 
     uint32_t parameters = EMBEDDB_RECORD_LEVEL_CONSISTENCY |
                           (EMBEDDB_USE_BMAP | EMBEDDB_USE_INDEX);
-    LOG_ERROR("size of txnData = %u.", TXN_RECORD_SIZE);
 
     if (embedDBSetup(state, TRANS_RECORD_PATH, TRANS_IDX_PATH, sizeof(uint64_t),
-                     TXN_RECORD_SIZE, PAGE_SIZE_512, PAGE_NUMBER,
+                     TXN_RECORD_SIZE, PAGE_SIZE_4096, PAGE_NUMBER,
                      parameters) != 0) {
         embedDBClose(state);
         embedDBtearDown(state);
@@ -774,12 +789,13 @@ static Result_t init(TxnRecord* self) {
  * @param[in,out] self Transaction record service instance.
  */
 OOP_CTOR(TxnRecord) {
-    self->init      = init;
-    self->insert    = txnInsert;
-    self->select    = txnSelect;
-    self->reset     = txnReset;
-    self->iterate   = iterateThrough;
-    self->aggregate = aggregate;
+    self->init        = init;
+    self->insert      = txnInsert;
+    self->select      = txnSelect;
+    self->reset       = txnReset;
+    self->iterate     = iterateThrough;
+    self->aggregate   = aggregate;
+    self->getFileSize = getFileSize;
 }
 
 TxnRecord* txnrecord() {

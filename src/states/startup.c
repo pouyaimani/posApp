@@ -16,6 +16,7 @@
 #include "nth/nth.h"
 #include "error.h"
 #include "record/txnRecs.h"
+#include "file/file.h"
 
 static lv_obj_t* startUpPage;
 static lv_obj_t* label;
@@ -40,6 +41,8 @@ STATE_DEF_ENTER(Startup) {
     if (res.err != ERR_DSC_OK) {
         LOG_DEBUG("Network init error = %d", res.err);
     }
+
+    LOG_TRACE("Free space in flash = %lu", OOP_CALL(file(), getFlashFreeSpace));
 
     shifts()->init();
 

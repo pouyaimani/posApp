@@ -11,7 +11,7 @@
 #include "phrases/phrases.h"
 
 #define PRINTER_WIDTH_PIX 384
-#define MAX_HEIGHT        (PRINTER_WIDTH_PIX / 2) // dynamic safe max
+#define MAX_HEIGHT        100 // dynamic safe max
 #define SHAPED_MAX        128
 
 /* =========================

@@ -104,7 +104,7 @@ OOP_VTABLE(File) {
 
     OOP_IMETHOD(int, File, sync, FileHandle* handle);
 
-    OOP_IMETHOD(long, File, getFreeSpace, char*);
+    OOP_IMETHOD(long, File, getFlashFreeSpace);
 
     OOP_IMETHOD(FileErr_t, File, insert, char*, uint8_t*, uint32_t, uint32_t);
 };

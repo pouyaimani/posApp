@@ -111,8 +111,10 @@ static long size(File* self, FileHandle* handle) {
 
 static int sync(File* self, FileHandle* handle) { return 0; }
 
-static long getFreeSpace(File* self, char* path) {
-    return sdkFileGetFreeSpace(path);
+static long getFlashFreeSpace(File* self, char* path) {
+    uint32_t fs;
+    sdkFileGetFreeSpace(&fs);
+    return fs;
 }
 
 static FileErr_t insert(File* self, char* path, uint8_t* pheSrc,
@@ -121,20 +123,20 @@ static FileErr_t insert(File* self, char* path, uint8_t* pheSrc,
 }
 
 OOP_CTOR(FileT3Rtos) {
-    self->base.vtable.close        = close;
-    self->base.vtable.exists       = exists;
-    self->base.vtable.flush        = flush;
-    self->base.vtable.getFreeSpace = getFreeSpace;
-    self->base.vtable.insert       = insert;
-    self->base.vtable.open         = open;
-    self->base.vtable.read         = read;
-    self->base.vtable.remove       = removeFile;
-    self->base.vtable.seek         = seek;
-    self->base.vtable.size         = size;
-    self->base.vtable.sync         = sync;
-    self->base.vtable.tell         = tell;
-    self->base.vtable.write        = write;
-    self->base.vtable.overwrite    = overwrite;
+    self->base.vtable.close             = close;
+    self->base.vtable.exists            = exists;
+    self->base.vtable.flush             = flush;
+    self->base.vtable.getFlashFreeSpace = getFlashFreeSpace;
+    self->base.vtable.insert            = insert;
+    self->base.vtable.open              = open;
+    self->base.vtable.read              = read;
+    self->base.vtable.remove            = removeFile;
+    self->base.vtable.seek              = seek;
+    self->base.vtable.size              = size;
+    self->base.vtable.sync              = sync;
+    self->base.vtable.tell              = tell;
+    self->base.vtable.write             = write;
+    self->base.vtable.overwrite         = overwrite;
 }
 
 #endif

@@ -341,7 +341,7 @@ static bool handleTxnExtractedData(const TxnData* txn, void* userData) {
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
     OOP_CALL(&rec, addFooter);
     res = OOP_CALL(&rec, flush);
-    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    LOG_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;);
     OOP_CALL(&rec, destroy);
     return true;
 }

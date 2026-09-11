@@ -263,6 +263,8 @@ OOP_CLASS(TxnRecord) {
      * @return Result_t containing the reset status.
      */
     OOP_METHOD(Result_t, reset);
+
+    OOP_METHOD(Result_t, getFileSize, uint16_t* size);
 };
 
 /**

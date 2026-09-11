@@ -148,6 +148,19 @@ typedef int8_t Error_t;
         }                                                                      \
     } while (0)
 
+#define LOG_VALUE_IF_NOT(expr, expected, on_error)                             \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val != __exp) {                                                  \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+        }                                                                      \
+    } while (0)
+
 /*********************************************************************************************
  *                                                                                           *
  *                                      General Errors

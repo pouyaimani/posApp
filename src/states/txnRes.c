@@ -87,7 +87,7 @@ static int8_t printResult(TxnData* txn) {
     Result_t res = buildReceipt(&rec, &data);
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
     res = OOP_CALL(&rec, flush);
-    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    LOG_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;);
     OOP_CALL(&rec, destroy);
     return true;
 }
