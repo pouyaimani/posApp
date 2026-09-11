@@ -47,5 +47,6 @@ void* getImgAddr(const char* name);
 #define ICON_SUCCEED  getImgAddr("img_succeed")
 #define ICON_FAILED   getImgAddr("img_failed")
 #define ICON_TERMINAL getImgAddr("img_terminal")
+#define ICON_EOP      getImgAddr("img_eop")
 
 #endif

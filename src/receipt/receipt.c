@@ -667,9 +667,10 @@ static int8_t addFooter(Receipt* r) {
     RETURN_VALUE_IF_NULL(r->buf, ;, ERR_BAD_PARAMETER);
     RETURN_VALUE_IF_NULL(r->canvas, ;, ERR_BAD_PARAMETER);
 
-    RecColumn_t row1[] = {{ICON_BANK_REC, LV_ALIGN_LEFT_MID, 1},
-                          {ICON_SHAPARAK, LV_ALIGN_RIGHT_MID, 1}};
-    return addImage(r, 2, row1);
+    addLineHorizontal(r, 3, 10, 10);
+
+    RecColumn_t row1[] = {{ICON_EOP, LV_ALIGN_CENTER, 1}};
+    return addImage(r, 1, row1);
 }
 
 static void destroyReceipt(Receipt* r) {

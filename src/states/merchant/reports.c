@@ -339,6 +339,7 @@ static bool handleTxnExtractedData(const TxnData* txn, void* userData) {
     Receipt  rec;
     Result_t res = buildReceipt(&rec, data);
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    OOP_CALL(&rec, addFooter);
     res = OOP_CALL(&rec, flush);
     RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
     OOP_CALL(&rec, destroy);
@@ -360,14 +361,6 @@ static bool handleSummaryExtractedData(TxnType               txnType,
         recElm->builder(recElm->receipt, recElm->data);
     }
     return true;
-}
-
-static bool handleDailyExtractedData(TxnType txnType, uint32_t count,
-                                     const uint64_t* sums, uint32_t sumCount,
-                                     void* userData) {
-    LOG_TRACE("Summary report: txn type = %d, number of txns = %lu, total "
-              "amount = %llu",
-              txnType, count, sums[0]);
 }
 
 static bool handleDetailedExtractedData(const TxnData* txn, void* userData) {
@@ -410,20 +403,11 @@ static ErrorDsc_t handleSummaryExtracting(ReceiptData*   recData,
     Result_t        res    = txnrecord()->aggregate(
         op, TXN_ALL, handleSummaryExtractedData, (void*)&recElm);
     if (res.err == ERR_DSC_OK) {
+        OOP_CALL(&receipt, addFooter);
         res = OOP_CALL(&receipt, flush);
     }
     OOP_CALL(&receipt, destroy);
     return res.err;
-}
-
-static ErrorDsc_t handleDailyExtracting(ReceiptData* rec, QueryOperator* op) {
-    if (queryFilterIsSet(qfilter, REP_FILTER_DATE_TIME)) {
-        // TODO
-        rec->dailyHeader.date    = 0;
-        rec->dailyHeader.time    = 0;
-        rec->dailyHeader.txnType = 0;
-    }
-    return ERR_DSC_OK;
 }
 
 static ErrorDsc_t handleDetailExtracting(ReceiptData*   recData,
@@ -441,6 +425,7 @@ static ErrorDsc_t handleDetailExtracting(ReceiptData*   recData,
     Result_t        res =
         txnrecord()->select(op, handleDetailedExtractedData, (void*)&recElm);
     if (res.err == ERR_DSC_OK) {
+        OOP_CALL(&receipt, addFooter);
         res = OOP_CALL(&receipt, flush);
     }
     OOP_CALL(&receipt, destroy);
