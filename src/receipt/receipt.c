@@ -10,8 +10,13 @@
 #include "utility/utility.h"
 #include "phrases/phrases.h"
 
+// #define COLOR_INVERSE 1
+
+static lv_color_t bgColor;
+static lv_color_t txtColor;
+
 #define PRINTER_WIDTH_PIX 384
-#define MAX_HEIGHT        100 // dynamic safe max
+#define MAX_HEIGHT        300 // dynamic safe max
 #define SHAPED_MAX        128
 
 /* =========================
@@ -56,7 +61,7 @@ static Result_t flushReceipt(Receipt* rec) {
         res.detail.printer, PRNT_ERR_OK, res.err = ERR_DSC_PRINTER;, res);
 
     // Clear canvas
-    lv_canvas_fill_bg(rec->canvas, lv_color_white(), LV_OPA_COVER);
+    lv_canvas_fill_bg(rec->canvas, bgColor, LV_OPA_COVER);
 
     // Reset cursor
     rec->height = 0;
@@ -86,7 +91,7 @@ static void draw_text_line(lv_layer_t* layer, int x, int y, int w, int height,
     lv_draw_label_dsc_t dsc;
     // uint32_t            tick = OOP_CALL(sys(), getTick);
     lv_draw_label_dsc_init(&dsc);
-    dsc.color    = lv_color_black();
+    dsc.color    = txtColor;
     dsc.flag     = 0;
     dsc.bidi_dir = LV_BASE_DIR_AUTO;
     dsc.font     = font;
@@ -230,7 +235,7 @@ static int8_t addTable(Receipt* r, RecFont_t font, int count,
     // --- Draw outer horizontal lines ---
     lv_draw_line_dsc_t line;
     lv_draw_line_dsc_init(&line);
-    line.color = lv_color_black();
+    line.color = txtColor;
     line.width = 1;
 
     // Top border
@@ -444,7 +449,7 @@ static int8_t addTextWithBorder(Receipt* r, RecFont_t font, int count,
     lv_draw_line_dsc_t line;
     lv_draw_line_dsc_init(&line);
 
-    line.color = lv_color_black();
+    line.color = txtColor;
     line.width = 1;
 
     int row_y1 = r->height;
@@ -543,7 +548,7 @@ static int8_t addHighlightedText(Receipt* r, const char* text, RecFont_t font,
     // Draw BLACK background ---
     lv_draw_rect_dsc_t rect_dsc;
     lv_draw_rect_dsc_init(&rect_dsc);
-    rect_dsc.bg_color = lv_color_black();
+    rect_dsc.bg_color = txtColor;
     rect_dsc.bg_opa   = LV_OPA_COVER;
 
     lv_area_t bg = {.x1 = 0,
@@ -556,7 +561,7 @@ static int8_t addHighlightedText(Receipt* r, const char* text, RecFont_t font,
     // Draw WHITE text ---
     lv_draw_label_dsc_t label_dsc;
     lv_draw_label_dsc_init(&label_dsc);
-    label_dsc.color = lv_color_white();
+    label_dsc.color = bgColor;
     label_dsc.font  = lvFont;
     label_dsc.align = align;
     label_dsc.flag |= LV_TEXT_FLAG_EXPAND;
@@ -640,7 +645,7 @@ static int8_t addLineHorizontal(Receipt* r, uint16_t thickness,
     lv_draw_line_dsc_t line;
     lv_draw_line_dsc_init(&line);
 
-    line.color = lv_color_black();
+    line.color = txtColor;
     line.width = thickness;
 
     int y = r->height + paddingTop;
@@ -674,6 +679,7 @@ static int8_t addFooter(Receipt* r) {
 }
 
 static void destroyReceipt(Receipt* r) {
+    printer()->finish();
     RETURN_VALUE_IF_NULL(r, ;, ERR_BAD_PARAMETER);
     if (r->canvas) {
         LV_DELETE(r->canvas);
@@ -699,6 +705,16 @@ OOP_CTOR(Receipt) {
     self->vtable.addAmount          = addAmount;
     self->vtable.addLineHorizontal  = addLineHorizontal;
 
+    RETURN_IF_NOT(printer()->init(), PRNT_ERR_OK, ;);
+
+#ifdef COLOR_INVERSE
+    bgColor  = lv_color_black();
+    txtColor = lv_color_white();
+#else
+    bgColor  = lv_color_white();
+    txtColor = lv_color_black();
+#endif
+
     self->maxHeight      = MAX_HEIGHT;
     self->height         = 0;
     self->width          = PRINTER_WIDTH_PIX;
@@ -723,7 +739,7 @@ OOP_CTOR(Receipt) {
 
     self->canvas = lv_canvas_create(NULL);
     lv_canvas_set_draw_buf(self->canvas, &self->draw_buf);
-    lv_canvas_fill_bg(self->canvas, lv_color_white(), LV_OPA_COVER);
+    lv_canvas_fill_bg(self->canvas, bgColor, LV_OPA_COVER);
     lv_obj_center(self->canvas);
 }
 

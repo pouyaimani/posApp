@@ -33,7 +33,10 @@ OOP_VTABLE(Printer) {
 
 OOP_CLASS(Printer) {
     OOP_IMPLEMENTS(Printer);
+    OOP_METHOD(PrinterErr_t, init);
+    OOP_METHOD(PrinterErr_t, finish);
     OOP_METHOD(PrinterErr_t, print, uint8_t*, uint16_t, uint16_t);
+    uint32_t        offset;
     PrinterStatus_t status;
     PrinterErr_t    error;
 };

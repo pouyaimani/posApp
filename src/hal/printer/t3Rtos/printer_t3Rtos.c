@@ -11,7 +11,7 @@ static u8* gBuf = NULL;
 u32 drawFunc(void* arg) {
     PRINT_DATA* data = (PRINT_DATA*)arg;
     data->buf        = gBuf;
-    return DRAW_DATA_OK;
+    return DRAW_DATA_FULL;
 }
 
 PrinterStatus_t translateSdkStatus(PRINTER_TASK_STATUS st) {
@@ -60,7 +60,7 @@ PrinterErr_t translateSdkErr(int err) {
     return error;
 }
 
-static void init(Printer* dev) {}
+static void init(Printer* dev) { sdkPrintSetDrawFunc(drawFunc); }
 
 static PrinterErr_t open(Printer* dev) {
     int ret = translateSdkErr(sdkPrintOpen());
@@ -85,12 +85,20 @@ static PrinterErr_t setGray(Printer* priter, PrinterGrayLevel_t level) {
     return translateSdkErr(sdkPrintSetGray(lv));
 }
 
-PrinterGrayLevel_t getGray(Printer* priter) {
-    PRINTER_GRAY_LEVEL g = sdkPrintGetGray();
-    PrinterGrayLevel_t gray =
-        g == SDK_PRINT_GRAY_M ? PRNT_GRAY_LVL_MEDIUM : PRNT_GRAY_LVL_LOW;
-    gray = g == SDK_PRINT_GRAY_L ? PRNT_GRAY_LVL_LOW : PRNT_GRAY_LVL_HIGH;
-    return gray;
+static PrinterGrayLevel_t getGray(Printer* printer) {
+    switch (sdkPrintGetGray()) {
+    case SDK_PRINT_GRAY_L:
+        return PRNT_GRAY_LVL_LOW;
+
+    case SDK_PRINT_GRAY_M:
+        return PRNT_GRAY_LVL_MEDIUM;
+
+    case SDK_PRINT_GRAY_H:
+        return PRNT_GRAY_LVL_HIGH;
+
+    default:
+        return PRNT_GRAY_LVL_MEDIUM;
+    }
 }
 
 static PrinterErr_t printBmp(Printer* priter, uint8_t* bmp, uint16_t width,
@@ -100,7 +108,6 @@ static PrinterErr_t printBmp(Printer* priter, uint8_t* bmp, uint16_t width,
     for (size_t i = 0; i < (width >> 3) * height; i++) {
         gBuf[i] = ~gBuf[i];
     }
-    sdkPrintSetDrawFunc(drawFunc);
     int ret = sdkPrintImage(&format, (const u8*)gBuf, width, height);
     ret     = sdkPrintStart();
     return translateSdkErr(ret);

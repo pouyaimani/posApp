@@ -748,11 +748,6 @@ Result_t buildReceipt(Receipt* rec, ReceiptData* data) {
 
     RETURN_VALUE_IF_NULL(builder, res.err = ERR_DSC_NOT_SUPPORTED;, res);
     RETURN_VALUE_IF_NOT(builder(rec, data), ERR_OK, ;, res);
-    res = OOP_CALL(rec, flush);
-    if (res.err != ERR_DSC_OK) {
-        handleError(res);
-    }
-    OOP_CALL(rec, destroy);
     return res;
 }
 
