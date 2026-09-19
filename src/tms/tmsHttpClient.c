@@ -1,4 +1,6 @@
 #include "tmsHttpClient.h"
+#include "logger.h"
+#include "error.h"
 
 #include <string.h>
 
@@ -9,13 +11,11 @@ static void httpFinished(HttpFlow* flow, const HttpFlowStatus* status) {
     const HttpResponse* response;
     const uint8_t*      body;
     size_t              bodyLength;
-
-    if (flow == NULL || status == NULL)
-        return;
+    RETURN_IF_NULL(flow, ;);
+    RETURN_IF_NULL(status, ;);
 
     client = (TmsHttpClient*)flow->userData;
-    if (client == NULL)
-        return;
+    RETURN_IF_NULL(client, ;);
 
     if (client->starting) {
         client->completionDuringStart = true;
@@ -30,8 +30,9 @@ static void httpFinished(HttpFlow* flow, const HttpFlowStatus* status) {
     userData     = client->userData;
     client->busy = false;
 
-    if (callback != NULL)
+    if (callback != NULL) {
         callback(client, status->result, response, body, bodyLength, userData);
+    }
 }
 
 void tmsHttpClientInit(TmsHttpClient* client, const char* host, uint16_t port) {
@@ -55,10 +56,10 @@ tmsHttpClientRequest(TmsHttpClient* client, HttpMethod method, const char* path,
     HttpFlowCallbacks callbacks;
     HttpFlowResult    result;
 
-    if (client == NULL || path == NULL || callback == NULL)
-        return HTTP_FLOW_ERR_INVALID_ARG;
-    if (client->busy)
-        return HTTP_FLOW_ERR_BUSY;
+    RETURN_VALUE_IF_NULL(client, ;, HTTP_FLOW_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(path, ;, HTTP_FLOW_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(callback, ;, HTTP_FLOW_ERR_INVALID_ARG);
+    RETURN_VALUE_IF(client->busy, true, ;, HTTP_FLOW_ERR_BUSY);
 
     if (client->flow.state != HTTP_FLOW_IDLE)
         httpFlowRelease(&client->flow);
@@ -85,15 +86,17 @@ tmsHttpClientRequest(TmsHttpClient* client, HttpMethod method, const char* path,
 
     client->starting = false;
 
-    if (result != HTTP_FLOW_OK) {
-        /*
-         * A synchronous startup error is communicated through the return value,
-         * not through both the return value and the callback.
-         */
-        client->busy                  = false;
-        client->completionDuringStart = false;
-        return result;
-    }
+    RETURN_VALUE_IF_NOT(
+        result, HTTP_FLOW_OK,
+        {
+            /*
+             * A synchronous startup error is communicated through the return
+             * value, not through both the return value and the callback.
+             */
+            client->busy                  = false;
+            client->completionDuringStart = false;
+        },
+        result);
 
     if (client->completionDuringStart) {
         HttpFlowStatus deferredStatus = client->deferredStatus;
@@ -101,7 +104,6 @@ tmsHttpClientRequest(TmsHttpClient* client, HttpMethod method, const char* path,
         client->completionDuringStart = false;
         httpFinished(&client->flow, &deferredStatus);
     }
-
     return result;
 }
 
@@ -113,8 +115,7 @@ HttpFlowResult tmsHttpClientPostJson(TmsHttpClient* client, const char* path,
         {"Content-Type", "application/json"},
         {"Accept", "application/json"},
         {"Connection", "close"}};
-    if (json == NULL)
-        return HTTP_FLOW_ERR_INVALID_ARG;
+    RETURN_VALUE_IF_NULL(json, ;, HTTP_FLOW_ERR_INVALID_ARG);
     return tmsHttpClientRequest(client, HTTP_METHOD_POST, path, headers,
                                 sizeof(headers) / sizeof(headers[0]),
                                 (const uint8_t*)json, strlen(json), callback,

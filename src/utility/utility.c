@@ -1141,3 +1141,8 @@ int maskPhoneNumber(const char* phone, char* output, size_t outputSize) {
 
     return 0;
 }
+
+bool isAlphaNumeric(unsigned char c) {
+    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9'));
+}

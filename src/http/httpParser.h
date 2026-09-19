@@ -125,7 +125,7 @@ typedef struct {
 
 void httpParserInit(HttpParser* parser);
 
-HttpParseResult httpParserParseResponse(HttpParser* parser, const uint8_t* data,
+HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
                                         size_t len);
 
 bool httpParserIsHeaderComplete(const HttpParser* parser);

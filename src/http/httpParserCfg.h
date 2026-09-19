@@ -40,4 +40,16 @@
 #define HTTP_MAX_BODY_SIZE 4096U
 #endif
 
+#ifndef HTTP_MAX_CHUNK_LINE_BYTES
+#define HTTP_MAX_CHUNK_LINE_BYTES 128U
+#endif
+
+#ifndef HTTP_MAX_TRAILER_BYTES
+#define HTTP_MAX_TRAILER_BYTES 512U
+#endif
+
+#ifndef HTTP_MAX_CHUNKS
+#define HTTP_MAX_CHUNKS 256U
+#endif
+
 #endif

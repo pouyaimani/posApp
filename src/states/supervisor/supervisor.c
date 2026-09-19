@@ -13,6 +13,8 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
+#include "upgrade.h"
+#include "utility/convert.h"
 
 typedef enum {
     SUBS_NET_SETTINGS = 0,
@@ -208,8 +210,8 @@ typedef enum {
 
 static ServerSetItemt_t serverItem;
 static char             ip[24];
-static uint16_t         port;
-static uint16_t         serverId;
+static char             port[5];
+static char             nii[5];
 
 STATE_DEF_ENTER(EnterIp) {
     inmgr()->run(
@@ -221,15 +223,13 @@ STATE_DEF_ENTER(EnterIp) {
             .maxLen = LEN_MAX_IP,
         },
         state->parent, enterPort, NULL, NULL);
-    if (serverItem == SERV_SET_MAIN) {
-        inmgr()->set(INPUT_TYPE_KEYPAD, settings()->server.mainServerIp);
-    } else if (serverItem == SERV_SET_TMS) {
-        inmgr()->set(INPUT_TYPE_KEYPAD, settings()->server.tmsIp);
-    }
+    inmgr()->set(INPUT_TYPE_KEYPAD, serverItem == SERV_SET_MAIN
+                                        ? settings()->server.mainServerIp
+                                        : settings()->server.tmsIp);
+    inmgr()->setOut(ip, NULL, sizeof(ip));
 }
 
 STATE_DEF_ENTER(EnterPort) {
-    snprintf(ip, sizeof(ip), "%s", inmgr()->input);
     inmgr()->run(
         &(InputCfg){
             .type   = INPUT_TYPE_KEYPAD,
@@ -238,18 +238,16 @@ STATE_DEF_ENTER(EnterPort) {
             .info   = "",
             .maxLen = 4,
         },
-        state->parent, enterServerId, NULL, NULL);
-    char str[5];
-    if (serverItem == SERV_SET_MAIN) {
-        intToStr(settings()->server.mainServerPort, str, sizeof(str));
-    } else if (serverItem == SERV_SET_TMS) {
-        intToStr(settings()->server.tmsPort, str, sizeof(str));
-    }
-    inmgr()->set(INPUT_TYPE_KEYPAD, str);
+        state->parent, serverItem == SERV_SET_MAIN ? enterServerId : success,
+        NULL, NULL);
+    inmgr()->setOut(port, NULL, sizeof(port));
+    intToStr(serverItem == SERV_SET_MAIN ? settings()->server.mainServerPort
+                                         : settings()->server.tmsPort,
+             port, sizeof(port));
+    inmgr()->set(INPUT_TYPE_KEYPAD, port);
 }
 
 STATE_DEF_ENTER(EnterServerId) {
-    port = toInt(inmgr()->input);
     inmgr()->run(
         &(InputCfg){
             .type   = INPUT_TYPE_KEYPAD,
@@ -258,32 +256,24 @@ STATE_DEF_ENTER(EnterServerId) {
             .info   = "",
             .maxLen = 4,
         },
-        state->parent, getServerId, NULL, NULL);
-    char str[5];
-    if (serverItem == SERV_SET_MAIN) {
-        intToStr(settings()->server.mainServerNii, str, sizeof(str));
-    } else if (serverItem == SERV_SET_TMS) {
-        intToStr(settings()->server.tmsId, str, sizeof(str));
-    }
-    inmgr()->set(INPUT_TYPE_KEYPAD, str);
+        state->parent, success, NULL, NULL);
+    inmgr()->setOut(nii, NULL, sizeof(nii));
+    intToStr(settings()->server.mainServerNii, nii, sizeof(nii));
+    inmgr()->set(INPUT_TYPE_KEYPAD, nii);
 }
 
-STATE_DEF_ENTER(GetServerId) {
-    serverId = toInt(inmgr()->input);
-    SM_GOTO(success);
+static void changeSSLstatuse(void* arg) {
+    int* idx                 = (int*)arg;
+    settings()->server.sslEn = !(*idx);
 }
-
-static void enSSL() { settings()->server.sslEn = 1; }
-
-static void disSSL() { settings()->server.sslEn = 0; }
 
 STATE_DEF_ENTER(EnableSsl) {
     ui_menu_create(sslMenu, disp()->screen);
     sslMenu->checkEnable = true;
     ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_ENABLE), LV_TEXT_ALIGN_RIGHT,
-                    success, enSSL, NULL);
+                    success, changeSSLstatuse, NULL);
     ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_DISABLE), LV_TEXT_ALIGN_RIGHT,
-                    success, disSSL, NULL);
+                    success, changeSSLstatuse, NULL);
     GOTO_MENU(state->parent, sslMenu, NULL, NULL);
     ui_menu_set_checked(sslMenu, !settings()->server.sslEn);
 }
@@ -292,13 +282,14 @@ STATE_DEF_ENTER(Success) {
     if (serverItem == SERV_SET_MAIN) {
         snprintf(settings()->server.mainServerIp,
                  sizeof(settings()->server.mainServerIp), "%s", ip);
-        settings()->server.mainServerPort = port;
-        settings()->server.mainServerNii  = serverId;
+        STRING_TO_U16(port, &settings()->server.mainServerPort);
+        STRING_TO_U16(nii, &settings()->server.mainServerNii);
     } else if (serverItem == SERV_SET_TMS) {
         snprintf(settings()->server.tmsIp, sizeof(settings()->server.tmsIp),
                  "%s", ip);
-        settings()->server.tmsPort = port;
-        settings()->server.tmsId   = serverId;
+        uint16_t tmsPort;
+        STRING_TO_U16(port, &tmsPort);
+        settings()->server.tmsPort = tmsPort;
     }
     settings()->save();
     GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
@@ -343,10 +334,6 @@ OOP_CTOR(NetworkSettings, State* parent, const char* name) {
     success = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, success, self, "sucess server settings");
     success->vtable.enter = STATE_ENTER(Success);
-
-    getServerId = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, getServerId, self, "get server id");
-    getServerId->vtable.enter = STATE_ENTER(GetServerId);
 }
 
 /******************** Merchant pass reset sub state **********************/
@@ -371,15 +358,6 @@ STATE_DEF_ENTER(FARA) { GOTO_DEV_INFO(state->parent); }
 OOP_CTOR(FARA, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(FARA);
-}
-
-/******************** Update app sub state **********************/
-
-STATE_DEF_ENTER(UpdateApp) { GOTO_DEV_INFO(state->parent); }
-
-OOP_CTOR(UpdateApp, State* parent, const char* name) {
-    OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter = STATE_ENTER(UpdateApp);
 }
 
 /******************** Default Settings sub state **********************/
@@ -418,12 +396,9 @@ static void SupervisorMenu(State* parent) {
 
 STATE_DEF_ENTER(Supervisor) { SM_GOTO(enterPass); }
 
-STATE_DEF_EXIT(Supervisor) {}
-
 OOP_CTOR(Supervisor, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(Supervisor);
-    self->base.vtable.exit  = STATE_EXIT(Supervisor);
 
     EnterPassword(self);
     SupervisorMenu(self);
@@ -447,8 +422,8 @@ OOP_CTOR(Supervisor, State* parent, const char* name) {
         (MerchantPassReset*)MEM_ALLOC(sizeof(MerchantPassReset));
     OOP_CALL_CTOR(MerchantPassReset, subStates[SUBS_MERCHANT_PASS_RESET],
                   supervisorMenu, "merchant pass reset");
-    subStates[SUBS_UPDATE_APP] = (UpdateApp*)MEM_ALLOC(sizeof(UpdateApp));
-    OOP_CALL_CTOR(UpdateApp, subStates[SUBS_UPDATE_APP], supervisorMenu,
+    subStates[SUBS_UPDATE_APP] = (Upgrade*)MEM_ALLOC(sizeof(Upgrade));
+    OOP_CALL_CTOR(Upgrade, subStates[SUBS_UPDATE_APP], supervisorMenu,
                   "update app");
     subStates[SUBS_DEFAULT_SETTINGS] =
         (DefaultSettings*)MEM_ALLOC(sizeof(DefaultSettings));

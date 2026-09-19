@@ -44,6 +44,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <float.h>
+#include "sys/sys.h"
 
 #ifdef ENABLE_LOCALES
 #include <locale.h>
@@ -154,19 +155,13 @@ typedef struct internal_hooks {
     void*(CJSON_CDECL* reallocate)(void* pointer, size_t size);
 } internal_hooks;
 
-#if defined(_MSC_VER)
-/* work around MSVC error C2322: '...' address of dllimport '...' is not static
- */
-static void* CJSON_CDECL internal_malloc(size_t size) { return malloc(size); }
-static void CJSON_CDECL  internal_free(void* pointer) { free(pointer); }
-static void* CJSON_CDECL internal_realloc(void* pointer, size_t size) {
-    return realloc(pointer, size);
+static void* CJSON_CDECL internal_malloc(size_t size) {
+    return MEM_ALLOC(size);
 }
-#else
-#define internal_malloc  malloc
-#define internal_free    free
-#define internal_realloc realloc
-#endif
+static void CJSON_CDECL  internal_free(void* pointer) { MEM_FREE(pointer); }
+static void* CJSON_CDECL internal_realloc(void* pointer, size_t size) {
+    return MEM_REALLOC(pointer, size);
+}
 
 /* strlen of character literals resolved at compile time */
 #define static_strlen(string_literal) (sizeof(string_literal) - sizeof(""))

@@ -76,6 +76,54 @@ static void nth_emitTimeout(NthTransaction* tx) {
 }
 
 #endif
+static bool isValidHostname(const char* host) {
+    RETURN_VALUE_IF_NULL(host, ;, false);
+
+    if (*host == '\0')
+        return false;
+
+    int labelLen = 0;
+
+    while (*host) {
+        char c = *host;
+
+        if (c == '.') {
+            /* Empty label is invalid. */
+            if (labelLen == 0)
+                return false;
+
+            /* Label cannot end with '-'. */
+            if (*(host - 1) == '-')
+                return false;
+
+            labelLen = 0;
+        } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                   (c >= '0' && c <= '9') || c == '-') {
+
+            /* Label cannot start with '-'. */
+            if (labelLen == 0 && c == '-')
+                return false;
+
+            labelLen++;
+
+            if (labelLen > 63)
+                return false;
+        } else {
+            return false;
+        }
+
+        host++;
+    }
+
+    /* Must not end with '.' or '-'. */
+    if (labelLen == 0)
+        return false;
+
+    if (*(host - 1) == '-')
+        return false;
+
+    return true;
+}
 
 static bool isValidIPv4(const char* ip) {
     RETURN_VALUE_IF_NULL(ip, ;, false);
@@ -117,6 +165,12 @@ static bool isValidIPv4(const char* ip) {
 
     // Must end with valid octet and exactly 3 dots
     return (dots == 3 && digits > 0);
+}
+
+static bool isValidHost(const char* host) {
+    RETURN_VALUE_IF_NULL(host, ;, false);
+
+    return isValidIPv4(host) || isValidHostname(host);
 }
 
 static void nth_resetRx(NthTransaction* tx) {
@@ -196,7 +250,7 @@ void nth_releaseTransaction(NthTransaction* tx) {
 NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
     RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
     RETURN_VALUE_IF_NULL(host, ;, NTH_ERR_INVALID_ARG);
-    RETURN_VALUE_IF_NOT(isValidIPv4(host), true, ;, NTH_ERR_INVALID_HOST);
+    RETURN_VALUE_IF_NOT(isValidHost(host), true, ;, NTH_ERR_INVALID_HOST);
 
     if (tx->socketFd >= 0)
         return NTH_ERR_INVALID_STATE;
@@ -357,6 +411,8 @@ static void nth_handleReceiving(NthTransaction* tx) {
     ioStatus = g_transport->recv(tx->socketFd, tx->rxBuffer.data + tx->rxOffset,
                                  remain, &received);
 
+    LOG_TRACE("net receive io status = %d", ioStatus);
+
     switch (ioStatus) {
 
     case NTH_IO_WOULD_BLOCK:
@@ -372,13 +428,14 @@ static void nth_handleReceiving(NthTransaction* tx) {
         NTH_LOG("nth: peer closed connection.");
 
         tx->peerClosed = true;
-
         if (tx->isComplete == NULL) {
             nth_fail(tx, NTH_ERR_DISCONNECTED);
             return;
         }
 
         decision = tx->isComplete(tx, tx->userData);
+
+        NTH_LOG("nth: tx->isComplete() -> decisioin = %d", decision);
 
         /*
          * No additional bytes can arrive after EOF.
@@ -404,14 +461,14 @@ static void nth_handleReceiving(NthTransaction* tx) {
         return;
     }
 
-    if (received == 0U || received > remain) {
-        nth_fail(tx, NTH_ERR_PROTOCOL);
-        return;
-    }
+    LOG_TRACE("net receive: received data len = %lu", received);
+
+    RETURN_IF(received, 0, nth_fail(tx, NTH_ERR_PROTOCOL););
+
+    RETURN_IF_GREATER(received, remain, nth_fail(tx, NTH_ERR_PROTOCOL););
 
     tx->rxOffset += received;
     tx->rxBuffer.len = tx->rxOffset;
-
     /*
      * Notify observers about only the newly received bytes.
      */
@@ -496,9 +553,7 @@ static void nth_fail(NthTransaction* tx, NthResult error) {
     NTH_LOG("nth: transaction failed.");
     if (!tx)
         return;
-
     nth_disconnect(tx);
-
     tx->prevState = tx->state;
     tx->state     = NTH_TX_FAILED;
     tx->lastError = error;
@@ -520,7 +575,7 @@ void nth_tick(void) {
         switch (tx->state) {
 
         case NTH_TX_IDLE:
-            NTH_LOG("nth: state idle.");
+            // NTH_LOG("nth: state idle.");
             break;
 
         case NTH_TX_READY:

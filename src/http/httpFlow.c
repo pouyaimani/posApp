@@ -6,6 +6,7 @@
 
 #include "error.h"
 #include "logger.h"
+#include "utility/utility.h"
 
 #if !defined(NT_RX_BUFFER_SIZE)
 #error "NT_RX_BUFFER_SIZE must be defined"
@@ -58,6 +59,8 @@ static void httpFlowFail(HttpFlow* flow, HttpFlowResult result) {
     if (flow == NULL || httpFlowIsTerminalState(flow))
         return;
 
+    LOG_TRACE("httpFlowFail(): result = %d", result);
+
     flow->status.result = result;
 
     httpFlowSetState(flow, HTTP_FLOW_FAILED);
@@ -79,9 +82,8 @@ static void httpFlowComplete(HttpFlow* flow) {
 }
 
 static bool httpIsValidHeaderName(const char* name) {
-    if (name == NULL)
-        return false;
-
+    RETURN_VALUE_IF_NULL(name, ;, false);
+    LOG_TRACE("httpIsValidHeaderName(): name = %s.", name);
     while (*name) {
 
         char c = *name;
@@ -89,10 +91,11 @@ static bool httpIsValidHeaderName(const char* name) {
         /*
          * HTTP token characters only.
          */
-        if (!isalnum((unsigned char)c) && c != '-' && c != '_') {
-            return false;
+        if (!isAlphaNumeric((unsigned char)c)) {
+            if (c != '-' && c != '_') {
+                return false;
+            }
         }
-
         name++;
     }
 
@@ -174,24 +177,13 @@ static bool httpAppend(ByteArray* buffer, const char* str) {
 
 static bool httpAppendHeader(ByteArray* buffer, const char* name,
                              const char* value) {
-    if (!httpIsValidHeaderName(name))
-        return false;
-
-    if (!httpIsValidHeaderValue(value))
-        return false;
-
-    if (!httpAppend(buffer, name))
-        return false;
-
-    if (!httpAppend(buffer, ": "))
-        return false;
-
-    if (!httpAppend(buffer, value))
-        return false;
-
-    if (!httpAppend(buffer, "\r\n"))
-        return false;
-
+    LOG_TRACE("httpAppendHeader(): name = %s, value = %s", name, value);
+    RETURN_VALUE_IF_NOT(httpIsValidHeaderName(name), true, ;, false);
+    RETURN_VALUE_IF_NOT(httpIsValidHeaderValue(value), true, ;, false);
+    RETURN_VALUE_IF_NOT(httpAppend(buffer, name), true, ;, false);
+    RETURN_VALUE_IF_NOT(httpAppend(buffer, ": "), true, ;, false);
+    RETURN_VALUE_IF_NOT(httpAppend(buffer, value), true, ;, false);
+    RETURN_VALUE_IF_NOT(httpAppend(buffer, "\r\n"), true, ;, false);
     return true;
 }
 
@@ -205,21 +197,19 @@ static HttpFlowResult httpBuildRequest(HttpFlow* flow) {
 
     const char* method = httpMethodString(req->method);
 
-    if (method == NULL || req->path == NULL || req->host == NULL) {
-        return HTTP_FLOW_ERR_REQUEST;
-    }
+    RETURN_VALUE_IF_NULL(method, ;, HTTP_FLOW_ERR_REQUEST);
+    RETURN_VALUE_IF_NULL(req->path, ;, HTTP_FLOW_ERR_REQUEST);
+    RETURN_VALUE_IF_NULL(req->host, ;, HTTP_FLOW_ERR_REQUEST);
 
     char line[320];
 
     int ret =
         snprintf(line, sizeof(line), "%s %s HTTP/1.1\r\n", method, req->path);
 
-    if (ret < 0 || (size_t)ret >= sizeof(line)) {
-        return HTTP_FLOW_ERR_REQUEST;
-    }
+    RETURN_VALUE_IF_LIITLE(ret, 0, ;, HTTP_FLOW_ERR_REQUEST);
+    RETURN_VALUE_IF_GE(ret, sizeof(line), ;, HTTP_FLOW_ERR_REQUEST);
 
-    if (!httpAppend(buffer, line))
-        return HTTP_FLOW_ERR_REQUEST;
+    RETURN_VALUE_IF(httpAppend(buffer, line), false, ;, HTTP_FLOW_ERR_REQUEST);
 
     /*
      * Mandatory HTTP/1.1 Host
@@ -235,24 +225,22 @@ static HttpFlowResult httpBuildRequest(HttpFlow* flow) {
                                (unsigned int)req->port);
         }
 
-        if (written < 0 || (size_t)written >= sizeof(hostValue)) {
-            return HTTP_FLOW_ERR_REQUEST;
-        }
+        RETURN_VALUE_IF_LIITLE(written, 0, ;, HTTP_FLOW_ERR_REQUEST);
+        RETURN_VALUE_IF_GE(written, sizeof(hostValue), ;
+                           , HTTP_FLOW_ERR_REQUEST);
 
-        if (!httpAppendHeader(buffer, "Host", hostValue)) {
-            return HTTP_FLOW_ERR_REQUEST;
-        }
+        RETURN_VALUE_IF(httpAppendHeader(buffer, "Host", hostValue), false, ;
+                        , HTTP_FLOW_ERR_REQUEST);
     }
 
     /*
      * User headers
      */
     for (size_t i = 0; i < req->headerCount; i++) {
-
-        if (!httpAppendHeader(buffer, req->headers[i].name,
-                              req->headers[i].value)) {
-            return HTTP_FLOW_ERR_REQUEST;
-        }
+        RETURN_VALUE_IF(httpAppendHeader(buffer, req->headers[i].name,
+                                         req->headers[i].value),
+                        false,
+                        ;, HTTP_FLOW_ERR_REQUEST);
     }
 
     /*
@@ -265,29 +253,28 @@ static HttpFlowResult httpBuildRequest(HttpFlow* flow) {
         snprintf(lenBuffer, sizeof(lenBuffer), "%lu",
                  (unsigned long)req->bodyLength);
 
-        if (!httpAppendHeader(buffer, "Content-Length", lenBuffer)) {
-            return HTTP_FLOW_ERR_REQUEST;
-        }
+        RETURN_VALUE_IF(httpAppendHeader(buffer, "Content-Length", lenBuffer),
+                        false,
+                        ;, HTTP_FLOW_ERR_REQUEST);
     }
 
     /*
      * End headers
      */
-    if (!httpAppend(buffer, "\r\n")) {
-        return HTTP_FLOW_ERR_REQUEST;
-    }
+    RETURN_VALUE_IF(httpAppend(buffer, "\r\n"), false, ;
+                    , HTTP_FLOW_ERR_REQUEST);
 
     /*
      * Append body
      */
     if (req->bodyLength > 0) {
 
-        if (buffer->len > buffer->capacity)
-            return HTTP_FLOW_ERR_REQUEST;
+        RETURN_VALUE_IF_GREATER(buffer->len, buffer->capacity, ;
+                                , HTTP_FLOW_ERR_REQUEST);
 
-        if (req->bodyLength > buffer->capacity - buffer->len) {
-            return HTTP_FLOW_ERR_REQUEST;
-        }
+        RETURN_VALUE_IF_GREATER(req->bodyLength,
+                                (buffer->capacity - buffer->len),
+                                ;, HTTP_FLOW_ERR_REQUEST);
 
         memcpy(buffer->data + buffer->len, req->body, req->bodyLength);
 
@@ -314,18 +301,14 @@ HttpFlowResult httpFlowStart(HttpFlow* flow, State* owner, const char* host,
                              uint16_t port, const HttpFlowRequest* request,
                              const HttpFlowCallbacks* callbacks,
                              void*                    userData) {
+    RETURN_VALUE_IF_NULL(flow, ;, HTTP_FLOW_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(request, ;, HTTP_FLOW_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(host, ;, HTTP_FLOW_ERR_INVALID_ARG);
 
-    if (flow == NULL || request == NULL || host == NULL) {
-        return HTTP_FLOW_ERR_INVALID_ARG;
-    }
+    RETURN_VALUE_IF_NOT(flow->state, HTTP_FLOW_IDLE, ;, HTTP_FLOW_ERR_BUSY);
 
-    if (flow->state != HTTP_FLOW_IDLE) {
-        return HTTP_FLOW_ERR_BUSY;
-    }
-
-    if (!httpIsValidMethod(request->method)) {
-        return HTTP_FLOW_ERR_REQUEST;
-    }
+    RETURN_VALUE_IF(httpIsValidMethod(request->method), false, ;
+                    , HTTP_FLOW_ERR_REQUEST);
 
     /*
      * Store request information.
@@ -353,9 +336,7 @@ HttpFlowResult httpFlowStart(HttpFlow* flow, State* owner, const char* host,
 
     flow->tx = nth()->alloc();
 
-    if (flow->tx == NULL) {
-        return HTTP_FLOW_ERR_NO_RESOURCE;
-    }
+    RETURN_VALUE_IF_NULL(flow->tx, ;, HTTP_FLOW_ERR_NO_RESOURCE);
 
     flow->ownsTransaction = true;
 
@@ -391,11 +372,9 @@ HttpFlowResult httpFlowStart(HttpFlow* flow, State* owner, const char* host,
 
     HttpFlowResult buildResult = httpBuildRequest(flow);
 
-    if (buildResult != HTTP_FLOW_OK) {
-        httpFlowFail(flow, buildResult);
-
-        return buildResult;
-    }
+    RETURN_VALUE_IF_NOT(buildResult, HTTP_FLOW_OK,
+                        httpFlowFail(flow, buildResult);
+                        , buildResult);
 
     flow->tx->txBuffer.len = flow->requestBuffer.len;
 
@@ -404,7 +383,7 @@ HttpFlowResult httpFlowStart(HttpFlow* flow, State* owner, const char* host,
     NthResult nthResult = nth()->connect(flow->tx, host, port);
 
     if (nthResult != NTH_OK) {
-
+        LOG_TRACE("httpFLow: nth()->connect() returned -> %d", nthResult);
         flow->status.nthResult = nthResult;
 
         httpFlowFail(flow, HTTP_FLOW_ERR_CONNECT);
@@ -467,19 +446,19 @@ static NthRxDecision httpFlowNthIsComplete(NthTransaction* tx, void* userData) {
     HttpFlow*       flow;
     HttpParseResult parseResult;
 
-    if (tx == NULL || userData == NULL)
-        return NTH_RX_ERROR;
+    RETURN_VALUE_IF_NULL(tx, ;, NTH_RX_ERROR);
+    RETURN_VALUE_IF_NULL(userData, ;, NTH_RX_ERROR);
 
     flow = (HttpFlow*)userData;
 
     if (httpFlowIsTerminalState(flow))
         return flow->state == HTTP_FLOW_COMPLETED ? NTH_RX_COMPLETE
                                                   : NTH_RX_ERROR;
-
     /*
      * Only a clean peer closure may finish a close-delimited body.
      * Socket errors and timeouts arrive through separate callbacks.
      */
+    LOG_TRACE("httpFlowNthIsComplete(): tx->peerClosed = %d", tx->peerClosed);
     if (tx->peerClosed) {
         parseResult = httpParserFinish(&flow->parser);
     } else {
@@ -492,14 +471,13 @@ static NthRxDecision httpFlowNthIsComplete(NthTransaction* tx, void* userData) {
     if (httpParserIsHeaderComplete(&flow->parser)) {
 
         const HttpResponse* response = httpParserGetResponse(&flow->parser);
-
         if (response != NULL)
             flow->status.httpStatus = response->statusCode;
 
         if (!httpParserIsMessageComplete(&flow->parser))
             httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
     }
-
+    LOG_TRACE("httpFlowNthIsComplete(): parseResult = %d", parseResult);
     switch (parseResult) {
 
     case HTTP_PARSE_OK:
@@ -527,25 +505,20 @@ static int8_t httpFlowNthReceive(NthTransaction* tx, void* userData) {
     const uint8_t*      body;
     size_t              bodyLength;
 
-    if (tx == NULL || userData == NULL)
-        return -1;
+    RETURN_VALUE_IF_NULL(tx, ;, -1);
+    RETURN_VALUE_IF_NULL(userData, ;, -1);
 
     flow = (HttpFlow*)userData;
 
-    if (httpFlowIsTerminalState(flow))
-        return 0;
+    RETURN_VALUE_IF(httpFlowIsTerminalState(flow), true, ;, 0);
 
-    if (!httpParserIsMessageComplete(&flow->parser)) {
-        httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
-        return -1;
-    }
-
+    RETURN_VALUE_IF(httpParserIsMessageComplete(&flow->parser), false,
+                    httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
+                    , -1);
     response = httpParserGetResponse(&flow->parser);
 
-    if (response == NULL) {
-        httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
-        return -1;
-    }
+    RETURN_VALUE_IF_NULL(response, httpFlowFail(flow, HTTP_FLOW_ERR_PARSE);
+                         , -1);
 
     flow->status.httpStatus = response->statusCode;
 
@@ -564,28 +537,24 @@ static int8_t httpFlowNthReceive(NthTransaction* tx, void* userData) {
 
         httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
 
-        if (flow->callbacks.onBody(flow, body, bodyLength) != 0) {
-
-            httpFlowFail(flow, HTTP_FLOW_ERR_BODY);
-            return -1;
-        }
+        RETURN_VALUE_IF_NOT(flow->callbacks.onBody(flow, body, bodyLength), 0,
+                            httpFlowFail(flow, HTTP_FLOW_ERR_BODY);
+                            , -1);
     }
 
-    if (httpFlowIsTerminalState(flow))
-        return 0;
+    RETURN_VALUE_IF_NOT(httpFlowIsTerminalState(flow), false, ;, 0);
 
     /*
      * Preserve your current policy:
      * non-2xx responses complete as HTTP errors.
      * Status 206 is included in the successful range.
      */
-    if (response->statusCode < 200 || response->statusCode >= 300) {
-
-        httpFlowFail(flow, HTTP_FLOW_ERR_HTTP_STATUS);
-
-        return 0;
-    }
-
+    RETURN_VALUE_IF_LIITLE(response->statusCode, 200,
+                           httpFlowFail(flow, HTTP_FLOW_ERR_HTTP_STATUS);
+                           , 0);
+    RETURN_VALUE_IF_GE(response->statusCode, 300,
+                       httpFlowFail(flow, HTTP_FLOW_ERR_HTTP_STATUS);
+                       , 0);
     httpFlowComplete(flow);
 
     return 0;

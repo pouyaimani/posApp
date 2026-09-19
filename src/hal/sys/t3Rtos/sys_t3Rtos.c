@@ -84,11 +84,15 @@ static void init(System* dev) {
 
 static uint32_t getTick(System* dev) { return sdkSysGetTicks(); }
 
-static unsigned int getMemory(System* dev, unsigned int size) {
+static void* getMemory(System* dev, unsigned int size) {
     return sdkSysGetMem(size);
 }
 
 static void freeMemory(System* dev, void* mem) { sdkSysFreeMem(mem); }
+
+static void* memRealloc(System* dev, void* mem, uint32_t newSize) {
+    return sdkSysRealloc(mem, newSize);
+}
 
 static unsigned int flushDisplay(System* dev, int32_t x0, int32_t x1,
                                  int32_t y0, int32_t y1, uint8_t* cmap) {
@@ -256,6 +260,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.getTime           = getTime;
     self->base.vtable.getPackedDateTime = getPackedDateTime;
     self->base.vtable.setDateTimeBcd    = setDateTimeBcd;
+    self->base.vtable.reallocate        = memRealloc;
 
     self->base.maxBright = 5;
     self->base.maxSound  = 5;

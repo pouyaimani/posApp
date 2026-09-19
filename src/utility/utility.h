@@ -373,4 +373,6 @@ bool isStringEmpty(const char* str);
 
 int maskPhoneNumber(const char* phone, char* output, size_t outputSize);
 
+bool isAlphaNumeric(unsigned char c);
+
 #endif

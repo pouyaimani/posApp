@@ -38,8 +38,7 @@ typedef int8_t Error_t;
         __typeof__(expected) __exp = (expected);                               \
                                                                                \
         if (__val == __exp) {                                                  \
-            LOG_ERROR("Error: %s returns %d (error expected value %d)", #expr, \
-                      (int)__val, (int)__exp);                                 \
+            LOG_ERROR("Error: %s returns %d", #expr, (int)__val, (int)__exp);  \
                                                                                \
             on_error;                                                          \
             return (retval);                                                   \
@@ -60,6 +59,20 @@ typedef int8_t Error_t;
         }                                                                      \
     } while (0)
 
+#define RETURN_IF_GREATER(expr, expected, on_error)                            \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val > __exp) {                                                   \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return;                                                            \
+        }                                                                      \
+    } while (0)
+
 #define RETURN_VALUE_IF_LIITLE(expr, expected, on_error, retval)               \
     do {                                                                       \
         __typeof__(expr)     __val = (expr);                                   \
@@ -71,6 +84,20 @@ typedef int8_t Error_t;
                                                                                \
             on_error;                                                          \
             return (retval);                                                   \
+        }                                                                      \
+    } while (0)
+
+#define RETURN_IF_LIITLE(expr, expected, on_error)                             \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val < __exp) {                                                   \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return;                                                            \
         }                                                                      \
     } while (0)
 
@@ -88,6 +115,20 @@ typedef int8_t Error_t;
         }                                                                      \
     } while (0)
 
+#define RETURN_IF_GE(expr, expected, on_error)                                 \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val >= __exp) {                                                  \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return;                                                            \
+        }                                                                      \
+    } while (0)
+
 #define RETURN_VALUE_IF_LE(expr, expected, on_error, retval)                   \
     do {                                                                       \
         __typeof__(expr)     __val = (expr);                                   \
@@ -99,6 +140,20 @@ typedef int8_t Error_t;
                                                                                \
             on_error;                                                          \
             return (retval);                                                   \
+        }                                                                      \
+    } while (0)
+
+#define RETURN_IF_LE(expr, expected, on_error)                                 \
+    do {                                                                       \
+        __typeof__(expr)     __val = (expr);                                   \
+        __typeof__(expected) __exp = (expected);                               \
+                                                                               \
+        if (__val <= __exp) {                                                  \
+            LOG_ERROR("Error: %s returns %d (expected %d)", #expr, (int)__val, \
+                      (int)__exp);                                             \
+                                                                               \
+            on_error;                                                          \
+            return;                                                            \
         }                                                                      \
     } while (0)
 

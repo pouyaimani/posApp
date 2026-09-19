@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "logger.h"
+#include "sys/sys.h"
 
 #include "utility/cJSON.h"
 
@@ -15,11 +17,11 @@ static bool copyPrinted(cJSON* root, char* buffer, size_t capacity) {
         return false;
     length = strlen(text);
     if (length >= capacity) {
-        free(text);
+        MEM_FREE(text);
         return false;
     }
     memcpy(buffer, text, length + 1u);
-    free(text);
+    MEM_FREE(text);
     return true;
 }
 
@@ -35,13 +37,13 @@ static cJSON* parseBounded(const uint8_t* json, size_t length) {
     cJSON* root;
     if (json == NULL || length == 0u)
         return NULL;
-    copy = (char*)malloc(length + 1u);
+    copy = (char*)MEM_ALLOC(length + 1u);
     if (copy == NULL)
         return NULL;
     memcpy(copy, json, length);
     copy[length] = '\0';
     root         = cJSON_Parse(copy);
-    free(copy);
+    MEM_FREE(copy);
     return root;
 }
 

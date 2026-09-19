@@ -1,4 +1,5 @@
 #include "tmsDownloader.h"
+#include "error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +13,11 @@ static bool parseUrl(const char* url, char* host, size_t hostCapacity,
     size_t        authorityLength;
     size_t        hostLength;
     unsigned long parsedPort = 80u;
-    if (url == NULL || host == NULL || port == NULL || path == NULL)
-        return false;
+    RETURN_VALUE_IF_NULL(url, ;, false);
+    RETURN_VALUE_IF_NULL(host, ;, false);
+    RETURN_VALUE_IF_NULL(port, ;, false);
+    RETURN_VALUE_IF_NULL(path, ;, false);
+
     if (strncmp(url, "http://", 7u) == 0)
         authority = url + 7u;
     else if (strncmp(url, "https://", 8u) == 0)
@@ -48,8 +52,7 @@ static bool parseUrl(const char* url, char* host, size_t hostCapacity,
     }
     if (slash == NULL)
         slash = "/";
-    if (strlen(slash) >= pathCapacity)
-        return false;
+    RETURN_VALUE_IF_GE(strlen(slash), pathCapacity, ;, false);
     strcpy(path, slash);
     *port = (uint16_t)parsedPort;
     return true;
@@ -71,8 +74,8 @@ static void rangeDone(TmsHttpClient* http, HttpFlowResult result,
     TmsDownloader* downloader = (TmsDownloader*)userData;
     uint32_t       expected;
     (void)http;
-    if (downloader == NULL || downloader->state != TMS_DOWNLOAD_RUNNING)
-        return;
+    RETURN_IF_NULL(downloader, ;);
+    RETURN_IF_NOT(downloader->state, TMS_DOWNLOAD_RUNNING, ;);
     expected = downloader->requestedLength;
     if (result != HTTP_FLOW_OK || response == NULL || body == NULL ||
         (response->statusCode != 206 &&
@@ -108,8 +111,9 @@ static HttpFlowResult requestNext(TmsDownloader* downloader) {
         snprintf(rangeValue, sizeof(rangeValue), "bytes=%lu-%lu",
                  (unsigned long)downloader->requestedStart,
                  (unsigned long)(downloader->requestedStart + length - 1u));
-    if (written < 0 || (size_t)written >= sizeof(rangeValue))
-        return HTTP_FLOW_ERR_REQUEST;
+    RETURN_VALUE_IF_LIITLE((size_t)written, 0, ;, HTTP_FLOW_ERR_REQUEST);
+    RETURN_VALUE_IF_GE((size_t)written, sizeof(rangeValue), ;
+                       , HTTP_FLOW_ERR_REQUEST);
     headers[0].name  = "Range";
     headers[0].value = rangeValue;
     headers[1].name  = "Connection";
@@ -121,6 +125,7 @@ static HttpFlowResult requestNext(TmsDownloader* downloader) {
 
 void tmsDownloaderInit(TmsDownloader*        downloader,
                        const TmsPlatformOps* platform) {
+
     if (downloader == NULL)
         return;
     memset(downloader, 0, sizeof(*downloader));
@@ -177,9 +182,8 @@ HttpFlowResult tmsDownloaderStart(TmsDownloader* downloader, const char* url,
 }
 
 void tmsDownloaderCancel(TmsDownloader* downloader) {
-    if (downloader == NULL || downloader->state != TMS_DOWNLOAD_RUNNING) {
-        return;
-    }
+    RETURN_IF_NULL(downloader, ;);
+    RETURN_IF_NOT(downloader->state, TMS_DOWNLOAD_RUNNING, ;);
 
     /*
      * Change state first. If cancellation causes a synchronous lower-level

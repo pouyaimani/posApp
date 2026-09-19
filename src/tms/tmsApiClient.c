@@ -1,4 +1,6 @@
 #include "tmsApiClient.h"
+#include "logger.h"
+#include "error.h"
 
 #include <string.h>
 
@@ -31,11 +33,13 @@ static void responseDone(TmsHttpClient* http, HttpFlowResult result,
     if (api == NULL || result != HTTP_FLOW_OK || response == NULL ||
         response->statusCode < 200 || response->statusCode >= 300 ||
         body == NULL) {
+        LOG_ERROR("responseDone (): result= %d, statusCode = %d", result,
+                  response->statusCode);
         if (api != NULL)
             finish(api, false, code);
         return;
     }
-
+    LOG_TRACE("responseDone(): api->responseKind = %d", api->responseKind);
     switch ((ApiResponseKind)api->responseKind) {
     case API_RESPONSE_UPGRADE:
         parsed =
@@ -52,7 +56,9 @@ static void responseDone(TmsHttpClient* http, HttpFlowResult result,
         parsed = tmsJsonParseCodeResponse(body, bodyLength, &code);
         break;
     }
-    finish(api, parsed && code == 0, code);
+    LOG_TRACE("responseDone(): parsed = %d, code = %d", parsed, code);
+    // finish(api, parsed && code == 0, code);
+    finish(api, parsed, code);
 }
 
 static HttpFlowResult post(TmsApiClient* api, const char* path,
@@ -77,13 +83,16 @@ tmsApiCheckUpgradeStart(TmsApiClient* client, const char* deviceSn,
                         const char* brandCode, const char* currentVersion,
                         int packResourceType, UpgradeInfo* info,
                         TmsApiDoneCallback callback, void* userData) {
-    if (client == NULL || info == NULL || callback == NULL)
-        return HTTP_FLOW_ERR_INVALID_ARG;
+    RETURN_VALUE_IF_NULL(client, ;, HTTP_FLOW_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(info, ;, HTTP_FLOW_ERR_INVALID_ARG);
+    RETURN_VALUE_IF_NULL(callback, ;, HTTP_FLOW_ERR_INVALID_ARG);
     memset(info, 0, sizeof(*info));
     info->responseCode = -1;
-    if (!tmsJsonBuildUpgradeCheck(client->json, sizeof(client->json), deviceSn,
-                                  brandCode, currentVersion, packResourceType))
-        return HTTP_FLOW_ERR_REQUEST;
+    RETURN_VALUE_IF_NOT(
+        tmsJsonBuildUpgradeCheck(client->json, sizeof(client->json), deviceSn,
+                                 brandCode, currentVersion, packResourceType),
+        true,
+        ;, HTTP_FLOW_ERR_REQUEST);
     client->upgradeInfo = info;
     return post(client, TMS_PATH_CHECK, API_RESPONSE_UPGRADE, callback,
                 userData);

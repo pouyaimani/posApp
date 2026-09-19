@@ -225,7 +225,11 @@ X(PHRASE_DEV_IS_NOT_CONFIGURED ,   "دستگاه پیکربندی نشده اس�
 X(PHRASE_WAGE                  ,   "کارمزد"                                     ,   "wage"
 )
 X(PHRASE_IS_NOT_SET            ,   "تنظیم نشده است"                                     ,   "wage"
-)  
+)
+X(PHRASE_UPG_START_FAILED      ,   "خطا در آغاز فرایند به روزرسانی"                                     ,   "wage"
+)
+X(PHRASE_ERR_CODE              ,   "کد خطا"                                     ,   "wage"
+)
 
 /**********************************************************************
  *

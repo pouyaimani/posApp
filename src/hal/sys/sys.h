@@ -40,7 +40,8 @@ OOP_DECLARE_CLASS(System)
 OOP_VTABLE(System) {
     OOP_IMETHOD(void, System, init);
     OOP_IMETHOD(uint32_t, System, getTick);
-    OOP_IMETHOD(unsigned int, System, getMemory, unsigned int);
+    OOP_IMETHOD(void*, System, getMemory, uint32_t size);
+    OOP_IMETHOD(void*, System, reallocate, void* p, uint32_t newSize);
     OOP_IMETHOD(void, System, freeMemory, void*);
     OOP_IMETHOD(unsigned int, System, flushDisplay, int32_t, int32_t, int32_t,
                 int32_t, uint8_t*);
@@ -77,8 +78,9 @@ OOP_CTOR(System, const char* name);
 
 System* sys(void);
 
-#define MEM_ALLOC(size) OOP_CALL(sys(), getMemory, size)
-#define MEM_FREE(mem)   OOP_CALL(sys(), freeMemory, mem)
-#define GET_TICK()      OOP_CALL(sys(), getTick)
+#define MEM_ALLOC(size)        OOP_CALL(sys(), getMemory, size)
+#define MEM_FREE(mem)          OOP_CALL(sys(), freeMemory, mem)
+#define MEM_REALLOC(mem, size) OOP_CALL(sys(), reallocate, mem, size)
+#define GET_TICK()             OOP_CALL(sys(), getTick)
 
 #endif
