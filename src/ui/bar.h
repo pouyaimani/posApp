@@ -4,19 +4,30 @@
 #include "oop.h"
 #include "lvgl.h"
 
-/***************************** Bar *****************************/
+typedef void (*UiBarCallback)(void* arg);
 
-OOP_CLASS(Bar) {
+/***************************** Bar *****************************/
+typedef struct {
     lv_obj_t* bar;
     lv_obj_t* title;
-    int       value;
-    int       max;
-    int       min;
-};
+
+    lv_obj_t* controls;
+    lv_obj_t* btnInc;
+    lv_obj_t* btnDec;
+    lv_obj_t* valueLabel;
+
+    UiBarCallback cb;
+    void*         cbData;
+
+    int min;
+    int max;
+    int value;
+} Bar;
 
 void ui_bar_destroy(Bar* bar);
 
-void ui_bar_create(Bar* bar, lv_obj_t* parent, int min, int max);
+void ui_bar_create(Bar* bar, lv_obj_t* parent, UiBarCallback cb, void* cbData,
+                   int min, int max);
 
 void ui_bar_set_value(Bar* bar, int value);
 

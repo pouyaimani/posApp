@@ -33,8 +33,11 @@ static const Phrases_t SettingsItemTxt[SET_ITEM_ALL] = {
 
 static Bar soundBar;
 
+static void sndBarCB(void* arg) { OOP_CALL(sys(), setVolume, soundBar.value); }
+
 STATE_DEF_ENTER(SoundSettings) {
-    ui_bar_create(&soundBar, disp()->screen, 0, sys()->maxSound);
+    ui_bar_create(&soundBar, disp()->screen, sndBarCB, NULL, 0,
+                  sys()->maxSound);
     ui_bar_set_title(&soundBar, "تنظیم صدا");
     ui_bar_set_value(&soundBar, settings()->terminal.devVolume);
     ui_bar_show(&soundBar);
@@ -57,7 +60,6 @@ STATE_DEF_HANDLE(SoundSettings, KeypadEvent) {
     } else if (ev->key == KEY_DOWN) {
         ui_bar_dec(&soundBar);
     }
-    OOP_CALL(sys(), setVolume, soundBar.value);
 }
 
 static void SoundSettings(State* parent) {
@@ -296,8 +298,13 @@ static void ReceiptSettings(State* parent) {
 /******************** screen light sub state **********************/
 static Bar brightBar;
 
+static void lgtBarCB(void* arg) {
+    OOP_CALL(sys(), setBrightness, brightBar.value);
+}
+
 STATE_DEF_ENTER(ScrLightSettings) {
-    ui_bar_create(&brightBar, disp()->screen, 1, sys()->maxBright);
+    ui_bar_create(&brightBar, disp()->screen, lgtBarCB, NULL, 1,
+                  sys()->maxBright);
     ui_bar_set_title(&brightBar, "تنظیم نور صفحه");
     ui_bar_set_value(&brightBar, settings()->terminal.brightness);
     ui_bar_show(&brightBar);
@@ -320,7 +327,6 @@ STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
     } else if (ev->key == KEY_DOWN) {
         ui_bar_dec(&brightBar);
     }
-    OOP_CALL(sys(), setBrightness, brightBar.value);
 }
 
 static void ScrLightSettings(State* parent) {

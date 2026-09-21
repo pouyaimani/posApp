@@ -9,6 +9,8 @@
 #include "ui/infoPage.h"
 #include "phrases/phrases.h"
 #include "timer.h"
+#include "ui/downloadProgress.h"
+#include "display/display.h"
 
 #define BRAND_CODE "PNAP_3300"
 
@@ -20,6 +22,8 @@
 
 static TmsUpgrade* tmsUpgrade;
 static Timer*      timer;
+
+static DownloadProgress* progressBar;
 
 static bool isBatteryOk() {
     return OOP_CALL(sys(), getBatteryStatus)->level > DEV_BAT_LEV_1 ? true
@@ -50,6 +54,7 @@ static void tmsUpgradeFinished(TmsUpgrade* upgrade, TmsUpgradeResult result,
     }
     TIMER_REMOVE(timer);
     MEM_FREE(tmsUpgrade);
+    ui_download_progress_destroy(progressBar);
     SM_GOTO(state->parent);
 }
 
@@ -57,6 +62,10 @@ void processUpdate(void) {
     tmsUpgradeProcess(tmsUpgrade);
     int percent = tmsUpgradeProgress(tmsUpgrade);
     LOG_DEBUG("upgrade percent = %d", percent);
+
+    ui_download_progress_set_value(progressBar, percent, 100);
+
+    ui_download_progress_set_size(progressBar, 0, 3600);
 }
 
 STATE_DEF_ENTER(Upgrade) {
@@ -84,7 +93,14 @@ STATE_DEF_ENTER(Upgrade) {
                   phraseGetDef(PHRASE_UPG_START_FAILED), errDsc);
         return;
     }
-    timer = TIMER_CREATE(processUpdate, SECS(1), false);
+    timer       = TIMER_CREATE(processUpdate, SECS(1), false);
+    progressBar = ui_download_progress_create(disp()->screen, 16, 70, 288);
+
+    ui_download_progress_set_title(progressBar, "Downloading update...");
+
+    ui_download_progress_set_value(progressBar, 0, 100);
+
+    ui_download_progress_set_size(progressBar, 0, 3600);
 }
 
 OOP_CTOR(Upgrade, State* parent, const char* name) {
