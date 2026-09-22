@@ -106,7 +106,7 @@ static void showShift(lv_obj_t* menu, int latest, const char* sdt,
 /******************** En/Dis shift sub state **********************/
 
 STATE_DEF_ENTER(ShiftEnable) {
-    ui_menu_on_off(EnMenu, disp()->screen);
+    ui_menu_on_off(EnMenu, disp()->screen, NULL, NULL);
     ui_menu_set_checked(EnMenu, !terminalStg->shiftEnable);
     ui_menu_show(EnMenu);
 }

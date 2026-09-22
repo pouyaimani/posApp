@@ -11,6 +11,11 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
+#include "utility/convert.h"
+#include "common.h"
+
+static char* inputStr;
+#define INPUT_SIZE 64
 
 typedef enum {
     SET_ITEM_SOUND = 0,
@@ -72,17 +77,17 @@ static void SoundSettings(State* parent) {
 }
 
 /******************** energy sub state **********************/
-static const char* energyItemTxt[2] = {"بازه ذخیره انرژی", "بازه خاموشی"};
+static const Phrases_t energyItemTxt[2] = {PHRASE_ENERGI_SAVING_RANGE,
+                                           PHRASE_OFF_RANGE};
 
 static Menu*     energyMenu;
-static int       idx;
 static SubState* getValue;
 
 STATE_DEF_ENTER(EnergySettings) {
     ui_menu_create(energyMenu, disp()->screen);
     for (uint8_t i = 0; i < 2; i++) {
-        ui_menu_addItem(energyMenu, &energyItemTxt[i], LV_TEXT_ALIGN_RIGHT,
-                        NULL, NULL, NULL);
+        ui_menu_addItem(energyMenu, phraseGetDef(energyItemTxt[i]),
+                        LV_TEXT_ALIGN_RIGHT, NULL, NULL, NULL);
     }
     ui_menu_show(energyMenu);
 }
@@ -92,46 +97,57 @@ STATE_DEF_EXIT(EnergySettings) {
     ui_menu_destroy(energyMenu);
 }
 
+static void getSaverRange(void* arg) {
+    State*  state = (State*)arg;
+    uint8_t val;
+    STRING_TO_U8(inmgr()->input, &val);
+    settings()->terminal.energySaverRange = val;
+    settings()->save();
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+              phraseGetDef(PHRASE_SUC_DONME), "");
+}
+
+static void getSleepTime(void* arg) {
+    State*  state = (State*)arg;
+    uint8_t val;
+    STRING_TO_U8(inmgr()->input, &val);
+    settings()->terminal.sleepTimeout = val;
+    settings()->save();
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+              phraseGetDef(PHRASE_SUC_DONME), "");
+}
+
 STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
     ui_menu_handleItem(energyMenu, ev->key);
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        idx = energyMenu->idx;
+        Phrases_t       phrase;
+        InPutCallBack_t cb;
+        DEFINE_STRING(str, 4);
+        uint8_t val;
         if (energyMenu->idx == 0) {
-            inmgr()->run(
-                &(InputCfg){
-                    .type   = INPUT_TYPE_KEYPAD,
-                    .mode   = INMD_ENTER_NUMBERS,
-                    .title  = PHRASE_ENTER_ENERGY_SAVER_RANGE,
-                    .info   = PHRASE_NONE,
-                    .maxLen = 2,
-                },
-                state, getValue, NULL, NULL);
+            phrase = PHRASE_ENTER_ENERGY_SAVER_RANGE;
+            cb     = getSaverRange;
+            val    = settings()->terminal.energySaverRange;
         } else if (energyMenu->idx == 1) {
-            inmgr()->run(
-                &(InputCfg){
-                    .type   = INPUT_TYPE_KEYPAD,
-                    .mode   = INMD_ENTER_NUMBERS,
-                    .title  = PHRASE_ENTER_SLEEP_TIME_RANGE,
-                    .info   = PHRASE_NONE,
-                    .maxLen = 2,
-                },
-                state, getValue, NULL, NULL);
+            phrase = PHRASE_ENTER_SLEEP_TIME_RANGE;
+            cb     = getSleepTime;
+            val    = settings()->terminal.sleepTimeout;
         }
+        inmgr()->run(
+            &(InputCfg){
+                .type   = INPUT_TYPE_KEYPAD,
+                .mode   = INMD_ENTER_NUMBERS,
+                .title  = phraseGetDef(phrase),
+                .info   = "",
+                .maxLen = 2,
+            },
+            state, NULL, cb, state);
+        U8_TO_STRING(&val, str);
+        inmgr()->set(INPUT_TYPE_KEYPAD, str);
     }
 }
-
-STATE_DEF_ENTER(GetValue) {
-    if (idx == 0) {
-
-    } else if (idx == 2) {
-    }
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, "با موفقیت انجام شد",
-              "");
-}
-
-STATE_DEF_EXIT(GetValue) {}
 
 static void EnergySettings(State* parent) {
     subSettings[SET_ITEM_ENERGY] = (SubState*)MEM_ALLOC(sizeof(SubState));
@@ -141,19 +157,14 @@ static void EnergySettings(State* parent) {
     subSettings[SET_ITEM_ENERGY]->vtable.exit  = STATE_EXIT(EnergySettings);
     subSettings[SET_ITEM_ENERGY]->vtable.handleKeypad =
         STATE_HANDLE(EnergySettings, KeypadEvent);
-
-    getValue = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, getValue, subSettings[SET_ITEM_ENERGY], "get value");
-    getValue->vtable.enter = STATE_ENTER(GetValue);
-    getValue->vtable.exit  = STATE_EXIT(GetValue);
 }
 
 /******************** receipt sub state **********************/
-static const char* receiptItemTxt[4] = {
-    "چاپ خودکار رسید",
-    "زمان رسید دوم",
-    "چاپ رسید پذیرنده",
-    "مدل چاپ",
+static const Phrases_t receiptItemTxt[4] = {
+    PHRASE_AUTO_PRINT,
+    PHRASE_SEC_PRINT_TIME,
+    PHRASE_PRINT_MERCHANT_REC,
+    PHRASE_PRINT_MODEL,
 };
 
 static SubState* subReceipt[4];
@@ -163,34 +174,37 @@ static Menu* receiptMenu;
 STATE_DEF_ENTER(ReceiptSettings) {
     ui_menu_create(receiptMenu, disp()->screen);
     for (uint8_t i = 0; i < 4; i++) {
-        ui_menu_addItem(receiptMenu, &receiptItemTxt[i], LV_TEXT_ALIGN_RIGHT,
-                        subReceipt[i], NULL, NULL);
+        ui_menu_addItem(receiptMenu, phraseGetDef(receiptItemTxt[i]),
+                        LV_TEXT_ALIGN_RIGHT, subReceipt[i], NULL, NULL);
     }
     GOTO_MENU(state->parent, receiptMenu, NULL, NULL);
 }
 
 static Menu* autoRecMenu;
 
+static void setAutoPrintRec(void* arg) {
+    ui_menu_set_checked(autoRecMenu, autoRecMenu->idx);
+    settings()->terminal.autoPrint = !autoRecMenu->idx;
+    settings()->save();
+}
+
 STATE_DEF_ENTER(AutoPrint) {
-    ui_menu_on_off(autoRecMenu, disp()->screen);
-    ui_menu_show(autoRecMenu);
-}
-
-STATE_DEF_EXIT(AutoPrint) {
-    ui_menu_hide(autoRecMenu);
-    ui_menu_destroy(autoRecMenu);
-}
-
-STATE_DEF_HANDLE(AutoPrint, KeypadEvent) {
-    ui_menu_handleItem(autoRecMenu, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else if (ev->key == KEY_ENTER) {
-        ui_menu_set_checked(autoRecMenu, autoRecMenu->idx);
-    }
+    ui_menu_on_off(autoRecMenu, disp()->screen, setAutoPrintRec, NULL);
+    ui_menu_set_checked(autoRecMenu, !settings()->terminal.autoPrint);
+    GOTO_MENU(state->parent, autoRecMenu, NULL, NULL);
 }
 
 static SubState* secPrintSuc;
+
+static void getSecRecPrintTime(void* arg) {
+    State*  state = (State*)arg;
+    uint8_t val;
+    STRING_TO_U8(inmgr()->input, &val);
+    settings()->terminal.secReceiptPrintTime = val;
+    settings()->save();
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+              phraseGetDef(PHRASE_SUC_DONME), "");
+}
 
 STATE_DEF_ENTER(SecPrintTime) {
     inmgr()->run(
@@ -201,60 +215,43 @@ STATE_DEF_ENTER(SecPrintTime) {
             .info   = "",
             .maxLen = 2,
         },
-        state->parent, secPrintSuc, NULL, NULL);
-    // GOTO_INPUT(state->parent, secPrintSuc, "زمان رسید دوم", "", 2,
-    //            IN_MODE_NUMBERS, NULL);
-}
-
-STATE_DEF_ENTER(SecPrintTimeSuc) {
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS, "با موفقیت انجام شد",
-              "");
+        state->parent, secPrintSuc, getSecRecPrintTime, state);
+    DEFINE_STRING(str, 4);
+    uint8_t val = settings()->terminal.secReceiptPrintTime;
+    U8_TO_STRING(&val, str);
+    inmgr()->set(INPUT_TYPE_KEYPAD, str);
 }
 
 static Menu merchRecMenu;
 
+static void setMerchantPrintRec(void* arg) {
+    ui_menu_set_checked(&merchRecMenu, merchRecMenu.idx);
+    settings()->terminal.merchantRecPrint = !merchRecMenu.idx;
+    settings()->save();
+}
+
 STATE_DEF_ENTER(PrnMerchRec) {
-    ui_menu_on_off(&merchRecMenu, disp()->screen);
-    ui_menu_show(&merchRecMenu);
-}
-
-STATE_DEF_EXIT(PrnMerchRec) {
-    ui_menu_hide(&merchRecMenu);
-    ui_menu_destroy(&merchRecMenu);
-}
-
-STATE_DEF_HANDLE(PrnMerchRec, KeypadEvent) {
-    ui_menu_handleItem(&merchRecMenu, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else if (ev->key == KEY_ENTER) {
-        ui_menu_set_checked(&merchRecMenu, merchRecMenu.idx);
-    }
+    ui_menu_on_off(&merchRecMenu, disp()->screen, setMerchantPrintRec, NULL);
+    ui_menu_set_checked(&merchRecMenu, !settings()->terminal.merchantRecPrint);
+    GOTO_MENU(state->parent, &merchRecMenu, NULL, NULL);
 }
 
 static Menu* prnModel;
 
+static void setPrintModel(void* arg) {
+    ui_menu_set_checked(prnModel, prnModel->idx);
+    settings()->terminal.printModel = prnModel->idx;
+    settings()->save();
+}
+
 STATE_DEF_ENTER(PrnModel) {
     ui_menu_create(prnModel, disp()->screen);
-    ui_menu_addItem(prnModel, "پس زمینه سفید", LV_TEXT_ALIGN_RIGHT, NULL, NULL,
-                    NULL);
-    ui_menu_addItem(prnModel, "پس زمینه مشکی", LV_TEXT_ALIGN_RIGHT, NULL, NULL,
-                    NULL);
-    ui_menu_show(prnModel);
-}
-
-STATE_DEF_EXIT(PrnModel) {
-    ui_menu_hide(prnModel);
-    ui_menu_destroy(prnModel);
-}
-
-STATE_DEF_HANDLE(PrnModel, KeypadEvent) {
-    ui_menu_handleItem(prnModel, ev->key);
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else if (ev->key == KEY_ENTER) {
-        ui_menu_set_checked(prnModel, prnModel->idx);
-    }
+    ui_menu_addItem(prnModel, phraseGetDef(PHRASE_WHITE_BCKGRND),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setPrintModel, NULL);
+    ui_menu_addItem(prnModel, phraseGetDef(PHRASE_BLK_BCKGRND),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setPrintModel, NULL);
+    ui_menu_set_checked(prnModel, settings()->terminal.printModel ? 1 : 0);
+    GOTO_MENU(state->parent, prnModel, NULL, NULL);
 }
 
 static void ReceiptSettings(State* parent) {
@@ -266,33 +263,22 @@ static void ReceiptSettings(State* parent) {
     subReceipt[0] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[0], subSettings[SET_ITEM_RECEIPT],
                   "auto print");
-    subReceipt[0]->vtable.enter        = STATE_ENTER(AutoPrint);
-    subReceipt[0]->vtable.exit         = STATE_EXIT(AutoPrint);
-    subReceipt[0]->vtable.handleKeypad = STATE_HANDLE(AutoPrint, KeypadEvent);
+    subReceipt[0]->vtable.enter = STATE_ENTER(AutoPrint);
 
     subReceipt[1] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[1], subSettings[SET_ITEM_RECEIPT],
                   "sec print time");
     subReceipt[1]->vtable.enter = STATE_ENTER(SecPrintTime);
 
-    secPrintSuc = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, secPrintSuc, subSettings[SET_ITEM_RECEIPT],
-                  "sec print time suc");
-    secPrintSuc->vtable.enter = STATE_ENTER(SecPrintTimeSuc);
-
     subReceipt[2] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[2], subSettings[SET_ITEM_RECEIPT],
                   "print merchaant receipt");
-    subReceipt[2]->vtable.enter        = STATE_ENTER(PrnMerchRec);
-    subReceipt[2]->vtable.exit         = STATE_EXIT(PrnMerchRec);
-    subReceipt[2]->vtable.handleKeypad = STATE_HANDLE(PrnMerchRec, KeypadEvent);
+    subReceipt[2]->vtable.enter = STATE_ENTER(PrnMerchRec);
 
     subReceipt[3] = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, subReceipt[3], subSettings[SET_ITEM_RECEIPT],
                   "print model");
-    subReceipt[3]->vtable.enter        = STATE_ENTER(PrnModel);
-    subReceipt[3]->vtable.exit         = STATE_EXIT(PrnModel);
-    subReceipt[3]->vtable.handleKeypad = STATE_HANDLE(PrnModel, KeypadEvent);
+    subReceipt[3]->vtable.enter = STATE_ENTER(PrnModel);
 }
 
 /******************** screen light sub state **********************/
@@ -305,7 +291,7 @@ static void lgtBarCB(void* arg) {
 STATE_DEF_ENTER(ScrLightSettings) {
     ui_bar_create(&brightBar, disp()->screen, lgtBarCB, NULL, 1,
                   sys()->maxBright);
-    ui_bar_set_title(&brightBar, "تنظیم نور صفحه");
+    ui_bar_set_title(&brightBar, phraseGetDef(PHRASE_DISP_LIGHT_ADJUST));
     ui_bar_set_value(&brightBar, settings()->terminal.brightness);
     ui_bar_show(&brightBar);
 }
@@ -321,7 +307,7 @@ STATE_DEF_HANDLE(ScrLightSettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-
+        SM_GOTO(state->parent);
     } else if (ev->key == KEY_UP) {
         ui_bar_inc(&brightBar);
     } else if (ev->key == KEY_DOWN) {
@@ -345,7 +331,7 @@ static void ScrLightSettings(State* parent) {
 static Menu* touchMenu;
 
 STATE_DEF_ENTER(TouchSettings) {
-    ui_menu_on_off(touchMenu, disp()->screen);
+    ui_menu_on_off(touchMenu, disp()->screen, NULL, NULL);
     int idx = settings()->terminal.touchEnable == true ? 0 : 1;
     ui_menu_set_checked(touchMenu, idx);
     ui_menu_show(touchMenu);

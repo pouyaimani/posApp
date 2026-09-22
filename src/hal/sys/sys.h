@@ -78,8 +78,10 @@ OOP_CTOR(System, const char* name);
 
 System* sys(void);
 
-#define MEM_ALLOC(size)        OOP_CALL(sys(), getMemory, size)
-#define MEM_FREE(mem)          OOP_CALL(sys(), freeMemory, mem)
+#define MEM_ALLOC(size) OOP_CALL(sys(), getMemory, size)
+#define MEM_FREE(mem)                                                          \
+    OOP_CALL(sys(), freeMemory, mem);                                          \
+    mem = NULL
 #define MEM_REALLOC(mem, size) OOP_CALL(sys(), reallocate, mem, size)
 #define GET_TICK()             OOP_CALL(sys(), getTick)
 

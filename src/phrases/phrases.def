@@ -230,7 +230,10 @@ X(PHRASE_UPG_START_FAILED      ,   "خطا در آغاز فرایند به رو�
 )
 X(PHRASE_ERR_CODE              ,   "کد خطا"                                     ,   "wage"
 )
-
+X(PHRASE_ENERGI_SAVING_RANGE   ,   "بازه ذخیره انرژی"                                     ,   "wage"
+)
+X(PHRASE_OFF_RANGE              ,   "بازه خاموشی"                                     ,   "wage"
+)
 /**********************************************************************
  *
  *                              Shift
@@ -506,6 +509,12 @@ X(PHRASE_NO_SIM            ,   "عدم شناسایی سیم کارت"         ,
 )
 X(PHRASE_NKN_OPERATOR            ,   "عدم شناسایی اپراتور"         ,  "phone number"
 )
+X(PHRASE_DISP_LIGHT_ADJUST        ,   "تنظیم نور صفحه"         ,  "phone number"
+)
+X(PHRASE_BLK_BCKGRND            ,   "پس زمینه مشکی"         ,  "phone number"
+)
+X(PHRASE_WHITE_BCKGRND        ,   "پس زمینه سفید"         ,  "phone number"
+)
 
 /**********************************************************************
  *
@@ -621,6 +630,21 @@ X(PHRASE_BILL_ORG               ,    "سازمان قبض"  ,       "mci"
 X(PHRASE_BILL_ID                ,   "شناسه قبض"                        ,   ""
 )
 X(PHRASE_PAYMENT_ID             ,   "شناسه پرداخت"                     ,   ""
+)
+
+/**********************************************************************
+ *
+ *                              Receipt
+ * 
+ **********************************************************************/
+
+X(PHRASE_AUTO_PRINT             ,   "چاپ خودکار رسید"                    ,   ""
+)
+X(PHRASE_SEC_PRINT_TIME         ,   "زمان رسید دوم"                     ,   ""
+)
+X(PHRASE_PRINT_MERCHANT_REC     ,   "چاپ رسید پذیرنده"                     ,   ""
+)
+X(PHRASE_PRINT_MODEL            ,   "مدل چاپ"                    ,   ""
 )
 
 /**********************************************************************

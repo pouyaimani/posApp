@@ -228,13 +228,14 @@ void ui_menu_destroy(Menu* menu) {
     }
 }
 
-void ui_menu_on_off(Menu* menu, lv_obj_t* parent) {
+void ui_menu_on_off(Menu* menu, lv_obj_t* parent, CallBack_t cb,
+                    void* userData) {
     RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_ENABLE), LV_TEXT_ALIGN_RIGHT,
-                    NULL, NULL, NULL);
+                    NULL, cb, userData);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_DISABLE), LV_TEXT_ALIGN_RIGHT,
-                    NULL, NULL, NULL);
+                    NULL, cb, userData);
 }
 
 void ui_menu_togglable(Menu* menu, lv_obj_t* parent) {
