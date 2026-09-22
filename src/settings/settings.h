@@ -10,12 +10,26 @@
 #define MAX_SHIFT_CNT 100
 
 typedef struct __attribute__((packed)) {
-    bool touchEnable;
+    uint8_t touchEnable;
+    uint8_t netRoute;
+    uint8_t devVolume;
+    uint8_t sleepTimeout;
+    uint8_t energySaverRange;
+    uint8_t brightness;
+    uint8_t shiftEnable;
+    uint8_t shiftActive;
+    uint8_t isCfgDone;
+    uint8_t language;
+    uint8_t updateFlag;
+    uint8_t connectMode;
 
-    uint8_t  netRoute;
-    uint8_t  devVolume;
-    uint8_t  sleepTimeout;
-    uint8_t  brightness;
+    /* Printer & print settings*/
+    uint8_t merchantRecPrint;
+    uint8_t printModel;
+    uint8_t autoPrint;
+    uint8_t printGreyScale;
+    uint8_t secReceiptPrintTime;
+
     char     loginOperator;
     char     loginDate[6 + 1];
     char     merchantPin[4 + 1];
@@ -33,10 +47,6 @@ typedef struct __attribute__((packed)) {
     char     wifiPwd[63 + 1];
     char     acquirerIIN[12];
     uint32_t appID;
-    uint8_t  language;
-    uint8_t  printGreyScale;
-    uint8_t  updateFlag;
-    uint8_t  connectMode;
     bool     maxAmntEnable;
     char     maxAmnt[12 + 1];
     bool     directSaleEn;
@@ -45,9 +55,6 @@ typedef struct __attribute__((packed)) {
     char     amountList[12 + 1][LEN_MAX_AMOUNT_LIST];
     int      amountListCnt;
     int      fixedAmountCoef;
-    uint8_t  shiftEnable;
-    uint8_t  shiftActive;
-    uint8_t  isCfgDone;
 } TerminalSettings;
 
 typedef struct __attribute__((packed)) {

@@ -1,29 +1,21 @@
 #include "settings.h"
-#include "sys/sys.h"
+
 #include "logger.h"
-#include "common.h"
-#include "utility/tlv.h"
 #include "storage/storage.h"
 
 static DevSettings  __settings;
 static TxnTraceInfo __txnTraceInfo;
 
-#define USER_DATA_ROOT_DIR "/mtd0/"
-#define APP_DIR            USER_DATA_ROOT_DIR
-#define DEVICE_PROP_FILE   APP_DIR "lv_device_prop"
-#define SETTINGS_FILE_ADDR DEVICE_PROP_FILE
+#define USER_DATA_ROOT_DIR  "/mtd0/"
+#define SETTINGS_FILE_ADDR  USER_DATA_ROOT_DIR "lv_device_prop"
+#define TXN_TRACE_FILE_ADDR USER_DATA_ROOT_DIR "txn_t_info"
 
-#define TXN_TRACE_FILE_ADDR "/mtd0/txn_t_info"
-
-#define SETTINGS_FILE_HEADER_LEN 4
-
-// default property value
 #define DEFAULT_SERVER_IP          ""
-#define DEFAULT_SERVER_PORT        ""
+#define DEFAULT_SERVER_PORT        "0"
 #define DEFAULT_BACKUP_SERVER_IP   ""
-#define DEFAULT_BACKUP_SERVER_PORT ""
+#define DEFAULT_BACKUP_SERVER_PORT "0"
 #define DEFAULT_TMS_IP             ""
-#define DEFAULT_TMS_PORT           ""
+#define DEFAULT_TMS_PORT           "0"
 #define DEFAULT_TMS_FORCE          "0"
 #define DEFAULT_COMM_MODE          "0"
 #define DEFAULT_KEY_VOLUME         "5"
@@ -35,15 +27,12 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_CONNECT_MODE       "1"
 #define DEFAULT_TOUCH_ENABLE       "0"
 #define DEFAULT_CFG_DONE           "0"
-#define DEFAULT_SHIFT_LATEST       "0"
 #define DEFAULT_SHIFT_ENABLE       "0"
 #define DEFAULT_SHIFT_ACTIVE       "0"
 #define DEFAULT_MAX_AMNT_EN        "0"
 #define DEFAULT_MAX_AMNT           "999999999999/0"
 #define DEFAULT_DIRECT_SALE_EN     "0"
-#define DEFAULT_SERVICES_EN        "0"
 #define DEFAULT_FIXED_AMNT_ITEM    "0"
-#define DEFAULT_FIXED_AMNT_LIST    "0"
 #define DEFAULT_FIXED_AMNT_COEF    "0"
 #define DEFAULT_AMNT_LIST_CNT      "0"
 #define DEFAULT_SSL_EN             "0"
@@ -52,110 +41,124 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_MERCHANT_PIN       MERCHANT_DEFAULT_PIN
 #define DEFAULT_BALANCE_INQ_WAGE   "1800"
 
+#define ARRAY_COUNT(a_) (sizeof(a_) / sizeof((a_)[0]))
+
 static const DataDescriptor txnTraceInfoDsc[] = {
-    {"stan", T_INT, (0), (sizeof(__txnTraceInfo.stan)), ("1"),
-     &(__txnTraceInfo.stan)},
-    {"batch", T_INT, (0), (sizeof(__txnTraceInfo.batch)), ("1"),
-     &(__txnTraceInfo.batch)}};
-
-BEGIN_DSC_ARRAY;
-static const DataDescriptor settingsDsc[] = {
-
-    // 🔹 Terminal - basic
-    DSC_BYTE(__settings.terminal.touchEnable, DEFAULT_TOUCH_ENABLE),
-    DSC_INT(__settings.terminal.isCfgDone, DEFAULT_CFG_DONE),
-    DSC_BYTE(__settings.terminal.netRoute, DEFAULT_COMM_MODE),
-    DSC_BYTE(__settings.terminal.devVolume, DEFAULT_KEY_VOLUME),
-    DSC_BYTE(__settings.terminal.sleepTimeout, DEFAULT_TIMEOUT_SLEEP),
-    DSC_BYTE(__settings.terminal.brightness, DEFAULT_BRIGHTNESS),
-
-    // 🔹 Login / identity
-    DSC_BYTE(__settings.terminal.loginOperator, "101"),
-    DSC_STR_BUF(__settings.terminal.loginDate, ""),
-    DSC_STR_BUF(__settings.terminal.merchantPin, DEFAULT_MERCHANT_PIN),
-    DSC_STR_BUF(__settings.terminal.merchantId, ""),
-    DSC_STR_BUF(__settings.terminal.terminalId, ""),
-    DSC_STR_BUF(__settings.terminal.merchantName, ""),
-    DSC_STR_BUF(__settings.terminal.merchantAddress, ""),
-    DSC_STR_BUF(__settings.terminal.merchantPostalCode, ""),
-    DSC_STR_BUF(__settings.terminal.merchantUniqueId, ""),
-    DSC_STR_BUF(__settings.terminal.merchantPhone, ""),
-
-    // 🔹 WiFi
-    DSC_STR_BUF(__settings.terminal.wfiSSID, ""),
-    DSC_STR_BUF(__settings.terminal.wifiMac, ""),
-    DSC_INT(__settings.terminal.wifiEnc, ""),
-    DSC_STR_BUF(__settings.terminal.wifiPwd, ""),
-
-    // 🔹 App
-    DSC_INT(__settings.terminal.appID, ""),
-
-    // 🔹 Main server
-    DSC_STR_BUF(__settings.server.mainServerIp, DEFAULT_SERVER_IP),
-    DSC_INT(__settings.server.mainServerPort, DEFAULT_SERVER_PORT),
-
-    // 🔹 Backup server
-    DSC_STR_BUF(__settings.server.backupServerIp, DEFAULT_BACKUP_SERVER_IP),
-    DSC_INT(__settings.server.backupServerPort, DEFAULT_BACKUP_SERVER_PORT),
-
-    // 🔹 Server IDs
-    DSC_INT(__settings.server.mainServerNii, DEFAULT_MAIN_SERVER_ID),
-    DSC_INT(__settings.server.tmsId, DEFAULT_TMS_ID),
-
-    DSC_BYTE(__settings.server.useBackupAddressFirst, "0"),
-
-    // 🔹 TMS
-    DSC_STR_BUF(__settings.server.tmsIp, DEFAULT_TMS_IP),
-    DSC_INT(__settings.server.tmsPort, DEFAULT_TMS_PORT),
-    DSC_STR_BUF(__settings.server.tmsBackupIp, DEFAULT_TMS_IP),
-    DSC_INT(__settings.server.tmsBackupPort, DEFAULT_TMS_PORT),
-    DSC_INT(__settings.server.forceTMS, DEFAULT_TMS_FORCE),
-
-    DSC_BYTE(__settings.server.sslEn, DEFAULT_SSL_EN),
-
-    // 🔹 Terminal flags
-    DSC_BYTE(__settings.terminal.language, DEFAULT_LANGUAGE),
-    DSC_BYTE(__settings.terminal.printGreyScale, DEFAULT_PRINT_GREY_SCALE),
-    DSC_BYTE(__settings.terminal.updateFlag, DEFAULT_UPDATE_FLAG),
-    DSC_BYTE(__settings.terminal.connectMode, DEFAULT_CONNECT_MODE),
-
-    // 🔹 Shift
-    DSC_INT(__settings.terminal.shiftEnable, DEFAULT_SHIFT_ENABLE),
-    DSC_INT(__settings.terminal.shiftActive, DEFAULT_SHIFT_ACTIVE),
-
-    // 🔹 Amount settings
-    DSC_INT(__settings.terminal.maxAmntEnable, DEFAULT_MAX_AMNT_EN),
-    DSC_STR_BUF(__settings.terminal.maxAmnt, DEFAULT_MAX_AMNT),
-
-    DSC_BYTE(__settings.terminal.directSaleEn, DEFAULT_DIRECT_SALE_EN),
-
-    DSC_BIN(__settings.terminal.chItemStatus,
-            sizeof(__settings.terminal.chItemStatus),
-            sizeof(__settings.terminal.chItemStatus), NULL),
-
-    DSC_INT(__settings.terminal.fixedAmountItem, DEFAULT_FIXED_AMNT_ITEM),
-    DSC_STR_BUF(__settings.terminal.amountList, DEFAULT_FIXED_AMNT_LIST),
-    DSC_INT(__settings.terminal.fixedAmountCoef, DEFAULT_FIXED_AMNT_COEF),
-    DSC_INT(__settings.terminal.amountListCnt, DEFAULT_AMNT_LIST_CNT),
-
-    DSC_INT(__settings.txn.balanceInqWage, DEFAULT_BALANCE_INQ_WAGE),
+    DSC_U32_NAMED("stan", __txnTraceInfo.stan, "1"),
+    DSC_U32_NAMED("batch", __txnTraceInfo.batch, "1"),
 };
 
-static Error_t saveSettings() {
-    return storage()->save(settingsDsc,
-                           sizeof(settingsDsc) / sizeof(DataDescriptor),
+/*
+ * These key strings intentionally match the old DSC_* stringized keys.
+ * Never rename a persisted key. Rename only the C member if necessary.
+ */
+static const DataDescriptor settingsDsc[] = {
+    DSC_BOOL_NAMED("touchEnable", __settings.terminal.touchEnable,
+                   DEFAULT_TOUCH_ENABLE),
+    DSC_U8_NAMED("isCfgDone", __settings.terminal.isCfgDone, DEFAULT_CFG_DONE),
+    DSC_U8_NAMED("netRoute", __settings.terminal.netRoute, DEFAULT_COMM_MODE),
+    DSC_U8_NAMED("devVolume", __settings.terminal.devVolume,
+                 DEFAULT_KEY_VOLUME),
+    DSC_U8_NAMED("sleepTimeout", __settings.terminal.sleepTimeout,
+                 DEFAULT_TIMEOUT_SLEEP),
+    DSC_U8_NAMED("energySaverRange", __settings.terminal.energySaverRange,
+                 DEFAULT_TIMEOUT_SLEEP),
+    DSC_U8_NAMED("brightness", __settings.terminal.brightness,
+                 DEFAULT_BRIGHTNESS),
+    DSC_U8_NAMED("merchantRecPrint", __settings.terminal.merchantRecPrint,
+                 DEFAULT_BRIGHTNESS),
+    DSC_U8_NAMED("printModel", __settings.terminal.printModel,
+                 DEFAULT_BRIGHTNESS),
+    DSC_U8_NAMED("autoPrint", __settings.terminal.autoPrint,
+                 DEFAULT_BRIGHTNESS),
+    DSC_U8_NAMED("secReceiptPrintTime", __settings.terminal.secReceiptPrintTime,
+                 DEFAULT_BRIGHTNESS),
+
+    DSC_U8_NAMED("loginOperator", __settings.terminal.loginOperator, "101"),
+    DSC_STR_NAMED("loginDate", __settings.terminal.loginDate, ""),
+    DSC_STR_NAMED("merchantPin", __settings.terminal.merchantPin,
+                  DEFAULT_MERCHANT_PIN),
+    DSC_STR_NAMED("merchantId", __settings.terminal.merchantId, ""),
+    DSC_STR_NAMED("terminalId", __settings.terminal.terminalId, ""),
+    DSC_STR_NAMED("merchantName", __settings.terminal.merchantName, ""),
+    DSC_STR_NAMED("merchantAddress", __settings.terminal.merchantAddress, ""),
+    DSC_STR_NAMED("merchantPostalCode", __settings.terminal.merchantPostalCode,
+                  ""),
+    DSC_STR_NAMED("merchantUniqueId", __settings.terminal.merchantUniqueId, ""),
+    DSC_STR_NAMED("merchantPhone", __settings.terminal.merchantPhone, ""),
+    DSC_STR_NAMED("mSafePwd", __settings.terminal.mSafePwd, ""),
+
+    DSC_STR_NAMED("wfiSSID", __settings.terminal.wfiSSID, ""),
+    DSC_STR_NAMED("wifiMac", __settings.terminal.wifiMac, ""),
+    DSC_U32_NAMED("wifiEnc", __settings.terminal.wifiEnc, "0"),
+    DSC_STR_NAMED("wifiPwd", __settings.terminal.wifiPwd, ""),
+    DSC_STR_NAMED("acquirerIIN", __settings.terminal.acquirerIIN, ""),
+    DSC_U32_NAMED("appID", __settings.terminal.appID, "0"),
+
+    DSC_STR_NAMED("mainServerIp", __settings.server.mainServerIp,
+                  DEFAULT_SERVER_IP),
+    DSC_U16_NAMED("mainServerPort", __settings.server.mainServerPort,
+                  DEFAULT_SERVER_PORT),
+    DSC_STR_NAMED("backupServerIp", __settings.server.backupServerIp,
+                  DEFAULT_BACKUP_SERVER_IP),
+    DSC_U16_NAMED("backupServerPort", __settings.server.backupServerPort,
+                  DEFAULT_BACKUP_SERVER_PORT),
+    DSC_U16_NAMED("mainServerNii", __settings.server.mainServerNii,
+                  DEFAULT_MAIN_SERVER_ID),
+    DSC_U16_NAMED("tmsId", __settings.server.tmsId, DEFAULT_TMS_ID),
+    DSC_BOOL_NAMED("useBackupAddressFirst",
+                   __settings.server.useBackupAddressFirst, "0"),
+
+    DSC_STR_NAMED("tmsIp", __settings.server.tmsIp, DEFAULT_TMS_IP),
+    DSC_U16_NAMED("tmsPort", __settings.server.tmsPort, DEFAULT_TMS_PORT),
+    DSC_STR_NAMED("tmsBackupIp", __settings.server.tmsBackupIp, DEFAULT_TMS_IP),
+    DSC_U16_NAMED("tmsBackupPort", __settings.server.tmsBackupPort,
+                  DEFAULT_TMS_PORT),
+    DSC_U8_NAMED("forceTMS", __settings.server.forceTMS, DEFAULT_TMS_FORCE),
+    DSC_BOOL_NAMED("sslEn", __settings.server.sslEn, DEFAULT_SSL_EN),
+
+    DSC_U8_NAMED("language", __settings.terminal.language, DEFAULT_LANGUAGE),
+    DSC_U8_NAMED("printGreyScale", __settings.terminal.printGreyScale,
+                 DEFAULT_PRINT_GREY_SCALE),
+    DSC_U8_NAMED("updateFlag", __settings.terminal.updateFlag,
+                 DEFAULT_UPDATE_FLAG),
+    DSC_U8_NAMED("connectMode", __settings.terminal.connectMode,
+                 DEFAULT_CONNECT_MODE),
+    DSC_U8_NAMED("shiftEnable", __settings.terminal.shiftEnable,
+                 DEFAULT_SHIFT_ENABLE),
+    DSC_U8_NAMED("shiftActive", __settings.terminal.shiftActive,
+                 DEFAULT_SHIFT_ACTIVE),
+
+    DSC_BOOL_NAMED("maxAmntEnable", __settings.terminal.maxAmntEnable,
+                   DEFAULT_MAX_AMNT_EN),
+    DSC_STR_NAMED("maxAmnt", __settings.terminal.maxAmnt, DEFAULT_MAX_AMNT),
+    DSC_BOOL_NAMED("directSaleEn", __settings.terminal.directSaleEn,
+                   DEFAULT_DIRECT_SALE_EN),
+    DSC_BIN_NAMED("chItemStatus", __settings.terminal.chItemStatus),
+    DSC_U32_NAMED("fixedAmountItem", __settings.terminal.fixedAmountItem,
+                  DEFAULT_FIXED_AMNT_ITEM),
+    DSC_BIN_NAMED("amountList", __settings.terminal.amountList),
+    DSC_U32_NAMED("fixedAmountCoef", __settings.terminal.fixedAmountCoef,
+                  DEFAULT_FIXED_AMNT_COEF),
+    DSC_U32_NAMED("amountListCnt", __settings.terminal.amountListCnt,
+                  DEFAULT_AMNT_LIST_CNT),
+
+    DSC_U64_NAMED("balanceInqWage", __settings.txn.balanceInqWage,
+                  DEFAULT_BALANCE_INQ_WAGE),
+};
+
+static Error_t saveSettings(void) {
+    return storage()->save(settingsDsc, ARRAY_COUNT(settingsDsc),
                            SETTINGS_FILE_ADDR);
 }
 
-static Error_t loadSettings() {
-    return storage()->load(settingsDsc,
-                           sizeof(settingsDsc) / sizeof(DataDescriptor),
+static Error_t loadSettings(void) {
+    return storage()->load(settingsDsc, ARRAY_COUNT(settingsDsc),
                            SETTINGS_FILE_ADDR);
 }
 
-static Error_t resetSettings() {
-    return storage()->reset(settingsDsc,
-                            sizeof(settingsDsc) / sizeof(DataDescriptor),
+static Error_t resetSettings(void) {
+    return storage()->reset(settingsDsc, ARRAY_COUNT(settingsDsc),
                             SETTINGS_FILE_ADDR);
 }
 
@@ -165,30 +168,31 @@ OOP_CTOR(DevSettings) {
     self->reset = resetSettings;
 }
 
-DevSettings* settings() {
+DevSettings* settings(void) {
     CALL_ONCE(OOP_CALL_CTOR(DevSettings, &__settings););
     return &__settings;
 }
 
-static Error_t loadTxnTraceInfo() {
-    storage()->load(txnTraceInfoDsc,
-                    sizeof(txnTraceInfoDsc) / sizeof(DataDescriptor),
-                    TXN_TRACE_FILE_ADDR);
+static Error_t loadTxnTraceInfo(void) {
+    return storage()->load(txnTraceInfoDsc, ARRAY_COUNT(txnTraceInfoDsc),
+                           TXN_TRACE_FILE_ADDR);
 }
 
-static Error_t incTxnTraceInfo() {
-    loadTxnTraceInfo();
+static Error_t incTxnTraceInfo(void) {
+    Error_t err = loadTxnTraceInfo();
+    if (err != ERR_OK)
+        return err;
+
     __txnTraceInfo.stan++;
-    if (__txnTraceInfo.stan >= 999999) {
+    if (__txnTraceInfo.stan >= 999999u) {
+        __txnTraceInfo.stan = 1u;
         __txnTraceInfo.batch++;
-        if (__txnTraceInfo.batch >= 999999) {
-            __txnTraceInfo.batch = 1;
-        }
-        __txnTraceInfo.stan = 1;
+        if (__txnTraceInfo.batch >= 999999u)
+            __txnTraceInfo.batch = 1u;
     }
-    storage()->save(txnTraceInfoDsc,
-                    sizeof(txnTraceInfoDsc) / sizeof(DataDescriptor),
-                    TXN_TRACE_FILE_ADDR);
+
+    return storage()->save(txnTraceInfoDsc, ARRAY_COUNT(txnTraceInfoDsc),
+                           TXN_TRACE_FILE_ADDR);
 }
 
 OOP_CTOR(TxnTraceInfo) {
@@ -196,8 +200,8 @@ OOP_CTOR(TxnTraceInfo) {
     self->inc  = incTxnTraceInfo;
 }
 
-TxnTraceInfo* txnTraceInfo() {
+TxnTraceInfo* txnTraceInfo(void) {
     CALL_ONCE(OOP_CALL_CTOR(TxnTraceInfo, &__txnTraceInfo);
-              loadTxnTraceInfo(););
+              (void)loadTxnTraceInfo(););
     return &__txnTraceInfo;
 }
