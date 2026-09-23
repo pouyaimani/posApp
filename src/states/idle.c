@@ -86,7 +86,8 @@ static void cellAutoConnect() {
     cellular()->startPPPlogin(NULL, NULL, NULL, NULL);
 }
 
-static void netAutoConnect() {
+static void netAutoConnect(void* arg) {
+    VAR_UNUSED(arg);
     NetRoute_t route = OOP_CALL(network(), getRoute);
     if (route == NET_ROUTE_WIFI) {
         wifiAutoConnect();
@@ -95,7 +96,10 @@ static void netAutoConnect() {
     }
 }
 
-static void timerCb() { netAutoConnect(); }
+static void hibernate(void* arg) {
+    VAR_UNUSED(arg);
+    OOP_CALL(sys(), hibernate);
+}
 
 static void menuEventCb(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
@@ -115,7 +119,7 @@ static void setTextIfChanged(lv_obj_t* label, const char* txt) {
 
 STATE_DEF_ENTER(Idle) {
     OOP_CALL(cellular(), checkSimStatus);
-    netAutoConnect();
+    netAutoConnect(NULL);
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
     getEventloop()->registerChecker(magreader()->ioRead);
@@ -413,5 +417,9 @@ OOP_CTOR(Idle, State* parent, const char* name) {
 
     createUi();
 
-    timer = TIMER_CREATE(timerCb, SECS(10), false);
+    OOP_CALL(&self->base, enableTimer);
+    OOP_CALL(&self->base, addTimer, netAutoConnect, SECS(10), NULL);
+    OOP_CALL(&self->base, addTimer, hibernate, SECS(60), NULL);
+
+    // timer = TIMER_CREATE(timerCb, SECS(10), false);
 }

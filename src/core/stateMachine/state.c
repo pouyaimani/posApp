@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "logger.h"
 #include "event.h"
+#include "sys/sys.h"
 
 /* defaults */
 
@@ -71,6 +72,76 @@ static void setNext(State* current, State* next) { current->next = next; }
 
 static void setPrev(State* current, State* prev) { current->prev = prev; }
 
+static bool enableTimer(State* state) {
+    if (!state) {
+        return false;
+    }
+    if (state->isTimerEn) {
+        return true;
+    }
+    state->timerList = MEM_ALLOC(sizeof(List));
+    if (!state->timerList) {
+        TRACE_POINT;
+        return false;
+    }
+    state->isTimerEn = true;
+    list_init(state->timerList, LIST_CIRCULAR);
+    return true;
+}
+
+static bool disableTimer(State* state) {
+    if (!state) {
+        return false;
+    }
+    if (!state->isTimerEn && !state->timerList) {
+        return true;
+    }
+    MEM_FREE(state->timerList);
+    state->isTimerEn = false;
+    return true;
+}
+
+static bool addTimer(State* state, StateCallback timerCb, uint32_t trigDuration,
+                     void* timerCbData) {
+    if (!state) {
+        return false;
+    }
+    if (!state->timerList) {
+        return false;
+    }
+    StateTimer_t* timer = MEM_ALLOC(sizeof(*timer));
+    if (!timer) {
+        TRACE_POINT;
+        return false;
+    }
+    timer->timerCb       = timerCb;
+    timer->trigDuration  = trigDuration;
+    timer->timerCbData   = timerCbData;
+    timer->lastCheckTime = GET_TICK();
+    return list_push_back(state->timerList, timer);
+}
+
+static bool match_timer_cb(void* data, void* context) {
+    if (data == NULL || context == NULL)
+        return false;
+    TRACE_POINT;
+    const StateTimer_t* timer = data;
+    const StateCallback cb    = context;
+    TRACE_POINT;
+
+    return timer->timerCb == cb;
+}
+
+static bool removeTimer(State* state, StateCallback cb) {
+    if (!state) {
+        return false;
+    }
+    if (!state->timerList) {
+        return false;
+    }
+    list_remove_predicate(state->timerList, match_timer_cb, cb);
+}
+
 OOP_CTOR(State, State* parent, const char* name) {
     STM_LOG("Constructing State is started ...");
     self->vtable.enter             = default_enter;
@@ -88,10 +159,17 @@ OOP_CTOR(State, State* parent, const char* name) {
     self->vtable.goTo              = goTo;
     self->vtable.setNext           = setNext;
     self->vtable.setPrev           = setPrev;
+    self->vtable.addTimer          = addTimer;
+    self->vtable.removeTimer       = removeTimer;
+    self->vtable.enableTimer       = enableTimer;
     self->parent                   = parent;
     self->next                     = NULL;
     self->prev                     = NULL;
     self->name                     = name;
     self->inner                    = STATE_ENTRY;
+    self->timerList                = NULL;
+    self->isTimerEn                = false;
+
+    list_init(self->timerList, LIST_CIRCULAR);
     STM_LOG("Constructing State finished ...");
 }

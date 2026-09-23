@@ -50,6 +50,19 @@ static void freeQ() {
     }
 }
 
+static bool handleStateTimer(void* data, void* context) {
+    VAR_UNUSED(context);
+    StateTimer_t* timer = (StateTimer_t*)data;
+    uint32_t      tick  = GET_TICK();
+    if (tick > timer->lastCheckTime + timer->trigDuration) {
+        if (!timer->timerCb) {
+            LOG_ERROR("timer callback is not found.");
+        }
+        timer->timerCb(timer->timerCbData);
+        timer->lastCheckTime = tick;
+    }
+}
+
 static void runCycle() {
     State* s = __core.current;
 
@@ -58,6 +71,7 @@ static void runCycle() {
         STM_LOG("SM: on entry to %s %s", s->name, " state.");
         s->inner = STATE_EVENT;
         OOP_CALL(s, enter);
+        s->entranceTime = GET_TICK();
         break;
 
     case STATE_EVENT:
@@ -72,6 +86,9 @@ static void runCycle() {
             } else {
                 i++;
             }
+        }
+        if (s->isTimerEn) {
+            list_foreach(s->timerList, handleStateTimer, NULL);
         }
         break;
 

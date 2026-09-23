@@ -82,20 +82,29 @@ static void init(System* dev) {
     sdkSysReadTerminalInfo(&tinfo);
 }
 
-static uint32_t getTick(System* dev) { return sdkSysGetTicks(); }
+static uint32_t getTick(System* dev) {
+    VAR_UNUSED(dev);
+    return sdkSysGetTicks();
+}
 
 static void* getMemory(System* dev, unsigned int size) {
+    VAR_UNUSED(dev);
     return sdkSysGetMem(size);
 }
 
-static void freeMemory(System* dev, void* mem) { sdkSysFreeMem(mem); }
+static void freeMemory(System* dev, void* mem) {
+    VAR_UNUSED(dev);
+    sdkSysFreeMem(mem);
+}
 
 static void* memRealloc(System* dev, void* mem, uint32_t newSize) {
+    VAR_UNUSED(dev);
     return sdkSysRealloc(mem, newSize);
 }
 
 static unsigned int flushDisplay(System* dev, int32_t x0, int32_t x1,
                                  int32_t y0, int32_t y1, uint8_t* cmap) {
+    VAR_UNUSED(dev);
     strRect    rect = {.m_x0 = x0, .m_x1 = x1, .m_y0 = y0, .m_y1 = y1};
     strPicture pic  = {
         .m_width = x1 - x0 + 1, .m_height = y1 - y0 + 1, .m_pic = cmap};
@@ -103,6 +112,7 @@ static unsigned int flushDisplay(System* dev, int32_t x0, int32_t x1,
 }
 
 static void logOut(System* dev, const char* data, size_t len, void* udata) {
+    VAR_UNUSED(dev);
     sdkLogOut(data);
 }
 
@@ -121,6 +131,7 @@ static void parseRtcTime(const uint8_t* rtcTime, int* year, int* month,
 }
 
 static DateTime* getDateTime(System* dev) {
+    VAR_UNUSED(dev);
     uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     char tmp[12 + 1] = {0};
@@ -132,6 +143,7 @@ static DateTime* getDateTime(System* dev) {
 }
 
 static uint32_t getDate(System* dev) {
+    VAR_UNUSED(dev);
     uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
@@ -143,6 +155,7 @@ static uint32_t getDate(System* dev) {
 }
 
 static uint32_t getTime(System* dev) {
+    VAR_UNUSED(dev);
     uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
@@ -154,6 +167,7 @@ static uint32_t getTime(System* dev) {
 }
 
 static uint64_t getPackedDateTime(System* dev) {
+    VAR_UNUSED(dev);
     uint8_t dt[6];
     memset(dt, 0, sizeof(dt));
     sdkSysGetRtcTime(dt);
@@ -167,6 +181,7 @@ static uint64_t getPackedDateTime(System* dev) {
 }
 
 static BatteryStat* getBatteryStatus(System* dev) {
+    VAR_UNUSED(dev);
     BatteryStatus st;
     int           ret = sdkSysGetBatteryStatus(&st);
     if (st.mBatteryLevel == SYS_BATTERY_LEVEL_NULL) {
@@ -183,16 +198,26 @@ static BatteryStat* getBatteryStatus(System* dev) {
     return &batterySt;
 }
 
-static void sysSleep(System* dev, uint32_t mili) { sdkSysSleep(mili); }
+static void sysSleep(System* dev, uint32_t mili) {
+    VAR_UNUSED(dev);
+    sdkSysSleep(mili);
+}
 
-static void reboot(System* dev) { sdkSysDeviceReboot(); }
+static void reboot(System* dev) {
+    VAR_UNUSED(dev);
+    sdkSysDeviceReboot();
+}
 
-static void powerOff(System* dev) { sdkSysDevicePowerOff(); }
+static void powerOff(System* dev) {
+    VAR_UNUSED(dev);
+    sdkSysDevicePowerOff();
+}
 
 #define CHANGE_SERIAL "T3335301003905"
-static int8_t getSN(System* dev, char* out, size_t len) {
+static SystemErr_t getSN(System* dev, char* out, size_t len) {
+    VAR_UNUSED(dev);
     if (!out) {
-        return ERR_NOK;
+        return SYS_ERR_NOK;
     }
     memset(out, 0, len);
     // int8_t err = sdkSysReadDeviceSN(SYS_SN_TYPE_CUSTOM,
@@ -203,35 +228,53 @@ static int8_t getSN(System* dev, char* out, size_t len) {
     // }
     strcpy(out, CHANGE_SERIAL);
 
-    return ERR_OK;
+    return SYS_ERR_OK;
 }
 
-static const char* getCode(System* dev) { return tinfo.mTerminalCode; }
+static const char* getCode(System* dev) {
+    VAR_UNUSED(dev);
+    return tinfo.mTerminalCode;
+}
 
-static const char* getName(System* dev) { return tinfo.mTerminalName; }
+static const char* getName(System* dev) {
+    VAR_UNUSED(dev);
+    return tinfo.mTerminalName;
+}
 
 static void setVolume(System* dev, int volume) {
+    VAR_UNUSED(dev);
     sdkSysSetDeviceVolume(SYS_VOLUME_TYPE_AUDIO, volume);
 }
 
 static void setBrightness(System* dev, int bright) {
+    VAR_UNUSED(dev);
     int br = bright > dev->maxBright ? dev->maxBright : bright;
     br     = bright < 1 ? 1 : bright;
     ddi_lcd_ioctl(DDI_LCD_CTL_BRIGHT, br, 0);
 }
 
 static int getVolume(System* dev) {
+    VAR_UNUSED(dev);
     return sdkSysGetDeviceVolume(SYS_VOLUME_TYPE_AUDIO);
 }
 
-static int getBrightness(System* dev) {}
+static int getBrightness(System* dev) { VAR_UNUSED(dev); }
 
-static void beepOnce(System* dev) { sdkSysBeepOnce(); }
+static void beepOnce(System* dev) {
+    VAR_UNUSED(dev);
+    sdkSysBeepOnce();
+}
 
 static void setDateTime(System* dev, DateTime* dt) {}
 
-static int8_t setDateTimeBcd(System* dev, char* dt) {
-    return sdkSysSetRtcTime(dt); // SDK_SYS_OK
+static SystemErr_t setDateTimeBcd(System* dev, char* dt) {
+    VAR_UNUSED(dev);
+    return sdkSysSetRtcTime(dt) == SDK_OK ? SYS_ERR_OK : SYS_ERR_NOK;
+}
+
+static SystemErr_t hibernate(System* dev) {
+    VAR_UNUSED(dev);
+    return (sdkSysEnterIdle() == SDK_OK ? SYS_ERR_OK : SYS_ERR_NOK);
 }
 
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
@@ -261,6 +304,7 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.getPackedDateTime = getPackedDateTime;
     self->base.vtable.setDateTimeBcd    = setDateTimeBcd;
     self->base.vtable.reallocate        = memRealloc;
+    self->base.vtable.hibernate         = hibernate;
 
     self->base.maxBright = 5;
     self->base.maxSound  = 5;

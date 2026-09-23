@@ -4,6 +4,7 @@
 #include "oop.h"
 #include <stdint.h>
 #include "core.h"
+#include "utility/linkedlist.h"
 
 #define STATE_ENTER(type) type##_Enter
 
@@ -44,6 +45,15 @@ typedef enum StateInner {
     STATE_SUBSTATE
 } StateInner;
 
+typedef void (*StateCallback)(void* arg);
+
+typedef struct {
+    uint32_t      lastCheckTime;
+    uint32_t      trigDuration;
+    StateCallback timerCb;
+    void*         timerCbData;
+} StateTimer_t;
+
 /* ===== State vtable ===== */
 
 OOP_VTABLE(State) {
@@ -63,6 +73,11 @@ OOP_VTABLE(State) {
     OOP_IMETHOD(void, State, goTo, State*);
     OOP_IMETHOD(void, State, setNext, State*);
     OOP_IMETHOD(void, State, setPrev, State*);
+    OOP_IMETHOD(bool, State, enableTimer);
+    OOP_IMETHOD(bool, State, disableTimer);
+    OOP_IMETHOD(bool, State, addTimer, StateCallback timerCb,
+                uint32_t trigDuration, void* timerCbData);
+    OOP_IMETHOD(bool, State, removeTimer, StateCallback timerCb);
 };
 
 /* ===== State base ===== */
@@ -74,6 +89,10 @@ OOP_CLASS(State) {
     State*      parent;
     State*      next;
     State*      prev;
+    /* first etrance time */
+    uint32_t entranceTime;
+    List*    timerList;
+    bool     isTimerEn;
 };
 
 /* ctor */

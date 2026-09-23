@@ -4,6 +4,7 @@
 #include "oop.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include "error.h"
 
 #define SERIAL_NUMBER_MAX_LEN 64
 
@@ -56,7 +57,7 @@ OOP_VTABLE(System) {
     OOP_IMETHOD(void, System, sleep, uint32_t ms);
     OOP_IMETHOD(void, System, reboot);
     OOP_IMETHOD(void, System, powerOff);
-    OOP_IMETHOD(int8_t, System, getSN, char* out, size_t len);
+    OOP_IMETHOD(SystemErr_t, System, getSN, char* out, size_t len);
     OOP_IMETHOD(const char*, System, getCode);
     OOP_IMETHOD(const char*, System, getName);
     OOP_IMETHOD(void, System, setVolume, int);
@@ -64,6 +65,7 @@ OOP_VTABLE(System) {
     OOP_IMETHOD(int, System, getVolume);
     OOP_IMETHOD(int, System, getBrightness);
     OOP_IMETHOD(void, System, beepOnce);
+    OOP_IMETHOD(SystemErr_t, System, hibernate);
 };
 
 OOP_CLASS(System) {
