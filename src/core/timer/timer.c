@@ -1,35 +1,27 @@
 #include "timer.h"
 #include "sys/sys.h"
 #include "logger.h"
+#include "error.h"
 
 static TimerHandler* __timerHandler;
 
 static TimerErr_t registerTimer(Timer* timer) {
     LOG_TRACE("Registring Timer ...");
-    if (__timerHandler->timersCnt >= TIMER_MAX_CHECKERS) {
+    RETURN_VALUE_IF_NULL(timer, ;, TIMER_ERR_BAD_ARG);
+    if (list_push_back(&__timerHandler->timers, timer) == false) {
         LOG_FATAL("Timer handler maximum is reached.");
         return TIMER_ERR_HANDLER_FULL;
     }
-    __timerHandler->timers[__timerHandler->timersCnt++] = timer;
     LOG_TRACE("Timer is registered.");
     return TIMER_ERR_OK;
 }
 
 static TimerErr_t unRegisterTimer(Timer* timer) {
     LOG_TRACE("Unregistring Timer ...");
-    TimerErr_t err = TIMER_ERR_NOT_FOUND;
-    for (size_t i = 0; i < __timerHandler->timersCnt; ++i) {
-        if (__timerHandler->timers[i] == timer) {
-            /* shift remaining callbacks left */
-            for (size_t j = i + 1; j < __timerHandler->timersCnt; ++j) {
-                __timerHandler->timers[j - 1] = __timerHandler->timers[j];
-            }
 
-            __timerHandler->timersCnt--;
-            return TIMER_ERR_OK;
-        }
-    }
-    return err;
+    if (!list_remove(&__timerHandler->timers, timer))
+        return TIMER_ERR_NOT_FOUND;
+    return TIMER_ERR_OK;
 }
 
 static void start(Timer* timer) {
@@ -60,15 +52,22 @@ void removeTimer(Timer* timer) {
     MEM_FREE(timer);
 }
 
-static void runCycle() {
-    for (size_t i = 0; i < __timerHandler->timersCnt; ++i) {
-        uint32_t tick = GET_TICK();
-        if (tick - __timerHandler->timers[i]->ctime >=
-            __timerHandler->timers[i]->period) {
-            __timerHandler->timers[i]->checker();
-            __timerHandler->timers[i]->ctime = tick;
+static bool handleTimer(void* data, void* context) {
+    VAR_UNUSED(context);
+    Timer*   timer = (Timer*)data;
+    uint32_t tick  = GET_TICK();
+    if (tick > timer->ctime + timer->period) {
+        if (!timer->checker) {
+            LOG_ERROR("timer callback is not found.");
+            return false;
         }
+        timer->checker(NULL);
+        timer->ctime = tick;
     }
+}
+
+static void runCycle() {
+    list_foreach(&__timerHandler->timers, handleTimer, NULL);
 }
 
 OOP_CTOR(TimerHandler) {
@@ -76,7 +75,8 @@ OOP_CTOR(TimerHandler) {
     self->runCycle        = runCycle;
     self->registerTimer   = registerTimer;
     self->unRegisterTimer = unRegisterTimer;
-    self->timersCnt       = 0;
+
+    list_init(&self->timers, LIST_CIRCULAR);
 }
 
 TimerHandler* getTimerHanlder(void) {

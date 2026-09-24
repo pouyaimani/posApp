@@ -4,20 +4,17 @@
 #include "oop.h"
 #include <stdbool.h>
 #include <stdint.h>
-
-/* Configuration */
-#define TIMER_MAX_CHECKERS 10
+#include "utility/linkedlist.h"
 
 typedef enum TimerErr_t {
     TIMER_ERR_OK,
     TIMER_ERR_HANDLER_FULL,
-    TIMER_ERR_NOT_FOUND
+    TIMER_ERR_NOT_FOUND,
+    TIMER_ERR_BAD_ARG
 } TimerErr_t;
 
 typedef void (*timerChecker)();
 
-// NOTE: Do not create object of Eventloop yourself, instead use getEventloop()
-// function
 OOP_CLASS(Timer) {
     bool     isSingleShot;
     bool     isStoped;
@@ -34,8 +31,7 @@ Timer* createTimer(timerChecker, uint32_t period, bool singleShot);
 void   removeTimer(Timer* timer);
 
 OOP_CLASS(TimerHandler) {
-    Timer* timers[TIMER_MAX_CHECKERS];
-    size_t timersCnt;
+    List timers;
     OOP_METHOD(void, runCycle);
     OOP_METHOD(TimerErr_t, registerTimer, Timer*);
     OOP_METHOD(TimerErr_t, unRegisterTimer, Timer*);
