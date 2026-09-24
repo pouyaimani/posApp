@@ -62,6 +62,9 @@ static void complete(TmsDownloader* downloader, bool success) {
     TmsDownloadDoneCallback callback = downloader->onDone;
     void*                   userData = downloader->userData;
     downloader->state = success ? TMS_DOWNLOAD_COMPLETED : TMS_DOWNLOAD_FAILED;
+
+    // NEW_ITEM_ADDED
+    tmsHttpClientRelease(&downloader->http);
     if (callback != NULL)
         callback(downloader, success, userData);
 }

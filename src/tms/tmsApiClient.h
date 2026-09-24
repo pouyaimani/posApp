@@ -21,6 +21,12 @@ typedef struct {
     int                responseKind;
 } TmsApiClient;
 
+typedef enum {
+    API_RESPONSE_UPGRADE,
+    API_RESPONSE_CODE,
+    API_RESPONSE_TIME
+} ApiResponseKind;
+
 void tmsApiClientInit(TmsApiClient* client, const char* host, uint16_t port);
 HttpFlowResult
 tmsApiCheckUpgradeStart(TmsApiClient* client, const char* deviceSn,

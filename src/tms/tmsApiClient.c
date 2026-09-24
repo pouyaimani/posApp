@@ -9,12 +9,6 @@
 #define TMS_PATH_RESULT "/api/device/upgrade/result/report"
 #define TMS_PATH_TIME   "/api/ntp/sync"
 
-typedef enum {
-    API_RESPONSE_UPGRADE,
-    API_RESPONSE_CODE,
-    API_RESPONSE_TIME
-} ApiResponseKind;
-
 static void finish(TmsApiClient* api, bool success, int code) {
     TmsApiDoneCallback callback = api->onDone;
     void*              userData = api->userData;

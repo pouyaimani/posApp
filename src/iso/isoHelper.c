@@ -82,7 +82,7 @@ static void handleSwitchDateTime(LtvStructInfo* tag) {
         dateTime[i] = parse2Digits(tempBuf + 2 + (i * 2));
     }
 
-    int ret = dtSetSystemDateTime(dateTime);
+    dtSetSystemDateTime(dateTime);
 }
 
 static void handleVoucherSerial(LtvStructInfo* tag, TxnData* txn) {

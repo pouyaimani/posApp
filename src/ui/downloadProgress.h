@@ -63,7 +63,7 @@ void ui_download_progress_set_size(DownloadProgress* progress,
 /**
  * Hide/show size text.
  */
-void ui_download_progress_show_size(DownloadProgress* progress, bool show);
+void ui_download_progress_show(DownloadProgress* progress, bool show);
 
 /**
  * Destroy widget.

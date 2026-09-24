@@ -217,7 +217,7 @@ void ui_download_progress_set_size(DownloadProgress* progress,
     lv_label_set_text(progress->sizeLabel, buffer);
 }
 
-void ui_download_progress_show_size(DownloadProgress* progress, bool show) {
+void ui_download_progress_show(DownloadProgress* progress, bool show) {
     if (!progress || !progress->sizeLabel)
         return;
 

@@ -19,7 +19,7 @@ typedef struct ModuleExist_t {
 } ModuleExist_t;
 
 OOP_CLASS(DateTime) {
-    char date[6 + 1];
+    char date[8 + 1];
     char time[6 + 1];
 };
 
@@ -50,8 +50,8 @@ OOP_VTABLE(System) {
     OOP_IMETHOD(uint32_t, System, getDate);
     OOP_IMETHOD(uint32_t, System, getTime);
     OOP_IMETHOD(uint64_t, System, getPackedDateTime);
-    OOP_IMETHOD(void, System, setDateTime, DateTime*);
-    OOP_IMETHOD(int8_t, System, setDateTimeBcd, const char*);
+    OOP_IMETHOD(SystemErr_t, System, setDateTime, DateTime*);
+    OOP_IMETHOD(SystemErr_t, System, setDateTimeBcd, const char*);
     OOP_IMETHOD(void, System, logOut, const char*, size_t, void*);
     OOP_IMETHOD(BatteryStat*, System, getBatteryStatus);
     OOP_IMETHOD(void, System, sleep, uint32_t ms);

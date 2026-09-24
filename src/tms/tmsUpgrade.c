@@ -10,7 +10,8 @@ static void finish(TmsUpgrade* upgrade, TmsUpgradeState state,
     upgrade->result = result;
     if (upgrade->onDone != NULL)
         upgrade->onDone(upgrade, result, upgrade->userData);
-    tmsApiClientRelease(&upgrade->api);
+    // NEW_ITEM_ADDED
+    // tmsApiClientRelease(&upgrade->api);
 }
 
 static void checkDone(TmsApiClient* api, bool success, int serverCode,

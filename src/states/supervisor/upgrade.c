@@ -35,6 +35,9 @@ static void tmsUpgradeFinished(TmsUpgrade* upgrade, TmsUpgradeResult result,
     (void)upgrade;
     State* state = (State*)userData;
 
+    TIMER_REMOVE(timer);
+    MEM_FREE(tmsUpgrade);
+    ui_download_progress_destroy(progressBar);
     switch (result) {
     case TMS_UPGRADE_RESULT_OK:
         LOG_DEBUG("TMS update completed");
@@ -42,26 +45,28 @@ static void tmsUpgradeFinished(TmsUpgrade* upgrade, TmsUpgradeResult result,
          * Current implementation reboots immediately
          * after this callback returns.
          */
+        GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+                  phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
         break;
 
     case TMS_UPGRADE_RESULT_NO_UPDATE:
-        LOG_DEBUG("No TMS update available");
+        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
+                  phraseGetDef(PHRASE_NO_UPDATE), "");
         break;
 
     default:
-        LOG_ERROR("TMS update failed: %d", result);
+        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+                  phraseGetDef(PHRASE_UPDATE_FAILED), "");
         break;
     }
-    TIMER_REMOVE(timer);
-    MEM_FREE(tmsUpgrade);
-    ui_download_progress_destroy(progressBar);
-    SM_GOTO(state->parent);
 }
 
 void processUpdate(void) {
     tmsUpgradeProcess(tmsUpgrade);
     int percent = tmsUpgradeProgress(tmsUpgrade);
     LOG_DEBUG("upgrade percent = %d", percent);
+
+    ui_download_progress_show(progressBar, true);
 
     ui_download_progress_set_value(progressBar, percent, 100);
 
@@ -101,6 +106,8 @@ STATE_DEF_ENTER(Upgrade) {
     ui_download_progress_set_value(progressBar, 0, 100);
 
     ui_download_progress_set_size(progressBar, 0, 3600);
+
+    ui_download_progress_show(progressBar, false);
 }
 
 OOP_CTOR(Upgrade, State* parent, const char* name) {

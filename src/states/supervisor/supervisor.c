@@ -282,8 +282,11 @@ STATE_DEF_ENTER(Success) {
     if (serverItem == SERV_SET_MAIN) {
         snprintf(settings()->server.mainServerIp,
                  sizeof(settings()->server.mainServerIp), "%s", ip);
-        STRING_TO_U16(port, &settings()->server.mainServerPort);
-        STRING_TO_U16(nii, &settings()->server.mainServerNii);
+        uint16_t mserverPort, mservernii;
+        STRING_TO_U16(port, &mserverPort);
+        STRING_TO_U16(nii, &mservernii);
+        settings()->server.mainServerNii  = mservernii;
+        settings()->server.mainServerPort = mserverPort;
     } else if (serverItem == SERV_SET_TMS) {
         snprintf(settings()->server.tmsIp, sizeof(settings()->server.tmsIp),
                  "%s", ip);

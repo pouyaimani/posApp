@@ -265,11 +265,23 @@ static void beepOnce(System* dev) {
     sdkSysBeepOnce();
 }
 
-static void setDateTime(System* dev, DateTime* dt) {}
-
 static SystemErr_t setDateTimeBcd(System* dev, char* dt) {
     VAR_UNUSED(dev);
     return sdkSysSetRtcTime(dt) == SDK_OK ? SYS_ERR_OK : SYS_ERR_NOK;
+}
+
+static SystemErr_t setDateTime(System* dev, DateTime* dt) {
+    int year, month, day, hour, minute, second;
+    sscanf(dt->date, "%4d%2d2%d", &year, &month, &day);
+    sscanf(dt->time, "%2d%2d2%d", &hour, &minute, &second);
+    char rtcTime[6];
+    rtcTime[0] = ((year % 100) / 10 << 4) | (year % 10);
+    rtcTime[1] = (month / 10 << 4) | (month % 10);
+    rtcTime[2] = (day / 10 << 4) | (day % 10);
+    rtcTime[3] = (hour / 10 << 4) | (hour % 10);
+    rtcTime[4] = (minute / 10 << 4) | (minute % 10);
+    rtcTime[5] = (second / 10 << 4) | (second % 10);
+    return setDateTimeBcd(dev, rtcTime);
 }
 
 static SystemErr_t hibernate(System* dev) {

@@ -365,8 +365,61 @@ static void TouchSettings(State* parent) {
 }
 
 /******************** date time sub state **********************/
+static TmsTimeSync* timeSync;
+
+static void timeSyncDone(TmsTimeSync* sync, TmsTimeSyncResult result,
+                         void* userData) {
+    const char* dateTime;
+    State*      state = (State*)userData;
+
+    if (result != TMS_TIME_SYNC_RESULT_OK) {
+        LOG_TRACE("Time sync failed: result=%d, serverCode=%d", result,
+                  sync->serverCode);
+        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+                  phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
+        return;
+    }
+
+    dateTime = tmsTimeSyncGetDateTime(sync);
+
+    if (dateTime != NULL) {
+        LOG_TRACE("Server time: %s", dateTime);
+        DateTime dt;
+        int      year, month, day, hour, minute, second;
+
+        sscanf(dateTime, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour,
+               &minute, &second);
+        snprintf(dt.date, sizeof(dt.date), "%d%d%d", year, month, day);
+        snprintf(dt.time, sizeof(dt.time), "%d%d%d", hour, minute, second);
+        LOG_TRACE("date = %s", dt.date);
+        LOG_TRACE("time = %s", dt.time);
+        OOP_CALL(sys(), setDateTime, &dt);
+    }
+
+    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
+              phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
+}
+
+#define TMS_HOST "sabztms.ir"
+#define TMS_PORT 18094U
 
 STATE_DEF_ENTER(DateTimeSettings) {
+    timeSync = MEM_ALLOC(sizeof(*timeSync));
+    RETURN_IF_NULL(timeSync,
+                   GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+                             phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), ""););
+    tmsTimeSyncInit(timeSync, TMS_HOST, TMS_PORT, timeSyncDone, state);
+
+    TmsTimeSyncResult result;
+
+    result = tmsTimeSyncStart(timeSync);
+
+    RETURN_IF_NOT(result, TMS_TIME_SYNC_RESULT_OK, {
+        LOG_TRACE("Could not start time sync: %d", result);
+        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+                  phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
+    });
+
     SHOW_INFO(INFO_WAITING, "لطفا منتظر بمانید", "");
 }
 
