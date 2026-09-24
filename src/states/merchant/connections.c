@@ -160,7 +160,9 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
         LOG_TRACE("wifi()->apList.size = %d", wifi()->apList.size);
         for (uint8_t i = 0; i < wifi()->apList.size; i++) {
             DEFINE_STRING(safeSsid, 64);
-            normalizeSsid(wifi()->apList.list[i].essid, safeSsid);
+            normalizeSsid(wifi()->apList.list[i].essid,
+                          sizeof(wifi()->apList.list[i].essid), safeSsid,
+                          sizeof(safeSsid));
             ui_menu_addItem(wifiMenu, safeSsid, LV_TEXT_ALIGN_RIGHT,
                             wifiEnterPass, NULL, NULL);
         }

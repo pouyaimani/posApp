@@ -363,7 +363,7 @@ bool isBillIdValid(const char* billId);
  */
 bool isBillValid(const char* billId, const char* paymentId);
 
-void normalizeSsid(char* in, char* out);
+void normalizeSsid(const char* in, size_t inSize, char* out, size_t outSize);
 
 void getSimOpName(SimCardOp_t op, char* out, size_t size);
 

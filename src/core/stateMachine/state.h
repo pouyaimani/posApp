@@ -48,7 +48,8 @@ typedef enum StateInner {
 typedef void (*StateCallback)(void* arg);
 
 typedef struct {
-    uint32_t      lastCheckTime;
+    // latest check time
+    uint32_t      ctime;
     uint32_t      trigDuration;
     StateCallback timerCb;
     void*         timerCbData;

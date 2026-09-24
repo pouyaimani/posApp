@@ -114,10 +114,10 @@ static bool addTimer(State* state, StateCallback timerCb, uint32_t trigDuration,
         TRACE_POINT;
         return false;
     }
-    timer->timerCb       = timerCb;
-    timer->trigDuration  = trigDuration;
-    timer->timerCbData   = timerCbData;
-    timer->lastCheckTime = GET_TICK();
+    timer->timerCb      = timerCb;
+    timer->trigDuration = trigDuration;
+    timer->timerCbData  = timerCbData;
+    timer->ctime        = GET_TICK();
     return list_push_back(state->timerList, timer);
 }
 

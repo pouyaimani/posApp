@@ -1078,17 +1078,23 @@ bool billExtractAmount(const char* paymentId, char* amount, size_t alen) {
     return true;
 }
 
-void normalizeSsid(char* in, char* out) {
-    size_t size = strlen(in);
-    size_t j    = 0;
-    for (size_t i = 0; in[i] && j < size - 1; i++) {
+void normalizeSsid(const char* in, size_t inSize, char* out, size_t outSize) {
+    if (!in || !out || outSize == 0)
+        return;
+
+    size_t j = 0;
+
+    for (size_t i = 0; i < inSize && in[i] != '\0'; i++) {
         unsigned char c = (unsigned char)in[i];
 
-        /* Allow printable ASCII only */
         if (c >= 32 && c <= 126) {
-            out[j++] = c;
+            if (j >= outSize - 1)
+                break;
+
+            out[j++] = (char)c;
         }
     }
+
     out[j] = '\0';
 }
 

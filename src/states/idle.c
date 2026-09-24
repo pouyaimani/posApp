@@ -51,7 +51,9 @@ static void wifiAutoConnect() {
     if (scnSt == WIFI_SCAN_SUCCEED) {
         for (uint8_t i = 0; i < wifi()->apList.size; i++) {
             DEFINE_STRING(safeSsid, 64);
-            normalizeSsid(wifi()->apList.list[i].essid, safeSsid);
+            normalizeSsid(wifi()->apList.list[i].essid,
+                          sizeof(wifi()->apList.list[i].essid), safeSsid,
+                          sizeof(safeSsid));
             if (strcmp(wifi()->apList.list[i].essid,
                        settings()->terminal.wfiSSID) == 0) {
                 WifiApInfo_t apInfo  = {0};
@@ -418,8 +420,7 @@ OOP_CTOR(Idle, State* parent, const char* name) {
     createUi();
 
     OOP_CALL(&self->base, enableTimer);
-    OOP_CALL(&self->base, addTimer, netAutoConnect, SECS(10), NULL);
     OOP_CALL(&self->base, addTimer, hibernate, SECS(60), NULL);
 
-    // timer = TIMER_CREATE(timerCb, SECS(10), false);
+    timer = TIMER_CREATE(netAutoConnect, SECS(10), false);
 }

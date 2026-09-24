@@ -13,6 +13,7 @@
 #include "input/inputMgr.h"
 #include "utility/convert.h"
 #include "common.h"
+#include "tms/tmsTimeSync.h"
 
 static char* inputStr;
 #define INPUT_SIZE 64

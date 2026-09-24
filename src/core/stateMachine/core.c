@@ -54,13 +54,20 @@ static bool handleStateTimer(void* data, void* context) {
     VAR_UNUSED(context);
     StateTimer_t* timer = (StateTimer_t*)data;
     uint32_t      tick  = GET_TICK();
-    if (tick > timer->lastCheckTime + timer->trigDuration) {
+    if (tick > timer->ctime + timer->trigDuration) {
         if (!timer->timerCb) {
             LOG_ERROR("timer callback is not found.");
         }
         timer->timerCb(timer->timerCbData);
-        timer->lastCheckTime = tick;
+        timer->ctime = tick;
     }
+}
+
+static bool resetStateTimer(void* data, void* context) {
+    VAR_UNUSED(context);
+    StateTimer_t* timer = (StateTimer_t*)data;
+    uint32_t      tick  = GET_TICK();
+    timer->ctime        = GET_TICK();
 }
 
 static void runCycle() {
@@ -72,6 +79,9 @@ static void runCycle() {
         s->inner = STATE_EVENT;
         OOP_CALL(s, enter);
         s->entranceTime = GET_TICK();
+        if (s->isTimerEn) {
+            list_foreach(s->timerList, resetStateTimer, NULL);
+        }
         break;
 
     case STATE_EVENT:

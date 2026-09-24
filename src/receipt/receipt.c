@@ -16,7 +16,7 @@ static lv_color_t bgColor;
 static lv_color_t txtColor;
 
 #define PRINTER_WIDTH_PIX 384
-#define MAX_HEIGHT        300 // dynamic safe max
+#define MAX_HEIGHT        100 // dynamic safe max
 #define SHAPED_MAX        128
 
 /* =========================

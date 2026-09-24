@@ -515,6 +515,12 @@ X(PHRASE_BLK_BCKGRND            ,   "پس زمینه مشکی"         ,  "phone
 )
 X(PHRASE_WHITE_BCKGRND        ,   "پس زمینه سفید"         ,  "phone number"
 )
+X(PHRASE_NO_UPDATE              ,   "دستگاه به روز می باشد"         ,  "phone number"
+)
+X(PHRASE_UPDATE_FAILED          ,   "خطا در به روز رسانی دستگاه"         ,  "phone number"
+)
+X(PHRASE_UPDATE_SUCCEED          ,   "دستگاه با موفقیت به روزرسانی شد"         ,  "phone number"
+)
 
 /**********************************************************************
  *
