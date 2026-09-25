@@ -51,4 +51,8 @@ typedef int8_t (*ErrCallBack_t)(void* arg);
 
 #define AMOUNT_STR(x) DEFINE_STRING(x, 12 + 1)
 
+#define SECS(x) (x * 1000)
+
+#define MINUTES(x) (x * 60 * 1000)
+
 #endif

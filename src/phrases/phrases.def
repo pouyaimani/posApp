@@ -234,6 +234,8 @@ X(PHRASE_ENERGI_SAVING_RANGE   ,   "بازه ذخیره انرژی"             
 )
 X(PHRASE_OFF_RANGE              ,   "بازه خاموشی"                                     ,   "wage"
 )
+X(PHRASE_INVALID_INPUT              ,   "ورودی نا معتبر است"                                     ,   "wage"
+)
 /**********************************************************************
  *
  *                              Shift
@@ -415,9 +417,9 @@ X(PHRASE_REPORT                         ,   "گزارش"                        
 )
 X(PHRASE_NONE                           ,   ""              ,   ""
 )
-X(PHRASE_ENTER_ENERGY_SAVER_RANGE      ,   "ورود بازه ذخیره انرژی"         ,   ""
+X(PHRASE_ENTER_SLEEP_TIME_RANGE      ,   "ورود بازه ذخیره انرژی"         ,   ""
 )
-X(PHRASE_ENTER_SLEEP_TIME_RANGE        ,   "ورود بازه خاموشی"              ,   ""
+X(PHRASE_ENTER_POWER_OFF_TIME_RANGE        ,   "ورود بازه خاموشی"              ,   ""
 )
 X(PHRASE_SEC_REC_TIME                  ,   "زمان رسید دوم"              ,   ""
 )
@@ -521,6 +523,7 @@ X(PHRASE_UPDATE_FAILED          ,   "خطا در به روز رسانی دستگ
 )
 X(PHRASE_UPDATE_SUCCEED          ,   "دستگاه با موفقیت به روزرسانی شد"         ,  "phone number"
 )
+
 
 /**********************************************************************
  *

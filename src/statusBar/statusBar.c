@@ -357,6 +357,8 @@ OOP_CTOR(StatusBar) {
     __statusBar->enDateTimeMode = enDateTimeMode;
     __statusBar->setSoundVolume = setSoundVolume;
     enDateTimeMode();
+
+    TIMER_START(timer);
 }
 
 StatusBar* statusBar() {

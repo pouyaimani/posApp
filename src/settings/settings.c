@@ -20,6 +20,7 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_COMM_MODE          "0"
 #define DEFAULT_KEY_VOLUME         "5"
 #define DEFAULT_TIMEOUT_SLEEP      "5"
+#define DEFAULT_TIMEOUT_POWER_OFF  "10"
 #define DEFAULT_BRIGHTNESS         "5"
 #define DEFAULT_LANGUAGE           "0"
 #define DEFAULT_PRINT_GREY_SCALE   "1"
@@ -61,8 +62,8 @@ static const DataDescriptor settingsDsc[] = {
                  DEFAULT_KEY_VOLUME),
     DSC_U8_NAMED("sleepTimeout", __settings.terminal.sleepTimeout,
                  DEFAULT_TIMEOUT_SLEEP),
-    DSC_U8_NAMED("energySaverRange", __settings.terminal.energySaverRange,
-                 DEFAULT_TIMEOUT_SLEEP),
+    DSC_U8_NAMED("powerOffTimeOut", __settings.terminal.powerOffTimeOut,
+                 DEFAULT_TIMEOUT_POWER_OFF),
     DSC_U8_NAMED("brightness", __settings.terminal.brightness,
                  DEFAULT_BRIGHTNESS),
     DSC_U8_NAMED("merchantRecPrint", __settings.terminal.merchantRecPrint,

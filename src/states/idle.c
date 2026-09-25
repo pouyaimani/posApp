@@ -103,6 +103,27 @@ static void hibernate(void* arg) {
     OOP_CALL(sys(), hibernate);
 }
 
+static void powerOff(void* arg) {
+    VAR_UNUSED(arg);
+    OOP_CALL(sys(), powerOff);
+}
+
+static void setSleepeTimeOutIfChanged(State* idle) {
+    static uint32_t sleepTimeout = 0;
+    if (settings()->terminal.sleepTimeout != sleepTimeout) {
+        sleepTimeout = settings()->terminal.sleepTimeout;
+        OOP_CALL(idle, resetTimerTimeOut, hibernate, MINUTES(sleepTimeout));
+    }
+}
+
+static void setPowerOffTimeOutIfChanged(State* idle) {
+    static uint32_t powerOffTimeOut = 0;
+    if (settings()->terminal.powerOffTimeOut != powerOffTimeOut) {
+        powerOffTimeOut = settings()->terminal.powerOffTimeOut;
+        OOP_CALL(idle, resetTimerTimeOut, powerOff, MINUTES(powerOffTimeOut));
+    }
+}
+
 static void menuEventCb(lv_event_t* e) {
     lv_event_code_t code = lv_event_get_code(e);
 
@@ -120,6 +141,8 @@ static void setTextIfChanged(lv_obj_t* label, const char* txt) {
 }
 
 STATE_DEF_ENTER(Idle) {
+    setSleepeTimeOutIfChanged(state);
+    setPowerOffTimeOutIfChanged(state);
     OOP_CALL(cellular(), checkSimStatus);
     netAutoConnect(NULL);
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
@@ -420,7 +443,11 @@ OOP_CTOR(Idle, State* parent, const char* name) {
     createUi();
 
     OOP_CALL(&self->base, enableTimer);
-    OOP_CALL(&self->base, addTimer, hibernate, SECS(60), NULL);
+    OOP_CALL(&self->base, addTimer, hibernate,
+             MINUTES(settings()->terminal.sleepTimeout), NULL);
+    OOP_CALL(&self->base, addTimer, powerOff,
+             MINUTES(settings()->terminal.powerOffTimeOut), NULL);
 
     timer = TIMER_CREATE(netAutoConnect, SECS(10), false);
+    TIMER_START(timer);
 }

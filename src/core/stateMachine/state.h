@@ -50,7 +50,7 @@ typedef void (*StateCallback)(void* arg);
 typedef struct {
     // latest check time
     uint32_t      ctime;
-    uint32_t      trigDuration;
+    uint32_t      timeOut;
     StateCallback timerCb;
     void*         timerCbData;
 } StateTimer_t;
@@ -76,9 +76,11 @@ OOP_VTABLE(State) {
     OOP_IMETHOD(void, State, setPrev, State*);
     OOP_IMETHOD(bool, State, enableTimer);
     OOP_IMETHOD(bool, State, disableTimer);
-    OOP_IMETHOD(bool, State, addTimer, StateCallback timerCb,
-                uint32_t trigDuration, void* timerCbData);
+    OOP_IMETHOD(bool, State, addTimer, StateCallback timerCb, uint32_t timeOut,
+                void* timerCbData);
     OOP_IMETHOD(bool, State, removeTimer, StateCallback timerCb);
+    OOP_IMETHOD(bool, State, resetTimerTimeOut, StateCallback timerCb,
+                uint32_t timeout);
 };
 
 /* ===== State base ===== */

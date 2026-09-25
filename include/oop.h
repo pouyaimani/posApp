@@ -59,6 +59,4 @@
         }                                                                      \
     } while (0)
 
-#define SECS(x) (x * 1000)
-
 #endif

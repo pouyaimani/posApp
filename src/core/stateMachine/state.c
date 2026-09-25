@@ -101,7 +101,7 @@ static bool disableTimer(State* state) {
     return true;
 }
 
-static bool addTimer(State* state, StateCallback timerCb, uint32_t trigDuration,
+static bool addTimer(State* state, StateCallback timerCb, uint32_t timeOut,
                      void* timerCbData) {
     if (!state) {
         return false;
@@ -114,10 +114,10 @@ static bool addTimer(State* state, StateCallback timerCb, uint32_t trigDuration,
         TRACE_POINT;
         return false;
     }
-    timer->timerCb      = timerCb;
-    timer->trigDuration = trigDuration;
-    timer->timerCbData  = timerCbData;
-    timer->ctime        = GET_TICK();
+    timer->timerCb     = timerCb;
+    timer->timeOut     = timeOut;
+    timer->timerCbData = timerCbData;
+    timer->ctime       = GET_TICK();
     return list_push_back(state->timerList, timer);
 }
 
@@ -142,6 +142,35 @@ static bool removeTimer(State* state, StateCallback cb) {
     list_remove_predicate(state->timerList, match_timer_cb, cb);
 }
 
+typedef struct {
+    StateCallback cb;
+    uint32_t      timeout;
+} TimerTimeoutChangeCtx;
+
+static bool __resetTimerTimeOut(void* data, void* context) {
+    TimerTimeoutChangeCtx* tcb   = (TimerTimeoutChangeCtx*)context;
+    StateTimer_t*          timer = (StateTimer_t*)data;
+    if (timer->timerCb == tcb->cb) {
+        timer->timeOut = tcb->timeout;
+        return false;
+    }
+    return true;
+}
+
+static bool resetTimerTimeOut(State* state, StateCallback cb,
+                              uint32_t timeout) {
+    if (!state) {
+        return false;
+    }
+    if (!state->timerList) {
+        return false;
+    }
+    TimerTimeoutChangeCtx tcb = {.cb = cb, .timeout = timeout};
+    if (state->isTimerEn) {
+        list_foreach(state->timerList, __resetTimerTimeOut, &tcb);
+    }
+}
+
 OOP_CTOR(State, State* parent, const char* name) {
     STM_LOG("Constructing State is started ...");
     self->vtable.enter             = default_enter;
@@ -162,6 +191,7 @@ OOP_CTOR(State, State* parent, const char* name) {
     self->vtable.addTimer          = addTimer;
     self->vtable.removeTimer       = removeTimer;
     self->vtable.enableTimer       = enableTimer;
+    self->vtable.resetTimerTimeOut = resetTimerTimeOut;
     self->parent                   = parent;
     self->next                     = NULL;
     self->prev                     = NULL;

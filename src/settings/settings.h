@@ -14,7 +14,7 @@ typedef struct __attribute__((packed)) {
     uint8_t netRoute;
     uint8_t devVolume;
     uint8_t sleepTimeout;
-    uint8_t energySaverRange;
+    uint8_t powerOffTimeOut;
     uint8_t brightness;
     uint8_t shiftEnable;
     uint8_t shiftActive;

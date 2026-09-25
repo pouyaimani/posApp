@@ -98,11 +98,16 @@ STATE_DEF_EXIT(EnergySettings) {
     ui_menu_destroy(energyMenu);
 }
 
-static void getSaverRange(void* arg) {
+static void getPowerOffTimeOut(void* arg) {
     State*  state = (State*)arg;
     uint8_t val;
     STRING_TO_U8(inmgr()->input, &val);
-    settings()->terminal.energySaverRange = val;
+    if (val <= 0) {
+        GOTO_INFO(subSettings[SET_ITEM_ENERGY], subSettings[SET_ITEM_ENERGY],
+                  INFO_WARNING, phraseGetDef(PHRASE_INVALID_INPUT), "");
+        return;
+    }
+    settings()->terminal.powerOffTimeOut = val;
     settings()->save();
     GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
               phraseGetDef(PHRASE_SUC_DONME), "");
@@ -112,6 +117,11 @@ static void getSleepTime(void* arg) {
     State*  state = (State*)arg;
     uint8_t val;
     STRING_TO_U8(inmgr()->input, &val);
+    if (val <= 0) {
+        GOTO_INFO(subSettings[SET_ITEM_ENERGY], subSettings[SET_ITEM_ENERGY],
+                  INFO_WARNING, phraseGetDef(PHRASE_INVALID_INPUT), "");
+        return;
+    }
     settings()->terminal.sleepTimeout = val;
     settings()->save();
     GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
@@ -128,13 +138,13 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
         DEFINE_STRING(str, 4);
         uint8_t val;
         if (energyMenu->idx == 0) {
-            phrase = PHRASE_ENTER_ENERGY_SAVER_RANGE;
-            cb     = getSaverRange;
-            val    = settings()->terminal.energySaverRange;
-        } else if (energyMenu->idx == 1) {
             phrase = PHRASE_ENTER_SLEEP_TIME_RANGE;
             cb     = getSleepTime;
             val    = settings()->terminal.sleepTimeout;
+        } else if (energyMenu->idx == 1) {
+            phrase = PHRASE_ENTER_POWER_OFF_TIME_RANGE;
+            cb     = getPowerOffTimeOut;
+            val    = settings()->terminal.powerOffTimeOut;
         }
         inmgr()->run(
             &(InputCfg){

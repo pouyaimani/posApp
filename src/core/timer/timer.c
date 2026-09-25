@@ -57,13 +57,14 @@ static bool handleTimer(void* data, void* context) {
     Timer*   timer = (Timer*)data;
     uint32_t tick  = GET_TICK();
     if (tick > timer->ctime + timer->period) {
-        if (!timer->checker) {
+        if (timer->checker) {
+            timer->checker(NULL);
+        } else {
             LOG_ERROR("timer callback is not found.");
-            return false;
         }
-        timer->checker(NULL);
         timer->ctime = tick;
     }
+    return true;
 }
 
 static void runCycle() {
