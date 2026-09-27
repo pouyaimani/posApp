@@ -19,6 +19,8 @@ typedef enum PrinterStatus_t {
     PRNT_STAT_OTHER
 } PrinterStatus_t;
 
+typedef enum { PRINT_BG_WHITE = 0, PRINT_BG_BLACK } PrintBg;
+
 OOP_DECLARE_CLASS(Printer)
 
 OOP_VTABLE(Printer) {
@@ -28,14 +30,15 @@ OOP_VTABLE(Printer) {
     OOP_IMETHOD(PrinterErr_t, Printer, setGray, PrinterGrayLevel_t);
     OOP_IMETHOD(PrinterGrayLevel_t, Printer, getGray);
     OOP_IMETHOD(PrinterStatus_t, Printer, getStatus);
-    OOP_IMETHOD(PrinterErr_t, Printer, printBmp, uint8_t*, uint16_t, uint16_t);
+    OOP_IMETHOD(PrinterErr_t, Printer, printBmp, uint8_t*, uint16_t, uint16_t,
+                PrintBg bg);
 };
 
 OOP_CLASS(Printer) {
     OOP_IMPLEMENTS(Printer);
     OOP_METHOD(PrinterErr_t, init);
     OOP_METHOD(PrinterErr_t, finish);
-    OOP_METHOD(PrinterErr_t, print, uint8_t*, uint16_t, uint16_t);
+    OOP_METHOD(PrinterErr_t, print, uint8_t*, uint16_t, uint16_t, PrintBg bg);
     uint32_t        offset;
     PrinterStatus_t status;
     PrinterErr_t    error;

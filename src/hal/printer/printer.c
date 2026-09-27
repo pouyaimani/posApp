@@ -42,8 +42,9 @@ reopen:
 
 static PrinterErr_t finish() { return OOP_CALL(__printer, close); }
 
-static PrinterErr_t print(uint8_t* src, uint16_t width, uint16_t height) {
-    return OOP_CALL(__printer, printBmp, src, width, height);
+static PrinterErr_t print(uint8_t* src, uint16_t width, uint16_t height,
+                          PrintBg bg) {
+    return OOP_CALL(__printer, printBmp, src, width, height, bg);
 }
 
 OOP_CTOR(Printer) {

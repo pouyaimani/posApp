@@ -102,11 +102,13 @@ static PrinterGrayLevel_t getGray(Printer* printer) {
 }
 
 static PrinterErr_t printBmp(Printer* priter, uint8_t* bmp, uint16_t width,
-                             uint16_t height) {
+                             uint16_t height, PrintBg bg) {
     PrintFormat format = {0};
     gBuf               = bmp;
-    for (size_t i = 0; i < (width >> 3) * height; i++) {
-        gBuf[i] = ~gBuf[i];
+    if (bg == PRINT_BG_WHITE) {
+        for (size_t i = 0; i < (width >> 3) * height; i++) {
+            gBuf[i] = ~gBuf[i];
+        }
     }
     int ret = sdkPrintImage(&format, (const u8*)gBuf, width, height);
     ret     = sdkPrintStart();

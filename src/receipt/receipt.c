@@ -54,7 +54,9 @@ static Result_t flushReceipt(Receipt* rec) {
         return res;
     // uint32_t tick = OOP_CALL(sys(), getTick);
     // Send current buffer to printer
-    res.detail.printer = printer()->print(rec->bitmap, rec->width, rec->height);
+    res.detail.printer = printer()->print(
+        rec->bitmap, rec->width, rec->height,
+        settings()->terminal.printModel ? PRINT_BG_BLACK : PRINT_BG_WHITE);
 
     // TODO: handle printer error
     RETURN_VALUE_IF_NOT(
