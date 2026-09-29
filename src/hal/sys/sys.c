@@ -36,6 +36,7 @@ void sys_freeMemory_debug(void* mem, const char* file, int line,
                           const char* func) {
     LOG_TRACE("########## [FREE] addr= %s%p%s bytes from %s:%d (%s) ##########",
               LOG_COLOR_ERROR, mem, LOG_COLOR_RESET, file, line, func);
+    OOP_CALL(sys(), freeMemory, mem);
 }
 
 OOP_CTOR(System, const char* name) {

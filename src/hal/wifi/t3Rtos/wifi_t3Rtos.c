@@ -7,7 +7,7 @@
 #include "logger.h"
 #include "utility/arith.h"
 
-static WifiAPInfo* apinfo;
+static WifiAPInfo* apinfo     = NULL;
 static WifiAPInfo* selectedAp = NULL;
 
 static void libEncodeSsid(char* src, u32 srcLen) {
@@ -144,11 +144,13 @@ static WifiErr_t close(Wifi* wifi) {
 
 static WifiErr_t startScan(Wifi* wifi) {
     wifi->scanSt = WIFI_SCAN_FAILED;
-    apinfo       = MEM_ALLOC(sizeof(WifiAPInfo) * LEN_WIFI_AP_LIST);
+    if (apinfo == NULL)
+        apinfo = MEM_ALLOC(sizeof(WifiAPInfo) * LEN_WIFI_AP_LIST);
     WifiErr_t err =
         translateSdkErr(sdkWifiStartScanAP(apinfo, LEN_WIFI_AP_LIST));
     if (err != WIFI_ERR_OK) {
-        MEM_FREE(apinfo);
+        if (apinfo)
+            MEM_FREE(apinfo);
         return err;
     }
     wifi->scanSt = WIFI_SCAN_UNDER_PROCESS;
@@ -183,10 +185,11 @@ static WifiScanSt_t getScanStatus(Wifi* wifi) {
             sortApInfo(apinfo, apNum);
             filterEmptySSID(apinfo, &apNum);
             copyWifiAp(wifi, apinfo, apNum);
-            MEM_FREE(apinfo);
         } else {
             wifi->scanSt = WIFI_SCAN_FAILED;
         }
+        if (apinfo)
+            MEM_FREE(apinfo);
     } else {
         wifi->scanSt = WIFI_SCAN_FAILED;
     }

@@ -114,6 +114,7 @@ static void WifiEnterPass(State* parent) {
 static Menu* wifiMenu = NULL;
 
 STATE_DEF_ENTER(WifiScan) {
+    wifi()->onUserSelection       = true;
     Result_t res                  = network()->init(NET_ROUTE_WIFI);
     settings()->terminal.netRoute = NET_ROUTE_WIFI;
     settings()->save();
@@ -122,6 +123,15 @@ STATE_DEF_ENTER(WifiScan) {
     }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SEARCHING_4_WIFI),
               phraseGetDef(PHRASE_PLEASE_WAIT));
+    WifiScanSt_t scnSt = OOP_CALL(wifi(), hgetScanStatus);
+    if (scnSt == WIFI_SCAN_UNDER_PROCESS) {
+        return;
+    } else if (scnSt == WIFI_SCAN_SUCCEED) {
+        WifiEvent* ev  = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        ev->scanStatus = WIFI_SCAN_SUCCEED;
+        DISPATCH_EVENT(ev);
+        return;
+    }
     if (wifi()->startScan() != WIFI_ERR_OK) {
         GOTO_INFO(state->parent, state->parent, INFO_ERROR,
                   phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
@@ -137,10 +147,7 @@ STATE_DEF_EXIT(WifiScan) {
 }
 
 STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
-    if (wifi()->scanSt == WIFI_SCAN_UNDER_PROCESS) {
-        return;
-    } else if (wifi()->scanSt == WIFI_SCAN_FAILED) {
-    } else {
+    if (wifiMenu) {
         ui_menu_handleItem(wifiMenu, ev->key);
         if (ev->key == KEY_ESC) {
             ui_menu_hide(wifiMenu);
@@ -280,6 +287,7 @@ static void createUi() {
 }
 
 STATE_DEF_ENTER(Connectios) {
+    wifi()->onUserSelection = false;
     createUi();
     GOTO_MENU_MEM_HANDLE(state->parent, menu, NULL, NULL);
 }

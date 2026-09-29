@@ -60,6 +60,7 @@ OOP_CLASS(Wifi) {
     OOP_METHOD(WifiErr_t, disconnect);
     WifiApList_t apList;
     WifiScanSt_t scanSt;
+    bool         onUserSelection;
 };
 
 OOP_CTOR(Wifi);

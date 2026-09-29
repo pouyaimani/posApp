@@ -44,9 +44,9 @@ STATE_DEF_ENTER(Startup) {
 
     LOG_TRACE("Free space in flash = %lu", OOP_CALL(file(), getFlashFreeSpace));
 
-    shifts()->init();
+    // shifts()->init();
 
-    txnrecord()->init();
+    // txnrecord()->init();
 
     LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
     OOP_CALL(sys(), setVolume, settings()->terminal.devVolume);

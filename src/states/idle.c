@@ -70,8 +70,8 @@ static void wifiAutoConnect() {
                 }
             }
         }
-    } else if (scnSt != WIFI_SCAN_UNDER_PROCESS) {
-        wifi()->scanInBg();
+    } else if (scnSt != WIFI_SCAN_UNDER_PROCESS && !wifi()->onUserSelection) {
+        wifi()->startScan();
     }
 }
 
