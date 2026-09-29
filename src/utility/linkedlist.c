@@ -209,7 +209,7 @@ size_t list_remove_predicate(List* list, ListPredicate predicate,
             }
 
             list_update_tail(list);
-            free(node);
+            MEM_FREE(node);
             removed++;
 
             if (list->size == 0)

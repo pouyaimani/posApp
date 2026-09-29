@@ -8,7 +8,7 @@
 
 #define CREATE_EVENT(type, event)                                              \
     do {                                                                       \
-        type##* ev = OOP_CALL(sys(), getMemory, sizeof(type##));               \
+        type##* ev = MEM_ALLOC(sizeof(type##));                                \
         event      = (Event*)ev;                                               \
         OOP_CALL_CTOR(Event, event);                                           \
         OOP_CALL_CTOR(type##, ev);                                             \

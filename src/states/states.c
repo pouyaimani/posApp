@@ -72,17 +72,6 @@ void GOTO_INFO(State* prev, State* next, uint8_t type, const char* title,
     SM_GOTO(getState(STATE_ID_INFO));
 }
 
-void GOTO_MENU(State* prev, Menu* amenu, CallBack_t _onExit, void* userData) {
-    RETURN_IF_NULL(prev, ;);
-    RETURN_IF_NULL(amenu, ;);
-    StMenu* stMenu   = (StMenu*)getState(STATE_ID_MENU);
-    stMenu->menu     = amenu;
-    stMenu->onExit   = _onExit;
-    stMenu->userData = userData;
-    OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);
-    SM_GOTO(getState(STATE_ID_MENU));
-}
-
 void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
                   State* onSuccess, State* onFailure) {
     TxnResult* res = getState(STATE_ID_TXN_RES);

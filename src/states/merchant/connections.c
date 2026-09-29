@@ -255,6 +255,7 @@ int               menuCount = 0;
 static Menu* menu;
 
 static void createUi() {
+    menu = MEM_ALLOC(sizeof(*menu));
     ui_menu_create(menu, disp()->screen);
     menuCount        = 0;
     NetRoute_t route = OOP_CALL(net, getRoute);
@@ -280,7 +281,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Connectios) {
     createUi();
-    GOTO_MENU(state->parent, menu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, menu, NULL, NULL);
 }
 
 OOP_CTOR(Connections, State* parent, const char* name) {
@@ -294,6 +295,4 @@ OOP_CTOR(Connections, State* parent, const char* name) {
 
     cel = cellular();
     net = network();
-
-    menu = MEM_ALLOC(sizeof(*menu));
 }

@@ -80,10 +80,15 @@ OOP_CTOR(System, const char* name);
 
 System* sys(void);
 
-#define MEM_ALLOC(size) OOP_CALL(sys(), getMemory, size)
+void* sys_getMemory_debug(size_t size, const char* file, int line,
+                          const char* func);
+void  sys_freeMemory_debug(void* mem, const char* file, int line,
+                           const char* func);
+
+#define MEM_ALLOC(size) sys_getMemory_debug(size, __FILE__, __LINE__, __func__)
 #define MEM_FREE(mem)                                                          \
-    OOP_CALL(sys(), freeMemory, mem);                                          \
-    mem = NULL
+    sys_freeMemory_debug(mem, __FILE__, __LINE__, __func__);                   \
+    mem = NULL;
 #define MEM_REALLOC(mem, size) OOP_CALL(sys(), reallocate, mem, size)
 #define GET_TICK()             OOP_CALL(sys(), getTick)
 

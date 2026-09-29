@@ -12,13 +12,9 @@
 static int*              fixedAmountItem;
 static TerminalSettings* termStorage;
 
-static SubState* amountList;
-static SubState* singleAmount;
-static SubState* variantAmount;
-
 static Menu* amountListMenu;
 
-STATE_DEF_ENTER(AmountList) {
+static void amountList() {
     amountListMenu = MEM_ALLOC(sizeof(*amountListMenu));
     ui_menu_create(amountListMenu, disp()->screen);
     for (uint8_t i = 0; i < termStorage->amountListCnt; i++) {
@@ -29,10 +25,10 @@ STATE_DEF_ENTER(AmountList) {
         ui_menu_addItem(amountListMenu, str, LV_TEXT_ALIGN_RIGHT, NULL, NULL,
                         NULL);
     }
-    GOTO_MENU(STATE_IDLE, amountListMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(STATE_IDLE, amountListMenu, NULL, NULL);
 }
 
-STATE_DEF_ENTER(SingleAmount) {
+static void singleAmount() {
     inmgr()->run(
         &(InputCfg){
             .type   = INPUT_TYPE_KEYPAD,
@@ -47,7 +43,7 @@ STATE_DEF_ENTER(SingleAmount) {
     //            NULL);
 }
 
-STATE_DEF_ENTER(VariantAmount) {
+static void variantAmount() {
     char str[32]                = {0};
     char amount[LEN_MAX_AMOUNT] = {0};
     amountSeparator(termStorage->amountList[11], amount, LEN_MAX_AMOUNT);
@@ -68,29 +64,17 @@ STATE_DEF_ENTER(VariantAmount) {
 
 STATE_DEF_ENTER(FixedAmount) {
     if (*fixedAmountItem == FIXED_AMNT_LISTS) {
-        SM_GOTO(amountList);
+        amountList();
     } else if (*fixedAmountItem == FIXED_AMNT_SINGLE) {
-        SM_GOTO(singleAmount);
+        singleAmount();
     } else if (*fixedAmountItem == FIXED_AMNT_VARIANT) {
-        SM_GOTO(variantAmount);
+        variantAmount();
     }
 }
 
 OOP_CTOR(FixedAmount, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
     self->base.vtable.enter = STATE_ENTER(FixedAmount);
-
-    amountList = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, amountList, parent, "amount list");
-    amountList->vtable.enter = STATE_ENTER(AmountList);
-
-    singleAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, singleAmount, parent, "single amount");
-    singleAmount->vtable.enter = STATE_ENTER(SingleAmount);
-
-    variantAmount = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, variantAmount, parent, "variant amount");
-    variantAmount->vtable.enter = STATE_ENTER(VariantAmount);
 
     fixedAmountItem = &settings()->terminal.fixedAmountItem;
     termStorage     = &settings()->terminal;

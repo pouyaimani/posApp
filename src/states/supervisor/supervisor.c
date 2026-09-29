@@ -268,13 +268,14 @@ static void changeSSLstatuse(void* arg) {
 }
 
 STATE_DEF_ENTER(EnableSsl) {
+    sslMenu = MEM_ALLOC(sizeof(*sslMenu));
     ui_menu_create(sslMenu, disp()->screen);
     sslMenu->checkEnable = true;
     ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_ENABLE), LV_TEXT_ALIGN_RIGHT,
                     success, changeSSLstatuse, NULL);
     ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_DISABLE), LV_TEXT_ALIGN_RIGHT,
                     success, changeSSLstatuse, NULL);
-    GOTO_MENU(state->parent, sslMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, sslMenu, NULL, NULL);
     ui_menu_set_checked(sslMenu, !settings()->server.sslEn);
 }
 
@@ -304,6 +305,7 @@ static void setItemToMainServer() { serverItem = SERV_SET_MAIN; }
 static void setItemToTms() { serverItem = SERV_SET_TMS; }
 
 STATE_DEF_ENTER(NetworkSettings) {
+    serverSetMenu = MEM_ALLOC(sizeof(*serverSetMenu));
     ui_menu_create(serverSetMenu, disp()->screen);
     ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SERVER_SETTINGS),
                     LV_TEXT_ALIGN_RIGHT, enterIp, setItemToMainServer, NULL);
@@ -311,7 +313,7 @@ STATE_DEF_ENTER(NetworkSettings) {
                     LV_TEXT_ALIGN_RIGHT, enterIp, setItemToTms, NULL);
     ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SSL),
                     LV_TEXT_ALIGN_RIGHT, enableSsl, NULL, NULL);
-    GOTO_MENU(state->parent, serverSetMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, serverSetMenu, NULL, NULL);
 }
 
 OOP_CTOR(NetworkSettings, State* parent, const char* name) {
@@ -381,12 +383,13 @@ OOP_CTOR(DefaultSettings, State* parent, const char* name) {
 static Menu* menu;
 
 STATE_DEF_ENTER(SupervisorMenu) {
+    menu = MEM_ALLOC(sizeof(*menu));
     ui_menu_create(menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL; i++) {
         ui_menu_addItem(menu, phraseGetDef(itemTxt[i]), LV_TEXT_ALIGN_RIGHT,
                         subStates[i], NULL, NULL);
     }
-    GOTO_MENU(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
 }
 
 static void SupervisorMenu(State* parent) {
@@ -440,8 +443,4 @@ OOP_CTOR(Supervisor, State* parent, const char* name) {
     self->substate.merchantPassReset = subStates[SUBS_MERCHANT_PASS_RESET];
     self->substate.updateApp         = subStates[SUBS_UPDATE_APP];
     self->substate.DefaultSettings   = subStates[SUBS_DEFAULT_SETTINGS];
-
-    sslMenu       = MEM_ALLOC(sizeof(*sslMenu));
-    serverSetMenu = MEM_ALLOC(sizeof(*serverSetMenu));
-    menu          = MEM_ALLOC(sizeof(*menu));
 }

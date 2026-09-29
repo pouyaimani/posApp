@@ -18,6 +18,15 @@
 #define LOG_LEV_ERROR 4
 #define LOG_LEV_FATAL 5
 
+#define LOG_COLOR_RESET "\x1b[0m"
+
+#define LOG_COLOR_TRACE "\x1b[90m" // Gray
+#define LOG_COLOR_DEBUG "\x1b[36m" // Cyan
+#define LOG_COLOR_INFO  "\x1b[32m" // Green
+#define LOG_COLOR_WARN  "\x1b[33m" // Yellow
+#define LOG_COLOR_ERROR "\x1b[31m" // Red
+#define LOG_COLOR_FATAL "\x1b[91m" // Bright Red
+
 #define LOG_LEVEL LOG_LEV_TRACE
 
 OOP_DECLARE_CLASS(DateTime);

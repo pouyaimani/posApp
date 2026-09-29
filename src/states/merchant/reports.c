@@ -145,12 +145,13 @@ STATE_DEF_ENTER(RePrint) {
     docType = DOC_TXN;
     queryFilterSet(&qfilter, REP_FILTER_LATEST);
     REPORT_RESULT_TXN(rquery.resMode);
+    printMenu = MEM_ALLOC(sizeof(*printMenu));
     ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_END; i++) {
         ui_menu_addItem(printMenu, phraseGetDef(printItemTxt[i]),
                         LV_TEXT_ALIGN_RIGHT, NULL, setReprintItem, NULL);
     }
-    GOTO_MENU(state->parent, printMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, printMenu, NULL, NULL);
 }
 
 static void RePrint(State* parent) {
@@ -208,12 +209,13 @@ static void SummaryReport(State* parent) {
 STATE_DEF_ENTER(DetailsReport) {
     docType = DOC_DETAILED_REPORT;
     queryFilterSet(&qfilter, REP_FILTER_DATE_TIME);
+    printMenu = MEM_ALLOC(sizeof(*printMenu));
     ui_menu_create(printMenu, disp()->screen);
     for (uint8_t i = 0; i < REPRINT_TRACE; i++) {
         ui_menu_addItem(printMenu, phraseGetDef(printItemTxt[i]),
                         LV_TEXT_ALIGN_RIGHT, NULL, setReprintItem, NULL);
     }
-    GOTO_MENU(state->parent, printMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, printMenu, NULL, NULL);
 }
 
 STATE_DEF_EXIT(DetailsReport) {}
@@ -550,13 +552,14 @@ static void setReportItem(void* arg) {
 
 STATE_DEF_ENTER(Reports) {
     queryFilterClear(&qfilter);
+    reportsMenu = MEM_ALLOC(sizeof(*reportsMenu));
     ui_menu_create(reportsMenu, disp()->screen);
     for (uint8_t i = 0; i < REP_ITEM_ALL; i++) {
         ui_menu_addItem(reportsMenu, phraseGetDef(reportsItemTxt[i]),
                         LV_TEXT_ALIGN_RIGHT, subReports[i], setReportItem,
                         (void*)(uintptr_t)i);
     }
-    GOTO_MENU(state->parent, reportsMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, reportsMenu, NULL, NULL);
 }
 
 OOP_CTOR(Reports, State* parent, const char* name) {
@@ -585,7 +588,4 @@ OOP_CTOR(Reports, State* parent, const char* name) {
     getEndTime = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, getEndTime, parent, "get End Time");
     getEndTime->vtable.enter = STATE_ENTER(GetEndTime);
-
-    printMenu   = MEM_ALLOC(sizeof(*printMenu));
-    reportsMenu = MEM_ALLOC(sizeof(*reportsMenu));
 }

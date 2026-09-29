@@ -214,6 +214,7 @@ static const Phrases_t dsc[SUBS_ALL] = {PHRASE_REPORT,
 static Menu* menu;
 
 static void createUi() {
+    menu = MEM_ALLOC(sizeof(*menu));
     ui_menu_create(menu, disp()->screen);
     for (uint8_t i = 0; i < SUBS_ALL; i++) {
         ui_menu_addItem(menu, phraseGetDef(dsc[i]), LV_TEXT_ALIGN_RIGHT,
@@ -223,7 +224,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(MerchantMenu) {
     createUi();
-    GOTO_MENU(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
 }
 
 static void MerchantMenu(State* parent) {
@@ -264,6 +265,4 @@ OOP_CTOR(Merchant, State* parent, const char* name) {
     self->subState.reports       = subStates[SUBS_REPORTS];
     self->subState.shifts        = subStates[SUBS_SHIFT];
     self->subState.otherProjects = subStates[SUBS_OTHER_PROJECTS];
-
-    menu = MEM_ALLOC(sizeof(*menu));
 }

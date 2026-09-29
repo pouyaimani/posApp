@@ -14,6 +14,9 @@ STATE_DEF_ENTER(StMenu) { ui_menu_show(menu->menu); }
 STATE_DEF_EXIT(StMenu) {
     ui_menu_hide(menu->menu);
     ui_menu_destroy(menu->menu);
+    if (menu->memHandle) {
+        MEM_FREE(menu->menu);
+    }
 }
 
 STATE_DEF_HANDLE(StMenu, TimeOutEvent) {}
@@ -67,4 +70,29 @@ OOP_CTOR(StMenu, State* parent, const char* name) {
     self->base.vtable.handleTimeout = STATE_HANDLE(StMenu, TimeOutEvent);
 
     menu = (StMenu*)getState(STATE_ID_MENU);
+}
+
+void GOTO_MENU(State* prev, Menu* amenu, CallBack_t _onExit, void* userData) {
+    RETURN_IF_NULL(prev, ;);
+    RETURN_IF_NULL(amenu, ;);
+    StMenu* stMenu    = (StMenu*)getState(STATE_ID_MENU);
+    stMenu->menu      = amenu;
+    stMenu->onExit    = _onExit;
+    stMenu->userData  = userData;
+    stMenu->memHandle = false;
+    OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);
+    SM_GOTO(getState(STATE_ID_MENU));
+}
+
+void GOTO_MENU_MEM_HANDLE(State* prev, Menu* amenu, CallBack_t _onExit,
+                          void* userData) {
+    RETURN_IF_NULL(prev, ;);
+    RETURN_IF_NULL(amenu, ;);
+    StMenu* stMenu    = (StMenu*)getState(STATE_ID_MENU);
+    stMenu->menu      = amenu;
+    stMenu->onExit    = _onExit;
+    stMenu->userData  = userData;
+    stMenu->memHandle = true;
+    OOP_CALL(getState(STATE_ID_MENU), setPrev, prev);
+    SM_GOTO(getState(STATE_ID_MENU));
 }

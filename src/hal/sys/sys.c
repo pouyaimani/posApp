@@ -16,6 +16,28 @@ static void constructT3Rtos() {
 
 #endif
 
+void* sys_getMemory_debug(size_t size, const char* file, int line,
+                          const char* func) {
+    void* ptr;
+
+    LOG_TRACE(
+        "########## [ALLOC] size = %s%u%s bytes from %s:%d (%s) ##########",
+        LOG_COLOR_ERROR, (unsigned)size, LOG_COLOR_RESET, file, line, func);
+
+    ptr = OOP_CALL(sys(), getMemory, size);
+
+    LOG_TRACE("########## address=%s%p%s ##########", LOG_COLOR_ERROR, ptr,
+              LOG_COLOR_RESET);
+
+    return ptr;
+}
+
+void sys_freeMemory_debug(void* mem, const char* file, int line,
+                          const char* func) {
+    LOG_TRACE("########## [FREE] addr= %s%p%s bytes from %s:%d (%s) ##########",
+              LOG_COLOR_ERROR, mem, LOG_COLOR_RESET, file, line, func);
+}
+
 OOP_CTOR(System, const char* name) {
     self->name                    = name;
     self->vtable.flushDisplay     = NULL;

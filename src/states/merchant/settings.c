@@ -85,6 +85,7 @@ static Menu*     energyMenu;
 static SubState* getValue;
 
 STATE_DEF_ENTER(EnergySettings) {
+    energyMenu = MEM_ALLOC(sizeof(*energyMenu));
     ui_menu_create(energyMenu, disp()->screen);
     for (uint8_t i = 0; i < 2; i++) {
         ui_menu_addItem(energyMenu, phraseGetDef(energyItemTxt[i]),
@@ -96,6 +97,7 @@ STATE_DEF_ENTER(EnergySettings) {
 STATE_DEF_EXIT(EnergySettings) {
     ui_menu_hide(energyMenu);
     ui_menu_destroy(energyMenu);
+    MEM_FREE(energyMenu);
 }
 
 static void getPowerOffTimeOut(void* arg) {
@@ -183,12 +185,13 @@ static SubState* subReceipt[4];
 static Menu* receiptMenu;
 
 STATE_DEF_ENTER(ReceiptSettings) {
+    receiptMenu = MEM_ALLOC(sizeof(*receiptMenu));
     ui_menu_create(receiptMenu, disp()->screen);
     for (uint8_t i = 0; i < 4; i++) {
         ui_menu_addItem(receiptMenu, phraseGetDef(receiptItemTxt[i]),
                         LV_TEXT_ALIGN_RIGHT, subReceipt[i], NULL, NULL);
     }
-    GOTO_MENU(state->parent, receiptMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, receiptMenu, NULL, NULL);
 }
 
 static Menu* autoRecMenu;
@@ -202,7 +205,7 @@ static void setAutoPrintRec(void* arg) {
 STATE_DEF_ENTER(AutoPrint) {
     ui_menu_on_off(autoRecMenu, disp()->screen, setAutoPrintRec, NULL);
     ui_menu_set_checked(autoRecMenu, !settings()->terminal.autoPrint);
-    GOTO_MENU(state->parent, autoRecMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, autoRecMenu, NULL, NULL);
 }
 
 static SubState* secPrintSuc;
@@ -233,18 +236,19 @@ STATE_DEF_ENTER(SecPrintTime) {
     inmgr()->set(INPUT_TYPE_KEYPAD, str);
 }
 
-static Menu merchRecMenu;
+static Menu* merchRecMenu;
 
 static void setMerchantPrintRec(void* arg) {
-    ui_menu_set_checked(&merchRecMenu, merchRecMenu.idx);
-    settings()->terminal.merchantRecPrint = !merchRecMenu.idx;
+    ui_menu_set_checked(merchRecMenu, merchRecMenu->idx);
+    settings()->terminal.merchantRecPrint = !merchRecMenu->idx;
     settings()->save();
 }
 
 STATE_DEF_ENTER(PrnMerchRec) {
-    ui_menu_on_off(&merchRecMenu, disp()->screen, setMerchantPrintRec, NULL);
-    ui_menu_set_checked(&merchRecMenu, !settings()->terminal.merchantRecPrint);
-    GOTO_MENU(state->parent, &merchRecMenu, NULL, NULL);
+    merchRecMenu = MEM_ALLOC(sizeof(*merchRecMenu));
+    ui_menu_on_off(merchRecMenu, disp()->screen, setMerchantPrintRec, NULL);
+    ui_menu_set_checked(merchRecMenu, !settings()->terminal.merchantRecPrint);
+    GOTO_MENU_MEM_HANDLE(state->parent, merchRecMenu, NULL, NULL);
 }
 
 static Menu* prnModel;
@@ -256,13 +260,14 @@ static void setPrintModel(void* arg) {
 }
 
 STATE_DEF_ENTER(PrnModel) {
+    prnModel = MEM_ALLOC(sizeof(*prnModel));
     ui_menu_create(prnModel, disp()->screen);
     ui_menu_addItem(prnModel, phraseGetDef(PHRASE_WHITE_BCKGRND),
                     LV_TEXT_ALIGN_RIGHT, NULL, setPrintModel, NULL);
     ui_menu_addItem(prnModel, phraseGetDef(PHRASE_BLK_BCKGRND),
                     LV_TEXT_ALIGN_RIGHT, NULL, setPrintModel, NULL);
     ui_menu_set_checked(prnModel, settings()->terminal.printModel ? 1 : 0);
-    GOTO_MENU(state->parent, prnModel, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, prnModel, NULL, NULL);
 }
 
 static void ReceiptSettings(State* parent) {
@@ -457,6 +462,7 @@ static void DateTimeSettings(State* parent) {
 static Menu* settingsMenu;
 
 static void createUi() {
+    settingsMenu = MEM_ALLOC(sizeof(*settingsMenu));
     ui_menu_create(settingsMenu, disp()->screen);
     for (uint8_t i = 0; i < SET_ITEM_ALL; i++) {
         ui_menu_addItem(settingsMenu, phraseGetDef(SettingsItemTxt[i]),
@@ -466,7 +472,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Settings) {
     createUi();
-    GOTO_MENU(state->parent, settingsMenu, NULL, NULL);
+    GOTO_MENU_MEM_HANDLE(state->parent, settingsMenu, NULL, NULL);
 }
 
 OOP_CTOR(Settings, State* parent, const char* name) {
@@ -479,11 +485,10 @@ OOP_CTOR(Settings, State* parent, const char* name) {
     TouchSettings(self);
     DateTimeSettings(self);
 
-    energyMenu   = MEM_ALLOC(sizeof(*energyMenu));
-    receiptMenu  = MEM_ALLOC(sizeof(*receiptMenu));
-    prnModel     = MEM_ALLOC(sizeof(*prnModel));
-    settingsMenu = MEM_ALLOC(sizeof(*settingsMenu));
-    touchMenu    = MEM_ALLOC(sizeof(*touchMenu));
-
-    autoRecMenu = MEM_ALLOC(sizeof(*autoRecMenu));
+    // energyMenu   = MEM_ALLOC(sizeof(*energyMenu));
+    // receiptMenu  = MEM_ALLOC(sizeof(*receiptMenu));
+    // prnModel     = MEM_ALLOC(sizeof(*prnModel));
+    // settingsMenu = MEM_ALLOC(sizeof(*settingsMenu));
+    // touchMenu    = MEM_ALLOC(sizeof(*touchMenu));
+    // autoRecMenu  = MEM_ALLOC(sizeof(*autoRecMenu));
 }
