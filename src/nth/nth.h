@@ -11,7 +11,10 @@
 #include "nth_types.h"
 #include "byteArray.h"
 
-#define NTH_SOCKET_CLOSE -1
+#define NTH_SOCKET_CLOSE           -1
+#define NTH_CONNECT_MAX_ATTEMPTS   3
+#define NTH_CONNECT_RETRY_DELAY_MS 300
+#define NTH_MAX_HOST_LEN           64
 
 struct NthTransaction;
 
@@ -62,6 +65,13 @@ typedef struct NthTransaction {
     NthReceiveChunkCallback onChunk;
 
     NthResult lastError;
+
+    char     connectHost[NTH_MAX_HOST_LEN];
+    uint16_t connectPort;
+
+    uint8_t  connectAttempt;
+    bool     connectRetryPending;
+    uint32_t connectRetryTick;
 
 } NthTransaction;
 

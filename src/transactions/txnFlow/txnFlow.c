@@ -172,8 +172,7 @@ static int8_t onReceive(NthTransaction* tx, void* ctx) {
 
     TxnFlow* flow = ctx;
     flow->stage   = TXN_STAGE_PARSING;
-    nth()->disconnect(flow->tx);
-    int rc = flow->cfg->parse(flow, &tx->rxBuffer);
+    int rc        = flow->cfg->parse(flow, &tx->rxBuffer);
     complete(flow, rc == ERR_NOK ? TXN_FLOW_FAILED : TXN_FLOW_SUCCESS, rc);
     return 0;
 }
@@ -182,7 +181,6 @@ static int8_t onFailure(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_TRACE("Txn flow: on failure ...");
     TxnFlow* flow = ctx;
-    // nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_FAILED, 0);
     return 0;
 }
@@ -191,7 +189,6 @@ static int8_t onTimeout(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
     LOG_TRACE("Txn flow: on timeout ...");
     TxnFlow* flow = ctx;
-    // nth()->disconnect(flow->tx);
     complete(ctx, TXN_FLOW_TIMEOUT, 0);
     return 0;
 }

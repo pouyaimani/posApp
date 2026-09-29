@@ -10,6 +10,8 @@ static TxnFlow* gflow;
 
 static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+        LOG_TRACE(
+            "config transaction is done successfully. saving settings ...");
         settings()->save();
     }
     Supporter* state = (Supporter*)STATE_SUPPORTER;

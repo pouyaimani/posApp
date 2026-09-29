@@ -6,6 +6,7 @@
 #include "utility/utility.h"
 #include "utility/arith.h"
 #include "magReader/magReader.h"
+#include "version.h"
 
 enum {
     TAG_MERCHANT_NAME      = 31,

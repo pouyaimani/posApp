@@ -129,7 +129,7 @@ static Error_t isoParseLogOnResponse(TxnData* txn, ByteArray* buf) {
     memset(settings()->terminal.terminalId, 0, terminalNumSize);
     snprintf(settings()->terminal.terminalId, terminalNumSize - 1, "%s", feild);
     LOG_DEBUG("terminal number = %s", feild);
-    RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
+    // RETURN_VALUE_IF_NOT(setWorkingKeys(), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
 

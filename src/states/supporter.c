@@ -13,7 +13,6 @@
 #include "ui/infoPage.h"
 
 static Menu*       menu;
-static SubState*   powerOff;
 static Merchant*   merchant;
 static Supervisor* supervisor;
 
@@ -25,8 +24,15 @@ static void onCustomer() {
     SM_GOTO(getState(STATE_ID_CARD_HOLDER));
 }
 
+static poweroff(void* arg) {
+    SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_POWERING_OFF), "");
+    OOP_CALL(infoPage(), forceUpdate);
+    OOP_CALL(sys(), powerOff);
+}
+
 static void onExit() {
-    GOTO_DIAL(STATE_SUPPORTER, powerOff, phraseGetDef(PHRASE_WANNA_EXIT), "");
+    GOTO_DIAL(STATE_SUPPORTER, STATE_SUPPORTER, phraseGetDef(PHRASE_WANNA_EXIT),
+              "", poweroff, NULL);
 }
 
 STATE_DEF_ENTER(Supporter) {
@@ -46,20 +52,10 @@ STATE_DEF_HANDLE(Supporter, TimeOutEvent) {}
 
 /******************** Power off sub state **********************/
 
-STATE_DEF_ENTER(PowerOff) {
-    // infoPage()->forceUpdate = true;
-    GOTO_INFO(NULL, NULL, INFO_WARNING, phraseGetDef(PHRASE_POWERING_OFF), "");
-    OOP_CALL(sys(), powerOff);
-}
-
 OOP_CTOR(Supporter, State* parent, const char* name) {
     State_ctor(self, parent, name);
     self->base.vtable.enter         = STATE_ENTER(Supporter);
     self->base.vtable.handleTimeout = STATE_HANDLE(Supporter, TimeOutEvent);
-
-    powerOff = (SubState*)MEM_ALLOC(sizeof(SubState));
-    OOP_CALL_CTOR(State, powerOff, self, "power off");
-    powerOff->vtable.enter = STATE_ENTER(PowerOff);
 
     merchant = (Merchant*)MEM_ALLOC(sizeof(Merchant));
     OOP_CALL_CTOR(Merchant, merchant, self, "merchant");
@@ -70,7 +66,6 @@ OOP_CTOR(Supporter, State* parent, const char* name) {
     self->substate.customer   = NULL;
     self->substate.merchant   = merchant;
     self->substate.supervisor = supervisor;
-    self->substate.powerOff   = powerOff;
 
     menu = MEM_ALLOC(sizeof(*menu));
 }

@@ -132,17 +132,14 @@ OOP_CLASS(Dialogue) {
     OOP_EXTENDS(State);
     OOP_METHOD(void, setBody, const char*);
     OOP_METHOD(void, setTitle, const char*);
+    CallBack_t cb;
+    void*      cbData;
 };
 
 OOP_CTOR(Dialogue, State* parent, const char* name);
 
-#define GOTO_DIAL(prev, next, title, body)                                     \
-    OOP_CALL(getState(STATE_ID_DIALOGUE), setNext, next);                      \
-    OOP_CALL(getState(STATE_ID_DIALOGUE), setPrev, prev);                      \
-    Dialogue* dial = (Dialogue*)getState(STATE_ID_DIALOGUE);                   \
-    dial->setTitle(title);                                                     \
-    dial->setBody(body);                                                       \
-    SM_GOTO(getState(STATE_ID_DIALOGUE));
+void GOTO_DIAL(State* prev, State* next, const char* title, const char* body,
+               CallBack_t cb, void* data);
 
 /************************ Menu ***********************/
 typedef struct Menu Menu;

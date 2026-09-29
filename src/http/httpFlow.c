@@ -379,6 +379,7 @@ HttpFlowResult httpFlowStart(HttpFlow* flow, State* owner, const char* host,
     flow->tx->txBuffer.len = flow->requestBuffer.len;
 
     httpFlowSetState(flow, HTTP_FLOW_CONNECTING);
+    flow->callbacks.onState(flow, HTTP_FLOW_CONNECTING);
 
     NthResult nthResult = nth()->connect(flow->tx, host, port);
 
@@ -407,6 +408,7 @@ static int8_t httpFlowOnConnect(NthTransaction* tx, void* userData) {
     HttpFlow* flow = (HttpFlow*)userData;
 
     httpFlowSetState(flow, HTTP_FLOW_SENDING);
+    flow->callbacks.onState(flow, HTTP_FLOW_SENDING);
 
     /*
      * Request has already been built.
@@ -422,7 +424,6 @@ static int8_t httpFlowOnConnect(NthTransaction* tx, void* userData) {
 
         return -1;
     }
-
     return 0;
 }
 
@@ -433,6 +434,7 @@ static int8_t httpFlowOnSent(NthTransaction* tx, void* userData) {
     HttpFlow* flow = (HttpFlow*)userData;
 
     httpFlowSetState(flow, HTTP_FLOW_RECEIVING_HEADERS);
+    flow->callbacks.onState(flow, HTTP_FLOW_RECEIVING_HEADERS);
 
     /*
      * HTTP response parser starts empty.
@@ -474,8 +476,10 @@ static NthRxDecision httpFlowNthIsComplete(NthTransaction* tx, void* userData) {
         if (response != NULL)
             flow->status.httpStatus = response->statusCode;
 
-        if (!httpParserIsMessageComplete(&flow->parser))
+        if (!httpParserIsMessageComplete(&flow->parser)) {
             httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
+            flow->callbacks.onState(flow, HTTP_FLOW_RECEIVING_BODY);
+        }
     }
     LOG_TRACE("httpFlowNthIsComplete(): parseResult = %d", parseResult);
     switch (parseResult) {
@@ -536,6 +540,7 @@ static int8_t httpFlowNthReceive(NthTransaction* tx, void* userData) {
     if (body != NULL && bodyLength > 0U && flow->callbacks.onBody != NULL) {
 
         httpFlowSetState(flow, HTTP_FLOW_RECEIVING_BODY);
+        flow->callbacks.onState(flow, HTTP_FLOW_RECEIVING_BODY);
 
         RETURN_VALUE_IF_NOT(flow->callbacks.onBody(flow, body, bodyLength), 0,
                             httpFlowFail(flow, HTTP_FLOW_ERR_BODY);

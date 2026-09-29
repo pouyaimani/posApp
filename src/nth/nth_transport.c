@@ -10,6 +10,7 @@
 
 static int sys_sock_connect(const char* host, uint16_t port) {
     RETURN_VALUE_IF_NULL(host, ;, ERR_NULL_PARAMETER);
+    LOG_TRACE("opening new socket...");
     SocketAddr_t addr;
     addr.family = NET_AF_INET;
     snprintf(addr.ip, sizeof(addr.ip), "%s", host);
@@ -17,7 +18,10 @@ static int sys_sock_connect(const char* host, uint16_t port) {
     SocketType_t type = NET_STREAM;
     NTH_LOG("host ip = %s", addr.ip);
     NTH_LOG("host port = %d", addr.port);
-    return OOP_CALL(network(), create, &addr, type);
+    int fd = OOP_CALL(network(), create, &addr, type);
+
+    LOG_TRACE("new socket result fd=%d", fd);
+    return fd;
 }
 
 static int sys_sock_send(int fd, const void* buf, size_t len) {
@@ -95,7 +99,10 @@ static int sys_sock_close(int fd) {
     if (st == NET_STATUS_DISCONNECTED)
         return 0;
 
-    return OOP_CALL(network(), close, fd);
+    OOP_CALL(network(), close, fd);
+    // assure socket is closed completely.. t3 wont work without this delay
+    OOP_CALL(sys(), sleep, 400);
+    return 0;
 }
 
 NthTransport sysTransport = {.connect = sys_sock_connect,

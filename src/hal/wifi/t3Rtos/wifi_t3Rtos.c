@@ -144,12 +144,15 @@ static WifiErr_t close(Wifi* wifi) {
 
 static WifiErr_t startScan(Wifi* wifi) {
     wifi->scanSt = WIFI_SCAN_FAILED;
+    apinfo       = MEM_ALLOC(sizeof(WifiAPInfo) * LEN_WIFI_AP_LIST);
     WifiErr_t err =
         translateSdkErr(sdkWifiStartScanAP(apinfo, LEN_WIFI_AP_LIST));
-    if (err == WIFI_ERR_OK) {
-        wifi->scanSt = WIFI_SCAN_UNDER_PROCESS;
+    if (err != WIFI_ERR_OK) {
+        MEM_FREE(apinfo);
+        return err;
     }
-    return err;
+    wifi->scanSt = WIFI_SCAN_UNDER_PROCESS;
+    return WIFI_ERR_OK;
 }
 
 static WifiErr_t connect(Wifi* wifi, WifiApInfo_t* ap, char* pass) {
@@ -180,6 +183,7 @@ static WifiScanSt_t getScanStatus(Wifi* wifi) {
             sortApInfo(apinfo, apNum);
             filterEmptySSID(apinfo, &apNum);
             copyWifiAp(wifi, apinfo, apNum);
+            MEM_FREE(apinfo);
         } else {
             wifi->scanSt = WIFI_SCAN_FAILED;
         }
@@ -231,8 +235,6 @@ OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.hdisconnect       = disconnect;
     self->base.vtable.getConnectStatus  = getConnectStatus;
     self->base.vtable.getSignalStrength = getSignalStrength;
-
-    apinfo = MEM_ALLOC(sizeof(WifiAPInfo) * LEN_WIFI_AP_LIST);
 }
 
 #endif

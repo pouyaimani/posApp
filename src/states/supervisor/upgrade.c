@@ -65,12 +65,13 @@ void processUpdate(void) {
     tmsUpgradeProcess(tmsUpgrade);
     int percent = tmsUpgradeProgress(tmsUpgrade);
     LOG_DEBUG("upgrade percent = %d", percent);
+    if (percent != 0) {
+        ui_download_progress_show(progressBar, true);
 
-    ui_download_progress_show(progressBar, true);
+        ui_download_progress_set_value(progressBar, percent, 100);
 
-    ui_download_progress_set_value(progressBar, percent, 100);
-
-    ui_download_progress_set_size(progressBar, 0, 3600);
+        ui_download_progress_set_size(progressBar, 0, 3600);
+    }
 }
 
 STATE_DEF_ENTER(Upgrade) {
@@ -91,6 +92,7 @@ STATE_DEF_ENTER(Upgrade) {
 
     if (result != TMS_UPGRADE_RESULT_OK) {
         LOG_ERROR("Could not start TMS update: %d", result);
+        MEM_FREE(tmsUpgrade);
         DEFINE_STRING(errDsc, 128);
         snprintf(errDsc, sizeof(errDsc), "%s = %d",
                  phraseGetDef(PHRASE_ERR_CODE), result);
@@ -98,7 +100,8 @@ STATE_DEF_ENTER(Upgrade) {
                   phraseGetDef(PHRASE_UPG_START_FAILED), errDsc);
         return;
     }
-    timer       = TIMER_CREATE(processUpdate, SECS(1), false);
+    timer = TIMER_CREATE(processUpdate, SECS(1), false);
+    TIMER_START(timer);
     progressBar = ui_download_progress_create(disp()->screen, 16, 70, 288);
 
     ui_download_progress_set_title(progressBar, "Downloading update...");

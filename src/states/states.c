@@ -93,3 +93,15 @@ void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
     res->onFailure = onFailure;
     SM_GOTO(getState(STATE_ID_TXN_RES));
 }
+
+void GOTO_DIAL(State* prev, State* next, const char* title, const char* body,
+               CallBack_t cb, void* data) {
+    OOP_CALL(getState(STATE_ID_DIALOGUE), setNext, next);
+    OOP_CALL(getState(STATE_ID_DIALOGUE), setPrev, prev);
+    Dialogue* dial = (Dialogue*)getState(STATE_ID_DIALOGUE);
+    dial->setTitle(title);
+    dial->setBody(body);
+    dial->cb     = cb;
+    dial->cbData = data;
+    SM_GOTO(getState(STATE_ID_DIALOGUE));
+}

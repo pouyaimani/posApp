@@ -1,6 +1,8 @@
 #include "tmsHttpClient.h"
 #include "logger.h"
 #include "error.h"
+#include "phrases/phrases.h"
+#include "ui/infoPage.h"
 
 #include <string.h>
 
@@ -32,6 +34,24 @@ static void httpFinished(HttpFlow* flow, const HttpFlowStatus* status) {
 
     if (callback != NULL) {
         callback(client, status->result, response, body, bodyLength, userData);
+    }
+}
+
+static void httpOnState(HttpFlow* flow, const HttpFlowState state) {
+    switch (state) {
+    case HTTP_FLOW_CONNECTING:
+        SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CONNECTIING), "");
+        break;
+    case HTTP_FLOW_SENDING:
+        SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SENDING_DATA), "");
+        break;
+    case HTTP_FLOW_RECEIVING_HEADERS:
+    case HTTP_FLOW_RECEIVING_BODY:
+        SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_RECEIVING_DATA), "");
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -73,7 +93,8 @@ tmsHttpClientRequest(TmsHttpClient* client, HttpMethod method, const char* path,
     request.bodyLength  = bodyLength;
 
     memset(&callbacks, 0, sizeof(callbacks));
-    callbacks.onDone = httpFinished;
+    callbacks.onDone  = httpFinished;
+    callbacks.onState = httpOnState;
 
     client->onDone                = callback;
     client->userData              = userData;

@@ -165,6 +165,8 @@ typedef int (*HttpFlowBodyCallback)(HttpFlow* flow, const uint8_t* data,
 typedef void (*HttpFlowDoneCallback)(HttpFlow*             flow,
                                      const HttpFlowStatus* status);
 
+typedef void (*HttpFlowStateCallback)(HttpFlow* flow, HttpFlowState state);
+
 typedef struct {
 
     HttpFlowHeadersCallback onHeaders;
@@ -172,6 +174,8 @@ typedef struct {
     HttpFlowBodyCallback onBody;
 
     HttpFlowDoneCallback onDone;
+
+    HttpFlowStateCallback onState;
 
 } HttpFlowCallbacks;
 

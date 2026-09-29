@@ -218,16 +218,16 @@ void ui_download_progress_set_size(DownloadProgress* progress,
 }
 
 void ui_download_progress_show(DownloadProgress* progress, bool show) {
-    if (!progress || !progress->sizeLabel)
+    if (!progress || !progress->container)
         return;
 
     if (show) {
 
-        lv_obj_clear_flag(progress->sizeLabel, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(progress->container, LV_OBJ_FLAG_HIDDEN);
 
     } else {
 
-        lv_obj_add_flag(progress->sizeLabel, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(progress->container, LV_OBJ_FLAG_HIDDEN);
     }
 }
 

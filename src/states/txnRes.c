@@ -79,17 +79,17 @@ STATE_DEF_ENTER(TxnResult) {
 STATE_DEF_EXIT(TxnResult) { OOP_CALL(infoPage(), hide); }
 
 static int8_t printResult(TxnData* txn) {
-    ReceiptData data;
-    data.txn           = *txn;
-    data.type          = DOC_TXN;
-    data.headerApplied = true;
-    Receipt  rec;
-    Result_t res = buildReceipt(&rec, &data);
-    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
-    res = OOP_CALL(&rec, flush);
-    LOG_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;);
-    OOP_CALL(&rec, destroy);
-    return true;
+    // ReceiptData data;
+    // data.txn           = *txn;
+    // data.type          = DOC_TXN;
+    // data.headerApplied = true;
+    // Receipt  rec;
+    // Result_t res = buildReceipt(&rec, &data);
+    // RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    // res = OOP_CALL(&rec, flush);
+    // LOG_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;);
+    // OOP_CALL(&rec, destroy);
+    // return true;
 }
 
 STATE_DEF_HANDLE(TxnResult, KeypadEvent) {

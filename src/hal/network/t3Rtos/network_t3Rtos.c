@@ -75,6 +75,7 @@ static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
         return -1;
     }
     SockAddr sadrr;
+    memset(&sadrr, 0, sizeof(SockAddr));
     if (sdkNetAddrSet(&sadrr, addr->ip, addr->port) != SDK_NET_OK) {
         LOG_ERROR(
             "T3Rtos: setting socket address is failed. ip = %s, port = %d",
@@ -85,13 +86,6 @@ static int32_t create(Network* self, SocketAddr_t* addr, SocketType_t type) {
     int32_t fd = sdkNetCreateSocket(&sadrr, sdkst);
     LOG_TRACE("T3Rtos: fd = %d", fd);
     return fd;
-}
-
-static NetError_t close(Network* self, int32_t id) {
-    VAR_UNUSED(self);
-    LOG_TRACE("T3Rtos: closing socket = <%d>", id);
-    int ret = sdkNetCloseSocket(id);
-    return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
 }
 
 static SocketStatus_t getStatus(Network* self, int32_t id) {
@@ -107,6 +101,16 @@ static SocketStatus_t getStatus(Network* self, int32_t id) {
     default:
         return SOCKET_STATUS_ERR;
     }
+}
+
+static NetError_t close(Network* self, int32_t id) {
+    VAR_UNUSED(self);
+    LOG_TRACE("T3Rtos: closing socket = <%d>", id);
+    int            ret = sdkNetCloseSocket(id);
+    SocketStatus_t st  = getStatus(self, id);
+
+    LOG_TRACE("socket close ret=%d, status after close=%d", ret, st);
+    return ret == SDK_NET_OK ? NET_ERR_OK : NET_ERR_INPUT_ERR;
 }
 
 static int32_t send(Network* self, int32_t socketID, const uint8_t* data,

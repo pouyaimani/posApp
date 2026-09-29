@@ -33,7 +33,15 @@ STATE_DEF_EXIT(Dialogue) {
 STATE_DEF_HANDLE(Dialogue, TimeOutEvent) {}
 
 STATE_DEF_HANDLE(Dialogue, KeypadEvent) {
+    Dialogue* dial = (Dialogue*)state;
     if (ev->key == KEY_ENTER) {
+        if (dial->cb) {
+            LV_HIDE(title);
+            LV_HIDE(body);
+            LV_HIDE(ui_button_obj(&confirmBut));
+            LV_HIDE(ui_button_obj(&cancelBut));
+            dial->cb(dial->cbData);
+        }
         SM_GOTO(state->next);
     } else if (ev->key == KEY_ESC) {
         SM_GOTO(state->prev);

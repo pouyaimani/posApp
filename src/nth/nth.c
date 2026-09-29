@@ -223,11 +223,15 @@ NthTransaction* nth_allocTransaction(void) {
 void nth_disconnect(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
 
-    // TODO:13. Close errors are currently thrown away
+    tx->connectRetryPending = false;
+
     if (tx->socketFd >= 0) {
-        NTH_LOG("NTH: closing socekt = %d", tx->socketFd);
+
+        NTH_LOG("NTH: closing socket = %d", tx->socketFd);
+
         g_transport->close(tx->socketFd);
     }
+
     tx->socketFd = NTH_SOCKET_CLOSE;
 
     if (tx->state == NTH_TX_CONNECTING || tx->state == NTH_TX_SENDING ||
@@ -247,26 +251,146 @@ void nth_releaseTransaction(NthTransaction* tx) {
     memset(tx, 0, sizeof(*tx));
 }
 
-NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
-    RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
-    RETURN_VALUE_IF_NULL(host, ;, NTH_ERR_INVALID_ARG);
-    RETURN_VALUE_IF_NOT(isValidHost(host), true, ;, NTH_ERR_INVALID_HOST);
+static void nth_closeSocketOnly(NthTransaction* tx) {
+    RETURN_IF_NULL(tx, ;);
 
-    if (tx->socketFd >= 0)
-        return NTH_ERR_INVALID_STATE;
+    if (tx->socketFd >= 0) {
+        NTH_LOG("nth: closing failed connection socket = %d", tx->socketFd);
+
+        g_transport->close(tx->socketFd);
+    }
+
+    tx->socketFd = NTH_SOCKET_CLOSE;
+}
+
+static void nth_scheduleConnectRetry(NthTransaction* tx, NthResult finalError) {
+    RETURN_IF_NULL(tx, ;);
+
+    nth_closeSocketOnly(tx);
+
+    if (tx->connectAttempt < NTH_CONNECT_MAX_ATTEMPTS) {
+
+        tx->connectRetryPending = true;
+
+        tx->connectRetryTick = nth_getTick() + NTH_CONNECT_RETRY_DELAY_MS;
+
+        /*
+         * Reset timeout reference so nth_checkTimeout()
+         * doesn't immediately timeout while waiting
+         * for retry.
+         */
+        tx->startTick = nth_getTick();
+
+        tx->state = NTH_TX_CONNECTING;
+
+        NTH_LOG("nth: connect attempt %d/%d failed; retry %d in %d ms",
+                tx->connectAttempt, NTH_CONNECT_MAX_ATTEMPTS,
+                tx->connectAttempt + 1, NTH_CONNECT_RETRY_DELAY_MS);
+
+        return;
+    }
+
+    NTH_LOG("nth: connect failed after %d attempts", tx->connectAttempt);
+
+    nth_fail(tx, finalError);
+}
+
+static NthResult nth_startConnectAttempt(NthTransaction* tx) {
+    RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
+
+    tx->connectRetryPending = false;
+
+    tx->connectAttempt++;
 
     tx->startTick = nth_getTick();
 
-    tx->socketFd = g_transport->connect(host, port);
+    NTH_LOG("nth: connect attempt %d/%d to %s:%d", tx->connectAttempt,
+            NTH_CONNECT_MAX_ATTEMPTS, tx->connectHost, tx->connectPort);
 
-    NTH_LOG("NTH: connect to socket = %d", tx->socketFd);
+    tx->socketFd = g_transport->connect(tx->connectHost, tx->connectPort);
 
-    RETURN_VALUE_IF_LIITLE(tx->socketFd, 0, nth_fail(tx, NTH_ERR_CONNECT);
-                           , NTH_ERR_CONNECT);
+    NTH_LOG("nth: connect returned socket = %d", tx->socketFd);
+
+    if (tx->socketFd < 0) {
+
+        tx->socketFd = NTH_SOCKET_CLOSE;
+
+        nth_scheduleConnectRetry(tx, NTH_ERR_CONNECT);
+
+        /*
+         * The operation has still been accepted asynchronously
+         * if another retry remains.
+         */
+        if (tx->state != NTH_TX_FAILED)
+            return NTH_OK;
+
+        return NTH_ERR_CONNECT;
+    }
 
     tx->state = NTH_TX_CONNECTING;
 
     return NTH_OK;
+}
+
+static void nth_complete(NthTransaction* tx) {
+    RETURN_IF_NULL(tx, ;);
+
+    tx->prevState = tx->state;
+    tx->state     = NTH_TX_COMPLETED;
+
+    NTH_LOG("nth: transaction completed, socket = %d", tx->socketFd);
+
+    /*
+     * Transaction is complete. We don't need the
+     * connection anymore.
+     */
+    nth_closeSocketOnly(tx);
+
+    if (tx->onReceive != NULL) {
+        tx->onReceive(tx, tx->userData);
+    }
+}
+
+NthResult nth_connect(NthTransaction* tx, const char* host, uint16_t port) {
+
+    RETURN_VALUE_IF_NULL(tx, ;, NTH_ERR_INVALID_ARG);
+
+    RETURN_VALUE_IF_NULL(host, ;, NTH_ERR_INVALID_ARG);
+
+    RETURN_VALUE_IF_NOT(isValidHost(host), true, ;, NTH_ERR_INVALID_HOST);
+
+    if (tx->socketFd >= 0 || tx->state == NTH_TX_CONNECTING) {
+
+        return NTH_ERR_INVALID_STATE;
+    }
+
+    if (strlen(host) >= sizeof(tx->connectHost)) {
+        return NTH_ERR_INVALID_HOST;
+    }
+
+    /*
+     * Store destination because retries happen asynchronously
+     * from nth_tick().
+     */
+    strncpy(tx->connectHost, host, sizeof(tx->connectHost) - 1);
+
+    tx->connectHost[sizeof(tx->connectHost) - 1] = '\0';
+
+    tx->connectPort = port;
+
+    tx->connectAttempt      = 0;
+    tx->connectRetryPending = false;
+    tx->connectRetryTick    = 0;
+
+    tx->state = NTH_TX_CONNECTING;
+
+    /*
+     * Start attempt #1.
+     *
+     * Attempts #2 and #3 will be started later
+     * through nth_tick().
+     */
+    return nth_startConnectAttempt(tx);
 }
 
 NthResult nth_send(NthTransaction* tx, ByteArray* ba) {
@@ -330,22 +454,75 @@ NthResult nth_sendProvidedTx(NthTransaction* tx) {
 
 static void nth_handleConnecting(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
-    int ret;
 
-    ret = g_transport->poll(tx->socketFd, 0);
+    uint32_t now = nth_getTick();
+
+    /*
+     * We are between attempts.
+     *
+     * nth_tick() keeps coming here, but we don't block.
+     */
+    if (tx->connectRetryPending) {
+
+        /*
+         * Signed subtraction makes this safe across
+         * uint32 tick wraparound.
+         */
+        if ((int32_t)(now - tx->connectRetryTick) < 0)
+            return;
+
+        NTH_LOG("nth: starting retry attempt %d", tx->connectAttempt + 1);
+
+        nth_startConnectAttempt(tx);
+
+        return;
+    }
+
+    /*
+     * A real connection attempt must have a descriptor.
+     */
+    if (tx->socketFd < 0) {
+
+        nth_scheduleConnectRetry(tx, NTH_ERR_CONNECT);
+
+        return;
+    }
+
+    int ret = g_transport->poll(tx->socketFd, 0);
 
     if (ret > 0) {
-        NTH_LOG("nth: socket is connected.");
+
+        NTH_LOG("nth: socket connected on attempt %d", tx->connectAttempt);
+
+        tx->connectRetryPending = false;
+
         tx->state = NTH_TX_READY;
+
         if (tx->onConnect) {
             NTH_LOG("nth: calling connect callback.");
+
             tx->onConnect(tx, tx->userData);
         }
-        // nth_emitConnectEvent(tx, true);
-    } else if (ret < 0) {
-        nth_fail(tx, NTH_ERR_CONNECT);
-        // nth_emitConnectEvent(tx, false);
+
+        return;
     }
+
+    if (ret < 0) {
+
+        NTH_LOG("nth: socket connect poll failed on attempt %d",
+                tx->connectAttempt);
+
+        nth_scheduleConnectRetry(tx, NTH_ERR_CONNECT);
+
+        return;
+    }
+
+    /*
+     * ret == 0:
+     *
+     * Still connecting. Do nothing.
+     * nth_tick() will poll again later.
+     */
 }
 
 static void nth_handleSending(NthTransaction* tx) {
@@ -411,7 +588,7 @@ static void nth_handleReceiving(NthTransaction* tx) {
     ioStatus = g_transport->recv(tx->socketFd, tx->rxBuffer.data + tx->rxOffset,
                                  remain, &received);
 
-    LOG_TRACE("net receive io status = %d", ioStatus);
+    // LOG_TRACE("net receive io status = %d", ioStatus);
 
     switch (ioStatus) {
 
@@ -444,12 +621,7 @@ static void nth_handleReceiving(NthTransaction* tx) {
             nth_fail(tx, NTH_ERR_PROTOCOL);
             return;
         }
-
-        tx->prevState = tx->state;
-        tx->state     = NTH_TX_COMPLETED;
-
-        if (tx->onReceive != NULL)
-            tx->onReceive(tx, tx->userData);
+        nth_complete(tx);
 
         return;
 
@@ -502,11 +674,7 @@ static void nth_handleReceiving(NthTransaction* tx) {
 
     case NTH_RX_COMPLETE:
 
-        tx->prevState = tx->state;
-        tx->state     = NTH_TX_COMPLETED;
-
-        if (tx->onReceive != NULL)
-            tx->onReceive(tx, tx->userData);
+        nth_complete(tx);
 
         return;
 
@@ -521,6 +689,7 @@ static void nth_checkTimeout(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
 
     switch (tx->state) {
+
     case NTH_TX_CONNECTING:
     case NTH_TX_SENDING:
     case NTH_TX_RECEIVING:
@@ -529,23 +698,57 @@ static void nth_checkTimeout(NthTransaction* tx) {
     default:
         return;
     }
-    uint32_t now;
 
-    now = nth_getTick();
+    /*
+     * We're intentionally waiting before the next
+     * connection attempt.
+     */
+    if (tx->state == NTH_TX_CONNECTING && tx->connectRetryPending) {
 
-    if ((now - tx->startTick) >= tx->timeoutMs) {
-        NTH_LOG("nth: time out occured.");
-        tx->prevState = tx->state;
-        tx->state     = NTH_TX_FAILED;
+        return;
+    }
 
-        tx->lastError = NTH_ERR_TIMEOUT;
+    uint32_t now = nth_getTick();
 
-        if (tx->onTimeout) {
-            NTH_LOG("nth: calling timeout callback.");
-            tx->onTimeout(tx, tx->userData);
-        }
+    if ((now - tx->startTick) < tx->timeoutMs)
+        return;
 
-        // nth_emitTimeout(tx);
+    /*
+     * CONNECT timeout:
+     *
+     * Retry attempts #2/#3 instead of immediately
+     * failing the whole transaction.
+     */
+    if (tx->state == NTH_TX_CONNECTING &&
+        tx->connectAttempt < NTH_CONNECT_MAX_ATTEMPTS) {
+
+        NTH_LOG("nth: connect attempt %d timed out", tx->connectAttempt);
+
+        nth_scheduleConnectRetry(tx, NTH_ERR_TIMEOUT);
+
+        return;
+    }
+
+    /*
+     * Final timeout.
+     */
+    NTH_LOG("nth: timeout occurred.");
+
+    tx->connectRetryPending = false;
+
+    /*
+     * Very important:
+     * Release the current socket before entering FAILED state.
+     */
+    nth_closeSocketOnly(tx);
+
+    tx->prevState = tx->state;
+    tx->state     = NTH_TX_FAILED;
+    tx->lastError = NTH_ERR_TIMEOUT;
+
+    if (tx->onTimeout) {
+        NTH_LOG("nth: calling timeout callback.");
+        tx->onTimeout(tx, tx->userData);
     }
 }
 

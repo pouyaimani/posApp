@@ -19,8 +19,11 @@ static TxnFlow flow;
 
 static TxnPendMgrCb pendDoneCb;
 
+#define TAG_PENDING_TXN 0x0501
+
 static const DataDescriptor pendingTxnDsc[] = {
-    {"txn", T_BINARY, (0), (sizeof(TxnData)), ("0"), &(pendTxnData)}};
+    DSC_BIN_ID(TAG_PENDING_TXN, pendTxnData),
+};
 
 void settleDone(TxnFlow* flow, const TxnFlowStatus* st) {
     (void*)flow;

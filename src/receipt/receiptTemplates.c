@@ -10,6 +10,7 @@
 #include "mylvgl.h"
 #include "ped/ped.h"
 #include "cellular/cellular.h"
+#include "version.h"
 
 static int8_t receiptSectionPsp(Receipt* rec) {
     RecColumn_t row[] = {
