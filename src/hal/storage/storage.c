@@ -10,8 +10,10 @@
 #include "utility/tlv.h"
 #include "utility/utility.h"
 
-#define SETTINGS_FILE_MAX_SIZE   4096u
+/* T3 file I/O is unreliable above this limit. */
+#define SETTINGS_FILE_MAX_SIZE   1024u
 #define SETTINGS_FILE_HEADER_LEN 4u
+#define STORAGE_TAG_LEN          2u
 #define LEGACY_INT_SIZE          4u
 
 static Storage __storage;
@@ -19,7 +21,21 @@ static Storage __storage;
 typedef struct {
     const DataDescriptor* dsc;
     size_t                count;
+    size_t                matchedCount;
+    bool                  needsRewrite;
 } StorageCtx;
+
+static size_t boundedStringLength(const char* text, size_t maxLen) {
+    size_t len = 0u;
+
+    if (text == NULL)
+        return 0u;
+
+    while (len < maxLen && text[len] != '\0')
+        len++;
+
+    return len;
+}
 
 static bool isNumericType(DataType type) {
     return type == T_U8 || type == T_U16 || type == T_U32 || type == T_U64 ||
@@ -30,17 +46,78 @@ static uint16_t numericWidth(DataType type) {
     switch (type) {
     case T_U8:
         return (uint16_t)sizeof(uint8_t);
-    case T_BOOL:
-        return (uint16_t)sizeof(bool);
     case T_U16:
         return (uint16_t)sizeof(uint16_t);
     case T_U32:
         return (uint16_t)sizeof(uint32_t);
     case T_U64:
         return (uint16_t)sizeof(uint64_t);
+    case T_BOOL:
+        return (uint16_t)sizeof(bool);
     default:
         return 0u;
     }
+}
+
+static bool descriptorTableIsValid(const DataDescriptor* dsc,
+                                   size_t                itemsCount) {
+    if (dsc == NULL || itemsCount == 0u)
+        return false;
+
+    for (size_t i = 0u; i < itemsCount; i++) {
+        const DataDescriptor* descriptor = &dsc[i];
+
+        if (descriptor->id == 0u || descriptor->id == UINT16_MAX ||
+            descriptor->address == NULL) {
+            LOG_ERROR("Invalid storage descriptor: index=%u id=%u", (unsigned)i,
+                      descriptor->id);
+            return false;
+        }
+
+        if (isNumericType(descriptor->type)) {
+            uint16_t expected = numericWidth(descriptor->type);
+
+            if (expected == 0u || descriptor->minLen != expected ||
+                descriptor->maxLen != expected) {
+                LOG_ERROR("Invalid numeric descriptor: id=%u", descriptor->id);
+                return false;
+            }
+        } else if (descriptor->type == T_STRING) {
+            if (descriptor->maxLen == 0u) {
+                LOG_ERROR("Invalid string descriptor: id=%u", descriptor->id);
+                return false;
+            }
+        } else if (descriptor->type == T_BINARY) {
+            if (descriptor->maxLen == 0u ||
+                descriptor->minLen > descriptor->maxLen) {
+                LOG_ERROR("Invalid binary descriptor: id=%u", descriptor->id);
+                return false;
+            }
+        } else {
+            LOG_ERROR("Unknown descriptor type: id=%u", descriptor->id);
+            return false;
+        }
+
+        for (size_t j = i + 1u; j < itemsCount; j++) {
+            if (descriptor->id == dsc[j].id) {
+                LOG_ERROR("Duplicate storage ID: %u", descriptor->id);
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool descriptorMatches(const DataDescriptor* descriptor,
+                              const TlvItem*        item) {
+    uint16_t id;
+
+    if (item->tagLen != STORAGE_TAG_LEN)
+        return false;
+
+    id = (uint16_t)(((uint16_t)item->tag[0] << 8u) | (uint16_t)item->tag[1]);
+    return id == descriptor->id;
 }
 
 static bool parseU64(const char* text, uint64_t* value) {
@@ -87,28 +164,28 @@ static bool numericValueFits(DataType type, uint64_t value) {
 static void writeNumeric(void* address, DataType type, uint64_t value) {
     switch (type) {
     case T_U8: {
-        uint8_t v = (uint8_t)value;
-        memcpy(address, &v, sizeof(v));
+        uint8_t converted = (uint8_t)value;
+        memcpy(address, &converted, sizeof(converted));
         break;
     }
     case T_U16: {
-        uint16_t v = (uint16_t)value;
-        memcpy(address, &v, sizeof(v));
+        uint16_t converted = (uint16_t)value;
+        memcpy(address, &converted, sizeof(converted));
         break;
     }
     case T_U32: {
-        uint32_t v = (uint32_t)value;
-        memcpy(address, &v, sizeof(v));
+        uint32_t converted = (uint32_t)value;
+        memcpy(address, &converted, sizeof(converted));
         break;
     }
     case T_U64: {
-        uint64_t v = value;
-        memcpy(address, &v, sizeof(v));
+        uint64_t converted = value;
+        memcpy(address, &converted, sizeof(converted));
         break;
     }
     case T_BOOL: {
-        bool v = value != 0u;
-        memcpy(address, &v, sizeof(v));
+        bool converted = value != 0u;
+        memcpy(address, &converted, sizeof(converted));
         break;
     }
     default:
@@ -117,29 +194,33 @@ static void writeNumeric(void* address, DataType type, uint64_t value) {
 }
 
 static bool readNumericItem(const TlvItem*        item,
-                            const DataDescriptor* descriptor, uint64_t* value) {
+                            const DataDescriptor* descriptor, uint64_t* value,
+                            bool* usedLegacyWidth) {
     uint16_t expected = numericWidth(descriptor->type);
 
+    *usedLegacyWidth = false;
+
     if (item->valueLen == expected) {
-        uint64_t result = 0u;
-        memcpy(&result, item->value, expected);
-        *value = result;
-        return numericValueFits(descriptor->type, result);
+        uint64_t decoded = 0u;
+        memcpy(&decoded, item->value, expected);
+        *value = decoded;
+        return numericValueFits(descriptor->type, decoded);
     }
 
     /*
-     * Old firmware copied four bytes starting at every T_INT address. For a
-     * one- or two-byte packed field, the trailing bytes belonged to adjacent
-     * fields. Preserve only this field's leading bytes rather than treating
-     * the complete, contaminated four-byte block as its value.
+     * The previous format wrote four bytes for every T_INT, including packed
+     * one- and two-byte members. Only the leading bytes belong to the field.
+     * The deployed terminals use the same native little-endian representation.
      */
     if (item->valueLen == LEGACY_INT_SIZE && expected != LEGACY_INT_SIZE) {
-        uint64_t legacy = 0u;
+        uint64_t decoded = 0u;
         uint16_t copyLen =
             expected < LEGACY_INT_SIZE ? expected : LEGACY_INT_SIZE;
-        memcpy(&legacy, item->value, copyLen);
-        *value = legacy;
-        return numericValueFits(descriptor->type, legacy);
+
+        memcpy(&decoded, item->value, copyLen);
+        *value           = decoded;
+        *usedLegacyWidth = true;
+        return numericValueFits(descriptor->type, decoded);
     }
 
     return false;
@@ -154,21 +235,23 @@ static Error_t storageTlvHandler(const TlvItem* item, void* user) {
 
     for (size_t i = 0u; i < ctx->count; i++) {
         const DataDescriptor* descriptor = &ctx->dsc[i];
-        size_t                keyLen     = strlen(descriptor->key);
-
-        if (keyLen != item->tagLen ||
-            memcmp(descriptor->key, item->tag, item->tagLen) != 0) {
+        if (!descriptorMatches(descriptor, item))
             continue;
-        }
+
+        ctx->matchedCount++;
 
         if (isNumericType(descriptor->type)) {
-            uint64_t value = 0u;
+            uint64_t value           = 0u;
+            bool     usedLegacyWidth = false;
 
-            if (!readNumericItem(item, descriptor, &value)) {
-                LOG_ERROR("Ignoring invalid setting '%s' (length=%u)",
-                          descriptor->key, item->valueLen);
+            if (!readNumericItem(item, descriptor, &value, &usedLegacyWidth)) {
+                LOG_ERROR("Ignoring invalid numeric setting: id=%u length=%u",
+                          descriptor->id, item->valueLen);
                 return ERR_OK;
             }
+
+            if (usedLegacyWidth)
+                ctx->needsRewrite = true;
 
             writeNumeric(descriptor->address, descriptor->type, value);
             return ERR_OK;
@@ -177,8 +260,8 @@ static Error_t storageTlvHandler(const TlvItem* item, void* user) {
         if (descriptor->type == T_BINARY) {
             if (item->valueLen < descriptor->minLen ||
                 item->valueLen > descriptor->maxLen) {
-                LOG_ERROR("Ignoring invalid binary setting '%s' (length=%u)",
-                          descriptor->key, item->valueLen);
+                LOG_ERROR("Ignoring invalid binary setting: id=%u length=%u",
+                          descriptor->id, item->valueLen);
                 return ERR_OK;
             }
 
@@ -190,8 +273,8 @@ static Error_t storageTlvHandler(const TlvItem* item, void* user) {
         if (descriptor->type == T_STRING) {
             if (item->valueLen < descriptor->minLen ||
                 item->valueLen > descriptor->maxLen) {
-                LOG_ERROR("Ignoring invalid string setting '%s' (length=%u)",
-                          descriptor->key, item->valueLen);
+                LOG_ERROR("Ignoring invalid string setting: id=%u length=%u",
+                          descriptor->id, item->valueLen);
                 return ERR_OK;
             }
 
@@ -200,33 +283,23 @@ static Error_t storageTlvHandler(const TlvItem* item, void* user) {
             return ERR_OK;
         }
 
-        LOG_ERROR("Ignoring setting '%s' with unknown type", descriptor->key);
         return ERR_OK;
     }
 
-    /* Unknown keys belong to a different schema version; safely ignore. */
+    /* Unknown IDs are intentionally ignored for forward compatibility. */
     return ERR_OK;
 }
 
 static void initStorage(const DataDescriptor* dsc, size_t itemsCount) {
-    if (dsc == NULL)
-        return;
-
     for (size_t i = 0u; i < itemsCount; i++) {
         const DataDescriptor* descriptor = &dsc[i];
 
         if (isNumericType(descriptor->type)) {
             uint64_t defaultValue = 0u;
 
-            if (descriptor->defaultValue != NULL &&
-                !parseU64(descriptor->defaultValue, &defaultValue)) {
-                LOG_ERROR("Invalid numeric default for '%s'", descriptor->key);
-                defaultValue = 0u;
-            }
-
-            if (!numericValueFits(descriptor->type, defaultValue)) {
-                LOG_ERROR("Numeric default out of range for '%s'",
-                          descriptor->key);
+            if (!parseU64(descriptor->defaultValue, &defaultValue) ||
+                !numericValueFits(descriptor->type, defaultValue)) {
+                LOG_ERROR("Invalid numeric default: id=%u", descriptor->id);
                 defaultValue = 0u;
             }
 
@@ -237,9 +310,8 @@ static void initStorage(const DataDescriptor* dsc, size_t itemsCount) {
         if (descriptor->type == T_BINARY) {
             memset(descriptor->address, 0, descriptor->maxLen);
             if (descriptor->defaultValue != NULL) {
-                size_t len = strlen(descriptor->defaultValue);
-                if (len > descriptor->maxLen)
-                    len = descriptor->maxLen;
+                size_t len = boundedStringLength(descriptor->defaultValue,
+                                                 descriptor->maxLen);
                 memcpy(descriptor->address, descriptor->defaultValue, len);
             }
             continue;
@@ -248,66 +320,58 @@ static void initStorage(const DataDescriptor* dsc, size_t itemsCount) {
         if (descriptor->type == T_STRING) {
             memset(descriptor->address, 0, descriptor->maxLen + 1u);
             if (descriptor->defaultValue != NULL) {
-                size_t len = strlen(descriptor->defaultValue);
-                if (len > descriptor->maxLen)
-                    len = descriptor->maxLen;
+                size_t len = boundedStringLength(descriptor->defaultValue,
+                                                 descriptor->maxLen);
                 memcpy(descriptor->address, descriptor->defaultValue, len);
             }
         }
     }
 }
 
-static bool isSettingsFileCorrect(const uint8_t* settingsData,
-                                  uint32_t       settingsDataLen,
-                                  uint16_t       expectedCrc) {
-    RETURN_VALUE_IF_NULL(settingsData, ;, false);
-    return (uint16_t)libCrc16((uint8_t*)settingsData, settingsDataLen) ==
-           expectedCrc;
+static bool payloadCrcIsValid(const uint8_t* data, uint16_t dataLen,
+                              uint16_t expectedCrc) {
+    RETURN_VALUE_IF_NULL(data, ;, false);
+    return (uint16_t)libCrc16((uint8_t*)data, dataLen) == expectedCrc;
 }
 
-static Error_t readFileHeadInfo(const char* addr, uint16_t* fileSize,
-                                uint16_t* fileCrc) {
+static Error_t readFileHeadInfo(const char* addr, uint16_t* payloadSize,
+                                uint16_t* payloadCrc) {
     uint8_t     header[SETTINGS_FILE_HEADER_LEN] = {0};
     FileHandle* fp;
     size_t      readSize;
 
     RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
-    RETURN_VALUE_IF_NULL(fileSize, ;, ERR_NULL_PARAMETER);
-    RETURN_VALUE_IF_NULL(fileCrc, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(payloadSize, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(payloadCrc, ;, ERR_NULL_PARAMETER);
 
-    fp = OOP_CALL(file(), open, addr, "rb");
+    fp = OOP_CALL(file(), open, addr, "r");
     if (fp == NULL) {
         LOG_INFO("Storage file does not exist: %s", addr);
         return ERR_NOK;
     }
 
-    /*
-     * Some embedded file implementations do not guarantee that the initial
-     * position is zero, even after opening with "rb".
-     */
     if (OOP_CALL(file(), seek, fp, 0, FILE_SEEK_ORG_SET) != 0) {
         LOG_ERROR("Cannot seek storage file: %s", addr);
         OOP_CALL(file(), close, fp);
         return ERR_NOK;
     }
 
-    readSize = OOP_CALL(file(), read, header, sizeof(header), 1u, fp);
-
+    readSize = OOP_CALL(file(), read, header, 1u, sizeof(header), fp);
     OOP_CALL(file(), close, fp);
 
     if (readSize != sizeof(header)) {
-        LOG_INFO("Storage file is empty/truncated: %s, read=%u expected=%u",
-                 addr, (unsigned)readSize, (unsigned)sizeof(header));
+        LOG_ERROR("Invalid storage header: path=%s read=%u expected=%u", addr,
+                  (unsigned)readSize, (unsigned)sizeof(header));
         return ERR_NOK;
     }
 
-    *fileSize = (uint16_t)(((uint16_t)header[0] << 8u) | header[1]);
+    *payloadSize = (uint16_t)(((uint16_t)header[0] << 8u) | header[1]);
+    *payloadCrc  = (uint16_t)(((uint16_t)header[2] << 8u) | header[3]);
 
-    *fileCrc = (uint16_t)(((uint16_t)header[2] << 8u) | header[3]);
-
-    if (*fileSize == 0u ||
-        *fileSize > SETTINGS_FILE_MAX_SIZE - SETTINGS_FILE_HEADER_LEN) {
-        LOG_ERROR("Invalid storage payload size: %s, size=%u", addr, *fileSize);
+    if (*payloadSize == 0u ||
+        *payloadSize > SETTINGS_FILE_MAX_SIZE - SETTINGS_FILE_HEADER_LEN) {
+        LOG_ERROR("Invalid storage payload size: path=%s size=%u", addr,
+                  *payloadSize);
         return ERR_NOK;
     }
 
@@ -322,8 +386,8 @@ static uint16_t itemWriteLength(const DataDescriptor* descriptor) {
         return descriptor->maxLen;
 
     if (descriptor->type == T_STRING) {
-        size_t len = strlen((const char*)descriptor->address);
-        return (uint16_t)(len > descriptor->maxLen ? descriptor->maxLen : len);
+        return (uint16_t)boundedStringLength((const char*)descriptor->address,
+                                             descriptor->maxLen);
     }
 
     return 0u;
@@ -331,121 +395,113 @@ static uint16_t itemWriteLength(const DataDescriptor* descriptor) {
 
 static Error_t saveStorage(const DataDescriptor* dsc, size_t itemsCount,
                            const char* addr) {
-    uint8_t*    fileWriteBuf;
-    uint32_t    writeBufLen = SETTINGS_FILE_HEADER_LEN;
-    uint16_t    crc16;
-    uint16_t    dataLen;
+    uint8_t*    fileBuffer;
+    uint32_t    totalLen = SETTINGS_FILE_HEADER_LEN;
+    uint16_t    payloadLen;
+    uint16_t    crc;
     FileHandle* fp;
-    int32_t     writtenToFile;
+    size_t      written;
 
     RETURN_VALUE_IF_NULL(dsc, ;, ERR_NULL_PARAMETER);
     RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
 
-    if (*addr == '\0')
+    if (*addr == '\0' || !descriptorTableIsValid(dsc, itemsCount))
         return ERR_BAD_PARAMETER;
 
-    fileWriteBuf = (uint8_t*)MEM_ALLOC(SETTINGS_FILE_MAX_SIZE);
-    if (fileWriteBuf == NULL)
+    fileBuffer = (uint8_t*)MEM_ALLOC(SETTINGS_FILE_MAX_SIZE);
+    if (fileBuffer == NULL)
         return ERR_NOK;
 
-    memset(fileWriteBuf, 0, SETTINGS_FILE_MAX_SIZE);
+    memset(fileBuffer, 0, SETTINGS_FILE_MAX_SIZE);
 
     for (size_t i = 0u; i < itemsCount; i++) {
-        uint16_t   itemLen = itemWriteLength(&dsc[i]);
-        uint16_t   encoded = 0u;
-        uint32_t   remaining;
-        TlvError_t err;
+        const DataDescriptor* descriptor = &dsc[i];
+        uint16_t              itemLen    = itemWriteLength(descriptor);
+        uint16_t              encodedLen = 0u;
+        uint32_t              remaining;
+        uint8_t               tag[STORAGE_TAG_LEN];
+        TlvError_t            tlvError;
 
-        if (itemLen == 0u && dsc[i].type != T_STRING) {
-            LOG_ERROR("Invalid descriptor '%s'", dsc[i].key);
-            MEM_FREE(fileWriteBuf);
+        if (totalLen >= SETTINGS_FILE_MAX_SIZE) {
+            LOG_ERROR("Storage buffer full before id=%u", descriptor->id);
+            MEM_FREE(fileBuffer);
             return ERR_NOK;
         }
 
-        remaining = SETTINGS_FILE_MAX_SIZE - writeBufLen;
-        err = tlv()->encode(fileWriteBuf + writeBufLen, remaining,
-                            (uint8_t*)dsc[i].key, (uint16_t)strlen(dsc[i].key),
-                            (uint8_t*)dsc[i].address, itemLen, &encoded);
+        remaining = SETTINGS_FILE_MAX_SIZE - totalLen;
+        tag[0]    = (uint8_t)(descriptor->id >> 8u);
+        tag[1]    = (uint8_t)(descriptor->id & 0xFFu);
 
-        if (err != TLV_OK || encoded > remaining) {
-            LOG_ERROR("Cannot encode setting '%s': %d", dsc[i].key, err);
-            MEM_FREE(fileWriteBuf);
+        tlvError =
+            tlv()->encode(fileBuffer + totalLen, remaining, tag, sizeof(tag),
+                          (uint8_t*)descriptor->address, itemLen, &encodedLen);
+
+        if (tlvError != TLV_OK || encodedLen == 0u || encodedLen > remaining) {
+            LOG_ERROR("Cannot encode setting: id=%u error=%d", descriptor->id,
+                      tlvError);
+            MEM_FREE(fileBuffer);
             return ERR_NOK;
         }
 
-        writeBufLen += encoded;
+        totalLen += encodedLen;
     }
 
-    dataLen = (uint16_t)(writeBufLen - SETTINGS_FILE_HEADER_LEN);
-    crc16 =
-        (uint16_t)libCrc16(fileWriteBuf + SETTINGS_FILE_HEADER_LEN, dataLen);
+    payloadLen = (uint16_t)(totalLen - SETTINGS_FILE_HEADER_LEN);
+    crc = (uint16_t)libCrc16(fileBuffer + SETTINGS_FILE_HEADER_LEN, payloadLen);
 
-    fileWriteBuf[0] = (uint8_t)(dataLen >> 8u);
-    fileWriteBuf[1] = (uint8_t)(dataLen & 0xFFu);
-    fileWriteBuf[2] = (uint8_t)(crc16 >> 8u);
-    fileWriteBuf[3] = (uint8_t)(crc16 & 0xFFu);
+    fileBuffer[0] = (uint8_t)(payloadLen >> 8u);
+    fileBuffer[1] = (uint8_t)(payloadLen & 0xFFu);
+    fileBuffer[2] = (uint8_t)(crc >> 8u);
+    fileBuffer[3] = (uint8_t)(crc & 0xFFu);
 
-    fp = OOP_CALL(file(), open, addr, "wb");
+    fp = OOP_CALL(file(), open, addr, "w");
     if (fp == NULL) {
-        MEM_FREE(fileWriteBuf);
+        LOG_ERROR("Cannot open storage for writing: %s", addr);
+        MEM_FREE(fileBuffer);
         return ERR_NOK;
     }
 
-    writtenToFile =
-        OOP_CALL(file(), overwrite, fileWriteBuf, writeBufLen, 1u, fp);
+    written = OOP_CALL(file(), overwrite, fileBuffer, 1u, totalLen, fp);
     OOP_CALL(file(), close, fp);
-    MEM_FREE(fileWriteBuf);
+    MEM_FREE(fileBuffer);
 
-    if (writtenToFile != (int32_t)writeBufLen) {
-        LOG_ERROR("Incomplete settings write: %d/%u", writtenToFile,
-                  (unsigned)writeBufLen);
+    if (written != totalLen) {
+        LOG_ERROR("Incomplete storage write: path=%s written=%u expected=%u",
+                  addr, (unsigned)written, (unsigned)totalLen);
         return ERR_NOK;
     }
 
+    LOG_TRACE("Storage saved: path=%s bytes=%u", addr, (unsigned)totalLen);
     return ERR_OK;
 }
 
 static Error_t loadStorage(const DataDescriptor* dsc, size_t itemsCount,
                            const char* addr) {
-    uint8_t*    fileCache = NULL;
-    uint16_t    fileSize  = 0u;
-    uint16_t    fileCrc   = 0u;
-    FileHandle* fp        = NULL;
+    uint8_t*    payload     = NULL;
+    uint16_t    payloadSize = 0u;
+    uint16_t    payloadCrc  = 0u;
+    FileHandle* fp          = NULL;
     size_t      readSize;
-    TlvError_t  decodeError;
     StorageCtx  ctx;
+    TlvError_t  tlvError;
 
     RETURN_VALUE_IF_NULL(dsc, ;, ERR_NULL_PARAMETER);
     RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
 
-    if (*addr == '\0')
+    if (*addr == '\0' || !descriptorTableIsValid(dsc, itemsCount))
         return ERR_BAD_PARAMETER;
 
-    /* Current-schema defaults first; the file is only an overlay. */
+    /* An old file is an overlay on the complete current schema defaults. */
     initStorage(dsc, itemsCount);
 
-    Error_t headerResult = readFileHeadInfo(addr, &fileSize, &fileCrc);
+    if (readFileHeadInfo(addr, &payloadSize, &payloadCrc) != ERR_OK)
+        return saveStorage(dsc, itemsCount, addr);
 
-    if (headerResult != ERR_OK) {
-        Error_t saveResult;
-
-        LOG_INFO("Initializing storage file with defaults: %s", addr);
-
-        saveResult = saveStorage(dsc, itemsCount, addr);
-
-        if (saveResult != ERR_OK) {
-            LOG_ERROR("Failed to initialize storage file: %s, error=%d", addr,
-                      saveResult);
-        }
-
-        return saveResult;
-    }
-
-    fileCache = (uint8_t*)MEM_ALLOC(fileSize);
-    if (fileCache == NULL)
+    payload = (uint8_t*)MEM_ALLOC(payloadSize);
+    if (payload == NULL)
         return ERR_NOK;
 
-    fp = OOP_CALL(file(), open, addr, "rb");
+    fp = OOP_CALL(file(), open, addr, "r");
     if (fp == NULL)
         goto corrupted_file;
 
@@ -454,33 +510,52 @@ static Error_t loadStorage(const DataDescriptor* dsc, size_t itemsCount,
         goto corrupted_file;
     }
 
-    readSize = OOP_CALL(file(), read, fileCache, fileSize, 1u, fp);
+    readSize = OOP_CALL(file(), read, payload, 1u, payloadSize, fp);
     OOP_CALL(file(), close, fp);
     fp = NULL;
 
-    if (readSize != fileSize ||
-        !isSettingsFileCorrect(fileCache, fileSize, fileCrc)) {
+    if (readSize != payloadSize ||
+        !payloadCrcIsValid(payload, payloadSize, payloadCrc)) {
+        LOG_ERROR("Storage read or CRC failure: %s", addr);
         goto corrupted_file;
     }
 
-    ctx.dsc     = dsc;
-    ctx.count   = itemsCount;
-    decodeError = tlv()->decode(fileCache, fileSize, storageTlvHandler, &ctx);
-    if (decodeError != TLV_OK)
+    ctx.dsc          = dsc;
+    ctx.count        = itemsCount;
+    ctx.matchedCount = 0u;
+    ctx.needsRewrite = false;
+
+    tlvError = tlv()->decode(payload, payloadSize, storageTlvHandler, &ctx);
+    if (tlvError != TLV_OK) {
+        LOG_ERROR("Storage TLV failure: path=%s error=%d", addr, tlvError);
         goto corrupted_file;
+    }
 
-    MEM_FREE(fileCache);
+    /* A string-tag or unrelated file must not silently load as all defaults. */
+    if (ctx.matchedCount == 0u) {
+        LOG_ERROR("Storage contains no recognized numeric IDs: %s", addr);
+        goto corrupted_file;
+    }
 
-    /* Missing keys remain at their defaults without an unnecessary write.
-     */
+    MEM_FREE(payload);
+
+    if (ctx.needsRewrite) {
+        Error_t migrationResult = saveStorage(dsc, itemsCount, addr);
+
+        if (migrationResult != ERR_OK) {
+            /* Values are valid in RAM; migration can be retried next boot. */
+            LOG_ERROR("Storage migration write failed: %s", addr);
+        }
+    }
+
     return ERR_OK;
 
 corrupted_file:
     if (fp != NULL)
         OOP_CALL(file(), close, fp);
-    MEM_FREE(fileCache);
+    MEM_FREE(payload);
 
-    /* Decoding may have applied a prefix; restore a clean default state. */
+    /* A partial decode must never leak into the active settings object. */
     initStorage(dsc, itemsCount);
     return saveStorage(dsc, itemsCount, addr);
 }
@@ -489,6 +564,10 @@ static Error_t resetStorage(const DataDescriptor* dsc, size_t itemsCount,
                             const char* addr) {
     RETURN_VALUE_IF_NULL(dsc, ;, ERR_NULL_PARAMETER);
     RETURN_VALUE_IF_NULL(addr, ;, ERR_NULL_PARAMETER);
+
+    if (*addr == '\0' || !descriptorTableIsValid(dsc, itemsCount))
+        return ERR_BAD_PARAMETER;
+
     initStorage(dsc, itemsCount);
     return saveStorage(dsc, itemsCount, addr);
 }

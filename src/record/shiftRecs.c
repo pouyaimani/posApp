@@ -23,13 +23,23 @@ static uint32_t latestIdx;
 // Using storage to keep open shifts temporary and insert it
 // into db when shifts is closed
 static ShiftData tmpShift;
-BEGIN_DSC_ARRAY;
+
+/*
+ * Persistent IDs are permanent. Never reuse an ID, even after removing a
+ * setting. Explicit assignments allow descriptors and members to be reordered.
+ */
+typedef enum {
+    SHIFT_TAG_START_DATE = 0x0101,
+    SHIFT_TAG_START_TIME = 0x0102,
+    SHIFT_TAG_END_DATE   = 0x0103,
+    SHIFT_TAG_END_TIME   = 0x0104,
+} ShiftTag;
+
 static const DataDescriptor shiftDesc[] = {
-    DSC_INT(tmpShift.startDate, 0),
-    DSC_INT(tmpShift.startTime, 0),
-    DSC_INT(tmpShift.endDate, 0),
-    DSC_INT(tmpShift.endTime, 0),
-};
+    DSC_U32_ID(SHIFT_TAG_START_DATE, tmpShift.startDate, "0"),
+    DSC_U32_ID(SHIFT_TAG_START_TIME, tmpShift.startTime, "0"),
+    DSC_U32_ID(SHIFT_TAG_END_DATE, tmpShift.endDate, "0"),
+    DSC_U32_ID(SHIFT_TAG_END_TIME, tmpShift.endTime, "0")};
 
 static int8_t getLatestFirstTime(uint32_t* latest) {
     if (!state || !latest)
