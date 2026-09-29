@@ -12,21 +12,75 @@ static bool exists(File* self, const char* path) {
     return sdkFileIsExist(path);
 }
 
-static FileHandle* open(File* self, const char* path, const char* mode) {
-    if (!exists(self, path)) {
-        LOG_WARN("file (%s) is not exists.", path);
-        int ret = sdkFileCreate(path, 2, 0);
-        if (ret != SDK_FILE_OK) {
-            LOG_ERROR("file (%s) could not be created. error = %d", path, ret);
-            u32 fs;
-            sdkFileGetFreeSpace(&fs);
-            LOG_ERROR("flash free space = %u", fs);
-            return NULL;
-        }
+static bool createEmptyFile(const char* path) {
+    int ret = sdkFileCreate(path, 1, 0);
+    return true;
+
+    if (ret != SDK_FILE_OK) {
+        uint32_t freeSpace = 0;
+
+        LOG_ERROR("Could not create file '%s': %d", path, ret);
+        sdkFileGetFreeSpace(&freeSpace);
+        LOG_ERROR("Flash free space: %u", freeSpace);
+
+        return false;
     }
+
+    return true;
+}
+
+static FileHandle* open(File* self, const char* path, const char* mode) {
+    bool fileExists;
+    bool truncate;
+    bool append;
+
+    if (path == NULL || mode == NULL)
+        return NULL;
+
+    fileExists = exists(self, path);
+    truncate   = mode[0] == 'w';
+    append     = mode[0] == 'a';
+
+    /*
+     * Opening a missing file for reading must fail.
+     * It must not silently create an empty file.
+     */
+    if (!fileExists && mode[0] == 'r') {
+        LOG_WARN("File does not exist: %s", path);
+        return NULL;
+    }
+
+    // /*
+    //  * "wb" means create a new empty file.
+    //  */
+    // if (truncate && fileExists) {
+    //     if (sdkFileDel(path) != SDK_FILE_OK) {
+    //         LOG_ERROR("Could not truncate file: %s", path);
+    //         return NULL;
+    //     }
+
+    //     fileExists = false;
+    // }
+
+    if (!fileExists) {
+        if (!createEmptyFile(path))
+            return NULL;
+    }
+
     FileHandle* handle = MEM_ALLOC(sizeof(FileHandle));
+    if (handle == NULL) {
+        LOG_ERROR("Could not allocate file handle: %s", path);
+        return NULL;
+    }
+
     snprintf(handle->path, sizeof(handle->path), "%s", path);
-    handle->pos = sdkFileGetSize(handle->path);
+
+    /*
+     * Only append mode starts at EOF.
+     * Read and write modes start at offset zero.
+     */
+    handle->pos = append ? sdkFileGetSize(handle->path) : 0u;
+
     return handle;
 }
 
@@ -66,12 +120,36 @@ static int seek(File* self, FileHandle* handle, long offset,
 
 static size_t read(File* self, void* buffer, size_t size, size_t count,
                    FileHandle* handle) {
-    u32 len = (u32)size * count;
-    s32 r   = sdkFileRead(handle->path, buffer, handle->pos, &len);
-    if (r != SDK_FILE_OK)
-        return 0;       // Error
-    handle->pos += len; // advance the position
-    return len;
+    uint32_t requested;
+    uint32_t length;
+    uint32_t fileSize;
+    int32_t  ret;
+
+    if (buffer == NULL || handle == NULL || size == 0u || count == 0u)
+        return 0u;
+
+    requested = (uint32_t)(size * count);
+    fileSize  = sdkFileGetSize(handle->path);
+
+    if (handle->pos >= fileSize)
+        return 0u;
+
+    length = requested;
+
+    /* Avoid requesting data beyond EOF. */
+    if (length > fileSize - handle->pos)
+        length = fileSize - handle->pos;
+
+    ret = sdkFileRead(handle->path, buffer, handle->pos, &length);
+
+    if (ret != SDK_FILE_OK) {
+        LOG_ERROR("Read failed: path=%s pos=%u requested=%u error=%d",
+                  handle->path, handle->pos, requested, ret);
+        return 0u;
+    }
+
+    handle->pos += length;
+    return length;
 }
 
 static size_t write(File* self, const void* buffer, size_t size, size_t count,
@@ -92,12 +170,41 @@ static int removeFile(File* self, const char* path) {
 
 static size_t overwrite(File* self, const void* buffer, size_t size,
                         size_t count, FileHandle* handle) {
-    size_t bytesToWrite = size * count;
-    // removeFile(self, handle->path);
-    s32 r = sdkFileWrite(handle->path, (u8*)buffer, (u32)bytesToWrite);
-    if (r != SDK_FILE_OK)
-        return 0; // Error
-    handle->pos += (u32)bytesToWrite;
+    size_t   bytesToWrite;
+    uint32_t resultingSize;
+    int32_t  ret;
+
+    if (buffer == NULL || handle == NULL || size == 0u || count == 0u)
+        return 0u;
+
+    bytesToWrite = size * count;
+
+    ret = sdkFileWrite(handle->path, (uint8_t*)buffer, (uint32_t)bytesToWrite);
+
+    // ret = sdkFileInsert(handle->path, (u8*)buffer, 0, (u32)bytesToWrite);
+
+    if (ret != SDK_FILE_OK) {
+        LOG_ERROR("Overwrite failed: path=%s bytes=%u error=%d", handle->path,
+                  (unsigned)bytesToWrite, ret);
+        return 0u;
+    }
+
+    resultingSize = sdkFileGetSize(handle->path);
+
+    if (resultingSize < bytesToWrite) {
+        LOG_ERROR("Invalid size after overwrite: path=%s size=%u expected=%u",
+                  handle->path, resultingSize, (unsigned)bytesToWrite);
+        return 0u;
+    }
+
+    LOG_TRACE("Overwrite succeed : path=%s bytes=%u error=%d", handle->path,
+              (unsigned)bytesToWrite, ret);
+    /*
+     * sdkFileWrite writes from the beginning, so the resulting logical
+     * position is bytesToWrite—not old position + bytesToWrite.
+     */
+    handle->pos = (uint32_t)bytesToWrite;
+
     return bytesToWrite;
 }
 
