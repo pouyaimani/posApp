@@ -26,6 +26,10 @@ void* sys_getMemory_debug(size_t size, const char* file, int line,
 
     ptr = OOP_CALL(sys(), getMemory, size);
 
+    if (ptr) {
+        memset(ptr, 0, size);
+    }
+
     LOG_TRACE("########## address=%s%p%s ##########", LOG_COLOR_ERROR, ptr,
               LOG_COLOR_RESET);
 

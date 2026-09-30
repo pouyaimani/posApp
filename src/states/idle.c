@@ -47,8 +47,7 @@ static void wifiAutoConnect() {
     if (conSt == WIFI_CONNECT_SUCCEED || conSt == WIFI_CONNECT_UNDER_PROCESS) {
         return;
     }
-    WifiScanSt_t scnSt = OOP_CALL(wifi(), hgetScanStatus);
-    if (scnSt == WIFI_SCAN_SUCCEED) {
+    if (wifi()->scanSt == WIFI_SCAN_SUCCEED) {
         for (uint8_t i = 0; i < wifi()->apList.size; i++) {
             DEFINE_STRING(safeSsid, 64);
             normalizeSsid(wifi()->apList.list[i].essid,
@@ -70,7 +69,8 @@ static void wifiAutoConnect() {
                 }
             }
         }
-    } else if (scnSt != WIFI_SCAN_UNDER_PROCESS && !wifi()->onUserSelection) {
+    } else if (wifi()->scanSt != WIFI_SCAN_UNDER_PROCESS &&
+               !wifi()->onUserSelection) {
         wifi()->startScan();
     }
 }

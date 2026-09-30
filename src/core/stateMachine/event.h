@@ -114,15 +114,16 @@ OOP_CTOR(MagEvent);
 /* ===== Wifi ===== */
 
 typedef enum WifiScanSt_t {
-    WIFI_SCAN_UNDER_PROCESS,
+    WIFI_SCAN_FAILED,
     WIFI_SCAN_SUCCEED,
-    WIFI_SCAN_FAILED
+    WIFI_SCAN_UNDER_PROCESS
 } WifiScanSt_t;
 
 typedef enum WifiConnectSt_t {
-    WIFI_CONNECT_UNDER_PROCESS,
+    WIFI_CONNECT_FAILED,
     WIFI_CONNECT_SUCCEED,
-    WIFI_CONNECT_FAILED
+    WIFI_CONNECT_UNDER_PROCESS
+
 } WifiConnectSt_t;
 
 OOP_DECLARE_CLASS(WifiApList_t);
