@@ -27,6 +27,8 @@
 #define LOG_COLOR_ERROR "\x1b[31m" // Red
 #define LOG_COLOR_FATAL "\x1b[91m" // Bright Red
 
+#define LOG_COLOR_RED LOG_COLOR_ERROR
+
 #define LOG_LEVEL LOG_LEV_TRACE
 
 OOP_DECLARE_CLASS(DateTime);

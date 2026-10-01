@@ -99,6 +99,12 @@ static void runCycle() {
                 i++;
             }
         }
+        if (s->timeout) {
+            if (s->entranceTime + s->timeout > GET_TICK()) {
+                TimeOutEvent* ev = createEvent(SM_EVENT_TIME_OUT);
+                DISPATCH_EVENT(ev);
+            }
+        }
         if (s->isTimerEn) {
             list_foreach(s->timerList, handleStateTimer, NULL);
         }

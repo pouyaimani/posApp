@@ -181,13 +181,21 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     }
 }
 
+STATE_DEF_HANDLE(WifiScan, TimeOutEvent) {
+    GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+              phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
+}
+
 static void WifiScan(State* parent) {
     wifiScan = (SubState*)MEM_ALLOC(sizeof(SubState));
     OOP_CALL_CTOR(State, wifiScan, parent, "wifi Scan");
-    wifiScan->vtable.enter        = STATE_ENTER(WifiScan);
-    wifiScan->vtable.exit         = STATE_EXIT(WifiScan);
-    wifiScan->vtable.handleWifi   = STATE_HANDLE(WifiScan, WifiEvent);
-    wifiScan->vtable.handleKeypad = STATE_HANDLE(WifiScan, KeypadEvent);
+    wifiScan->vtable.enter         = STATE_ENTER(WifiScan);
+    wifiScan->vtable.exit          = STATE_EXIT(WifiScan);
+    wifiScan->vtable.handleWifi    = STATE_HANDLE(WifiScan, WifiEvent);
+    wifiScan->vtable.handleKeypad  = STATE_HANDLE(WifiScan, KeypadEvent);
+    wifiScan->vtable.handleTimeout = STATE_HANDLE(WifiScan, TimeOutEvent);
+
+    OOP_CALL(wifiScan, setTimeOut, SECS(30));
 }
 
 /******************** Cellular connect sub state **********************/

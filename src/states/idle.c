@@ -43,35 +43,50 @@ static Timer*    timer;
 static SwipeHint swipe;
 
 static void wifiAutoConnect() {
-    WifiConnectSt_t conSt = OOP_CALL(wifi(), getConnectStatus);
-    if (conSt == WIFI_CONNECT_SUCCEED || conSt == WIFI_CONNECT_UNDER_PROCESS) {
-        return;
+    if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_FAILED &&
+        OOP_CALL(wifi(), hgetScanStatus) == WIFI_SCAN_FAILED &&
+        !wifi()->onUserSelection) {
+        wifi()->startScan();
     }
-    if (wifi()->scanSt == WIFI_SCAN_SUCCEED) {
-        for (uint8_t i = 0; i < wifi()->apList.size; i++) {
-            DEFINE_STRING(safeSsid, 64);
-            normalizeSsid(wifi()->apList.list[i].essid,
-                          sizeof(wifi()->apList.list[i].essid), safeSsid,
-                          sizeof(safeSsid));
-            if (strcmp(wifi()->apList.list[i].essid,
-                       settings()->terminal.wfiSSID) == 0) {
-                WifiApInfo_t apInfo  = {0};
-                char         pwd[64] = {0};
-                snprintf(apInfo.essid, sizeof(apInfo.essid), "%s",
-                         settings()->terminal.wfiSSID);
-                snprintf(apInfo.mac, sizeof(apInfo.mac), "%s",
-                         settings()->terminal.wifiMac);
-                apInfo.secMode = settings()->terminal.wifiEnc;
-                snprintf(pwd, sizeof(pwd), "%s", settings()->terminal.wifiPwd);
-                if (strlen(apInfo.essid) > 0 && strlen(pwd) > 0 &&
-                    apInfo.secMode != 0) {
-                    OOP_CALL(wifi(), hconnect, &apInfo, pwd);
+}
+
+STATE_DEF_HANDLE(Idle, WifiEvent) {
+    LOG_TRACE("ev->type = %d", ev->type);
+    if (ev->type == WIFI_EV_SCAN) {
+        if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
+            LOG_TRACE("saved wifi ssid = %s", settings()->terminal.wfiSSID);
+            LOG_TRACE("wifi()->apList.size = %d", wifi()->apList.size);
+            for (uint8_t i = 0; i < wifi()->apList.size; i++) {
+                DEFINE_STRING(safeSsid, 64);
+                normalizeSsid(wifi()->apList.list[i].essid,
+                              sizeof(wifi()->apList.list[i].essid), safeSsid,
+                              sizeof(safeSsid));
+                if (strcmp(wifi()->apList.list[i].essid,
+                           settings()->terminal.wfiSSID) == 0) {
+                    WifiApInfo_t apInfo  = {0};
+                    char         pwd[64] = {0};
+                    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s",
+                             settings()->terminal.wfiSSID);
+                    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s",
+                             settings()->terminal.wifiMac);
+                    apInfo.secMode = settings()->terminal.wifiEnc;
+                    snprintf(pwd, sizeof(pwd), "%s",
+                             settings()->terminal.wifiPwd);
+                    LOG_TRACE("Saved wifi ssid [%s%s%s] is found nearby.",
+                              LOG_COLOR_RED, apInfo.essid, LOG_COLOR_RESET);
+                    RETURN_IF_LE(strlen(apInfo.essid), 0, ;);
+                    RETURN_IF_LE(strlen(pwd), 0, ;);
+                    RETURN_IF(apInfo.secMode, 0, ;);
+                    LOG_TRACE("start connecting to [%s%s%s]", LOG_COLOR_RED,
+                              apInfo.essid, LOG_COLOR_RESET);
+                    wifi()->connect(&apInfo, pwd);
                 }
             }
         }
-    } else if (wifi()->scanSt != WIFI_SCAN_UNDER_PROCESS &&
-               !wifi()->onUserSelection) {
-        wifi()->startScan();
+    } else if (ev->type == WIFI_EV_CONNECT) {
+        LOG_TRACE("result of connecting to [%s%s%s] -> %d", LOG_COLOR_RED,
+                  settings()->terminal.wfiSSID, LOG_COLOR_RESET,
+                  ev->connectStatus);
     }
 }
 
@@ -439,6 +454,7 @@ OOP_CTOR(Idle, State* parent, const char* name) {
     self->base.vtable.handleTimeout   = STATE_HANDLE(Idle, TimeOutEvent);
     self->base.vtable.handleMag       = STATE_HANDLE(Idle, MagEvent);
     self->base.vtable.onSocketConnect = STATE_HANDLE(Idle, SocketConnectEvent);
+    self->base.vtable.handleWifi      = STATE_HANDLE(Idle, WifiEvent);
 
     createUi();
 

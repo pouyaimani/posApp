@@ -1,5 +1,7 @@
 #include "sys.h"
 
+// #define SYS_MEM_LOG 1
+
 System*     __sys;
 BatteryStat batterySt;
 char        serialNumber[SERIAL_NUMBER_MAX_LEN];
@@ -19,10 +21,11 @@ static void constructT3Rtos() {
 void* sys_getMemory_debug(size_t size, const char* file, int line,
                           const char* func) {
     void* ptr;
-
+#ifdef SYS_MEM_LOG
     LOG_TRACE(
         "########## [ALLOC] size = %s%u%s bytes from %s:%d (%s) ##########",
         LOG_COLOR_ERROR, (unsigned)size, LOG_COLOR_RESET, file, line, func);
+#endif
 
     ptr = OOP_CALL(sys(), getMemory, size);
 
@@ -30,16 +33,20 @@ void* sys_getMemory_debug(size_t size, const char* file, int line,
         memset(ptr, 0, size);
     }
 
+#ifdef SYS_MEM_LOG
     LOG_TRACE("########## address=%s%p%s ##########", LOG_COLOR_ERROR, ptr,
               LOG_COLOR_RESET);
+#endif
 
     return ptr;
 }
 
 void sys_freeMemory_debug(void* mem, const char* file, int line,
                           const char* func) {
+#ifdef SYS_MEM_LOG
     LOG_TRACE("########## [FREE] addr= %s%p%s bytes from %s:%d (%s) ##########",
               LOG_COLOR_ERROR, mem, LOG_COLOR_RESET, file, line, func);
+#endif
     OOP_CALL(sys(), freeMemory, mem);
 }
 

@@ -24,6 +24,7 @@ static void checkWifiScanResult() {
     WifiScanSt_t st = OOP_CALL(__wifi, hgetScanStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
         WifiEvent* ev  = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        ev->type       = WIFI_EV_SCAN;
         ev->scanStatus = st;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkWifiScanResult);
@@ -42,6 +43,7 @@ static void checkWifiConnectResult() {
     WifiConnectSt_t st = OOP_CALL(__wifi, getConnectStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
         WifiEvent* ev     = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        ev->type          = WIFI_EV_CONNECT;
         ev->connectStatus = st;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkWifiConnectResult);

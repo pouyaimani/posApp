@@ -74,6 +74,7 @@ OOP_VTABLE(State) {
     OOP_IMETHOD(void, State, goTo, State*);
     OOP_IMETHOD(void, State, setNext, State*);
     OOP_IMETHOD(void, State, setPrev, State*);
+    OOP_IMETHOD(void, State, setTimeOut, uint32_t);
     OOP_IMETHOD(bool, State, enableTimer);
     OOP_IMETHOD(bool, State, disableTimer);
     OOP_IMETHOD(bool, State, addTimer, StateCallback timerCb, uint32_t timeOut,
@@ -96,6 +97,8 @@ OOP_CLASS(State) {
     uint32_t entranceTime;
     List*    timerList;
     bool     isTimerEn;
+    // State time out
+    bool timeout;
 };
 
 /* ctor */

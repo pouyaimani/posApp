@@ -72,6 +72,11 @@ static void setNext(State* current, State* next) { current->next = next; }
 
 static void setPrev(State* current, State* prev) { current->prev = prev; }
 
+static bool setTimeOut(State* state, uint32_t timeout) {
+    state->timeout = timeout;
+    return true;
+}
+
 static bool enableTimer(State* state) {
     if (!state) {
         return false;
@@ -192,6 +197,7 @@ OOP_CTOR(State, State* parent, const char* name) {
     self->vtable.removeTimer       = removeTimer;
     self->vtable.enableTimer       = enableTimer;
     self->vtable.resetTimerTimeOut = resetTimerTimeOut;
+    self->vtable.setTimeOut        = setTimeOut;
     self->parent                   = parent;
     self->next                     = NULL;
     self->prev                     = NULL;

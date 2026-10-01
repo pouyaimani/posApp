@@ -142,20 +142,36 @@ bool tmsJsonBuildUpgradeReport(char* buffer, size_t capacity,
     return ok;
 }
 
+static void printUpdateInfo(const UpgradeInfo* info) {
+    if (info == NULL)
+        return;
+
+    LOG_TRACE("========== Update Info ==========\r\n");
+    LOG_TRACE("isHasNewVersion : %s\r\n",
+              info->isHasNewVersion ? "true" : "false");
+    LOG_TRACE("message         : %s\r\n", info->message);
+    LOG_TRACE("planId          : %s\r\n", info->planId);
+    LOG_TRACE("version         : %s\r\n", info->version);
+    LOG_TRACE("url             : %s\r\n", info->url);
+    LOG_TRACE("hash            : %s\r\n", info->hash);
+    LOG_TRACE("ts              : %s\r\n", info->ts);
+    LOG_TRACE("fileSize        : %d\r\n", info->fileSize);
+    LOG_TRACE("=================================\r\n");
+}
+
 bool tmsJsonParseUpgradeResponse(const uint8_t* json, size_t length,
                                  UpgradeInfo* info) {
     cJSON* root;
     cJSON* code;
     cJSON* data;
     cJSON* item;
-    if (info == NULL)
-        return false;
+    RETURN_VALUE_IF_NULL(info, ;, false);
     root = parseBounded(json, length);
-    if (root == NULL)
-        return false;
+    RETURN_VALUE_IF_NULL(root, ;, false);
     code = cJSON_GetObjectItemCaseSensitive(root, "code");
     data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (!cJSON_IsNumber(code)) {
+        LOG_ERROR("tmsJsonParseUpgradeResponse(): code is not numeric.");
         cJSON_Delete(root);
         return false;
     }
@@ -175,6 +191,7 @@ bool tmsJsonParseUpgradeResponse(const uint8_t* json, size_t length,
             info->fileSize = item->valueint;
         else if (cJSON_IsString(item) && item->valuestring != NULL)
             info->fileSize = (int)strtol(item->valuestring, NULL, 10);
+        printUpdateInfo(info);
     }
     cJSON_Delete(root);
     return true;
