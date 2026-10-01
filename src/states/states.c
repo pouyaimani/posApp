@@ -10,7 +10,6 @@ static Info*        info;
 static Dialogue*    dialogue;
 static Supporter*   supporter;
 static DevInfo*     devInfo;
-static StMenu*      menu;
 static FixedAmount* fixedAmount;
 static TxnResult*   txnRes;
 
@@ -44,10 +43,6 @@ State* getState(StateId_t id) {
         CALL_ONCE(devInfo = MEM_ALLOC(sizeof(DevInfo));
                   OOP_CALL_CTOR(DevInfo, devInfo, idle, "dev info"););
         return (State*)devInfo;
-    case STATE_ID_MENU:
-        CALL_ONCE(menu = MEM_ALLOC(sizeof(StMenu));
-                  OOP_CALL_CTOR(StMenu, menu, idle, "menu"););
-        return (State*)menu;
     case STATE_ID_FIXED_AMOUNT:
         CALL_ONCE(fixedAmount = MEM_ALLOC(sizeof(FixedAmount)); OOP_CALL_CTOR(
                       FixedAmount, fixedAmount, idle, "fixed Amount"););

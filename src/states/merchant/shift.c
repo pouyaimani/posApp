@@ -12,6 +12,7 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
+#include "menuMgr/menuMgr.h"
 
 static Menu*     shiftItemMenu;
 static lv_obj_t* shiftMenu;
@@ -335,7 +336,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Shift) {
     createUi();
-    GOTO_MENU(state->parent, shiftItemMenu, NULL, NULL);
+    menuMgr()->run(shiftItemMenu, state->parent, &menuCfgBack2idleOBC);
 }
 
 OOP_CTOR(Shift, State* parent, const char* name) {

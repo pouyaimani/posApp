@@ -141,19 +141,6 @@ OOP_CTOR(Dialogue, State* parent, const char* name);
 void GOTO_DIAL(State* prev, State* next, const char* title, const char* body,
                CallBack_t cb, void* data);
 
-/************************ Menu ***********************/
-typedef struct Menu Menu;
-
-OOP_CLASS(StMenu) {
-    OOP_EXTENDS(State);
-    Menu*      menu;
-    CallBack_t onExit;
-    void*      userData;
-    bool       memHandle;
-};
-
-OOP_CTOR(StMenu, State* parent, const char* name);
-
 /************************ Fixed Amount ***********************/
 
 OOP_CLASS(FixedAmount) { OOP_EXTENDS(State); };
@@ -184,9 +171,6 @@ void GOTO_INPUT(State* prev, State* next, const char* title, const char* body,
                 int max, InputMode_t mode, char* out);
 void GOTO_INFO(State* prev, State* next, uint8_t type, const char* title,
                const char* body);
-void GOTO_MENU(State* prev, Menu* amenu, CallBack_t _onExit, void* userData);
-void GOTO_MENU_MEM_HANDLE(State* prev, Menu* amenu, CallBack_t _onExit,
-                          void* userData);
 void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
                   State* onSuccess, State* onFailure);
 void GOTO_NET_CONNNECT();

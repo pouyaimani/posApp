@@ -72,9 +72,9 @@ static void setNext(State* current, State* next) { current->next = next; }
 
 static void setPrev(State* current, State* prev) { current->prev = prev; }
 
-static bool setTimeOut(State* state, uint32_t timeout) {
+static void setTimeOut(State* state, uint32_t timeout) {
     state->timeout = timeout;
-    return true;
+    STM_LOG("State time out duration = %lu is set.", timeout);
 }
 
 static bool enableTimer(State* state) {

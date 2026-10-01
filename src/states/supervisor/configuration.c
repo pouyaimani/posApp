@@ -12,6 +12,7 @@
 #include "txnFlow/txnFLow.h"
 #include "txnCommon.h"
 #include "transaction.h"
+#include "menuMgr/menuMgr.h"
 
 /******************** Configuration sub state **********************/
 
@@ -24,7 +25,7 @@ STATE_DEF_ENTER(Configuration) {
                     &getTxn(TXN_LOGON)->state, NULL, NULL);
     ui_menu_addItem(cfgMenu, phraseGetDef(PHRASE_GET_MERCHANT_DATA),
                     LV_TEXT_ALIGN_RIGHT, &getTxn(TXN_CFG)->state, NULL, NULL);
-    GOTO_MENU_MEM_HANDLE(state->parent, cfgMenu, NULL, NULL);
+    menuMgr()->run(cfgMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 OOP_CTOR(Configuration, State* parent, const char* name) {

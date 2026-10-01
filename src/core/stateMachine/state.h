@@ -95,15 +95,21 @@ OOP_CLASS(State) {
     State*      prev;
     /* first etrance time */
     uint32_t entranceTime;
-    List*    timerList;
-    bool     isTimerEn;
+
+    uint32_t timeOutRef;
+
+    List* timerList;
+    bool  isTimerEn;
+
     // State time out
-    bool timeout;
+    uint32_t timeout;
 };
 
 /* ctor */
 OOP_CTOR(State, State* parent, const char* name);
 
 typedef State SubState;
+
+#define STATE_BASE(x) (x##)->base
 
 #endif

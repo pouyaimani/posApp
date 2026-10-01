@@ -14,6 +14,7 @@
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
 #include "record/txnQuery.h"
+#include "menuMgr/menuMgr.h"
 
 static ReceiptDocType docType;
 
@@ -151,7 +152,7 @@ STATE_DEF_ENTER(RePrint) {
         ui_menu_addItem(printMenu, phraseGetDef(printItemTxt[i]),
                         LV_TEXT_ALIGN_RIGHT, NULL, setReprintItem, NULL);
     }
-    GOTO_MENU_MEM_HANDLE(state->parent, printMenu, NULL, NULL);
+    menuMgr()->run(printMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 static void RePrint(State* parent) {
@@ -215,7 +216,7 @@ STATE_DEF_ENTER(DetailsReport) {
         ui_menu_addItem(printMenu, phraseGetDef(printItemTxt[i]),
                         LV_TEXT_ALIGN_RIGHT, NULL, setReprintItem, NULL);
     }
-    GOTO_MENU_MEM_HANDLE(state->parent, printMenu, NULL, NULL);
+    menuMgr()->run(printMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 STATE_DEF_EXIT(DetailsReport) {}
@@ -559,7 +560,7 @@ STATE_DEF_ENTER(Reports) {
                         LV_TEXT_ALIGN_RIGHT, subReports[i], setReportItem,
                         (void*)(uintptr_t)i);
     }
-    GOTO_MENU_MEM_HANDLE(state->parent, reportsMenu, NULL, NULL);
+    menuMgr()->run(reportsMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 OOP_CTOR(Reports, State* parent, const char* name) {

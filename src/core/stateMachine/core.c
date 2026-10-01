@@ -81,6 +81,7 @@ static void runCycle() {
         s->inner = STATE_EVENT;
         OOP_CALL(s, enter);
         s->entranceTime = GET_TICK();
+        s->timeOutRef   = s->entranceTime;
         if (s->isTimerEn) {
             list_foreach(s->timerList, resetStateTimer, NULL);
         }
@@ -100,9 +101,16 @@ static void runCycle() {
             }
         }
         if (s->timeout) {
-            if (s->entranceTime + s->timeout > GET_TICK()) {
+            uint32_t tick = GET_TICK();
+            if (tick > s->timeOutRef + s->timeout) {
+                STM_LOG("SM: state [%s%s%s] time out trigged. timeout = %lu, "
+                        "tick = %lu, timeOutRef = %lu",
+                        LOG_COLOR_RED, s->name, LOG_COLOR_RESET, s->timeout,
+                        tick, s->timeOutRef);
+                s->timeOutRef    = tick;
                 TimeOutEvent* ev = createEvent(SM_EVENT_TIME_OUT);
-                DISPATCH_EVENT(ev);
+                OOP_CALL((Event*)ev, dispatchTo, s);
+                OOP_CALL(sys(), freeMemory, ev);
             }
         }
         if (s->isTimerEn) {

@@ -8,6 +8,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "input/inputMgr.h"
+#include "menuMgr/menuMgr.h"
 
 static int*              fixedAmountItem;
 static TerminalSettings* termStorage;
@@ -25,7 +26,7 @@ static void amountList() {
         ui_menu_addItem(amountListMenu, str, LV_TEXT_ALIGN_RIGHT, NULL, NULL,
                         NULL);
     }
-    GOTO_MENU_MEM_HANDLE(STATE_IDLE, amountListMenu, NULL, NULL);
+    menuMgr()->run(amountListMenu, STATE_IDLE, &menuCfgBack2idleOBM);
 }
 
 static void singleAmount() {

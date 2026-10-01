@@ -13,6 +13,7 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
+#include "menuMgr/menuMgr.h"
 
 static Cellular* cel;
 static Network*  net;
@@ -297,7 +298,7 @@ static void createUi() {
 STATE_DEF_ENTER(Connectios) {
     wifi()->onUserSelection = false;
     createUi();
-    GOTO_MENU_MEM_HANDLE(state->parent, menu, NULL, NULL);
+    menuMgr()->run(menu, state->parent, &menuCfgBack2idleOBM);
 }
 
 OOP_CTOR(Connections, State* parent, const char* name) {

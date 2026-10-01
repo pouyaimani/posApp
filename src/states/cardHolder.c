@@ -17,6 +17,7 @@
 #include "txn.h"
 #include "error.h"
 #include "settings/settings.h"
+#include "menuMgr/menuMgr.h"
 
 size_t                  LEN_CARDHOLDER_ITEMS;
 static Menu*            menu;
@@ -37,7 +38,7 @@ static void onSimCharge() {
     ui_menu_addItem(&chargeMenu, phraseGetDef(PHRASE_TXN_VOUCHER),
                     LV_TEXT_ALIGN_RIGHT, &getTxn(TXN_VOUCHER)->state, NULL,
                     NULL);
-    GOTO_MENU(STATE_IDLE, &chargeMenu, NULL, NULL);
+    menuMgr()->run(&chargeMenu, STATE_IDLE, &menuCfgBack2idleOBC);
 }
 
 static CardHolderItems __cardHolderItems[] = {

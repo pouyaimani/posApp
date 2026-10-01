@@ -13,6 +13,7 @@
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
 #include "cardHolder.h"
+#include "menuMgr/menuMgr.h"
 
 static TerminalSettings* termStorage;
 
@@ -223,7 +224,7 @@ STATE_DEF_ENTER(FixedAmount) {
                     NULL);
     ui_menu_set_checked(fixedAmntMenu, termStorage->fixedAmountItem);
     listCnt = 0;
-    GOTO_MENU_MEM_HANDLE(state->parent, fixedAmntMenu, NULL, NULL);
+    menuMgr()->run(fixedAmntMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 /******************** max amount sub state **********************/
@@ -272,7 +273,7 @@ STATE_DEF_ENTER(MaxAmount) {
     } else {
         ui_menu_set_checked(maxAmntMenu, 1);
     }
-    GOTO_MENU_MEM_HANDLE(state->parent, maxAmntMenu, NULL, NULL);
+    menuMgr()->run(maxAmntMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 /******************** direct sale sub state **********************/
@@ -292,7 +293,7 @@ STATE_DEF_ENTER(DirectSale) {
     ui_menu_addItem(dirSaleMenu, phraseGetDef(PHRASE_DISABLE),
                     LV_TEXT_ALIGN_RIGHT, NULL, disDirectSale, NULL);
 
-    GOTO_MENU_MEM_HANDLE(state->parent, dirSaleMenu, NULL, NULL);
+    menuMgr()->run(dirSaleMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 /******************** enable services sub state **********************/
@@ -317,7 +318,7 @@ STATE_DEF_ENTER(EnableServices) {
                                 cardHolderItems(i)->enabled, NULL, NULL, NULL);
     }
 
-    GOTO_MENU_MEM_HANDLE(saveServiceStatus, servMenu, NULL, NULL);
+    menuMgr()->run(servMenu, saveServiceStatus, &menuCfgBack2idleOBM);
 }
 
 /*********************** other project state **************************/
@@ -334,7 +335,9 @@ STATE_DEF_ENTER(OtherProjects) {
         ui_menu_addItem(otherMenu, phraseGetDef(dsc[i]), LV_TEXT_ALIGN_RIGHT,
                         subState[i], NULL, NULL);
     }
-    GOTO_MENU_MEM_HANDLE(state->parent, otherMenu, saveSettings, NULL);
+    MenuMgrCfg cfg = menuCfgBack2idleOBM;
+    cfg.onExit     = saveSettings;
+    menuMgr()->run(otherMenu, state->parent, &cfg);
 }
 
 OOP_CTOR(OtherProjects, State* parent, const char* name) {

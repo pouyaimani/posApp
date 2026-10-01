@@ -11,6 +11,7 @@
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
 #include "input/inputMgr.h"
+#include "menuMgr/menuMgr.h"
 
 static bool validatePass(char* pass0, char* pass1, uint8_t len) {
     for (size_t i = 0; i < len; i++) {
@@ -224,7 +225,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(MerchantMenu) {
     createUi();
-    GOTO_MENU_MEM_HANDLE(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
+    menuMgr()->run(menu, getState(STATE_ID_SUPPORTER), &menuCfgBack2idleOBM);
 }
 
 static void MerchantMenu(State* parent) {

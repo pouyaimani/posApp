@@ -8,6 +8,7 @@
 #include "input/inputMgr.h"
 #include "txnCommon.h"
 #include "utility/convert.h"
+#include "menuMgr/menuMgr.h"
 
 /******************************************************************
  *                           Substates
@@ -68,7 +69,7 @@ STATE_DEF_ENTER(SelectOperator) {
                     LV_TEXT_ALIGN_RIGHT, NULL, setOperator, NULL);
     ui_menu_addItem(&opSelectionMenu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL),
                     LV_TEXT_ALIGN_RIGHT, NULL, setOperator, NULL);
-    GOTO_MENU(STATE_IDLE, &opSelectionMenu, NULL, NULL);
+    menuMgr()->run(&opSelectionMenu, STATE_IDLE, &menuCfgBack2idleOBC);
 }
 
 static void SelectOperator(State* parent) {
@@ -135,7 +136,7 @@ STATE_DEF_ENTER(SelectAmount) {
     ui_menu_create(&amntSelectionMenu, disp()->screen);
     LOG_TRACE("Operator = %d", selectedOp);
     setChargeAmnt();
-    GOTO_MENU(selectOperator, &amntSelectionMenu, NULL, NULL);
+    menuMgr()->run(&amntSelectionMenu, selectOperator, &menuCfgBack2idleOBC);
 }
 
 static void SelectAmount(State* parent) {

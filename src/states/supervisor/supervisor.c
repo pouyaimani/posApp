@@ -15,6 +15,7 @@
 #include "input/inputMgr.h"
 #include "upgrade.h"
 #include "utility/convert.h"
+#include "menuMgr/menuMgr.h"
 
 typedef enum {
     SUBS_NET_SETTINGS = 0,
@@ -275,7 +276,7 @@ STATE_DEF_ENTER(EnableSsl) {
                     success, changeSSLstatuse, NULL);
     ui_menu_addItem(sslMenu, phraseGetDef(PHRASE_DISABLE), LV_TEXT_ALIGN_RIGHT,
                     success, changeSSLstatuse, NULL);
-    GOTO_MENU_MEM_HANDLE(state->parent, sslMenu, NULL, NULL);
+    menuMgr()->run(sslMenu, state->parent, &menuCfgBack2idleOBM);
     ui_menu_set_checked(sslMenu, !settings()->server.sslEn);
 }
 
@@ -313,7 +314,7 @@ STATE_DEF_ENTER(NetworkSettings) {
                     LV_TEXT_ALIGN_RIGHT, enterIp, setItemToTms, NULL);
     ui_menu_addItem(serverSetMenu, phraseGetDef(PHRASE_SSL),
                     LV_TEXT_ALIGN_RIGHT, enableSsl, NULL, NULL);
-    GOTO_MENU_MEM_HANDLE(state->parent, serverSetMenu, NULL, NULL);
+    menuMgr()->run(serverSetMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 OOP_CTOR(NetworkSettings, State* parent, const char* name) {
@@ -389,7 +390,7 @@ STATE_DEF_ENTER(SupervisorMenu) {
         ui_menu_addItem(menu, phraseGetDef(itemTxt[i]), LV_TEXT_ALIGN_RIGHT,
                         subStates[i], NULL, NULL);
     }
-    GOTO_MENU_MEM_HANDLE(getState(STATE_ID_SUPPORTER), menu, NULL, NULL);
+    menuMgr()->run(menu, getState(STATE_ID_SUPPORTER), &menuCfgBack2idleOBM);
 }
 
 static void SupervisorMenu(State* parent) {

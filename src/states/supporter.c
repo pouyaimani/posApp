@@ -11,6 +11,8 @@
 #include "supervisor/supervisor.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "menuMgr/menuMgr.h"
+#include "menuMgr/menuMgr.h"
 
 static Menu*       menu;
 static Merchant*   merchant;
@@ -45,10 +47,10 @@ STATE_DEF_ENTER(Supporter) {
                     supervisor, NULL, NULL);
     ui_menu_addItem(menu, phraseGetDef(PHRASE_TURN_OFF), LV_TEXT_ALIGN_RIGHT,
                     NULL, onExit, NULL);
-    GOTO_MENU(STATE_IDLE, menu, NULL, NULL);
+    menuMgr()->run(menu, STATE_IDLE, &menuCfgBack2idleOBC);
 }
 
-STATE_DEF_HANDLE(Supporter, TimeOutEvent) {}
+STATE_DEF_HANDLE(Supporter, TimeOutEvent) { SM_GOTO(STATE_IDLE); }
 
 /******************** Power off sub state **********************/
 

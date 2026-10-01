@@ -14,6 +14,7 @@
 #include "utility/convert.h"
 #include "common.h"
 #include "tms/tmsTimeSync.h"
+#include "menuMgr/menuMgr.h"
 
 static char* inputStr;
 #define INPUT_SIZE 64
@@ -191,7 +192,7 @@ STATE_DEF_ENTER(ReceiptSettings) {
         ui_menu_addItem(receiptMenu, phraseGetDef(receiptItemTxt[i]),
                         LV_TEXT_ALIGN_RIGHT, subReceipt[i], NULL, NULL);
     }
-    GOTO_MENU_MEM_HANDLE(state->parent, receiptMenu, NULL, NULL);
+    menuMgr()->run(receiptMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 static Menu* autoRecMenu;
@@ -205,7 +206,7 @@ static void setAutoPrintRec(void* arg) {
 STATE_DEF_ENTER(AutoPrint) {
     ui_menu_on_off(autoRecMenu, disp()->screen, setAutoPrintRec, NULL);
     ui_menu_set_checked(autoRecMenu, !settings()->terminal.autoPrint);
-    GOTO_MENU_MEM_HANDLE(state->parent, autoRecMenu, NULL, NULL);
+    menuMgr()->run(autoRecMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 static SubState* secPrintSuc;
@@ -248,7 +249,7 @@ STATE_DEF_ENTER(PrnMerchRec) {
     merchRecMenu = MEM_ALLOC(sizeof(*merchRecMenu));
     ui_menu_on_off(merchRecMenu, disp()->screen, setMerchantPrintRec, NULL);
     ui_menu_set_checked(merchRecMenu, !settings()->terminal.merchantRecPrint);
-    GOTO_MENU_MEM_HANDLE(state->parent, merchRecMenu, NULL, NULL);
+    menuMgr()->run(merchRecMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 static Menu* prnModel;
@@ -267,7 +268,7 @@ STATE_DEF_ENTER(PrnModel) {
     ui_menu_addItem(prnModel, phraseGetDef(PHRASE_BLK_BCKGRND),
                     LV_TEXT_ALIGN_RIGHT, NULL, setPrintModel, NULL);
     ui_menu_set_checked(prnModel, settings()->terminal.printModel ? 1 : 0);
-    GOTO_MENU_MEM_HANDLE(state->parent, prnModel, NULL, NULL);
+    menuMgr()->run(prnModel, state->parent, &menuCfgBack2idleOBM);
 }
 
 static void ReceiptSettings(State* parent) {
@@ -472,7 +473,7 @@ static void createUi() {
 
 STATE_DEF_ENTER(Settings) {
     createUi();
-    GOTO_MENU_MEM_HANDLE(state->parent, settingsMenu, NULL, NULL);
+    menuMgr()->run(settingsMenu, state->parent, &menuCfgBack2idleOBM);
 }
 
 OOP_CTOR(Settings, State* parent, const char* name) {
