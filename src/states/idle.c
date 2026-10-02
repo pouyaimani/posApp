@@ -43,8 +43,11 @@ static Timer*    timer;
 static SwipeHint swipe;
 
 static void wifiAutoConnect() {
-    if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_FAILED &&
-        OOP_CALL(wifi(), hgetScanStatus) == WIFI_SCAN_FAILED &&
+    WifiScanSt_t    scanSt    = OOP_CALL(wifi(), hgetScanStatus);
+    WifiConnectSt_t connectSt = OOP_CALL(wifi(), getConnectStatus);
+    LOG_TRACE("Wifi auto connect: scan status = %d, connect status = %d",
+              scanSt, connectSt);
+    if (connectSt == WIFI_CONNECT_FAILED && scanSt == WIFI_SCAN_FAILED &&
         !wifi()->onUserSelection) {
         wifi()->startScan();
     }

@@ -4,7 +4,7 @@
 #include "oop.h"
 #include <stddef.h>
 
-#define STM_LOG_ENABLE
+// #define STM_LOG_ENABLE
 
 #ifdef STM_LOG_ENABLE
 #define STM_LOG(...) LOG_TRACE(__VA_ARGS__)

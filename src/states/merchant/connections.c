@@ -90,15 +90,14 @@ static void WifiConnect(State* parent) {
 /******************** Wifi Enter pass sub state **********************/
 
 STATE_DEF_ENTER(WifiEnterPass) {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_ALPHAB,
-            .title  = phraseGetDef(PHRASE_WIFI_PIN),
-            .info   = "",
-            .maxLen = 32,
-        },
-        state->parent, wifiConnect, NULL, NULL);
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
+                             .mode    = INMD_ENTER_ALPHAB,
+                             .title   = phraseGetDef(PHRASE_WIFI_PIN),
+                             .info    = "",
+                             .maxLen  = 32,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 state->parent, wifiConnect, NULL, NULL);
 }
 
 STATE_DEF_EXIT(WifiEnterPass) {}

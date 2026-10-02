@@ -3,8 +3,7 @@
 
 #include "state.h"
 #include "inputCtrl.h"
-
-typedef void (*InPutCallBack_t)(void* userData);
+#include "timeout.h"
 
 typedef struct {
     State*           state;

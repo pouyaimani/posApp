@@ -40,14 +40,13 @@ STATE_DEF_ENTER(Purchase) {
  ******************************************************************/
 
 STATE_DEF_ENTER(EnterAmount) {
-    inmgr()->run(
-        &(InputCfg){
-            .mode   = INMD_ENTER_AMOUNT,
-            .title  = phraseGetDef(PHRASE_AMOUNT),
-            .info   = phraseGetDef(PHRASE_TO_RIAL_1),
-            .maxLen = LEN_MAX_AMOUNT,
-        },
-        STATE_IDLE, enterPass, NULL, NULL);
+    inmgr()->run(&(InputCfg){.mode    = INMD_ENTER_AMOUNT,
+                             .title   = phraseGetDef(PHRASE_AMOUNT),
+                             .info    = phraseGetDef(PHRASE_TO_RIAL_1),
+                             .maxLen  = LEN_MAX_AMOUNT,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 STATE_IDLE, enterPass, NULL, NULL);
 }
 
 /******************************************************************
@@ -65,15 +64,14 @@ STATE_DEF_ENTER(EnterPassword) {
     if (!str2u64(inmgr()->input, &amount)) {
         LOG_FATAL("Converting amount form string to u64 failed.");
     }
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_PED,
-            .mode   = INMD_ENTER_PIN,
-            .title  = phraseGetDef(PHRASE_CARD_PIN),
-            .info   = phraseGetDef(PHRASE_BY_CUSTOMER),
-            .maxLen = LEN_MAX_CARD_PIN,
-        },
-        STATE_IDLE, commu, NULL, NULL);
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_PED,
+                             .mode    = INMD_ENTER_PIN,
+                             .title   = phraseGetDef(PHRASE_CARD_PIN),
+                             .info    = phraseGetDef(PHRASE_BY_CUSTOMER),
+                             .maxLen  = LEN_MAX_CARD_PIN,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 STATE_IDLE, commu, NULL, NULL);
 }
 
 /******************************************************************

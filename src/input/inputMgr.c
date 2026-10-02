@@ -113,9 +113,9 @@ STATE_DEF_HANDLE(Input, PedEvent) {
 }
 
 STATE_DEF_HANDLE(Input, TimeOutEvent) {
-    InputEvent input;
-    input.type = INPUT_EV_TIMEOUT;
-    inputUpdate(NULL, &input);
+    if (__inputmgr.ctrl->cfg.tocb) {
+        __inputmgr.ctrl->cfg.tocb(__inputmgr.ctrl->cfg.cbData);
+    }
 }
 
 static void ui_create() {
@@ -194,6 +194,7 @@ static void run(InputCfg* cfg, State* back, State* next, InPutCallBack_t cb,
     __inputmgr.back      = back;
     __inputmgr.cb        = cb;
     __inputmgr.cbData    = cbData;
+    OOP_CALL(__inputmgr.state, setTimeOut, cfg->timeout);
     SM_GOTO(__inputmgr.state);
 }
 

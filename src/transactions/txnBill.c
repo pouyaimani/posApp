@@ -36,14 +36,13 @@ STATE_DEF_ENTER(Bill) {
  ******************************************************************/
 
 STATE_DEF_ENTER(EnterBillId) {
-    inmgr()->run(
-        &(InputCfg){
-            .mode   = INMD_ENTER_NUMBERS,
-            .title  = phraseGetDef(PHRASE_BILL_ID),
-            .info   = "",
-            .maxLen = LEN_MAX_BILL_ID,
-        },
-        STATE_IDLE, enterPayId, NULL, NULL);
+    inmgr()->run(&(InputCfg){.mode    = INMD_ENTER_NUMBERS,
+                             .title   = phraseGetDef(PHRASE_BILL_ID),
+                             .info    = "",
+                             .maxLen  = LEN_MAX_BILL_ID,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 STATE_IDLE, enterPayId, NULL, NULL);
     inmgr()->setOut(data.bill.billId, NULL, sizeof(data.bill.billId));
 }
 
@@ -58,14 +57,13 @@ STATE_DEF_ENTER(EnterPayId) {
                   phraseGetDef(PHRASE_BILL_INVALID), "");
         return;
     }
-    inmgr()->run(
-        &(InputCfg){
-            .mode   = INMD_ENTER_NUMBERS,
-            .title  = phraseGetDef(PHRASE_PAYMENT_ID),
-            .info   = "",
-            .maxLen = LEN_MAX_PAYMENT_ID,
-        },
-        STATE_IDLE, enterPass, NULL, NULL);
+    inmgr()->run(&(InputCfg){.mode    = INMD_ENTER_NUMBERS,
+                             .title   = phraseGetDef(PHRASE_PAYMENT_ID),
+                             .info    = "",
+                             .maxLen  = LEN_MAX_PAYMENT_ID,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 STATE_IDLE, enterPass, NULL, NULL);
     inmgr()->setOut(data.bill.paymentId, NULL, sizeof(data.bill.paymentId));
 }
 
@@ -86,15 +84,14 @@ STATE_DEF_ENTER(EnterPassword) {
     if (!str2u64(amountStr, &amount)) {
         LOG_FATAL("Converting amount form string to u64 failed.");
     }
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_PED,
-            .mode   = INMD_ENTER_PIN,
-            .title  = phraseGetDef(PHRASE_CARD_PIN),
-            .info   = phraseGetDef(PHRASE_BY_CUSTOMER),
-            .maxLen = LEN_MAX_CARD_PIN,
-        },
-        STATE_IDLE, communication, NULL, NULL);
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_PED,
+                             .mode    = INMD_ENTER_PIN,
+                             .title   = phraseGetDef(PHRASE_CARD_PIN),
+                             .info    = phraseGetDef(PHRASE_BY_CUSTOMER),
+                             .maxLen  = LEN_MAX_CARD_PIN,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 STATE_IDLE, communication, NULL, NULL);
 }
 
 /******************************************************************

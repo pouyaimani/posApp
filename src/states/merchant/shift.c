@@ -310,15 +310,14 @@ STATE_DEF_HANDLE(HandleReports, KeypadEvent) {
 }
 
 STATE_DEF_ENTER(ShiftReports) {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_NUMBERS,
-            .title  = phraseGetDef(PHRASE_SHIFT_SELECT),
-            .info   = "",
-            .maxLen = LEN_MAX_SHIFT_NUM,
-        },
-        state->parent, handleReports, NULL, NULL);
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
+                             .mode    = INMD_ENTER_NUMBERS,
+                             .title   = phraseGetDef(PHRASE_SHIFT_SELECT),
+                             .info    = "",
+                             .maxLen  = LEN_MAX_SHIFT_NUM,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 state->parent, handleReports, NULL, NULL);
     // GOTO_INPUT(state->parent, handleReports,
     // phraseGetDef(PHRASE_SHIFT_SELECT),
     //            "", 3, IN_MODE_NUMBERS, NULL);

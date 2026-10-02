@@ -149,15 +149,14 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
             cb     = getPowerOffTimeOut;
             val    = settings()->terminal.powerOffTimeOut;
         }
-        inmgr()->run(
-            &(InputCfg){
-                .type   = INPUT_TYPE_KEYPAD,
-                .mode   = INMD_ENTER_NUMBERS,
-                .title  = phraseGetDef(phrase),
-                .info   = "",
-                .maxLen = 2,
-            },
-            state, NULL, cb, state);
+        inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
+                                 .mode    = INMD_ENTER_NUMBERS,
+                                 .title   = phraseGetDef(phrase),
+                                 .info    = "",
+                                 .maxLen  = 2,
+                                 .timeout = BACK_IDLE_TMO,
+                                 .tocb    = back2idle},
+                     state, NULL, cb, state);
         U8_TO_STRING(&val, str);
         inmgr()->set(INPUT_TYPE_KEYPAD, str);
     }
@@ -222,15 +221,14 @@ static void getSecRecPrintTime(void* arg) {
 }
 
 STATE_DEF_ENTER(SecPrintTime) {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_NUMBERS,
-            .title  = phraseGetDef(PHRASE_SEC_REC_TIME),
-            .info   = "",
-            .maxLen = 2,
-        },
-        state->parent, secPrintSuc, getSecRecPrintTime, state);
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
+                             .mode    = INMD_ENTER_NUMBERS,
+                             .title   = phraseGetDef(PHRASE_SEC_REC_TIME),
+                             .info    = "",
+                             .maxLen  = 2,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 state->parent, secPrintSuc, getSecRecPrintTime, state);
     DEFINE_STRING(str, 4);
     uint8_t val = settings()->terminal.secReceiptPrintTime;
     U8_TO_STRING(&val, str);

@@ -7,11 +7,7 @@
 #include "myColor.h"
 #include "mylvgl.h"
 #include "states.h"
-
-/**
- * @brief Default inactivity timeout before returning to idle.
- */
-#define BACK_IDLE_TMO SECS(30)
+#include "timeout.h"
 
 static MenuMgr __menuMgr;
 

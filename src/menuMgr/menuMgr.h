@@ -117,14 +117,6 @@ OOP_CLASS(MenuMgr) {
 MenuMgr* menuMgr(void);
 
 /**
- * @brief Standard timeout callback that returns the state machine to
- * STATE_IDLE.
- *
- * @param arg Unused.
- */
-void back2idle(void* arg);
-
-/**
  * @brief 30-second back-to-idle configuration for heap-owned menus.
  *
  * MenuMgr will free the Menu structure when leaving the manager state.

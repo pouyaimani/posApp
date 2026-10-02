@@ -30,15 +30,14 @@ static void amountList() {
 }
 
 static void singleAmount() {
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_AMOUNT,
-            .title  = "",
-            .info   = "",
-            .maxLen = LEN_MAX_AMOUNT,
-        },
-        STATE_IDLE, STATE_IDLE, NULL, NULL);
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
+                             .mode    = INMD_ENTER_AMOUNT,
+                             .title   = "",
+                             .info    = "",
+                             .maxLen  = LEN_MAX_AMOUNT,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 STATE_IDLE, STATE_IDLE, NULL, NULL);
     // GOTO_INPUT(STATE_IDLE, STATE_IDLE, "", "", LEN_MAX_AMOUNT,
     // IN_MODE_AMOUNT,
     //            NULL);
@@ -49,15 +48,14 @@ static void variantAmount() {
     char amount[LEN_MAX_AMOUNT] = {0};
     amountSeparator(termStorage->amountList[11], amount, LEN_MAX_AMOUNT);
     snprintf(str, sizeof(str), "(%s) %s", phraseGetDef(PHRASE_RIAL), amount);
-    inmgr()->run(
-        &(InputCfg){
-            .type   = INPUT_TYPE_KEYPAD,
-            .mode   = INMD_ENTER_NUMBERS,
-            .title  = str,
-            .info   = phraseGetDef(PHRASE_ENTER_COUNT),
-            .maxLen = 4,
-        },
-        STATE_IDLE, STATE_IDLE, NULL, NULL);
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
+                             .mode    = INMD_ENTER_NUMBERS,
+                             .title   = str,
+                             .info    = phraseGetDef(PHRASE_ENTER_COUNT),
+                             .maxLen  = 4,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 STATE_IDLE, STATE_IDLE, NULL, NULL);
     // GOTO_INPUT(STATE_IDLE, STATE_IDLE, str, phraseGetDef(PHRASE_ENTER_COUNT),
     // 4,
     //            IN_MODE_NUMBERS, NULL);
