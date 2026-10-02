@@ -3,21 +3,7 @@
 
 #include "mylvgl.h"
 
-#define DOT_COUNT  12
-#define DOT_SIZE   8
-#define DOT_RADIUS 30
-
-#define CIRCLE_SIZE 30
-
-#define RIPPLE_START 60
-#define RIPPLE_END   140
-
-#define RIPPLE_TIME  600
-#define RIPPLE_DELAY 120
-
-#define WAIT_PERIOD 100
-
-#define RIPPLE_REPEAT_DELAY 800
+#define DOT_COUNT 8
 
 typedef enum {
     STATUS_INDICATOR_HIDDEN = 0,

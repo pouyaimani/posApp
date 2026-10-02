@@ -1,6 +1,21 @@
 #include "statusIndicator.h"
 #include "myColor.h"
 
+#define DOT_SIZE            8
+#define DOT_RADIUS          20
+#define CIRCLE_SIZE         40
+#define RIPPLE_START        60
+#define RIPPLE_END          140
+#define RIPPLE_TIME         600
+#define RIPPLE_DELAY        120
+#define WAIT_PERIOD         100
+#define RIPPLE_REPEAT_DELAY 800
+
+#define STATUS_COLOR_WAITING 0x652D90
+#define STATUS_COLOR_SUCCESS 0x2E7D32
+#define STATUS_COLOR_ERROR   0xC62828
+#define STATUS_COLOR_WARNING 0xB45309
+
 static void setColor(StatusIndicator* si, uint32_t color) {
     si->color = color;
     LV_SET_BG_COLOR(si->circle, color);
@@ -117,15 +132,19 @@ static void waitTimerCb(lv_timer_t* timer) {
             break;
 
         case 1:
-            opa = LV_OPA_60;
+            opa = LV_OPA_80;
             break;
 
         case 2:
-            opa = LV_OPA_30;
+            opa = LV_OPA_60;
+            break;
+
+        case 3:
+            opa = LV_OPA_40;
             break;
 
         default:
-            opa = LV_OPA_10;
+            opa = LV_OPA_20;
             break;
         }
 
@@ -148,7 +167,7 @@ void statusIndicatorCreate(StatusIndicator* si, lv_obj_t* parent) {
     LV_SET_SIZE(si->circle, CIRCLE_SIZE, CIRCLE_SIZE);
     lv_obj_center(si->circle);
     LV_SET_RADIUS(si->circle, LV_RADIUS_CIRCLE);
-    LV_SET_BG_OPA(si->circle, LV_OPA_40);
+    LV_SET_BG_OPA(si->circle, LV_OPA_90);
     si->icon = lv_label_create(si->root);
 
     lv_obj_set_style_text_font(si->icon, LV_FONT_DEFAULT, LV_PART_MAIN);
@@ -184,7 +203,7 @@ void statusIndicatorCreate(StatusIndicator* si, lv_obj_t* parent) {
         LV_SET_SIZE(si->dots[i], DOT_SIZE, DOT_SIZE);
         LV_SET_RADIUS(si->dots[i], LV_RADIUS_CIRCLE);
 
-        int32_t a = i * 3600 / DOT_COUNT;
+        int32_t a = i * 360 / DOT_COUNT;
 
         int32_t x = lv_trigo_cos(a) * DOT_RADIUS / LV_TRIGO_SIN_MAX;
 
@@ -202,9 +221,12 @@ void statusIndicatorShow(StatusIndicator* si, StatusIndicatorState state) {
     for (int i = 0; i < DOT_COUNT; i++) {
         LV_HIDE(si->dots[i]);
     }
+    LV_SET_BG_OPA(si->circle, LV_OPA_COVER);
     switch (state) {
     case STATUS_INDICATOR_WAITING:
-        setColor(si, MAIN_THEME_COLOR);
+        setColor(si, STATUS_COLOR_WAITING);
+        LV_SET_BG_OPA(si->circle, LV_OPA_TRANSP);
+
         for (int i = 0; i < DOT_COUNT; i++) {
             LV_SHOW(si->dots[i]);
         }
@@ -212,22 +234,27 @@ void statusIndicatorShow(StatusIndicator* si, StatusIndicatorState state) {
         si->waitTimer = lv_timer_create(waitTimerCb, WAIT_PERIOD, si);
         LV_SET_TEXT(si->icon, "");
         break;
+
     case STATUS_INDICATOR_SUCCESS:
-        setColor(si, MAIN_THEME_COLOR);
+        setColor(si, STATUS_COLOR_SUCCESS);
         LV_SET_TEXT(si->icon, LV_SYMBOL_OK);
+
         LV_SHOW(si->ripple1);
         LV_SHOW(si->ripple2);
         startRippleLoop(si);
         break;
+
     case STATUS_INDICATOR_ERROR:
-        setColor(si, MAIN_THEME_COLOR);
+        setColor(si, STATUS_COLOR_ERROR);
         LV_SET_TEXT(si->icon, LV_SYMBOL_CLOSE);
+
         LV_SHOW(si->ripple1);
         LV_SHOW(si->ripple2);
         startRippleLoop(si);
         break;
+
     case STATUS_INDICATOR_WARNING:
-        setColor(si, MAIN_THEME_COLOR);
+        setColor(si, STATUS_COLOR_WARNING);
         LV_SET_TEXT(si->icon, LV_SYMBOL_WARNING);
         break;
     }
