@@ -3,7 +3,7 @@
 #include "sys/sys.h"
 #include "iso/iso8583.h"
 #include "phrases/phrases.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "txn.h"
 #include "ui/infoPage.h"
 #include "common.h"

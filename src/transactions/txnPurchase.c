@@ -8,7 +8,7 @@
 #include "txn.h"
 #include "utility/utility.h"
 #include "phrases/phrases.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "iso/iso8583.h"
 #include "ui/infoPage.h"
 #include "txnCommon.h"

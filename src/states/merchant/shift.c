@@ -11,7 +11,7 @@
 #include "logger.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
 
 static Menu*     shiftItemMenu;

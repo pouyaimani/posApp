@@ -10,7 +10,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
 
 static bool validatePass(char* pass0, char* pass1, uint8_t len) {

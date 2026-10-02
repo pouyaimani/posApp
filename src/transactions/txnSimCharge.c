@@ -5,7 +5,7 @@
 #include "iso/iso8583.h"
 #include "ui/menu.h"
 #include "phrases/phrases.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "txnCommon.h"
 #include "utility/convert.h"
 #include "menuMgr/menuMgr.h"

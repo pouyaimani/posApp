@@ -10,7 +10,7 @@
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "utility/convert.h"
 #include "common.h"
 #include "tms/tmsTimeSync.h"

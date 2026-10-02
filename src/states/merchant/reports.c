@@ -12,7 +12,7 @@
 #include "printer/printer.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "record/txnQuery.h"
 #include "menuMgr/menuMgr.h"
 

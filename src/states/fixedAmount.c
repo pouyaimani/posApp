@@ -7,7 +7,7 @@
 #include "utility/utility.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
 
 static int*              fixedAmountItem;

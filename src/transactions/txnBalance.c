@@ -7,7 +7,7 @@
 #include "settings/settings.h"
 #include "txnFlow/txnFLow.h"
 #include "ped/ped.h"
-#include "input/inputMgr.h"
+#include "inputMgr/inputMgr.h"
 #include "iso/iso8583.h"
 #include "receipt/receiptTemplates.h"
 #include "txnCommon.h"
