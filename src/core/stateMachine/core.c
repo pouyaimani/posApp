@@ -57,11 +57,12 @@ static bool handleStateTimer(void* data, void* context) {
     StateTimer_t* timer = (StateTimer_t*)data;
     uint32_t      tick  = GET_TICK();
     if (tick > timer->ctime + timer->timeOut) {
-        if (!timer->timerCb) {
+        if (timer->timerCb) {
+            timer->timerCb(timer->timerCbData);
+        } else {
             LOG_ERROR("timer callback is not found.");
         }
-        timer->timerCb(timer->timerCbData);
-        timer->ctime = tick;
+        timer->ctime = GET_TICK();
     }
     return true;
 }
@@ -69,7 +70,6 @@ static bool handleStateTimer(void* data, void* context) {
 static bool resetStateTimer(void* data, void* context) {
     VAR_UNUSED(context);
     StateTimer_t* timer = (StateTimer_t*)data;
-    uint32_t      tick  = GET_TICK();
     timer->ctime        = GET_TICK();
     return true;
 }

@@ -135,6 +135,29 @@ static bool resetTimerTimeOut(State* state, StateCallback cb,
     }
 }
 
+static bool __updateTimers(void* data, void* context) {
+    VAR_UNUSED(context);
+    StateTimer_t* timer = (StateTimer_t*)data;
+    timer->ctime        = GET_TICK();
+    LOG_TRACE("timer updated...");
+    return true;
+}
+
+static bool updateTimers(State* state) {
+    LOG_TRACE("updating timers ...");
+    if (!state) {
+        return false;
+    }
+    if (!state->timerList) {
+        return false;
+    }
+    if (state->isTimerEn) {
+        list_foreach(state->timerList, __updateTimers, NULL);
+    }
+    LOG_TRACE("timers have been updated.");
+    return true;
+}
+
 OOP_CTOR(State, State* parent, const char* name) {
     STM_LOG("Constructing State is started ...");
     self->vtable.enter             = default_enter;
@@ -152,6 +175,7 @@ OOP_CTOR(State, State* parent, const char* name) {
     self->vtable.removeTimer       = removeTimer;
     self->vtable.enableTimer       = enableTimer;
     self->vtable.resetTimerTimeOut = resetTimerTimeOut;
+    self->vtable.updateTimers      = updateTimers;
     self->vtable.setTimeOut        = setTimeOut;
     self->parent                   = parent;
     self->next                     = NULL;

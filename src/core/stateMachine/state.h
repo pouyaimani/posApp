@@ -66,6 +66,7 @@ OOP_VTABLE(State) {
     OOP_IMETHOD(bool, State, removeTimer, StateCallback timerCb);
     OOP_IMETHOD(bool, State, resetTimerTimeOut, StateCallback timerCb,
                 uint32_t timeout);
+    OOP_IMETHOD(bool, State, updateTimers);
 };
 
 /* ===== State base ===== */

@@ -117,8 +117,9 @@ static void netAutoConnect(void* arg) {
 }
 
 static void hibernate(void* arg) {
-    VAR_UNUSED(arg);
+    Idle* idle = (Idle*)arg;
     OOP_CALL(sys(), hibernate);
+    OOP_CALL(&idle->base, updateTimers);
 }
 
 static void powerOff(void* arg) {
@@ -452,9 +453,9 @@ OOP_CTOR(Idle, State* parent, const char* name) {
 
     OOP_CALL(&self->base, enableTimer);
     OOP_CALL(&self->base, addTimer, hibernate,
-             MINUTES(settings()->terminal.sleepTimeout), NULL);
+             MINUTES(settings()->terminal.sleepTimeout), self);
     OOP_CALL(&self->base, addTimer, powerOff,
-             MINUTES(settings()->terminal.powerOffTimeOut), NULL);
+             MINUTES(settings()->terminal.powerOffTimeOut), self);
 
     timer = TIMER_CREATE(netAutoConnect, SECS(10), false);
     TIMER_START(timer);
