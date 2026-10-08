@@ -4,7 +4,7 @@
 #include "oop.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "event.h"
+#include "magEvent.h"
 #include "error.h"
 
 OOP_DECLARE_CLASS(MagReader)

@@ -1,7 +1,7 @@
 #include "network.h"
 #include "sys/sys.h"
 #include "eventloop.h"
-#include "event.h"
+#include "eventAll.h"
 #include "logger.h"
 #include "settings/settings.h"
 #include "len.h"
@@ -52,66 +52,9 @@ static Result_t init(NetRoute_t route) {
     return setRoute(route);
 }
 
-static void checkSocketConnectStatus() {
-    SocketStatus_t st = OOP_CALL(__network, getStatus, __network->id);
-    if (st != NET_STATUS_CONNECTING) {
-        SocketConnectEvent* ev =
-            (WifiEvent*)createEvent(SM_EVENT_SOCKET_CONNECT);
-        ev->isConnected = st == NET_STATUS_CONNECTED;
-        DISPATCH_EVENT(ev);
-        getEventloop()->unregisterChecker(checkSocketConnectStatus);
-    }
-    if (GET_TICK() - tick >= CONNECT_TIME_OUT) {
-        SocketConnectEvent* ev =
-            (WifiEvent*)createEvent(SM_EVENT_SOCKET_CONNECT);
-        ev->isConnected = false;
-        DISPATCH_EVENT(ev);
-        getEventloop()->unregisterChecker(checkSocketConnectStatus);
-    }
-}
-
-static int connect() {
-    SocketAddr_t addr;
-    addr.family = NET_AF_INET;
-    snprintf(addr.ip, sizeof(addr.ip), "%s", settings()->server.mainServerIp);
-    addr.port         = settings()->server.mainServerPort;
-    SocketType_t type = NET_STREAM;
-    __network->id     = OOP_CALL(__network, create, &addr, type);
-    tick              = GET_TICK();
-    getEventloop()->registerChecker(checkSocketConnectStatus);
-    return __network->id;
-}
-
-static void checkSocketReceive() {
-    DEFINE_BYTE_ARRAY(recBuffer, LEN_SOCKET_REC_BUFF);
-    int ret = OOP_CALL(__network, receive, __network->id, recBuffer,
-                       LEN_SOCKET_REC_BUFF);
-    SocketReadyReadEvent* ev =
-        (SocketReadyReadEvent*)createEvent(SM_EVENT_SOCKET_READY_READ);
-    ev->ba.data = ret > 0 ? recBuffer : NULL;
-    ev->ba.len  = ret;
-    DISPATCH_EVENT(ev);
-    getEventloop()->unregisterChecker(checkSocketReceive);
-}
-
-static int send(uint8_t* data, size_t len) {
-    int ret =
-        OOP_CALL(__network, send, __network->id, data, len, SEND_TIME_OUT);
-    if (ret == len) {
-        getEventloop()->registerChecker(checkSocketReceive);
-        tick = GET_TICK();
-    }
-    return ret;
-}
-
-static void disconnect() { OOP_CALL(__network, close, __network->id); }
-
 OOP_CTOR(Network) {
-    self->init       = init;
-    self->connect    = connect;
-    self->send       = send;
-    self->disconnect = disconnect;
-    self->setRoute   = setRoute;
+    self->init     = init;
+    self->setRoute = setRoute;
 }
 
 Network* network() {

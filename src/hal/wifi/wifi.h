@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "dcfg.h"
-#include "event.h"
+#include "wifiEvent.h"
 #include "common.h"
 #include "error.h"
 #include "len.h"

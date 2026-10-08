@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "event.h"
+#include "ped/pedEvent.h"
+#include "keypad/keypadEvent.h"
 
 typedef enum {
     INPUT_EV_NONE,

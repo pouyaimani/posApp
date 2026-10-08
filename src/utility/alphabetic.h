@@ -3,7 +3,7 @@
 
 #include "oop.h"
 #include "stdbool.h"
-#include "event.h"
+#include "eventAll.h"
 
 OOP_CLASS(Alphebatic) {
     OOP_METHOD(void, addKey, char*, size_t, Key_t);

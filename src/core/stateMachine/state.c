@@ -2,8 +2,14 @@
 #include "core.h"
 #include <stdio.h>
 #include "logger.h"
-#include "event.h"
 #include "sys/sys.h"
+#include "eventFactory.h"
+
+#define DEFINE_DEFAULT_HANDLER(name, EventType, label)                         \
+    static void name(State* state, EventType* event) {                         \
+        (void)event;                                                           \
+        defaultEventHandler(state, label);                                     \
+    }
 
 /* defaults */
 
@@ -16,56 +22,9 @@ static void default_exit(State* s) { printf("%s exit not defined\n", s->name); }
 
 static void goTo(State* s, State* nextState) { smCore()->goTo(nextState); }
 
-static void default_timeout(State* s, TimeOutEvent* ev) {
-    (void)ev;
-    STM_LOG("Timeout event handler is not defined for %s state.", s->name);
-}
-
-static void default_keypad(State* s, KeypadEvent* ev) {
-    (void)ev;
-    STM_LOG("Keypad event handler is not defined for %s state.", s->name);
-}
-
-static void default_mag(State* s, MagEvent* ev) {
-    (void)ev;
-    STM_LOG("Mag event handler is not defined for %s state.", s->name);
-}
-
-static void default_wifi(State* s, WifiEvent* ev) {
-    (void)ev;
-    STM_LOG("Wifi event handler is not defined for %s state.", s->name);
-}
-
-static void default_cell(State* s, CellEvent* ev) {
-    (void)ev;
-    STM_LOG("Cellular event handler is not defined for %s state.", s->name);
-}
-
-static void default_sock_connect(State* s, SocketConnectEvent* ev) {
-    (void)ev;
-    STM_LOG("Socket connect event handler is not defined for %s state.",
-            s->name);
-}
-
-static void default_sock_sent(State* s, SocketSentEvent* ev) {
-    (void)ev;
-    STM_LOG("Socket sent event handler is not defined for %s state.", s->name);
-}
-
-static void default_sock_read(State* s, SocketReadyReadEvent* ev) {
-    (void)ev;
-    STM_LOG("Socket read event handler is not defined for %s state.", s->name);
-}
-
-static void default_sock_timeout(State* s, SocketTimeOutEvent* ev) {
-    (void)ev;
-    STM_LOG("Socket timeout event handler is not defined for %s state.",
-            s->name);
-}
-
-static void default_ped(State* s, PedEvent* ev) {
-    (void)ev;
-    STM_LOG("Ped event handler is not defined for %s state.", s->name);
+static void default_handleEvent(State* state, Event* event) {
+    STM_LOG("Event %u is not handled by state %s", (unsigned)event->id,
+            state->name);
 }
 
 static void setNext(State* current, State* next) { current->next = next; }
@@ -180,16 +139,12 @@ OOP_CTOR(State, State* parent, const char* name) {
     STM_LOG("Constructing State is started ...");
     self->vtable.enter             = default_enter;
     self->vtable.exit              = default_exit;
-    self->vtable.handleTimeout     = default_timeout;
-    self->vtable.handleKeypad      = default_keypad;
-    self->vtable.handleMag         = default_mag;
-    self->vtable.handleWifi        = default_wifi;
-    self->vtable.handleCell        = default_cell;
-    self->vtable.onSocketConnect   = default_sock_connect;
-    self->vtable.onSocketSent      = default_sock_sent;
-    self->vtable.onSocketReadyRead = default_sock_read;
-    self->vtable.onSocketTimeOut   = default_sock_timeout;
-    self->vtable.handlePed         = default_ped;
+    self->vtable.handleTimeout     = default_handleEvent;
+    self->vtable.handleKeypad      = default_handleEvent;
+    self->vtable.handleMag         = default_handleEvent;
+    self->vtable.handleWifi        = default_handleEvent;
+    self->vtable.handleCell        = default_handleEvent;
+    self->vtable.handlePed         = default_handleEvent;
     self->vtable.goTo              = goTo;
     self->vtable.setNext           = setNext;
     self->vtable.setPrev           = setPrev;
@@ -209,3 +164,18 @@ OOP_CTOR(State, State* parent, const char* name) {
     list_init(self->timerList, LIST_CIRCULAR);
     STM_LOG("Constructing State finished ...");
 }
+
+/* Generate the timeout factory. */
+EVENT_DEFINE_FACTORY(TimeOutEvent);
+
+static void to_dispatchTo(Event* self, State* state) {
+    /*
+     * Timeout handling will be discussed below.
+     * This assumes State exposes handleTimeOut.
+     */
+    OOP_CALL(state, handleTimeout, self);
+}
+
+OOP_CTOR(TimeOutEvent) { self->base.vtable.dispatchTo = to_dispatchTo; }
+
+void toEventRegister(void) { EVENT_REGISTER(SM_EVENT_TIME_OUT, TimeOutEvent); }

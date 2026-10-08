@@ -2,7 +2,7 @@
 #include "states/states.h"
 #include "logger.h"
 #include "display.h"
-#include "event.h"
+#include "eventAll.h"
 #include "ui/menu.h"
 #include "sys/sys.h"
 #include "wifi/wifi.h"
@@ -127,7 +127,8 @@ STATE_DEF_ENTER(WifiScan) {
     if (scnSt == WIFI_SCAN_UNDER_PROCESS) {
         return;
     } else if (scnSt == WIFI_SCAN_SUCCEED) {
-        WifiEvent* ev  = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        WifiEvent* ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        RETURN_IF_NULL(ev, ;);
         ev->scanStatus = WIFI_SCAN_SUCCEED;
         DISPATCH_EVENT(ev);
         return;

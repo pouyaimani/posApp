@@ -3,7 +3,7 @@
 
 #include "oop.h"
 #include <stdbool.h>
-#include "core/stateMachine/event.h"
+#include "keypadEvent.h"
 
 OOP_DECLARE_CLASS(Keypad)
 

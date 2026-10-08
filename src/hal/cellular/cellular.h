@@ -3,7 +3,7 @@
 
 #include "oop.h"
 #include <stdint.h>
-#include "event.h"
+#include "celEvent.h"
 #include "error.h"
 
 typedef enum CellSigStrength_t {

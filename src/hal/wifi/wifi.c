@@ -1,8 +1,9 @@
 #include "wifi.h"
 #include "sys/sys.h"
 #include "eventloop.h"
-#include "event.h"
+#include "eventAll.h"
 #include "logger.h"
+#include "error.h"
 
 Wifi* __wifi;
 
@@ -23,7 +24,8 @@ static WifiApList_t* getApList(Wifi* self) { return &self->apList; }
 static void checkWifiScanResult() {
     WifiScanSt_t st = OOP_CALL(__wifi, hgetScanStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
-        WifiEvent* ev  = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        WifiEvent* ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        RETURN_IF_NULL(ev, ;);
         ev->type       = WIFI_EV_SCAN;
         ev->scanStatus = st;
         DISPATCH_EVENT(ev);
@@ -42,7 +44,8 @@ static WifiErr_t scanInBg() { return OOP_CALL(__wifi, hstartScan); }
 static void checkWifiConnectResult() {
     WifiConnectSt_t st = OOP_CALL(__wifi, getConnectStatus);
     if (st != WIFI_SCAN_UNDER_PROCESS) {
-        WifiEvent* ev     = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        WifiEvent* ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
+        RETURN_IF_NULL(ev, ;);
         ev->type          = WIFI_EV_CONNECT;
         ev->connectStatus = st;
         DISPATCH_EVENT(ev);
@@ -73,6 +76,8 @@ OOP_CTOR(Wifi) {
     self->connect                  = connect;
     self->disconnect               = disconnect;
     self->scanInBg                 = scanInBg;
+
+    wifiEventRegister();
 }
 
 Wifi* wifi() {

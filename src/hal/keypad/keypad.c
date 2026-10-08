@@ -3,6 +3,7 @@
 #include "core/stateMachine/event.h"
 #include "core/eventloop/eventloop.h"
 #include "logger.h"
+#include "error.h"
 
 Keypad* __keypad;
 
@@ -30,7 +31,8 @@ static void ioRead() {
     OOP_CALL(__keypad, readKey);
     if (isPressed(__keypad)) {
         KeypadEvent* ev = (KeypadEvent*)createEvent(SM_EVENT_KEYPAD);
-        ev->key         = getKey(__keypad);
+        RETURN_IF_NULL(ev, ;);
+        ev->key = getKey(__keypad);
         switch (ev->key) {
         case KEY_0:
             ev->keyStr = '0';
@@ -80,6 +82,7 @@ OOP_CTOR(Keypad) {
     self->unregisterIo     = unregisterIo;
     self->vtable.getKey    = getKey;
     self->vtable.isPressed = isPressed;
+    keypadEventRegister();
     registerIo();
 }
 

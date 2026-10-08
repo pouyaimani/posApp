@@ -5,7 +5,7 @@
 #include "sys/sys.h"
 #include "lvgl.h"
 #include "display.h"
-#include "event.h"
+#include "eventAll.h"
 #include "assets.h"
 #include "transactions/transaction.h"
 #include "ui/menu.h"

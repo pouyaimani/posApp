@@ -1,149 +1,80 @@
-#include "event.h"
-#include "state.h"
+#include "eventAll.h"
 #include "core.h"
-#include <stdlib.h>
-#include "sys/sys.h"
-#include "keypad/keypad.h"
 #include "logger.h"
+#include "error.h"
 
-#define CREATE_EVENT(type, event)                                              \
-    do {                                                                       \
-        type##* ev = MEM_ALLOC(sizeof(type##));                                \
-        event      = (Event*)ev;                                               \
-        OOP_CALL_CTOR(Event, event);                                           \
-        OOP_CALL_CTOR(type##, ev);                                             \
-    } while (0)
+#include <stddef.h>
 
-/* ================= Event base ================= */
+#define EVENT_REGISTRY_CAPACITY 32
+
+typedef struct {
+    EventId        id;
+    EventFactoryFn factory;
+} EventEntry;
+
+static EventEntry registry[EVENT_REGISTRY_CAPACITY];
+static uint16_t   registryCount = 0;
+
+/* ================= Base Event ================= */
+
 static void dispatch(Event* self, State* state) {
+    if (!self)
+        return;
+
     self->target = state;
     smCore()->raiseEvent(self);
 }
 
-OOP_CTOR(Event) { self->vtable.dispatch = dispatch; }
+/* ================= Registry ================= */
 
-Event* createEvent(SmEventType_t type) {
-    Event* event;
-    STM_LOG("Creating Event. type = %d", type);
-    switch (type) {
-    case SM_EVENT_TIME_OUT:
-        CREATE_EVENT(TimeOutEvent, event);
-        break;
-    case SM_EVENT_KEYPAD:
-        CREATE_EVENT(KeypadEvent, event);
-        break;
-    case SM_EVENT_MAG:
-        CREATE_EVENT(MagEvent, event);
-        break;
-    case SM_EVENT_WIFI:
-        CREATE_EVENT(WifiEvent, event);
-        break;
-    case SM_EVENT_CELLULAR:
-        CREATE_EVENT(CellEvent, event);
-        break;
-    case SM_EVENT_SOCKET_CONNECT:
-        CREATE_EVENT(SocketConnectEvent, event);
-        break;
-    case SM_EVENT_SOCKET_SENT:
-        CREATE_EVENT(SocketSentEvent, event);
-        break;
-    case SM_EVENT_SOCKET_READY_READ:
-        CREATE_EVENT(SocketReadyReadEvent, event);
-        break;
-    case SM_EVENT_SOCKET_TIME_OUT:
-        CREATE_EVENT(SocketTimeOutEvent, event);
-        break;
-    case SM_EVENT_PED:
-        CREATE_EVENT(PedEvent, event);
-        break;
-    default:
-        break;
+bool eventRegister(EventId id, EventFactoryFn factory) {
+    LOG_TRACE("Registering event with [id, factory fn] = [%s%d, %p%s]",
+              LOG_COLOR_RED, id, factory, LOG_COLOR_RESET);
+    RETURN_VALUE_IF_NULL(factory, ;, false);
+
+    /* Reject duplicate event IDs. */
+    for (uint16_t i = 0; i < registryCount; i++) {
+        if (registry[i].id == id) {
+            LOG_ERROR("Duplicated event is rejected. event id = %s%s%s",
+                      LOG_COLOR_RED, id, LOG_COLOR_RESET);
+            return false;
+        }
     }
-    return event;
+
+    if (registryCount >= EVENT_REGISTRY_CAPACITY) {
+        LOG_ERROR("Event registerer capacity is full.");
+        return false;
+    }
+
+    registry[registryCount].id      = id;
+    registry[registryCount].factory = factory;
+
+    registryCount++;
+
+    LOG_TRACE("Event with id = %s%d%s has been registered successfully.",
+              LOG_COLOR_RED, id, LOG_COLOR_RESET);
+
+    return true;
 }
 
-/* ================= TimeOut ================= */
+/* ================= Factory ================= */
 
-static void TimeOut_dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, handleTimeout, self);
+Event* createEvent(EventId id) {
+    for (uint16_t i = 0; i < registryCount; i++) {
+        if (registry[i].id == id) {
+            return registry[i].factory();
+        }
+    }
+
+    STM_LOG("Event not registered: %s%u", LOG_COLOR_RED, (unsigned)id);
+
+    return NULL;
 }
 
-OOP_CTOR(TimeOutEvent) { self->base.vtable.dispatchTo = TimeOut_dispatchTo; }
+void eventInit(void) { registryCount = 0; }
 
-/* ================= Keypad ================= */
-
-static void Keypad_dispatchTo(Event* self, State* state) {
-    STM_LOG("Keypad event dispatch to is called ...");
-    OOP_CALL(state, handleKeypad, self);
+OOP_CTOR(Event) {
+    self->target            = NULL;
+    self->vtable.dispatch   = dispatch;
+    self->vtable.dispatchTo = NULL;
 }
-
-OOP_CTOR(KeypadEvent) {
-    STM_LOG("Keypad event is constructing ...");
-    self->base.vtable.dispatchTo = Keypad_dispatchTo;
-}
-
-/* ================= MagReader ================= */
-
-static void mag_dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, handleMag, self);
-}
-
-OOP_CTOR(MagEvent) { self->base.vtable.dispatchTo = mag_dispatchTo; }
-
-/* ==================== Wifi ==================== */
-
-static void wifi_dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, handleWifi, self);
-}
-
-OOP_CTOR(WifiEvent) { self->base.vtable.dispatchTo = wifi_dispatchTo; }
-
-/* =================== Cellular ================== */
-
-static void cell_dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, handleCell, self);
-}
-
-OOP_CTOR(CellEvent) { self->base.vtable.dispatchTo = cell_dispatchTo; }
-
-/* =================== Socket ================== */
-
-static void socket_connect__dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, onSocketConnect, self);
-}
-
-OOP_CTOR(SocketConnectEvent) {
-    self->base.vtable.dispatchTo = socket_connect__dispatchTo;
-}
-
-static void socket_sent_dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, onSocketSent, self);
-}
-
-OOP_CTOR(SocketSentEvent) {
-    self->base.vtable.dispatchTo = socket_sent_dispatchTo;
-}
-
-static void socket_rr_dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, onSocketReadyRead, self);
-}
-
-OOP_CTOR(SocketReadyReadEvent) {
-    self->base.vtable.dispatchTo = socket_rr_dispatchTo;
-}
-
-static void socket_timeout__dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, onSocketTimeOut, self);
-}
-
-OOP_CTOR(SocketTimeOutEvent) {
-    self->base.vtable.dispatchTo = socket_timeout__dispatchTo;
-}
-
-/* =================== Ped ================== */
-
-static void ped_dispatchTo(Event* self, State* state) {
-    OOP_CALL(state, handlePed, self);
-}
-
-OOP_CTOR(PedEvent) { self->base.vtable.dispatchTo = ped_dispatchTo; }

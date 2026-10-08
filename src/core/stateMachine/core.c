@@ -1,10 +1,12 @@
 #include "core.h"
 #include "state.h"
 #include "event.h"
+#include "eventIds.h"
 #include <stdlib.h>
 #include "logger.h"
 #include "sys/sys.h"
 #include "common.h"
+#include "error.h"
 
 Core __core;
 
@@ -109,6 +111,7 @@ static void runCycle() {
                         tick, s->timeOutRef);
                 s->timeOutRef    = tick;
                 TimeOutEvent* ev = createEvent(SM_EVENT_TIME_OUT);
+                RETURN_IF_NULL(ev, ;);
                 OOP_CALL((Event*)ev, dispatchTo, s);
                 OOP_CALL(sys(), freeMemory, ev);
             }
@@ -169,6 +172,10 @@ OOP_CTOR(Core) {
     __core.next             = NULL;
     __core.qsize            = 0;
     __core.cbSize           = 0;
+
+    eventInit();
+
+    toEventRegister();
 }
 
 Core* smCore(void) {

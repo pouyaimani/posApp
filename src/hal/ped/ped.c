@@ -1,8 +1,9 @@
 #include "ped.h"
 
-#include "event.h"
+#include "pedEvent.h"
 #include "eventloop.h"
 #include "logger.h"
+#include "error.h"
 
 Ped* __ped;
 
@@ -44,7 +45,8 @@ static void pedPoll() {
         return;
     }
     PedEvent* ev = (PedEvent*)createEvent(SM_EVENT_PED);
-    ev->type     = (PedEventType_t)key;
+    RETURN_IF_NULL(ev, ;);
+    ev->type = (PedEventType_t)key;
     DISPATCH_EVENT(ev);
 }
 
@@ -70,6 +72,8 @@ OOP_CTOR(Ped) {
     self->getMac                   = getMac;
     self->enterPinEntryMode        = enterPinEntryMode;
     self->exitPinEntryMode         = exitPinEntryMode;
+
+    pedEventRegister();
 }
 
 Ped* ped() {

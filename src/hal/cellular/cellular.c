@@ -1,9 +1,10 @@
 #include "cellular.h"
 #include "sys/sys.h"
 #include "eventloop.h"
-#include "event.h"
+#include "eventAll.h"
 #include "logger.h"
 #include "timer.h"
+#include "error.h"
 
 Cellular* __cellular;
 
@@ -25,7 +26,8 @@ static uint32_t tick;
 static void checkCellLoginResult() {
     if (GET_TICK() - tick >= LOGIN_TIME_OUT) {
         CellEvent* ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
-        ev->pppSt     = CELL_PPP_FAILURE;
+        RETURN_IF_NULL(ev, ;);
+        ev->pppSt = CELL_PPP_FAILURE;
         DISPATCH_EVENT(ev);
         getEventloop()->unregisterChecker(checkCellLoginResult);
         return;
@@ -38,7 +40,8 @@ static void checkCellLoginResult() {
         return;
     }
     CellEvent* ev = (CellEvent*)createEvent(SM_EVENT_CELLULAR);
-    ev->pppSt     = st;
+    RETURN_IF_NULL(ev, ;);
+    ev->pppSt = st;
     DISPATCH_EVENT(ev);
     getEventloop()->unregisterChecker(checkCellLoginResult);
 }
@@ -63,6 +66,8 @@ OOP_CTOR(Cellular) {
     self->vtable.getSimStatus      = NULL;
 
     self->startPPPlogin = startPPPlogin;
+
+    celEventRegister();
 }
 
 Cellular* cellular() {

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "core.h"
 #include "utility/linkedlist.h"
+#include "eventAll.h"
 
 #define STATE_ENTER(type) type##_Enter
 
@@ -22,19 +23,6 @@
 #define SM_GOTO(state) smCore()->goTo(state)
 
 #define SM_SUB(state) smCore()->goToSub(state)
-
-/* Forward */
-OOP_DECLARE_CLASS(Event);
-OOP_DECLARE_CLASS(TimeOutEvent);
-OOP_DECLARE_CLASS(KeypadEvent);
-OOP_DECLARE_CLASS(MagEvent);
-OOP_DECLARE_CLASS(WifiEvent);
-OOP_DECLARE_CLASS(CellEvent);
-OOP_DECLARE_CLASS(SocketConnectEvent);
-OOP_DECLARE_CLASS(SocketReadyReadEvent);
-OOP_DECLARE_CLASS(SocketSentEvent);
-OOP_DECLARE_CLASS(SocketTimeOutEvent);
-OOP_DECLARE_CLASS(State);
 
 /* ===== Inner state ===== */
 
@@ -66,10 +54,6 @@ OOP_VTABLE(State) {
     OOP_IMETHOD(void, State, handleWifi, WifiEvent* ev);
     OOP_IMETHOD(void, State, handleCell, CellEvent* ev);
     OOP_IMETHOD(void, State, handlePed, CellEvent* ev);
-    OOP_IMETHOD(void, State, onSocketConnect, SocketConnectEvent* ev);
-    OOP_IMETHOD(void, State, onSocketSent, SocketSentEvent* ev);
-    OOP_IMETHOD(void, State, onSocketReadyRead, SocketReadyReadEvent* ev);
-    OOP_IMETHOD(void, State, onSocketTimeOut, SocketTimeOutEvent* ev);
     // These methods shall not be overrided
     OOP_IMETHOD(void, State, goTo, State*);
     OOP_IMETHOD(void, State, setNext, State*);

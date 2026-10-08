@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "event.h"
+#include "eventAll.h"
 #include "nth_config.h"
 
 typedef struct {

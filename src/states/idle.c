@@ -5,7 +5,7 @@
 #include "sys/sys.h"
 #include "mylvgl.h"
 #include "display.h"
-#include "event.h"
+#include "eventAll.h"
 #include "wifi/wifi.h"
 #include "cellular/cellular.h"
 #include "assets.h"
@@ -370,16 +370,6 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     }
 }
 
-STATE_DEF_HANDLE(Idle, SocketConnectEvent) {
-    if (ev->isConnected) {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR, "error in connecting",
-                  "");
-    } else {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_SUCCESS, "connected", "");
-    }
-    network()->disconnect();
-}
-
 STATE_DEF_HANDLE(Idle, MagEvent) {
     if (!settings()->terminal.isCfgDone) {
         GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
@@ -451,13 +441,12 @@ static void createUi() {
 
 OOP_CTOR(Idle, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter           = STATE_ENTER(Idle);
-    self->base.vtable.exit            = STATE_EXIT(Idle);
-    self->base.vtable.handleKeypad    = STATE_HANDLE(Idle, KeypadEvent);
-    self->base.vtable.handleTimeout   = STATE_HANDLE(Idle, TimeOutEvent);
-    self->base.vtable.handleMag       = STATE_HANDLE(Idle, MagEvent);
-    self->base.vtable.onSocketConnect = STATE_HANDLE(Idle, SocketConnectEvent);
-    self->base.vtable.handleWifi      = STATE_HANDLE(Idle, WifiEvent);
+    self->base.vtable.enter         = STATE_ENTER(Idle);
+    self->base.vtable.exit          = STATE_EXIT(Idle);
+    self->base.vtable.handleKeypad  = STATE_HANDLE(Idle, KeypadEvent);
+    self->base.vtable.handleTimeout = STATE_HANDLE(Idle, TimeOutEvent);
+    self->base.vtable.handleMag     = STATE_HANDLE(Idle, MagEvent);
+    self->base.vtable.handleWifi    = STATE_HANDLE(Idle, WifiEvent);
 
     createUi();
 

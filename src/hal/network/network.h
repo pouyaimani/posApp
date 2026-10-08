@@ -71,11 +71,8 @@ OOP_VTABLE(Network) {
 OOP_CLASS(Network) {
     OOP_IMPLEMENTS(Network);
     SocketAddr_t address;
-    OOP_METHOD(int, connect);
-    OOP_METHOD(void, disconnect);
     OOP_METHOD(Result_t, init, NetRoute_t route);
     OOP_METHOD(Result_t, setRoute, NetRoute_t);
-    OOP_METHOD(int, send, uint8_t* data, size_t len);
     int id;
 };
 

@@ -3,6 +3,7 @@
 #include "eventloop.h"
 #include "logger.h"
 #include <stdint.h>
+#include "error.h"
 
 MagReader* __magReader;
 
@@ -42,7 +43,8 @@ static void readIo() {
     OOP_CALL(__magReader, read);
     if (isSwiped(__magReader)) {
         MagEvent* ev = (MagEvent*)createEvent(SM_EVENT_MAG);
-        ev->data     = &__magReader->data;
+        RETURN_IF_NULL(ev, ;);
+        ev->data = &__magReader->data;
         DISPATCH_EVENT(ev);
     }
 }
@@ -86,6 +88,8 @@ OOP_CTOR(MagReader) {
     self->vtable.getTrack3 = getTrack3;
     self->ioRead           = readIo;
     self->getPan           = getPan;
+
+    magEventRegister();
 }
 
 MagReader* magreader() {

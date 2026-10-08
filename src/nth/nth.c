@@ -23,59 +23,6 @@ static void nth_fail(NthTransaction* tx, NthResult error);
 #define NTH_ENABLE_EVENT_BRIDGE 0
 #endif
 
-#if NTH_ENABLE_EVENT_BRIDGE
-
-#include "event.h"
-#include "core.h"
-
-static void nth_emitConnectEvent(NthTransaction* tx, bool connected) {
-    RETURN_IF_NULL(tx, ;);
-    SocketConnectEvent* ev = createEvent(SM_EVENT_SOCKET_CONNECT);
-
-    RETURN_IF_NULL(ev, ;);
-
-    ev->isConnected = connected;
-
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
-static void nth_emitSendEvent(NthTransaction* tx) {
-    RETURN_IF_NULL(tx, ;);
-    SocketSentEvent* ev = createEvent(SM_EVENT_SOCKET_SENT);
-
-    RETURN_IF_NULL(ev, ;);
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
-static void nth_emitReadEvent(NthTransaction* tx) {
-    RETURN_IF_NULL(tx, ;);
-    SocketReadyReadEvent* ev = createEvent(SM_EVENT_SOCKET_READY_READ);
-
-    RETURN_IF_NULL(ev, ;);
-
-    ev->ba.data = tx->rxBuffer.data;
-    ev->ba.len  = tx->rxBuffer.len;
-
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
-static void nth_emitTimeout(NthTransaction* tx) {
-    RETURN_IF_NULL(tx, ;);
-    SocketTimeOutEvent* ev = createEvent(SM_EVENT_SOCKET_TIME_OUT);
-
-    RETURN_IF_NULL(ev, ;);
-    ev->base.target = tx->owner;
-
-    DISPATCH_EVENT(ev);
-}
-
-#endif
 static bool isValidHostname(const char* host) {
     RETURN_VALUE_IF_NULL(host, ;, false);
 
