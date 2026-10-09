@@ -54,6 +54,7 @@ OOP_VTABLE(State) {
     OOP_IMETHOD(void, State, handleWifi, WifiEvent* ev);
     OOP_IMETHOD(void, State, handleCell, CellEvent* ev);
     OOP_IMETHOD(void, State, handlePed, CellEvent* ev);
+    OOP_IMETHOD(void, State, handlePicc, PiccEvent* ev);
     // These methods shall not be overrided
     OOP_IMETHOD(void, State, goTo, State*);
     OOP_IMETHOD(void, State, setNext, State*);

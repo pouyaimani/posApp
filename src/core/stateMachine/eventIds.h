@@ -13,8 +13,6 @@ typedef uint16_t EventId;
 #define SM_EVENT_SOCKET_READY_READ ((EventId)7)
 #define SM_EVENT_SOCKET_TIME_OUT   ((EventId)8)
 #define SM_EVENT_PED               ((EventId)9)
-
-/* Device-specific events can use a reserved range. */
-#define SM_EVENT_PICC ((EventId)100)
+#define SM_EVENT_PICC              ((EventId)10)
 
 #endif

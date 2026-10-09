@@ -168,6 +168,7 @@ OOP_CTOR(State, State* parent, const char* name) {
     self->vtable.handleWifi        = default_handleEvent;
     self->vtable.handleCell        = default_handleEvent;
     self->vtable.handlePed         = default_handleEvent;
+    self->vtable.handlePicc        = default_handleEvent;
     self->vtable.goTo              = goTo;
     self->vtable.setNext           = setNext;
     self->vtable.setPrev           = setPrev;

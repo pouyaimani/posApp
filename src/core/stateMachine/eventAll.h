@@ -4,6 +4,7 @@
 #include "event.h"
 
 #include "toEvent.h"
+#include "picc/piccEvent.h"
 #include "keypad/keypadEvent.h"
 #include "magReader/magEvent.h"
 #include "wifi/wifiEvent.h"

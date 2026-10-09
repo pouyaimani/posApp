@@ -5,6 +5,13 @@
 
 #include "../picc.h"
 
+/*
+ * Default EMV/contactless configuration.
+ *
+ * Add PICC_TECH_FELICA if the application requires it.
+ */
+#define PICC_T3_DEFAULT_TECH (PICC_TECH_A | PICC_TECH_B)
+
 OOP_CLASS(PiccT3Rtos) { OOP_EXTENDS(Picc); };
 
 OOP_CTOR(PiccT3Rtos);
