@@ -66,7 +66,12 @@ static void startReprintByTxnType(TxnType txnType) {
 
 static void runReportInput(InputMode_t mode, const char* title, char* output,
                            size_t outputSize, uint16_t max, SubState* next,
-                           InPutCallBack_t cb, void* userData) {
+                           CallBack_t cb, void* userData) {
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = next;
+    inFinishCtx.onCancel = mainMenu;
+    inFinishCtx.cb       = cb;
+    inFinishCtx.userData = userData;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = mode,
                              .title   = title,
@@ -74,7 +79,7 @@ static void runReportInput(InputMode_t mode, const char* title, char* output,
                              .maxLen  = max,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 mainMenu, next, cb, userData);
+                 inputComplete, &inFinishCtx);
 
     inmgr()->setOut(output, NULL, outputSize);
 }

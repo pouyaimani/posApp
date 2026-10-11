@@ -147,6 +147,9 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         default:
             return;
         }
+        memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+        inFinishCtx.onFinish = state;
+        inFinishCtx.onCancel = state->parent;
         inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                                  .mode    = INMD_ENTER_AMOUNT,
                                  .title   = phraseGetDef(phrase),
@@ -154,7 +157,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
                                  .maxLen  = LEN_MAX_AMOUNT,
                                  .timeout = BACK_IDLE_TMO,
                                  .tocb    = back2idle},
-                     state->parent, state, NULL, NULL);
+                     inputComplete, &inFinishCtx);
         inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[listCnt]);
         // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_TENTH_AMNT),
         //            phraseGetDef(PHRASE_RIAL), LEN_MAX_AMOUNT,
@@ -163,6 +166,9 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         listCnt++;
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_SINGLE) {
         if (listCnt == 0) {
+            memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+            inFinishCtx.onFinish = state;
+            inFinishCtx.onCancel = state->parent;
             inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                                      .mode    = INMD_ENTER_AMOUNT,
                                      .title   = phraseGetDef(PHRASE_AMOUNT),
@@ -170,7 +176,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
                                      .maxLen  = LEN_MAX_AMOUNT,
                                      .timeout = BACK_IDLE_TMO,
                                      .tocb    = back2idle},
-                         state->parent, state, NULL, NULL);
+                         inputComplete, &inFinishCtx);
             inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[10]);
             // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
             //            phraseGetDef(PHRASE_RIAL), LEN_MAX_AMOUNT,
@@ -183,6 +189,9 @@ STATE_DEF_ENTER(EnterFixedAmount) {
         }
     } else if (termStorage->fixedAmountItem == FIXED_AMNT_VARIANT) {
         if (listCnt == 0) {
+            memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+            inFinishCtx.onFinish = state;
+            inFinishCtx.onCancel = state->parent;
             inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                                      .mode    = INMD_ENTER_AMOUNT,
                                      .title   = phraseGetDef(PHRASE_AMOUNT),
@@ -190,7 +199,7 @@ STATE_DEF_ENTER(EnterFixedAmount) {
                                      .maxLen  = LEN_MAX_AMOUNT,
                                      .timeout = BACK_IDLE_TMO,
                                      .tocb    = back2idle},
-                         state->parent, state, NULL, NULL);
+                         inputComplete, &inFinishCtx);
             inmgr()->set(INPUT_TYPE_KEYPAD, termStorage->amountList[11]);
             // GOTO_INPUT(state->parent, state, phraseGetDef(PHRASE_AMOUNT),
             //            phraseGetDef(PHRASE_RIAL), LEN_MAX_AMOUNT,
@@ -241,6 +250,9 @@ STATE_DEF_ENTER(GetMaxAmnt) {
 STATE_DEF_ENTER(EnterMaxAmnt) {
     DEFINE_STRING(rial, 16);
     snprintf(rial, sizeof(rial), "(%s)", phraseGetDef(PHRASE_RIAL));
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = getMaxAmnt;
+    inFinishCtx.onCancel = state->parent;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_AMOUNT,
                              .title   = phraseGetDef(PHRASE_AMNT_CEIL),
@@ -248,7 +260,7 @@ STATE_DEF_ENTER(EnterMaxAmnt) {
                              .maxLen  = LEN_MAX_AMOUNT,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 state->parent, getMaxAmnt, NULL, NULL);
+                 inputComplete, &inFinishCtx);
     // GOTO_INPUT(state->parent, getMaxAmnt, phraseGetDef(PHRASE_AMNT_CEIL),
     // rial,
     //            12, IN_MODE_AMOUNT, NULL);

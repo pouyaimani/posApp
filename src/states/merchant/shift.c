@@ -310,6 +310,9 @@ STATE_DEF_HANDLE(HandleReports, KeypadEvent) {
 }
 
 STATE_DEF_ENTER(ShiftReports) {
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = handleReports;
+    inFinishCtx.onCancel = state->parent;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_NUMBERS,
                              .title   = phraseGetDef(PHRASE_SHIFT_SELECT),
@@ -317,7 +320,7 @@ STATE_DEF_ENTER(ShiftReports) {
                              .maxLen  = LEN_MAX_SHIFT_NUM,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 state->parent, handleReports, NULL, NULL);
+                 inputComplete, &inFinishCtx);
     // GOTO_INPUT(state->parent, handleReports,
     // phraseGetDef(PHRASE_SHIFT_SELECT),
     //            "", 3, IN_MODE_NUMBERS, NULL);

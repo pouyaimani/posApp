@@ -6,12 +6,16 @@
 #include "timeout.h"
 
 typedef struct {
+    State*     onFinish;
+    State*     onCancel;
+    CallBack_t cb;
+    void*      userData;
+} InputFinishCtx;
+
+typedef struct {
     State*           state;
-    State*           next;
-    State*           back;
     InputController* ctrl;
-    void (*run)(InputCfg* cfg, State* back, State* next, InPutCallBack_t cb,
-                void* cbData);
+    void (*run)(InputCfg* cfg, InPutComplete cb, void* cbData);
     void (*set)(InputType type, const char* in);
     void (*setDefault)(InputType type, const char* in);
     void (*setOut)(char* oraw, char* oformated, uint16_t len);
@@ -25,12 +29,16 @@ typedef struct {
     char*    oformated;
     uint16_t outlen;
 
-    InPutCallBack_t cb;
-    void*           cbData;
+    InPutComplete cb;
+    void*         cbData;
 } InputMgr;
 
 InputMgr* inmgr();
 
 extern InputCfg inCfgEnterPin;
+
+extern InputFinishCtx inFinishCtx;
+
+void inputComplete(InputResult result, void* userData);
 
 #endif

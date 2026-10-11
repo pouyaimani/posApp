@@ -41,6 +41,9 @@ STATE_DEF_ENTER(EnterPin) {
     amountSeparator(amnt, amntSep, sizeof(amntSep));
     snprintf(wage, sizeof(wage), "%s %s %s", phraseGetDef(PHRASE_WAGE), amntSep,
              phraseGetDef(PHRASE_RIAL));
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = commu;
+    inFinishCtx.onCancel = STATE_IDLE;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_PED,
                              .mode    = INMD_ENTER_PIN,
                              .title   = phraseGetDef(PHRASE_CARD_PIN),
@@ -48,7 +51,7 @@ STATE_DEF_ENTER(EnterPin) {
                              .maxLen  = LEN_MAX_CARD_PIN,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 STATE_IDLE, commu, NULL, NULL);
+                 inputComplete, &inFinishCtx);
 }
 
 /******************************************************************

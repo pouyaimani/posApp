@@ -4,7 +4,15 @@
 #include <stdint.h>
 #include "phrases/phrases.h"
 
-typedef void (*InPutCallBack_t)(void* userData);
+typedef enum {
+    INPUT_RES_FINISHED,
+    INPUT_RES_CANCELED,
+    INPUT_RES_PROCESSING,
+    INPUT_NO_ACTION
+
+} InputResult;
+
+typedef void (*InPutComplete)(InputResult result, void* operationContext);
 
 typedef enum {
     INPUT_TYPE_KEYPAD,
@@ -23,15 +31,15 @@ typedef enum {
 } InputMode;
 
 typedef struct {
-    InputType       type;
-    InputMode       mode;
-    char*           title;
-    char*           info;
-    uint16_t        maxLen;
-    uint16_t        minLen;
-    uint32_t        timeout;
-    InPutCallBack_t tocb;
-    void*           cbData;
+    InputType     type;
+    InputMode     mode;
+    char*         title;
+    char*         info;
+    uint16_t      maxLen;
+    uint16_t      minLen;
+    uint32_t      timeout;
+    InPutComplete tocb;
+    void*         cbData;
 } InputCfg;
 
 #endif

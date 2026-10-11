@@ -58,6 +58,9 @@ STATE_DEF_ENTER(CheckPassword) {
 }
 
 STATE_DEF_ENTER(EnterPassword) {
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = checkPass;
+    inFinishCtx.onCancel = STATE_IDLE;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_PIN,
                              .title   = phraseGetDef(PHRASE_PASS_ENTRY),
@@ -65,9 +68,7 @@ STATE_DEF_ENTER(EnterPassword) {
                              .maxLen  = LEN_MAX_PASSWORD,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 STATE_IDLE, checkPass, NULL, NULL);
-    // GOTO_INPUT(STATE_IDLE, checkPass, phraseGetDef(PHRASE_PASS_ENTRY), "",
-    //            LEN_MAX_PASSWORD, IN_MODE_PASSWORD, NULL);
+                 inputComplete, &inFinishCtx);
 }
 
 static void EnterPassword(State* parent) {
@@ -102,6 +103,9 @@ STATE_DEF_ENTER(CheckPin) {
 }
 
 STATE_DEF_ENTER(EnterNewPin) {
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = reEnterNewPin;
+    inFinishCtx.onCancel = state->parent;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_PIN,
                              .title   = phraseGetDef(PHRASE_NEW_PIN),
@@ -109,7 +113,7 @@ STATE_DEF_ENTER(EnterNewPin) {
                              .maxLen  = LEN_MAX_PASSWORD,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 state->parent, reEnterNewPin, NULL, NULL);
+                 inputComplete, &inFinishCtx);
     // GOTO_INPUT(state->parent, reEnterNewPin, phraseGetDef(PHRASE_NEW_PIN),
     // "",
     //            4, IN_MODE_PASSWORD, NULL);
@@ -119,6 +123,9 @@ STATE_DEF_ENTER(ReEnterNewPin) {
     for (size_t i = 0; i < 4; i++) {
         newPin[i] = inmgr()->input[i];
     }
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = checkNewPin;
+    inFinishCtx.onCancel = merchantMenu;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_PIN,
                              .title   = phraseGetDef(PHRASE_REPEAT_NEW_PIN),
@@ -126,7 +133,7 @@ STATE_DEF_ENTER(ReEnterNewPin) {
                              .maxLen  = LEN_MAX_PASSWORD,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 merchantMenu, checkNewPin, NULL, NULL);
+                 inputComplete, &inFinishCtx);
     // GOTO_INPUT(merchantMenu, checkNewPin,
     // phraseGetDef(PHRASE_REPEAT_NEW_PIN),
     //            "", 4, IN_MODE_PASSWORD, NULL);
@@ -147,6 +154,9 @@ STATE_DEF_ENTER(CheckNewPin) {
 }
 
 STATE_DEF_ENTER(ChangeMerPin) {
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = checkPin;
+    inFinishCtx.onCancel = state->parent;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_PIN,
                              .title   = phraseGetDef(PHRASE_CURRENT_PIN),
@@ -154,7 +164,7 @@ STATE_DEF_ENTER(ChangeMerPin) {
                              .maxLen  = LEN_MAX_PASSWORD,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 state->parent, checkPin, NULL, NULL);
+                 inputComplete, &inFinishCtx);
     // GOTO_INPUT(state->parent, checkPin, phraseGetDef(PHRASE_CURRENT_PIN), "",
     // 4,
     //            IN_MODE_PASSWORD, NULL);

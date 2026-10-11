@@ -90,14 +90,16 @@ static desiredAmnt[LEN_MAX_AMOUNT + 1];
 
 STATE_DEF_ENTER(EnterAmount) {
     memset(desiredAmnt, 0, sizeof(desiredAmnt));
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = txn == TXN_VOUCHER ? enterPass : enterPhone;
+    inFinishCtx.onCancel = STATE_IDLE;
     inmgr()->run(&(InputCfg){.mode    = INMD_ENTER_AMOUNT,
                              .title   = phraseGetDef(PHRASE_AMOUNT),
                              .info    = phraseGetDef(PHRASE_TO_RIAL_1),
                              .maxLen  = LEN_MAX_AMOUNT,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 STATE_IDLE, txn == TXN_VOUCHER ? enterPass : enterPhone, NULL,
-                 NULL);
+                 inputComplete, &inFinishCtx);
     inmgr()->setOut(desiredAmnt, NULL, sizeof(desiredAmnt));
 }
 
@@ -150,6 +152,9 @@ static void SelectAmount(State* parent) {
  ******************************************************************/
 
 STATE_DEF_ENTER(EnterPhone) {
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = enterPass;
+    inFinishCtx.onCancel = selectAmount;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_NUMBERS,
                              .title   = phraseGetDef(PHRASE_PHONE_NUMBER),
@@ -157,7 +162,7 @@ STATE_DEF_ENTER(EnterPhone) {
                              .maxLen  = LEN_MAX_PHONE_NUMBER,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 selectAmount, enterPass, NULL, NULL);
+                 inputComplete, &inFinishCtx);
     inmgr()->set(INPUT_TYPE_KEYPAD, "09");
     inmgr()->setOut(phoneNum, phoneNum, sizeof(phoneNum));
 }
@@ -174,6 +179,9 @@ static void EnterPhone(State* parent) {
 
 STATE_DEF_ENTER(EnterPassword) {
     STRING_TO_U64(desiredAmnt, &selectedAmnt);
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = communication;
+    inFinishCtx.onCancel = STATE_IDLE;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_PED,
                              .mode    = INMD_ENTER_PIN,
                              .title   = phraseGetDef(PHRASE_CARD_PIN),
@@ -181,7 +189,7 @@ STATE_DEF_ENTER(EnterPassword) {
                              .maxLen  = LEN_MAX_CARD_PIN,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 STATE_IDLE, communication, NULL, NULL);
+                 inputComplete, &inFinishCtx);
 }
 
 static void EnterPassword(State* parent) {

@@ -6,14 +6,6 @@
 
 #define INPUT_SIZE 128
 
-typedef enum {
-    INPUT_RES_FINISHED,
-    INPUT_RES_CANCELED,
-    INPUT_RES_PROCESSING,
-    INPUT_NO_ACTION
-
-} InputResult;
-
 typedef struct {
 
     InputResult (*handle)(InputEvent* ev, InputCfg cfg);

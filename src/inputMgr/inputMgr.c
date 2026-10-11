@@ -21,6 +21,22 @@ static Button    cancelBut;
 static lv_obj_t* title;
 static lv_obj_t* info;
 
+InputFinishCtx inFinishCtx;
+
+void inputComplete(InputResult result, void* userData) {
+    InputFinishCtx* ctx = (InputFinishCtx*)(userData);
+    if (result == INPUT_RES_FINISHED) {
+        if (ctx->onFinish)
+            SM_GOTO(ctx->onFinish);
+    } else if (result == INPUT_RES_CANCELED) {
+        if (ctx->onCancel)
+            SM_GOTO(ctx->onCancel);
+    }
+    if (ctx->cb) {
+        ctx->cb(ctx->userData);
+    }
+}
+
 static void ui_show(InputController* inCtrl) {
     LV_SET_TEXT(inputBox.textBox, inCtrl->finput);
     LV_SET_TEXT(title, inCtrl->cfg.title);
@@ -82,13 +98,14 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
             snprintf(__inputmgr.oformated, __inputmgr.outlen, "%s",
                      __inputmgr.finput);
         }
-        SM_GOTO(__inputmgr.next);
         if (__inputmgr.cb) {
-            __inputmgr.cb(__inputmgr.cbData);
+            __inputmgr.cb(res, __inputmgr.cbData);
         }
         return;
     } else if (res == INPUT_RES_CANCELED) {
-        SM_GOTO(__inputmgr.back);
+        if (__inputmgr.cb) {
+            __inputmgr.cb(res, __inputmgr.cbData);
+        }
         return;
     }
     ui_show(__inputmgr.ctrl);
@@ -102,19 +119,16 @@ STATE_DEF_HANDLE(Input, PedEvent) {
     input.type      = INPUT_EV_PED;
     input.ped       = *ev;
     InputResult res = inputUpdate(__inputmgr.ctrl, &input);
-    if (res == INPUT_RES_FINISHED) {
-        SM_GOTO(__inputmgr.next);
-        return;
-    } else if (res == INPUT_RES_CANCELED) {
-        SM_GOTO(__inputmgr.back);
-        return;
+    if (__inputmgr.cb) {
+        __inputmgr.cb(res, __inputmgr.cbData);
     }
     ui_show(__inputmgr.ctrl);
 }
 
 STATE_DEF_HANDLE(Input, TimeOutEvent) {
     if (__inputmgr.ctrl->cfg.tocb) {
-        __inputmgr.ctrl->cfg.tocb(__inputmgr.ctrl->cfg.cbData);
+        __inputmgr.ctrl->cfg.tocb(INPUT_RES_CANCELED,
+                                  __inputmgr.ctrl->cfg.cbData);
     }
 }
 
@@ -179,8 +193,7 @@ void setOut(char* oraw, char* oformated, uint16_t len) {
     __inputmgr.outlen    = len;
 }
 
-static void run(InputCfg* cfg, State* back, State* next, InPutCallBack_t cb,
-                void* cbData) {
+static void run(InputCfg* cfg, InPutComplete cb, void* cbData) {
     reset(cfg->type);
     __inputmgr.oraw      = NULL;
     __inputmgr.oformated = NULL;
@@ -190,8 +203,6 @@ static void run(InputCfg* cfg, State* back, State* next, InPutCallBack_t cb,
         __inputmgr.ctrl = &pedCtrl;
     }
     __inputmgr.ctrl->cfg = *cfg;
-    __inputmgr.next      = next;
-    __inputmgr.back      = back;
     __inputmgr.cb        = cb;
     __inputmgr.cbData    = cbData;
     OOP_CALL(__inputmgr.state, setTimeOut, cfg->timeout);

@@ -136,8 +136,8 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else if (ev->key == KEY_ENTER) {
-        Phrases_t       phrase;
-        InPutCallBack_t cb;
+        Phrases_t  phrase;
+        CallBack_t cb;
         DEFINE_STRING(str, 4);
         uint8_t val;
         if (energyMenu->idx == 0) {
@@ -149,6 +149,10 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
             cb     = getPowerOffTimeOut;
             val    = settings()->terminal.powerOffTimeOut;
         }
+        memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+        inFinishCtx.onCancel = state;
+        inFinishCtx.cb       = cb;
+        inFinishCtx.userData = state;
         inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                                  .mode    = INMD_ENTER_NUMBERS,
                                  .title   = phraseGetDef(phrase),
@@ -156,7 +160,7 @@ STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
                                  .maxLen  = 2,
                                  .timeout = BACK_IDLE_TMO,
                                  .tocb    = back2idle},
-                     state, NULL, cb, state);
+                     inputComplete, &inFinishCtx);
         U8_TO_STRING(&val, str);
         inmgr()->set(INPUT_TYPE_KEYPAD, str);
     }
@@ -221,6 +225,11 @@ static void getSecRecPrintTime(void* arg) {
 }
 
 STATE_DEF_ENTER(SecPrintTime) {
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inFinishCtx.onFinish = secPrintSuc;
+    inFinishCtx.onCancel = state->parent;
+    inFinishCtx.cb       = getSecRecPrintTime;
+    inFinishCtx.userData = state;
     inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
                              .mode    = INMD_ENTER_NUMBERS,
                              .title   = phraseGetDef(PHRASE_SEC_REC_TIME),
@@ -228,7 +237,7 @@ STATE_DEF_ENTER(SecPrintTime) {
                              .maxLen  = 2,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 state->parent, secPrintSuc, getSecRecPrintTime, state);
+                 inputComplete, &inFinishCtx);
     DEFINE_STRING(str, 4);
     uint8_t val = settings()->terminal.secReceiptPrintTime;
     U8_TO_STRING(&val, str);
