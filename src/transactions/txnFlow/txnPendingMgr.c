@@ -81,19 +81,38 @@ static Error_t update(TxnStatus st, TxnData* data) {
 }
 
 static Error_t new(TxnData* data) {
+    if (!data) {
+        return ERR_NOK;
+    }
 
-    pendTxnData.status = TXN_STATUS_PENDING_REVERSE;
-    LOG_TRACE("TxnPendingMgr: new transaction is saving ...");
-    return updateTxnData(data);
+    LOG_TRACE("TxnPendingMgr: saving pending reversal.");
+    return update(TXN_STATUS_PENDING_REVERSE, data);
 }
 
-static void processPendedTxn(TxnData* tx, TxnFlowConfig* cfg) {
-    txnFlowInit(&flow);
+static void processPendedTxn(const TxnData* tx, const TxnFlowConfig* cfg) {
+    if (!tx || !cfg) {
+        return;
+    }
 
     DEFINE_STRING(ip, 32);
     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    txnRun(&flow, NULL, ip, settings()->server.mainServerPort, cfg);
-    memcpy(&flow.data, tx, sizeof(*tx));
+
+    if (!txnFlowPrepare(&flow, NULL, cfg)) {
+        LOG_FATAL("Pending transaction preparation failed.");
+        return;
+    }
+
+    /* Restore the original transaction before starting communication. */
+    memcpy(&flow.data, tx, sizeof(flow.data));
+
+    /*
+     * The selected recovery configuration defines the outgoing
+     * operation; the remaining data comes from the original transaction.
+     */
+    flow.data.core.mti     = cfg->mti;
+    flow.data.core.txnType = cfg->type;
+
+    txnFlowConnect(&flow, ip, settings()->server.mainServerPort);
 }
 
 static void processReverse(TxnData* tx) {

@@ -114,6 +114,18 @@ struct TxnFlow {
     void* userData;
 };
 
+/*
+ * Prepare a new transaction before running any steps.
+ * Call only on a fresh or fully released flow.
+ */
+bool txnFlowPrepare(TxnFlow* flow, State* owner, const TxnFlowConfig* cfg);
+
+/*
+ * Start communication using an already prepared flow.
+ * Preserves transaction data and step runtime.
+ */
+bool txnFlowConnect(TxnFlow* flow, const char* host, uint16_t port);
+
 void txnFlowInit(TxnFlow* flow);
 
 int8_t txnStart(TxnFlowConfig* cfg, TxnFlow* flow, State* owner);

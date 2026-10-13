@@ -56,65 +56,95 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
 }
 
 void txnFlowInit(TxnFlow* flow) {
-    RETURN_VALUE_IF_NULL(flow, ;, false);
+    RETURN_IF_NULL(flow, ;);
+
     LOG_TRACE("Txn flow: initing flow");
     memset(flow, 0, sizeof(*flow));
     flow->stage = TXN_STAGE_IDLE;
 }
 
-bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
-            const TxnFlowConfig* cfg) {
-
+bool txnFlowPrepare(TxnFlow* flow, State* owner, const TxnFlowConfig* cfg) {
     RETURN_VALUE_IF_NULL(flow, ;, false);
-    // RETURN_VALUE_IF_NULL(owner, ;, false);
-    RETURN_VALUE_IF_NULL(host, ;, false);
-    LOG_TRACE("Txn flow: running flow ..., host = %s, port = %d", host, port);
+    RETURN_VALUE_IF_NULL(cfg, ;, false);
+    RETURN_VALUE_IF_NULL(cfg->build, ;, false);
+    RETURN_VALUE_IF_NULL(cfg->parse, ;, false);
 
     txnFlowInit(flow);
 
-    flow->data.core.mti = cfg->mti;
+    flow->owner = owner;
+    flow->cfg   = cfg;
 
+    flow->data.core.mti     = cfg->mti;
     flow->data.core.txnType = cfg->type;
 
-    flow->owner = owner;
+    return true;
+}
 
-    flow->cfg = cfg;
+bool txnFlowConnect(TxnFlow* flow, const char* host, uint16_t port) {
+    if (!flow || !host || !flow->cfg) {
+        return false;
+    }
+
+    if (!flow->cfg->build || !flow->cfg->parse) {
+        return false;
+    }
+
+    /* Do not start another connection on an active flow. */
+    if (flow->tx || flow->stage != TXN_STAGE_IDLE) {
+        return false;
+    }
+
+    LOG_TRACE("Txn flow: connecting, host = %s, port = %u", host,
+              (unsigned)port);
 
     flow->stage = TXN_STAGE_CONNECTING;
 
     flow->tx = nth()->alloc();
-
     if (!flow->tx) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_NO_MEMORY);
         return false;
     }
 
-    flow->tx->owner = owner;
-
-    flow->tx->userData = flow;
-
-    flow->tx->onConnect = onConnect;
-
-    flow->tx->onSent = onSent;
-
-    flow->tx->onReceive = onReceive;
-
-    flow->tx->onFailure = onFailure;
-
-    flow->tx->onTimeout = onTimeout;
-
+    flow->tx->owner      = flow->owner;
+    flow->tx->userData   = flow;
+    flow->tx->onConnect  = onConnect;
+    flow->tx->onSent     = onSent;
+    flow->tx->onReceive  = onReceive;
+    flow->tx->onFailure  = onFailure;
+    flow->tx->onTimeout  = onTimeout;
     flow->tx->isComplete = isComplete;
 
-    if (cfg && cfg->onConnecting) {
-        LOG_TRACE("TxnFolw: on connect callback is calling ...");
-        cfg->onConnecting(flow);
+    if (flow->cfg->onConnecting) {
+        flow->cfg->onConnecting(flow);
     }
+
     NthResult res = nth()->connect(flow->tx, host, port);
-    LOG_TRACE("TxnFolw: connect result = %d", res);
+
+    LOG_TRACE("Txn flow: connect result = %d", res);
+
     if (res != NTH_OK) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_CONNECT);
         return false;
     }
+
+    return true;
+}
+
+/*
+ * Existing callers retain their current behavior:
+ * initialize a transaction and immediately connect.
+ */
+bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
+            const TxnFlowConfig* cfg) {
+    if (!host) {
+        return false;
+    }
+
+    if (!txnFlowPrepare(flow, owner, cfg)) {
+        return false;
+    }
+
+    return txnFlowConnect(flow, host, port);
 }
 
 static int8_t onConnect(NthTransaction* tx, void* ctx) {
