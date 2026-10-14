@@ -81,7 +81,7 @@ static void runReportInput(InputMode_t mode, const char* title, char* output,
                              .tocb    = back2idle},
                  inputComplete, &inFinishCtx);
 
-    inmgr()->setOut(output, NULL, outputSize);
+    inmgr()->commit(output, NULL, outputSize);
 }
 
 /*********************************************************************************************

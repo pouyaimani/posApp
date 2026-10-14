@@ -63,6 +63,15 @@ typedef void (*TxnFlowStageCb)(TxnFlow* flow);
 
 typedef int (*TxnComposeFn)(TxnData* data);
 
+/*
+ * Called after successful composition and building, immediately
+ * before sending.
+ *
+ * Return ERR_OK to allow transmission.
+ * Any other result terminates the flow without calling send().
+ */
+typedef int (*TxnBeforeSendFn)(TxnFlow* flow);
+
 /* ================= Config ================= */
 
 typedef struct {
@@ -84,6 +93,8 @@ typedef struct {
     TxnFlowDone done;
 
     TxnFlowStageCb onConnecting;
+
+    TxnBeforeSendFn beforeSend;
 
     TxnFlowStageCb onSending;
 

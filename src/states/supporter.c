@@ -4,7 +4,6 @@
 #include "display.h"
 #include "eventAll.h"
 #include "assets.h"
-#include "transactions/transaction.h"
 #include "ui/menu.h"
 #include "sys/sys.h"
 #include "merchant/merchant.h"

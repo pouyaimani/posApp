@@ -7,7 +7,6 @@
 #include "sys/sys.h"
 #include "storage/storage.h"
 #include "utility/utility.h"
-#include "transactions/transaction.h"
 #include "settings/settings.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"

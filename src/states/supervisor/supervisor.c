@@ -237,7 +237,7 @@ STATE_DEF_ENTER(EnterIp) {
     inmgr()->set(INPUT_TYPE_KEYPAD, serverItem == SERV_SET_MAIN
                                         ? settings()->server.mainServerIp
                                         : settings()->server.tmsIp);
-    inmgr()->setOut(ip, NULL, sizeof(ip));
+    inmgr()->commit(ip, NULL, sizeof(ip));
 }
 
 STATE_DEF_ENTER(EnterPort) {
@@ -253,7 +253,7 @@ STATE_DEF_ENTER(EnterPort) {
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
                  inputComplete, &inFinishCtx);
-    inmgr()->setOut(port, NULL, sizeof(port));
+    inmgr()->commit(port, NULL, sizeof(port));
     intToStr(serverItem == SERV_SET_MAIN ? settings()->server.mainServerPort
                                          : settings()->server.tmsPort,
              port, sizeof(port));
@@ -272,7 +272,7 @@ STATE_DEF_ENTER(EnterServerId) {
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
                  inputComplete, &inFinishCtx);
-    inmgr()->setOut(nii, NULL, sizeof(nii));
+    inmgr()->commit(nii, NULL, sizeof(nii));
     intToStr(settings()->server.mainServerNii, nii, sizeof(nii));
     inmgr()->set(INPUT_TYPE_KEYPAD, nii);
 }

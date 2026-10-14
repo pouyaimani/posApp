@@ -1,52 +1,52 @@
-#include "txnFlow/txnFLow.h"
-#include "isoHandler.h"
-#include "settings/settings.h"
-#include "states/states.h"
-#include "txnCommon.h"
+// #include "txnFlow/txnFLow.h"
+// #include "isoHandler.h"
+// #include "settings/settings.h"
+// #include "states/states.h"
+// #include "txnCommon.h"
 
-extern void settleDone(TxnFlow* flow, const TxnFlowStatus* st);
+// extern void settleDone(TxnFlow* flow, const TxnFlowStatus* st);
 
-static int compose(TxnData* data) { data->core.stan = txnTraceInfo()->stan; }
+// static int compose(TxnData* data) { data->core.stan = txnTraceInfo()->stan; }
 
-static const uint8_t isoFeilds[] = {ELEMENT_PROCESSING_CODE,
-                                    ELEMENT_AMOUNT_TRANSACTION,
-                                    ELEMENT_STAN,
-                                    ELEMENT_TIME_LOCAL_TRANSACTION,
-                                    ELEMENT_DATE_LOCAL_TRANSACTION,
-                                    ELEMENT_NETWORK_INTL_ID,
-                                    ELEMENT_ACQUIRING_INSTITUTION_ID,
-                                    ELEMENT_RETRIEVAL_REFERENCE_NUMBER,
-                                    ELEMENT_TERMINAL_ID,
-                                    ELEMENT_CARD_ACCEPTOR_ID,
-                                    ELEMENT_ADDITIONAL_DATA_PRIVATE,
-                                    ELEMENT_CURRENCY_CODE_TRANSACTION,
-                                    ELEMENT_SECURITY_CONTROL_INFO,
-                                    ELEMENT_MAC};
+// static const uint8_t isoFeilds[] = {ELEMENT_PROCESSING_CODE,
+//                                     ELEMENT_AMOUNT_TRANSACTION,
+//                                     ELEMENT_STAN,
+//                                     ELEMENT_TIME_LOCAL_TRANSACTION,
+//                                     ELEMENT_DATE_LOCAL_TRANSACTION,
+//                                     ELEMENT_NETWORK_INTL_ID,
+//                                     ELEMENT_ACQUIRING_INSTITUTION_ID,
+//                                     ELEMENT_RETRIEVAL_REFERENCE_NUMBER,
+//                                     ELEMENT_TERMINAL_ID,
+//                                     ELEMENT_CARD_ACCEPTOR_ID,
+//                                     ELEMENT_ADDITIONAL_DATA_PRIVATE,
+//                                     ELEMENT_CURRENCY_CODE_TRANSACTION,
+//                                     ELEMENT_SECURITY_CONTROL_INFO,
+//                                     ELEMENT_MAC};
 
-int buildSettle(TxnFlow* flow, ByteArray* ba) {
-    return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
-                    flow->cfg->feildsCnt, &flow->data, ba);
-}
+// int buildSettle(TxnFlow* flow, ByteArray* ba) {
+//     return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
+//                     flow->cfg->feildsCnt, &flow->data, ba);
+// }
 
-const TxnFlowConfig settlementTxn = {
+// const TxnFlowConfig settlementTxn = {
 
-    TXN_FLOW_COMMON,
+//     TXN_FLOW_COMMON,
 
-    .type = TXN_SETTLE,
+//     .type = TXN_SETTLE,
 
-    .mti = MTI_FIN_ADVICE,
+//     .mti = MTI_FIN_ADVICE,
 
-    .prcode = PRC_SETTLE,
+//     .prcode = PRC_SETTLE,
 
-    .feilds = isoFeilds,
+//     .feilds = isoFeilds,
 
-    .feildsCnt = sizeof(isoFeilds),
+//     .feildsCnt = sizeof(isoFeilds),
 
-    .needSettlement = false,
+//     .needSettlement = false,
 
-    .compose = compose,
+//     .compose = compose,
 
-    .build = buildSettle,
+//     .build = buildSettle,
 
-    .done = settleDone,
-};
+//     .done = settleDone,
+// };

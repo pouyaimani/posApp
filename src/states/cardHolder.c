@@ -7,7 +7,6 @@
 #include "display.h"
 #include "eventAll.h"
 #include "assets.h"
-#include "transactions/transaction.h"
 #include "ui/menu.h"
 #include "eventloop.h"
 #include "magReader/magReader.h"
@@ -18,6 +17,8 @@
 #include "error.h"
 #include "settings/settings.h"
 #include "menuMgr/menuMgr.h"
+#include "transactions/txnMgr.h"
+#include "transactions/txnConfig.h"
 
 size_t                  LEN_CARDHOLDER_ITEMS;
 static Menu*            menu;
@@ -25,19 +26,48 @@ static Menu             chargeMenu;
 static CardHolderItems* activeItems[LEN_MAX_CARDHOLDER_ITEMS];
 static CardHolderItems* selected;
 
-static void onPurchase() { SM_GOTO(&getTxn(TXN_PURCHASE)->state); }
+static void transactionDone(TxnMgrResult result, TxnMgrStep step,
+                            TxnMgrError err, int respCode) {
 
-static void onBalance() { SM_GOTO(&getTxn(TXN_BALANCE)->state); }
+    if (result == TXN_MGR_RESULT_REJECT) {
+        /* Display approval or print the transaction receipt. */
+        return;
+    }
 
-static void onBill() { SM_GOTO(&getTxn(TXN_BILL)->state); }
+    if (result == TXN_MGR_RESULT_SUCCESS) {
+        /* Display approval or print the transaction receipt. */
+        return;
+    }
+
+    if (err != TXN_MGR_ERR_NONE) {
+        /*
+         * Handle a local failure.
+         * respCode may still contain approval if persistence failed
+         * after receiving a successful host response.
+         */
+        return;
+    }
+
+    /* Handle the host decline in respCode. */
+    (void)step;
+}
+
+static void onPurchase() { txnMgr()->run(&purchaseTxnCfg, transactionDone); }
+
+static void onBalance() { txnMgr()->run(&balanceTxnCfg, transactionDone); }
+
+static void onBill() { txnMgr()->run(&billTxnCfg, transactionDone); }
+
+static void onTopup() { txnMgr()->run(&topupTxnCfg, transactionDone); }
+
+static void onVoucher() { txnMgr()->run(&voucherTxnCfg, transactionDone); }
 
 static void onSimCharge() {
     ui_menu_create(&chargeMenu, disp()->screen);
     ui_menu_addItem(&chargeMenu, phraseGetDef(PHRASE_TXN_TOPUP),
-                    LV_TEXT_ALIGN_RIGHT, &getTxn(TXN_TOPUP)->state, NULL, NULL);
+                    LV_TEXT_ALIGN_RIGHT, NULL, onTopup, NULL);
     ui_menu_addItem(&chargeMenu, phraseGetDef(PHRASE_TXN_VOUCHER),
-                    LV_TEXT_ALIGN_RIGHT, &getTxn(TXN_VOUCHER)->state, NULL,
-                    NULL);
+                    LV_TEXT_ALIGN_RIGHT, NULL, onVoucher, NULL);
     menuMgr()->run(&chargeMenu, STATE_IDLE, &menuCfgBack2idleOBC);
 }
 

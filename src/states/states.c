@@ -67,6 +67,17 @@ void GOTO_INFO(State* prev, State* next, uint8_t type, const char* title,
     SM_GOTO(getState(STATE_ID_INFO));
 }
 
+void GOTO_INFO_CB(uint8_t type, const char* title, const char* body,
+                  CallBack_t done, void* userData) {
+    RETURN_IF_NULL(prev, ;);
+    RETURN_IF_NULL(next, ;);
+    Info* info = (Info*)getState(STATE_ID_INFO);
+    info->setData(type, title, body);
+    OOP_CALL(getState(STATE_ID_INFO), setPrev, prev);
+    OOP_CALL(getState(STATE_ID_INFO), setNext, next);
+    SM_GOTO(getState(STATE_ID_INFO));
+}
+
 void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
                   State* onSuccess, State* onFailure) {
     TxnResult* res = getState(STATE_ID_TXN_RES);

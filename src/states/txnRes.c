@@ -99,12 +99,12 @@ STATE_DEF_HANDLE(TxnResult, KeypadEvent) {
     TxnResult* self = (TxnResult*)state;
     hideDigitalRec();
     if (self->txnCfg->needSettlement) {
-        if (txnPendingMgr()->run(pendMgrDone)) {
-            if (ev->key == KEY_ENTER) {
-                printResult(&self->data);
-            }
-            return;
-        }
+        // if (txnPendingMgr()->run(pendMgrDone)) {
+        //     if (ev->key == KEY_ENTER) {
+        //         printResult(&self->data);
+        //     }
+        //     return;
+        // }
     }
     if (ev->key == KEY_ESC) {
         SM_GOTO(self->onFailure);

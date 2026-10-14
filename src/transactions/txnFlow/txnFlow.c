@@ -2,7 +2,7 @@
 #include <string.h>
 #include "error.h"
 #include "logger.h"
-#include "txnPendingMgr.h"
+#include "txnMgr.h"
 #include "settings/settings.h"
 
 static int8_t onConnect(NthTransaction* tx, void* ctx);
@@ -17,42 +17,42 @@ static int8_t onTimeout(NthTransaction* tx, void* ctx);
 
 static NthRxDecision isComplete(NthTransaction* tx, void* ctx);
 
-void txnFlowRelease(TxnFlow* flow) {
-    RETURN_VALUE_IF_NULL(flow, ;, false);
-    LOG_TRACE("Txn flow: rleasing flow ...");
-    if (flow && flow->tx) {
-        nth()->release(flow->tx);
-        flow->tx = NULL;
-    }
-    flow->stage = TXN_STAGE_IDLE;
-}
-
 static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
-    RETURN_VALUE_IF_NULL(flow, ;, false);
-    LOG_TRACE("Txn flow: complete. result = %d, code = %d", result, code);
-    TxnFlowStatus st;
-
-    st.result = result;
-    st.stage  = flow->stage;
-    st.code   = code;
-
-    txnTraceInfo()->inc();
-    if (result == TXN_FLOW_SUCCESS && code == RESP_CODE_SUCESS) {
-        if (flow->cfg->needSettlement) {
-            LOG_TRACE("Txn flow: settlement needed.");
-            txnPendingMgr()->update(TXN_STATUS_PENDING_SETTLEMENT, &flow->data);
-        } else {
-            txnPendingMgr()->mark(TXN_STATUS_APPROVED);
-        }
-        LOG_TRACE("Txn flow: txn is done.");
+    if (!flow) {
+        return;
     }
+
+    TxnFlowStatus status = {
+        .result = result, .stage = flow->stage, .code = code};
+
+    /* Capture the callback before releasing the runtime resources. */
+    TxnFlowDone done = flow->cfg ? flow->cfg->done : NULL;
+
+    /*
+     * Preserve the existing trace behavior for this change.
+     * Whether failed connection attempts should consume a trace
+     * number is a separate transaction-policy decision.
+     */
+    txnTraceInfo()->inc();
 
     txnFlowRelease(flow);
 
-    if (flow->cfg && flow->cfg->done) {
-        LOG_TRACE("Txn flow: calling config done.");
-        flow->cfg->done(flow, &st);
+    if (done) {
+        done(flow, &status);
     }
+}
+
+void txnFlowRelease(TxnFlow* flow) {
+    if (!flow) {
+        return;
+    }
+
+    if (flow->tx) {
+        nth()->release(flow->tx);
+        flow->tx = NULL;
+    }
+
+    flow->stage = TXN_STAGE_IDLE;
 }
 
 void txnFlowInit(TxnFlow* flow) {
@@ -148,52 +148,77 @@ bool txnRun(TxnFlow* flow, State* owner, const char* host, uint16_t port,
 }
 
 static int8_t onConnect(NthTransaction* tx, void* ctx) {
-    RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_TRACE("Txn flow: on connect ...");
     TxnFlow* flow = ctx;
-    ByteArray(ba, NT_BUFFER_SIZE);
 
-    /* Compose transaction related data */
-    if (flow->cfg->compose) {
-        LOG_TRACE("TxnFolw: compose callback is calling ...");
-        flow->cfg->compose(&flow->data);
+    if (!tx || !flow || !flow->cfg) {
+        return -1;
     }
 
-    if (flow->cfg->build(flow, &ba) != ERR_OK) {
-        complete(flow, TXN_FLOW_FAILED, NTH_ERR_INTERNAL);
+    ByteArray(ba, NT_BUFFER_SIZE);
+
+    /*
+     * Compose before building so the recovery record can contain
+     * the final transaction identifiers and request data.
+     */
+    if (flow->cfg->compose) {
+        int rc = flow->cfg->compose(&flow->data);
+
+        if (rc != ERR_OK) {
+            complete(flow, TXN_FLOW_FAILED, rc);
+            return -1;
+        }
+    }
+
+    int rc = flow->cfg->build(flow, &ba);
+
+    if (rc != ERR_OK) {
+        complete(flow, TXN_FLOW_FAILED, rc);
         return -1;
     }
 
     flow->stage = TXN_STAGE_SENDING;
 
+    /*
+     * Let the owner persist recovery data before any request bytes
+     * are sent. A persistence failure prevents transmission.
+     */
+    if (flow->cfg->beforeSend) {
+        rc = flow->cfg->beforeSend(flow);
+
+        if (rc != ERR_OK) {
+            complete(flow, TXN_FLOW_FAILED, rc);
+            return -1;
+        }
+    }
+
     if (flow->cfg->onSending) {
-        LOG_TRACE("TxnFolw: on send callback is calling ...");
         flow->cfg->onSending(flow);
     }
 
     if (nth()->send(tx, &ba) != NTH_OK) {
+        /*
+         * Sending can fail after partial transmission.
+         * Preserve any recovery record already saved.
+         */
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_SEND);
         return -1;
     }
+
     return 0;
 }
 
 static int8_t onSent(NthTransaction* tx, void* ctx) {
-    RETURN_VALUE_IF_NULL(tx, ;, false);
-
     TxnFlow* flow = ctx;
+    RETURN_VALUE_IF_NULL(tx, ;, false);
+    RETURN_VALUE_IF_NULL(flow, ;, false);
+    RETURN_VALUE_IF_NULL(flow->cfg, ;, false);
 
     flow->stage = TXN_STAGE_RECEIVING;
 
-    if (flow->cfg->needSettlement) {
-        LOG_TRACE("TxnFolw: txn needs settlement ...");
-        txnPendingMgr()->new(&flow->data);
-    }
-
     if (flow->cfg->onReceiving) {
-        LOG_TRACE("TxnFolw: on receive callback is calling ...");
         flow->cfg->onReceiving(flow);
     }
+
     return 0;
 }
 

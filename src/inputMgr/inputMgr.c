@@ -187,7 +187,7 @@ static void set(InputType type, const char* in) {
     strcpy(ctrl->input, in);
 }
 
-void setOut(char* oraw, char* oformated, uint16_t len) {
+void commit(char* oraw, char* oformated, uint16_t len) {
     __inputmgr.oraw      = oraw;
     __inputmgr.oformated = oformated;
     __inputmgr.outlen    = len;
@@ -211,7 +211,7 @@ static void run(InputCfg* cfg, InPutComplete cb, void* cbData) {
 
 InputMgr* inmgr() {
     CALL_ONCE(__inputmgr.state = MEM_ALLOC(sizeof(State)); __inputmgr.run = run;
-              __inputmgr.setOut = setOut; __inputmgr.set = set;
+              __inputmgr.commit = commit; __inputmgr.set = set;
               __inputmgr.reset                           = reset;
               OOP_CALL_CTOR(State, __inputmgr.state, NULL, "");
               __inputmgr.state->vtable.enter = STATE_ENTER(Input);

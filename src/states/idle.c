@@ -26,7 +26,7 @@
 #include "ui/swipeHint.h"
 #include "ui/digitalReceipt.h"
 #include "assets.h"
-#include "txnFlow/txnPendingMgr.h"
+#include "txnMgr.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -350,10 +350,9 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_3) {
         OOP_CALL(file(), remove, "/mtd0/txn_t_info");
     } else if (ev->key == KEY_4) {
-        txnPendingMgr()->run(pendMgrDone);
 
     } else if (ev->key == KEY_5) {
-        txnPendingMgr()->reset();
+        txnMgr()->pendingReset();
     } else if (ev->key == KEY_6) {
         insertTxn();
     } else if (ev->key == KEY_7) {

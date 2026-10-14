@@ -335,6 +335,7 @@ Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* feild, uint16_t feildsCnt,
 
 RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     RETURN_VALUE_IF_NULL(buf, ;, ERR_NULL_PARAMETER);
+    RETURN_VALUE_IF_NULL(txn, ;, ERR_NULL_PARAMETER);
     IsoStatus_t st = iso8583()->parse(buf->data, buf->len);
     RETURN_VALUE_IF_NOT(st, ISO_OK, ;, ERR_NOK);
 

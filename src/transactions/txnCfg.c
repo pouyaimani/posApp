@@ -1,62 +1,62 @@
-#include "txnFlow/txnFLow.h"
-#include "settings/settings.h"
-#include "iso/iso8583.h"
-#include "txnCommon.h"
-#include "transaction.h"
-#include "supporter.h"
-#include "states.h"
+// #include "txnFlow/txnFLow.h"
+// #include "settings/settings.h"
+// #include "iso/iso8583.h"
+// #include "txnCommon.h"
+// #include "transaction.h"
+// #include "supporter.h"
+// #include "states.h"
 
-static TxnFlow* gflow;
+// static TxnFlow* gflow;
 
-static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        LOG_TRACE(
-            "config transaction is done successfully. saving settings ...");
-        settings()->save();
-    }
-    Supporter* state = (Supporter*)STATE_SUPPORTER;
-    commonDone(flow, st, state->substate.supervisor->substate.configuration,
-               state->substate.supervisor->substate.configuration, true);
-}
+// static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
+//     if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
+//         LOG_TRACE(
+//             "config transaction is done successfully. saving settings ...");
+//         settings()->save();
+//     }
+//     Supporter* state = (Supporter*)STATE_SUPPORTER;
+//     commonDone(flow, st, state->substate.supervisor->substate.configuration,
+//                state->substate.supervisor->substate.configuration, true);
+// }
 
-static const uint8_t isoFeilds[] = {
-    ELEMENT_PROCESSING_CODE, ELEMENT_STAN, ELEMENT_TIME_LOCAL_TRANSACTION,
-    ELEMENT_DATE_LOCAL_TRANSACTION, ELEMENT_NETWORK_INTL_ID,
-    // ELEMENT_ACQUIRING_INSTITUTION_ID,
-    ELEMENT_TERMINAL_ID, ELEMENT_ADDITIONAL_DATA_PRIVATE,
-    ELEMENT_SECURITY_CONTROL_INFO, ELEMENT_MAC};
+// static const uint8_t isoFeilds[] = {
+//     ELEMENT_PROCESSING_CODE, ELEMENT_STAN, ELEMENT_TIME_LOCAL_TRANSACTION,
+//     ELEMENT_DATE_LOCAL_TRANSACTION, ELEMENT_NETWORK_INTL_ID,
+//     // ELEMENT_ACQUIRING_INSTITUTION_ID,
+//     ELEMENT_TERMINAL_ID, ELEMENT_ADDITIONAL_DATA_PRIVATE,
+//     ELEMENT_SECURITY_CONTROL_INFO, ELEMENT_MAC};
 
-const TxnFlowConfig cfgTxn = {
+// const TxnFlowConfig cfgTxn = {
 
-    TXN_FLOW_COMMON,
+//     TXN_FLOW_COMMON,
 
-    .type = TXN_CFG,
+//     .type = TXN_CFG,
 
-    .mti = MTI_AUTH_REQ,
+//     .mti = MTI_AUTH_REQ,
 
-    .prcode = PRC_CFG,
+//     .prcode = PRC_CFG,
 
-    .feilds = isoFeilds,
+//     .feilds = isoFeilds,
 
-    .feildsCnt = sizeof(isoFeilds),
+//     .feildsCnt = sizeof(isoFeilds),
 
-    .needSettlement = false,
+//     .needSettlement = false,
 
-    .compose = NULL,
+//     .compose = NULL,
 
-    .done = cfgDone,
+//     .done = cfgDone,
 
-    .digitalReceipt = false};
+//     .digitalReceipt = false};
 
-STATE_DEF_ENTER(Config) {
-    DEFINE_STRING(ip, 32);
-    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    txnRun(gflow, state, ip, settings()->server.mainServerPort, &cfgTxn);
-}
+// STATE_DEF_ENTER(Config) {
+//     DEFINE_STRING(ip, 32);
+//     normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
+//     txnRun(gflow, state, ip, settings()->server.mainServerPort, &cfgTxn);
+// }
 
-OOP_CTOR(Config, State* parent, const char* name) {
-    OOP_CALL_CTOR(Transaction, self, parent, name);
-    self->base.state.vtable.enter = STATE_ENTER(Config);
+// OOP_CTOR(Config, State* parent, const char* name) {
+//     OOP_CALL_CTOR(Transaction, self, parent, name);
+//     self->base.state.vtable.enter = STATE_ENTER(Config);
 
-    gflow = self->base.flow;
-}
+//     gflow = self->base.flow;
+// }

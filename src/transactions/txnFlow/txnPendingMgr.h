@@ -1,24 +1,24 @@
-#ifndef TXNRECOVERY_H_
-#define TXNRECOVERY_H_
+// #ifndef TXNRECOVERY_H_
+// #define TXNRECOVERY_H_
 
-#include "txn.h"
-#include "txnFlow.h"
-#include "error.h"
+// #include "txn.h"
+// #include "txnFlow.h"
+// #include "error.h"
 
-typedef int (*TxnPendMgrCb)(const TxnData* txnData);
+// typedef int (*TxnPendMgrCb)(const TxnData* txnData);
 
-typedef struct {
+// typedef struct {
 
-    bool (*run)(TxnPendMgrCb);
-    Error_t (*mark)(TxnStatus st);
-    Error_t (*new)(TxnData* txnData);
-    Error_t (*update)(TxnStatus st, TxnData* txnData);
-    Error_t (*reset)();
+//     bool (*run)(TxnPendMgrCb);
+//     Error_t (*mark)(TxnStatus st);
+//     Error_t (*new)(TxnData* txnData);
+//     Error_t (*update)(TxnStatus st, TxnData* txnData);
+//     Error_t (*reset)();
 
-    bool (*hasPendingTxn)(void);
+//     bool (*hasPendingTxn)(void);
 
-} TxnPendingMgr;
+// } TxnPendingMgr;
 
-TxnPendingMgr* txnPendingMgr(void);
+// TxnPendingMgr* txnPendingMgr(void);
 
-#endif
+// #endif
