@@ -16,7 +16,7 @@
 //     LOG_TRACE("Pending manager done callback is called.");
 //     if (data) {
 //         if (data->core.respCode != RESP_CODE_SUCESS) {
-//             GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
+//             infoMgr()->run(STATE_IDLE, STATE_IDLE, INFO_ERROR,
 //                       phraseGetDef(PHRASE_PENDED_TXN_FAILURE), "");
 //             return;
 //         }
@@ -95,7 +95,7 @@
 //     default:
 //         break;
 //     }
-//     GOTO_INFO(onFail, onFail, INFO_ERROR,
+//     infoMgr()->run(onFail, onFail, INFO_ERROR,
 //               phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
 //               st->result == TXN_FLOW_TIMEOUT ? phraseGetDef(PHRASE_TIME_OUT)
 //                                              : phraseGetDef(body));

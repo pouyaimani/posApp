@@ -56,7 +56,7 @@
 // STATE_DEF_ENTER(EnterPayId) {
 //     LOG_TRACE("Bill id = %s", data.bill.billId);
 //     if (!isBillIdValid(data.bill.billId)) {
-//         GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
+//         infoMgr()->run(STATE_IDLE, STATE_IDLE, INFO_ERROR,
 //                   phraseGetDef(PHRASE_BILL_INVALID), "");
 //         return;
 //     }
@@ -80,7 +80,7 @@
 
 // STATE_DEF_ENTER(EnterPassword) {
 //     if (!isBillValid(data.bill.billId, data.bill.paymentId)) {
-//         GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
+//         infoMgr()->run(STATE_IDLE, STATE_IDLE, INFO_ERROR,
 //                   phraseGetDef(PHRASE_BILL_INVALID), "");
 //         return;
 //     }

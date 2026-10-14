@@ -12,6 +12,7 @@
 #include "iso/iso8583.h"
 #include "states/states.h"
 #include "states/supporter.h"
+#include "infoMgr/infoMgr.h"
 
 /******************************************************************
  *                Balance Transaction config
@@ -202,8 +203,9 @@ static int pendMgrDone(TxnData* data) {
     LOG_TRACE("Pending manager done callback is called.");
     if (data) {
         if (data->core.respCode != RESP_CODE_SUCESS) {
-            GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
-                      phraseGetDef(PHRASE_PENDED_TXN_FAILURE), "");
+            infoMgrsetCommon(STATE_IDLE, STATE_IDLE);
+            infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                           phraseGetDef(PHRASE_PENDED_TXN_FAILURE), "");
             return;
         }
     }
@@ -281,10 +283,11 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
     default:
         break;
     }
-    GOTO_INFO(onFail, onFail, INFO_ERROR,
-              phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
-              st->result == TXN_FLOW_TIMEOUT ? phraseGetDef(PHRASE_TIME_OUT)
-                                             : phraseGetDef(body));
+    infoMgrsetCommon(onFail, onFail);
+    infoMgr()->run(
+        INFO_ERROR, &infoFinishCtx, phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
+        st->result == TXN_FLOW_TIMEOUT ? phraseGetDef(PHRASE_TIME_OUT)
+                                       : phraseGetDef(body));
 }
 
 void financeTxnDone(TxnFlow* flow, const TxnFlowStatus* st) {

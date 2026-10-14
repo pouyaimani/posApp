@@ -1,3 +1,4 @@
+#include "devInfoPage.h"
 #include "states.h"
 #include "logger.h"
 #include "mylvgl.h"
@@ -5,37 +6,9 @@
 #include "utility/utility.h"
 #include "font/myFont.h"
 #include "myColor.h"
-#include "ui/infoPage.h"
-#include "sys/sys.h"
 #include "phrases/phrases.h"
 #include "cellular/cellular.h"
 #include "settings/settings.h"
-
-static void setData(InfoType_t type, const char* title, const char* body) {
-    OOP_CALL(infoPage(), setData, type, title, body);
-}
-
-STATE_DEF_ENTER(Info) { OOP_CALL(infoPage(), show); }
-
-STATE_DEF_EXIT(Info) {
-    OOP_CALL(infoPage(), hide);
-    setData(INFO_WAITING, "", "");
-}
-
-STATE_DEF_HANDLE(Info, TimeOutEvent) {}
-
-STATE_DEF_HANDLE(Info, KeypadEvent) { SM_GOTO(state->next); }
-
-OOP_CTOR(Info, State* parent, const char* name) {
-    OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter         = STATE_ENTER(Info);
-    self->base.vtable.exit          = STATE_EXIT(Info);
-    self->base.vtable.handleKeypad  = STATE_HANDLE(Info, KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(Info, TimeOutEvent);
-    self->setData                   = setData;
-}
-
-/*******************************************************************/
 
 static void rowMenuAdd(lv_obj_t* menu, const char* description,
                        const char* val) {
@@ -112,10 +85,11 @@ static void getOperatorDsc(char* op, size_t size) {
     getSimOpName(opType, op, size);
 }
 
-lv_obj_t* menu;
-
-STATE_DEF_ENTER(DevInfo) {
-    menu = uiRowMenu(disp()->screen);
+lv_obj_t* ui_dev_info_create() {
+    lv_obj_t* menu = uiRowMenu(disp()->screen);
+    if (!menu) {
+        return NULL;
+    }
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
     rowMenuAdd(menu, phraseGetDef(PHRASE_SERIAL), sn);
@@ -131,22 +105,15 @@ STATE_DEF_ENTER(DevInfo) {
     DEFINE_STRING(op, 48);
     getOperatorDsc(op, sizeof(op));
     rowMenuAdd(menu, phraseGetDef(PHRASE_OPERATOR), op);
-    LV_SHOW(menu);
+    return menu;
 }
 
-STATE_DEF_EXIT(DevInfo) {
-    LV_HIDE(menu);
-    LV_DELETE(menu);
-}
+void ui_dev_info_show(lv_obj_t* page) { LV_SHOW(page); }
 
-STATE_DEF_HANDLE(DevInfo, TimeOutEvent) {}
+void ui_dev_info_hide(lv_obj_t* page) { LV_HIDE(page); }
 
-STATE_DEF_HANDLE(DevInfo, KeypadEvent) { SM_GOTO(state->prev); }
-
-OOP_CTOR(DevInfo, State* parent, const char* name) {
-    OOP_CALL_CTOR(State, self, parent, name);
-    self->base.vtable.enter         = STATE_ENTER(DevInfo);
-    self->base.vtable.exit          = STATE_EXIT(DevInfo);
-    self->base.vtable.handleKeypad  = STATE_HANDLE(DevInfo, KeypadEvent);
-    self->base.vtable.handleTimeout = STATE_HANDLE(DevInfo, TimeOutEvent);
+void ui_dev_info_destroy(lv_obj_t* page) {
+    if (page) {
+        lv_obj_delete(page);
+    }
 }

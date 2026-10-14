@@ -11,6 +11,7 @@
 #include "timer.h"
 #include "ui/downloadProgress.h"
 #include "display/display.h"
+#include "infoMgr/infoMgr.h"
 
 #define BRAND_CODE "PNAP_3300"
 
@@ -45,18 +46,21 @@ static void tmsUpgradeFinished(TmsUpgrade* upgrade, TmsUpgradeResult result,
          * Current implementation reboots immediately
          * after this callback returns.
          */
-        GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-                  phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                       phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
         break;
 
     case TMS_UPGRADE_RESULT_NO_UPDATE:
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
-                  phraseGetDef(PHRASE_NO_UPDATE), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_NO_UPDATE), "");
         break;
 
     default:
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_UPDATE_FAILED), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_UPDATE_FAILED), "");
         break;
     }
 }
@@ -76,9 +80,10 @@ void processUpdate(void) {
 
 STATE_DEF_ENTER(Upgrade) {
     tmsUpgrade = MEM_ALLOC(sizeof(TmsUpgrade));
+    infoMgrsetCommon(state->parent, state->parent);
     RETURN_IF_NULL(tmsUpgrade,
-                   GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                             phraseGetDef(PHRASE_UPG_START_FAILED), ""););
+                   infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                                  phraseGetDef(PHRASE_UPG_START_FAILED), ""););
     tmsUpgradeInit(tmsUpgrade, TMS_HOST, TMS_PORT, tmsPlatformOps(),
                    tmsUpgradeFinished, state);
 
@@ -96,8 +101,9 @@ STATE_DEF_ENTER(Upgrade) {
         DEFINE_STRING(errDsc, 128);
         snprintf(errDsc, sizeof(errDsc), "%s = %d",
                  phraseGetDef(PHRASE_ERR_CODE), result);
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_UPG_START_FAILED), errDsc);
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_UPG_START_FAILED), errDsc);
         return;
     }
     timer = TIMER_CREATE(processUpdate, SECS(1), false);

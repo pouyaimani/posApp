@@ -59,7 +59,7 @@
 // STATE_DEF_ENTER(EnterPassword) {
 //     amount = 0;
 //     if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
-//         GOTO_INFO(enterAmount, enterAmount, INFO_ERROR,
+//         infoMgr()->run(enterAmount, enterAmount, INFO_ERROR,
 //                   phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
 //         return;
 //     }

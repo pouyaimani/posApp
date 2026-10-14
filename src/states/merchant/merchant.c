@@ -12,6 +12,7 @@
 #include "ui/infoPage.h"
 #include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
+#include "infoMgr/infoMgr.h"
 
 static bool validatePass(char* pass0, char* pass1, uint8_t len) {
     for (size_t i = 0; i < len; i++) {
@@ -52,8 +53,10 @@ STATE_DEF_ENTER(CheckPassword) {
     if (isPassVlaid) {
         SM_GOTO(merchantMenu);
     } else {
-        GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER),
-                  INFO_ERROR, phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+        infoMgrsetCommon(getState(STATE_ID_SUPPORTER),
+                         getState(STATE_ID_SUPPORTER));
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -97,8 +100,9 @@ STATE_DEF_ENTER(CheckPin) {
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
     } else {
-        GOTO_INFO(merchantMenu, merchantMenu, INFO_ERROR,
-                  phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+        infoMgrsetCommon(merchantMenu, merchantMenu);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -145,11 +149,13 @@ STATE_DEF_ENTER(CheckNewPin) {
         snprintf(settings()->terminal.merchantPin, LEN_MERCHANT_PIN + 1, "%s",
                  newPin);
         settings()->save();
-        GOTO_INFO(merchantMenu, merchantMenu, INFO_SUCCESS,
-                  phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
+        infoMgrsetCommon(merchantMenu, merchantMenu);
+        infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                       phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
     } else {
-        GOTO_INFO(merchantMenu, merchantMenu, INFO_ERROR,
-                  phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
+        infoMgrsetCommon(merchantMenu, merchantMenu);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
     }
 }
 
@@ -201,7 +207,10 @@ static void ChangeMerPin(State* parent) {
 
 /******************** Merchant data sub state **********************/
 
-STATE_DEF_ENTER(MerchantData) { GOTO_DEV_INFO(state->parent); }
+STATE_DEF_ENTER(MerchantData) {
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->runDevInfo(&infoFinishCtx);
+}
 
 OOP_CTOR(MerchantData, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, "Merchant Data");

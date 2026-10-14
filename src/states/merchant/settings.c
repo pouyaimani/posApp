@@ -15,6 +15,7 @@
 #include "common.h"
 #include "tms/tmsTimeSync.h"
 #include "menuMgr/menuMgr.h"
+#include "infoMgr/infoMgr.h"
 
 static char* inputStr;
 #define INPUT_SIZE 64
@@ -106,14 +107,17 @@ static void getPowerOffTimeOut(void* arg) {
     uint8_t val;
     STRING_TO_U8(inmgr()->input, &val);
     if (val <= 0) {
-        GOTO_INFO(subSettings[SET_ITEM_ENERGY], subSettings[SET_ITEM_ENERGY],
-                  INFO_WARNING, phraseGetDef(PHRASE_INVALID_INPUT), "");
+        infoMgrsetCommon(subSettings[SET_ITEM_ENERGY],
+                         subSettings[SET_ITEM_ENERGY]);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INVALID_INPUT), "");
         return;
     }
     settings()->terminal.powerOffTimeOut = val;
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_SUC_DONME), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx, phraseGetDef(PHRASE_SUC_DONME),
+                   "");
 }
 
 static void getSleepTime(void* arg) {
@@ -121,14 +125,17 @@ static void getSleepTime(void* arg) {
     uint8_t val;
     STRING_TO_U8(inmgr()->input, &val);
     if (val <= 0) {
-        GOTO_INFO(subSettings[SET_ITEM_ENERGY], subSettings[SET_ITEM_ENERGY],
-                  INFO_WARNING, phraseGetDef(PHRASE_INVALID_INPUT), "");
+        infoMgrsetCommon(subSettings[SET_ITEM_ENERGY],
+                         subSettings[SET_ITEM_ENERGY]);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INVALID_INPUT), "");
         return;
     }
     settings()->terminal.sleepTimeout = val;
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_SUC_DONME), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx, phraseGetDef(PHRASE_SUC_DONME),
+                   "");
 }
 
 STATE_DEF_HANDLE(EnergySettings, KeypadEvent) {
@@ -220,8 +227,9 @@ static void getSecRecPrintTime(void* arg) {
     STRING_TO_U8(inmgr()->input, &val);
     settings()->terminal.secReceiptPrintTime = val;
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_SUC_DONME), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx, phraseGetDef(PHRASE_SUC_DONME),
+                   "");
 }
 
 STATE_DEF_ENTER(SecPrintTime) {
@@ -398,8 +406,9 @@ static void timeSyncDone(TmsTimeSync* sync, TmsTimeSyncResult result,
     if (result != TMS_TIME_SYNC_RESULT_OK) {
         LOG_TRACE("Time sync failed: result=%d, serverCode=%d", result,
                   sync->serverCode);
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
         return;
     }
 
@@ -419,8 +428,9 @@ static void timeSyncDone(TmsTimeSync* sync, TmsTimeSyncResult result,
         OOP_CALL(sys(), setDateTime, &dt);
     }
 
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                   phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
 }
 
 #define TMS_HOST "sabztms.ir"
@@ -428,19 +438,21 @@ static void timeSyncDone(TmsTimeSync* sync, TmsTimeSyncResult result,
 
 STATE_DEF_ENTER(DateTimeSettings) {
     timeSync = MEM_ALLOC(sizeof(*timeSync));
+    infoMgrsetCommon(state->parent, state->parent);
     RETURN_IF_NULL(timeSync,
-                   GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                             phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), ""););
+                   infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                                  phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
+                                  ""););
     tmsTimeSyncInit(timeSync, TMS_HOST, TMS_PORT, timeSyncDone, state);
 
     TmsTimeSyncResult result;
 
     result = tmsTimeSyncStart(timeSync);
-
+    infoMgrsetCommon(state->parent, state->parent);
     RETURN_IF_NOT(result, TMS_TIME_SYNC_RESULT_OK, {
         LOG_TRACE("Could not start time sync: %d", result);
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
     });
 
     SHOW_INFO(INFO_WAITING, "لطفا منتظر بمانید", "");
@@ -450,8 +462,8 @@ STATE_DEF_EXIT(DateTimeSettings) {}
 
 STATE_DEF_HANDLE(DateTimeSettings, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  "خطا در به روز رسانی", "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx, "خطا در به روز رسانی", "");
     }
 }
 

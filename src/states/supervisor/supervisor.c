@@ -16,6 +16,7 @@
 #include "upgrade.h"
 #include "utility/convert.h"
 #include "menuMgr/menuMgr.h"
+#include "infoMgr/infoMgr.h"
 
 typedef enum {
     SUBS_NET_SETTINGS = 0,
@@ -56,8 +57,10 @@ STATE_DEF_ENTER(CheckPassword) {
     if (isPassVlaid) {
         SM_GOTO(supervisorMenu);
     } else {
-        GOTO_INFO(getState(STATE_ID_SUPPORTER), getState(STATE_ID_SUPPORTER),
-                  INFO_ERROR, phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+        infoMgrsetCommon(getState(STATE_ID_SUPPORTER),
+                         getState(STATE_ID_SUPPORTER));
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -101,8 +104,9 @@ STATE_DEF_ENTER(CheckPin) {
     if (isPassVlaid) {
         SM_GOTO(enterNewPin);
     } else {
-        GOTO_INFO(supervisorMenu, supervisorMenu, INFO_ERROR,
-                  phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
+        infoMgrsetCommon(supervisorMenu, supervisorMenu);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INCORRECT_PASSWORD), "");
     }
 }
 
@@ -147,11 +151,13 @@ STATE_DEF_ENTER(CheckNewPin) {
             settings()->terminal.merchantPin[i] = newPin[i];
         }
         settings()->save();
-        GOTO_INFO(supervisorMenu, supervisorMenu, INFO_SUCCESS,
-                  phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
+        infoMgrsetCommon(supervisorMenu, supervisorMenu);
+        infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                       phraseGetDef(PHRASE_PIN_CHANGED_SUC), "");
     } else {
-        GOTO_INFO(supervisorMenu, supervisorMenu, INFO_ERROR,
-                  phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
+        infoMgrsetCommon(supervisorMenu, supervisorMenu);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_PIN_CONFIRM_ERR), "");
     }
 }
 
@@ -311,8 +317,9 @@ STATE_DEF_ENTER(Success) {
         settings()->server.tmsPort = tmsPort;
     }
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_SUC_DONME), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx, phraseGetDef(PHRASE_SUC_DONME),
+                   "");
 }
 
 static void setItemToMainServer() { serverItem = SERV_SET_MAIN; }
@@ -362,8 +369,9 @@ STATE_DEF_ENTER(MerchantPassReset) {
     snprintf(settings()->terminal.merchantPin, LEN_MERCHANT_PIN + 1, "%s",
              MERCHANT_DEFAULT_PIN);
     settings()->save();
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_SUC_DONME), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx, phraseGetDef(PHRASE_SUC_DONME),
+                   "");
 }
 
 OOP_CTOR(MerchantPassReset, State* parent, const char* name) {
@@ -373,7 +381,10 @@ OOP_CTOR(MerchantPassReset, State* parent, const char* name) {
 
 /******************** FARA sub state **********************/
 
-STATE_DEF_ENTER(FARA) { GOTO_DEV_INFO(state->parent); }
+STATE_DEF_ENTER(FARA) {
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->runDevInfo(&infoFinishCtx);
+}
 
 OOP_CTOR(FARA, State* parent, const char* name) {
     OOP_CALL_CTOR(State, self, parent, name);
@@ -384,8 +395,9 @@ OOP_CTOR(FARA, State* parent, const char* name) {
 
 STATE_DEF_ENTER(DefaultSettings) {
     settings()->reset();
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_SUC_DONME), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx, phraseGetDef(PHRASE_SUC_DONME),
+                   "");
 }
 
 OOP_CTOR(DefaultSettings, State* parent, const char* name) {

@@ -5,6 +5,7 @@
 #include "states/states.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "infoMgr/infoMgr.h"
 
 int8_t injectOffline() {
     // 8F161C2B5F0E891FD943013BC2D85909
@@ -28,7 +29,8 @@ STATE_DEF_ENTER(KeyInjection) {
     Phrases_t id =
         err == ERR_OK ? PHRASE_KEY_INJ_SUCCEED : PHRASE_KEY_INJ_FAILED;
     int8_t infoType = err == ERR_OK ? INFO_SUCCESS : INFO_ERROR;
-    GOTO_INFO(state->parent, state->parent, infoType, phraseGetDef(id), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(infoType, &infoFinishCtx, phraseGetDef(id), "");
 }
 
 OOP_CTOR(KeyInjection, State* parent, const char* name) {

@@ -27,7 +27,7 @@ static void onCustomer() {
 
 static poweroff(void* arg) {
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_POWERING_OFF), "");
-    OOP_CALL(infoPage(), forceUpdate);
+    infoPage()->forceUpdate();
     OOP_CALL(sys(), powerOff);
 }
 

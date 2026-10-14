@@ -9,6 +9,7 @@
 #include "record/txnRecs.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"
+#include "infoMgr/infoMgr.h"
 
 /******************** txn result state **********************/
 
@@ -46,27 +47,28 @@ STATE_DEF_ENTER(TxnResult) {
             getResponseCode(self->st.code, dsc, sizeof(dsc));
         }
         if (self->st.code == 0) {
-            OOP_CALL(infoPage(), setData, INFO_SUCCESS,
-                     phraseGetDef(PHRASE_SUC_DONME), dsc);
-            OOP_CALL(infoPage(), show);
+            infoPage()->setData(INFO_SUCCESS, phraseGetDef(PHRASE_SUC_DONME),
+                                dsc);
+            infoPage()->show();
             return;
-            // GOTO_INFO(self->onSuccess, self->onSuccess, INFO_SUCCESS,
+            // infoMgr()->run(self->onSuccess, self->onSuccess, INFO_SUCCESS,
             //           phraseGetDef(PHRASE_SUC_DONME), dsc);
         } else {
-            OOP_CALL(infoPage(), setData, INFO_ERROR,
-                     phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
-            OOP_CALL(infoPage(), show);
+            infoPage()->setData(
+                INFO_ERROR, phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
+            infoPage()->show();
             return;
-            // GOTO_INFO(self->onFailure, self->onFailure, INFO_ERROR,
+            // infoMgr()->run(self->onFailure, self->onFailure, INFO_ERROR,
             //           phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), dsc);
         }
-        OOP_CALL(infoPage(), setData, INFO_ERROR,
-                 phraseGetDef(self->st.code == 0
-                                  ? PHRASE_SUC_DONME
-                                  : PHRASE_UNSUCCESSFUL_OPERATION),
-                 dsc);
-        OOP_CALL(infoPage(), show);
-        // GOTO_INFO(self->st.code == 0 ? self->onSuccess : self->onFailure,
+        infoPage()->setData(INFO_ERROR,
+                            phraseGetDef(self->st.code == 0
+                                             ? PHRASE_SUC_DONME
+                                             : PHRASE_UNSUCCESSFUL_OPERATION),
+                            dsc);
+        infoPage()->show();
+        // infoMgr()->run(self->st.code == 0 ? self->onSuccess :
+        // self->onFailure,
         //           self->st.code == 0 ? self->onSuccess : self->onFailure,
         //           self->st.code == 0 ? INFO_SUCCESS : INFO_ERROR,
         //           phraseGetDef(self->st.code == 0
@@ -76,7 +78,7 @@ STATE_DEF_ENTER(TxnResult) {
     }
 }
 
-STATE_DEF_EXIT(TxnResult) { OOP_CALL(infoPage(), hide); }
+STATE_DEF_EXIT(TxnResult) { infoPage()->hide(); }
 
 static int8_t printResult(TxnData* txn) {
     // ReceiptData data;

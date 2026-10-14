@@ -103,12 +103,6 @@ OOP_CLASS(DevInfo) { OOP_EXTENDS(State); };
 
 OOP_CTOR(DevInfo, State* parent, const char* name);
 
-#define GOTO_DEV_INFO(prev)                                                    \
-    DevInfo* devInfo = (DevInfo*)getState(STATE_ID_DEV_INFO);                  \
-    OOP_CALL(getState(STATE_ID_DEV_INFO), setPrev, prev);                      \
-    OOP_CALL(getState(STATE_ID_DEV_INFO), setNext, prev);                      \
-    SM_GOTO(getState(STATE_ID_DEV_INFO));
-
 /**************************Ginfo*************************/
 
 OOP_CLASS(Ginfo) {
@@ -167,10 +161,6 @@ OOP_CTOR(TxnResult, State* parent, const char* name);
 #define STATE_SUPPORTER  getState(STATE_ID_SUPPORTER)
 #define GOTO_SUPPORTER() SM_GOTO(STATE_SUPPORTER)
 
-void GOTO_INPUT(State* prev, State* next, const char* title, const char* body,
-                int max, InputMode_t mode, char* out);
-void GOTO_INFO(State* prev, State* next, uint8_t type, const char* title,
-               const char* body);
 void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
                   State* onSuccess, State* onFailure);
 void GOTO_NET_CONNNECT();

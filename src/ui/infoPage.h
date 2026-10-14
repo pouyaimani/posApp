@@ -14,16 +14,11 @@ typedef enum {
     INFO_IMG
 } InfoType_t;
 
-OOP_DECLARE_CLASS(InfoPage);
-
-OOP_VTABLE(InfoPage) {
-    OOP_IMETHOD(void, InfoPage, setData, InfoType_t, const char*, const char*);
-    OOP_IMETHOD(void, InfoPage, show);
-    OOP_IMETHOD(void, InfoPage, hide);
-    OOP_IMETHOD(void, InfoPage, forceUpdate);
-};
 OOP_CLASS(InfoPage) {
-    OOP_IMPLEMENTS(InfoPage);
+    OOP_METHOD(void, setData, InfoType_t, const char* title, const char* body);
+    OOP_METHOD(void, show);
+    OOP_METHOD(void, hide);
+    OOP_METHOD(void, forceUpdate);
     lv_obj_t*  parent;
     InfoType_t type;
     lv_obj_t*  title;

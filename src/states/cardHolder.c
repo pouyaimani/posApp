@@ -127,7 +127,7 @@ STATE_DEF_ENTER(CardHolder) {
 
 STATE_DEF_EXIT(CardHolder) {
     ui_menu_hide(menu);
-    OOP_CALL(infoPage(), hide);
+    infoPage()->hide();
     ui_menu_destroy(menu);
 }
 
@@ -155,10 +155,10 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     if (ev->key <= KEY_9) {
         selected = activeItems[((int)ev->key - 1)];
         if (!ch->isMagSwiped) {
-            OOP_CALL(infoPage(), setData, INFO_IMG, ICON_SWIPE_CARD,
-                     phraseGetDef(PHRASE_SWIPRE_CARD));
+            infoPage()->setData(INFO_IMG, ICON_SWIPE_CARD,
+                                phraseGetDef(PHRASE_SWIPRE_CARD));
             ui_menu_hide(menu);
-            OOP_CALL(infoPage(), show);
+            infoPage()->show();
             return;
         }
         startItem();
@@ -167,10 +167,10 @@ STATE_DEF_HANDLE(CardHolder, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         selected = activeItems[menu->idx];
         if (!ch->isMagSwiped) {
-            OOP_CALL(infoPage(), setData, INFO_IMG, ICON_SWIPE_CARD,
-                     phraseGetDef(PHRASE_SWIPRE_CARD));
+            infoPage()->setData(INFO_IMG, ICON_SWIPE_CARD,
+                                phraseGetDef(PHRASE_SWIPRE_CARD));
             ui_menu_hide(menu);
-            OOP_CALL(infoPage(), show);
+            infoPage()->show();
             return;
         }
         startItem();

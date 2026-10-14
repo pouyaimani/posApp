@@ -15,6 +15,7 @@
 #include "inputMgr/inputMgr.h"
 #include "record/txnQuery.h"
 #include "menuMgr/menuMgr.h"
+#include "infoMgr/infoMgr.h"
 
 static ReceiptDocType docType;
 
@@ -248,8 +249,9 @@ static void DetailsReport(State* parent) {
 static void validateFdate(void* userData) {
     if (jalaliDateStrToGregorianUint(rquery.startDate, &dtFilter.fdate) != 0) {
         /* invalid start date */
-        GOTO_INFO(getStartDate, getStartDate, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_DATE), "");
+        infoMgrsetCommon(getStartDate, getStartDate);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INVALID_DATE), "");
         return;
     }
 }
@@ -269,8 +271,9 @@ STATE_DEF_ENTER(GetStartDate) {
 static void validateEdate(void* userData) {
     if (jalaliDateStrToGregorianUint(rquery.endDate, &dtFilter.tdate) != 0) {
         /* invalid start date */
-        GOTO_INFO(getEndDate, getEndDate, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_DATE), "");
+        infoMgrsetCommon(getEndDate, getEndDate);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INVALID_DATE), "");
         return;
     }
 }
@@ -290,8 +293,9 @@ STATE_DEF_ENTER(GetEndDate) {
 static void validateStime(void* userData) {
     if (timeStrToUint(rquery.startTime, &dtFilter.ftime) != 0) {
         /* invalid start date */
-        GOTO_INFO(getStartTime, getStartTime, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_TIME), "");
+        infoMgrsetCommon(getStartTime, getStartTime);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INVALID_TIME), "");
         return;
     }
 }
@@ -311,8 +315,9 @@ STATE_DEF_ENTER(GetStartTime) {
 static void validateEtime(void* userData) {
     if (timeStrToUint(rquery.endTime, &dtFilter.ttime) != 0) {
         /* invalid start date */
-        GOTO_INFO(getEndTime, getEndTime, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_TIME), "");
+        infoMgrsetCommon(getEndTime, getEndTime);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INVALID_TIME), "");
         return;
     }
 }
@@ -320,8 +325,9 @@ static void validateEtime(void* userData) {
 STATE_DEF_ENTER(GetEndTime) {
     if (jalaliDateStrToGregorianUint(rquery.endDate, &dtFilter.tdate) != 0) {
         /* invalid start date */
-        GOTO_INFO(getEndDate, getEndDate, INFO_ERROR,
-                  phraseGetDef(PHRASE_INVALID_DATE), "");
+        infoMgrsetCommon(getEndDate, getEndDate);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_INVALID_DATE), "");
         return;
     }
     runReportInput(INMD_ENTER_TIME, phraseGetDef(PHRASE_TO_TIME),
@@ -475,8 +481,9 @@ STATE_DEF_ENTER(ExtractData) {
                                 dtFilter.ttime) > 0) {
 
             /* FROM > TO */
-            GOTO_INFO(getStartDate, getStartDate, INFO_ERROR,
-                      phraseGetDef(PHRASE_INVALID_DATE_TIME), "");
+            infoMgrsetCommon(getEndDate, getEndDate);
+            infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                           phraseGetDef(PHRASE_INVALID_DATE_TIME), "");
             return;
         }
     }
@@ -500,7 +507,7 @@ STATE_DEF_ENTER(ExtractData) {
 
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_EXTRACTING_DATA),
               phraseGetDef(PHRASE_PLEASE_WAIT));
-    OOP_CALL(infoPage(), forceUpdate);
+    infoPage()->forceUpdate();
 
     STRING_TO_U64(rquery.refNum, &rrn);
     STRING_TO_U32(rquery.trace, &trace);
@@ -518,16 +525,18 @@ STATE_DEF_ENTER(ExtractData) {
     ExtractHandler* extracter = findExtracter(docType);
     if (!extracter) {
         LOG_TRACE("extracter not found");
-        GOTO_INFO(mainMenu, mainMenu, INFO_ERROR,
-                  phraseGetDef(PHRASE_TXN_NOT_FND), "");
+        infoMgrsetCommon(getEndDate, mainMenu);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_TXN_NOT_FND), "");
         return;
     }
     res.err = extracter->handler(&recData, &op);
     txnquery()->close(&op);
-    OOP_CALL(infoPage(), hide);
+    infoPage()->hide();
     if (res.err != ERR_DSC_OK) {
-        GOTO_INFO(mainMenu, mainMenu, INFO_ERROR,
-                  phraseGetDef(PHRASE_TXN_NOT_FND), "");
+        infoMgrsetCommon(mainMenu, mainMenu);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_TXN_NOT_FND), "");
         return;
     }
     SM_GOTO(mainMenu);
@@ -535,7 +544,9 @@ STATE_DEF_ENTER(ExtractData) {
 
 STATE_DEF_HANDLE(ExtractData, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        GOTO_INFO(prev, prev, INFO_ERROR, phraseGetDef(PHRASE_NO_RESULT), "");
+        infoMgrsetCommon(prev, prev);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_NO_RESULT), "");
     }
 }
 

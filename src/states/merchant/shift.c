@@ -13,6 +13,7 @@
 #include "ui/infoPage.h"
 #include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
+#include "infoMgr/infoMgr.h"
 
 static Menu*     shiftItemMenu;
 static lv_obj_t* shiftMenu;
@@ -125,9 +126,10 @@ STATE_DEF_HANDLE(ShiftEnable, KeypadEvent) {
     } else if (ev->key == KEY_ENTER) {
         if (EnMenu->idx) {
             if (terminalStg->shiftActive) {
-                GOTO_INFO(state->parent, state->parent, INFO_WARNING,
-                          phraseGetDef(PHRASE_SHIFT_IS_ACTIVE),
-                          phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
+                infoMgrsetCommon(state->parent, state->parent);
+                infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                               phraseGetDef(PHRASE_SHIFT_IS_ACTIVE),
+                               phraseGetDef(PHRASE_SHIFT_CLOSE_FIRST));
                 return;
             }
         }
@@ -155,8 +157,9 @@ STATE_DEF_ENTER(ShowCurrentShift) {
                   LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
-                  phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
 
@@ -179,9 +182,10 @@ static uint32_t sdate, stime;
 
 STATE_DEF_ENTER(CreateShift) {
     if (!terminalStg->shiftEnable) {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
-                  phraseGetDef(PHRASE_SHIFT_IS_DEACTIVE),
-                  phraseGetDef(PHRASE_SHIFT_EN_FIRST));
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SHIFT_IS_DEACTIVE),
+                       phraseGetDef(PHRASE_SHIFT_EN_FIRST));
         return;
     }
     if (!terminalStg->shiftActive) {
@@ -194,8 +198,9 @@ STATE_DEF_ENTER(CreateShift) {
                   LV_TEXT_ALIGN_CENTER);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
-                  phraseGetDef(PHRASE_SHIFT_IS_RUNNING), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SHIFT_IS_RUNNING), "");
     }
 }
 
@@ -210,8 +215,9 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
     if (ev->key == KEY_ESC) {
         SM_GOTO(state->parent);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-                  phraseGetDef(PHRASE_SHIFT_IS_ACTIVATED), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SHIFT_IS_ACTIVATED), "");
         terminalStg->shiftActive = true;
         ShiftData data;
         data.startDate = sdate;
@@ -239,8 +245,9 @@ STATE_DEF_ENTER(CloseShift) {
                   LV_TEXT_ALIGN_LEFT);
         LV_SHOW(shiftMenu);
     } else {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
-                  phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SHIFT_NO_ACTIVE), "");
     }
 }
 
@@ -261,11 +268,13 @@ STATE_DEF_HANDLE(CloseShift, KeypadEvent) {
         data.endTime             = etime;
         terminalStg->shiftActive = false;
         if (shifts()->insert(&data) == 0) {
-            GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-                      phraseGetDef(PHRASE_SHIFT_IS_CLOSED), "");
+            infoMgrsetCommon(state->parent, state->parent);
+            infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                           phraseGetDef(PHRASE_SHIFT_IS_CLOSED), "");
         } else {
-            GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                      phraseGetDef(PHRASE_SHIFT_CLOSE_ERR), "");
+            infoMgrsetCommon(state->parent, state->parent);
+            infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                           phraseGetDef(PHRASE_SHIFT_CLOSE_ERR), "");
         }
     }
 }
@@ -280,8 +289,9 @@ STATE_DEF_ENTER(HandleReports) {
     LOG_DEBUG("shiftNum = %d", shiftNum);
     ShiftData data;
     if (shifts()->get(shiftNum, &data) != 0) {
-        GOTO_INFO(state->parent, state->parent, INFO_WARNING,
-                  phraseGetDef(PHRASE_SHIFT_TARGET_NOT_FND), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SHIFT_TARGET_NOT_FND), "");
         return;
     }
     char sdt[24] = {0};

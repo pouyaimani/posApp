@@ -13,6 +13,7 @@
 #include "inputMgr/inputMgr.h"
 #include "cardHolder.h"
 #include "menuMgr/menuMgr.h"
+#include "infoMgr/infoMgr.h"
 
 static TerminalSettings* termStorage;
 
@@ -240,8 +241,9 @@ static SubState* getMaxAmnt;
 static void disMaxAmnt() { termStorage->maxAmntEnable = false; }
 
 STATE_DEF_ENTER(GetMaxAmnt) {
-    GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-              phraseGetDef(PHRASE_ACTIVATE_SUC), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                   phraseGetDef(PHRASE_ACTIVATE_SUC), "");
     termStorage->maxAmntEnable = true;
     snprintf(termStorage->maxAmnt, 13, "%s", inmgr()->input);
 }

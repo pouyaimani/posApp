@@ -14,6 +14,7 @@
 #include "ui/infoPage.h"
 #include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
+#include "infoMgr/infoMgr.h"
 
 static Cellular* cel;
 static Network*  net;
@@ -54,8 +55,9 @@ static void saveWifiInfo(State* parent, WifiApInfo_t* ap, const char* pwd) {
     Result_t res = network()->setRoute(NET_ROUTE_WIFI);
     if (res.err != ERR_DSC_OK) {
         LOG_TRACE("Unable to set device route.");
-        GOTO_INFO(parent, parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_CONNECTION_ERR), "");
+        infoMgrsetCommon(parent, parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_CONNECTION_ERR), "");
         return;
     }
     // settings()->terminal.netRoute = NET_ROUTE_WIFI;
@@ -69,12 +71,14 @@ STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
     } else {
         LOG_TRACE("Wifi: connect status = %d", ev->connectStatus);
         if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
-            GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-                      phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
+            infoMgrsetCommon(state->parent, state->parent);
+            infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                           phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
             saveWifiInfo(state->parent, selectedAp, inmgr()->input);
         } else {
-            GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                      phraseGetDef(PHRASE_CONNECTION_ERR), "");
+            infoMgrsetCommon(state->parent, state->parent);
+            infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                           phraseGetDef(PHRASE_CONNECTION_ERR), "");
         }
     }
 }
@@ -137,8 +141,9 @@ STATE_DEF_ENTER(WifiScan) {
         return;
     }
     if (wifi()->startScan() != WIFI_ERR_OK) {
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
     }
 }
 
@@ -180,14 +185,16 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
         HIDE_INFO();
         ui_menu_show(wifiMenu);
     } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
     }
 }
 
 STATE_DEF_HANDLE(WifiScan, TimeOutEvent) {
-    GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-              phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
+    infoMgrsetCommon(state->parent, state->parent);
+    infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                   phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
 }
 
 static void WifiScan(State* parent) {
@@ -215,9 +222,10 @@ STATE_DEF_ENTER(CellularLogin) {
               phraseGetDef(PHRASE_PLEASE_WAIT));
     OOP_CALL(cel, checkSimStatus);
     if (OOP_CALL(cel, getSimStatus) != SIM_STATUS_OK) {
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_CONNECTION_ERR),
-                  phraseGetDef(PHRASE_CHECK_SIM_STAT));
+        infoMgrsetCommon(STATE_IDLE, STATE_IDLE);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_CONNECTION_ERR),
+                       phraseGetDef(PHRASE_CHECK_SIM_STAT));
         return;
     }
     cel->startPPPlogin(NULL, NULL, NULL, NULL);
@@ -230,20 +238,23 @@ STATE_DEF_HANDLE(CellularLogin, CellEvent) {
         // Result_t res = network()->setRoute(NET_ROUTE_CELLULAR);
         // if (res.err != ERR_DSC_OK) {
         //     LOG_TRACE("Unable to set device route.");
-        //     GOTO_INFO(state->parent, state->parent, INFO_ERROR,
+        //     infoMgr()->run(state->parent, state->parent, INFO_ERROR,
         //               phraseGetDef(PHRASE_CONNECTION_ERR), "");
         //     return;
         // }
         // settings()->terminal.netRoute = NET_ROUTE_CELLULAR;
         // settings()->save();
-        GOTO_INFO(state->parent, state->parent, INFO_SUCCESS,
-                  phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                       phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
     } else if (ev->pppSt == CELL_PPP_FAILURE) {
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_CONNECTION_ERR), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_CONNECTION_ERR), "");
     } else if (ev->pppSt == CELL_PPP_INVALID) {
-        GOTO_INFO(state->parent, state->parent, INFO_ERROR,
-                  phraseGetDef(PHRASE_CONNECTION_ERR), "");
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_CONNECTION_ERR), "");
     }
 }
 

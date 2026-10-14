@@ -27,6 +27,7 @@
 #include "ui/digitalReceipt.h"
 #include "assets.h"
 #include "txnMgr.h"
+#include "infoMgr/infoMgr.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -339,7 +340,8 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (ev->key == KEY_FUNCTION) {
         SM_GOTO(getState(STATE_ID_SUPPORTER));
     } else if (ev->key == KEY_CLEAR) {
-        GOTO_DEV_INFO(state);
+        infoMgrsetCommon(state, state);
+        infoMgr()->runDevInfo(&infoFinishCtx);
     } else if (ev->key == KEY_1) {
         print();
     } else if (ev->key == KEY_2) {
@@ -372,8 +374,9 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
 
 STATE_DEF_HANDLE(Idle, MagEvent) {
     if (!settings()->terminal.isCfgDone) {
-        GOTO_INFO(STATE_IDLE, STATE_IDLE, INFO_ERROR,
-                  phraseGetDef(PHRASE_DEV_IS_NOT_CONFIGURED), "");
+        infoMgrsetCommon(STATE_IDLE, STATE_IDLE);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_DEV_IS_NOT_CONFIGURED), "");
         return;
     }
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);

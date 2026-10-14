@@ -79,7 +79,6 @@ static bool     recoveryNotified;
  * Reserve an additional byte for the amount string terminator.
  */
 static InputCfg inputCfg;
-static char     amountStr[LEN_MAX_AMOUNT + 1];
 
 /******************************************************************
  *                      Forward declarations
@@ -199,23 +198,14 @@ static bool saveAmount(TxnMgr* mgr) {
         return false;
     }
 
-    /* Bounded scan: reject missing terminators, signs, separators and overflow.
-     */
-    while (len < sizeof(amountStr) && amountStr[len] != '\0') {
-        unsigned char ch = (unsigned char)amountStr[len];
-        if (ch < '0' || ch > '9') {
-            return false;
-        }
-        unsigned digit = (unsigned)(ch - '0');
-        if (amount > (UINT64_MAX - digit) / 10) {
-            return false;
-        }
-        amount = amount * 10 + digit;
-        ++len;
+    if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
+        // infoMgr()->run(enterAmount, enterAmount, INFO_ERROR,
+        //           phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
+        return false;
     }
 
-    if (len == sizeof(amountStr) || len > LEN_MAX_AMOUNT ||
-        len < LEN_MIN_AMOUNT || amount == 0) {
+    if (!str2u64(inmgr()->input, &amount)) {
+        LOG_FATAL("Converting amount form string to u64 failed.");
         return false;
     }
 
@@ -243,7 +233,7 @@ static void onInputComplete(InputResult result, void* userData) {
         switch (mgr->step) {
         case TXN_STEP_AMOUNT:
             if (!saveAmount(mgr)) {
-                mgr->fail(TXN_MGR_ERR_INVALID_INPUT);
+                // err
                 return;
             }
             break;
@@ -297,8 +287,6 @@ static void onInputTimeout(InputResult result, void* userData) {
  ******************************************************************/
 
 static void enterAmount(void) {
-    memset(amountStr, 0, sizeof(amountStr));
-
     inputCfg = (InputCfg){.mode    = INMD_ENTER_AMOUNT,
                           .title   = phraseGetDef(PHRASE_AMOUNT),
                           .info    = phraseGetDef(PHRASE_TO_RIAL_1),
@@ -308,14 +296,6 @@ static void enterAmount(void) {
                           .cbData  = &__txnMgr};
 
     inmgr()->run(&inputCfg, onInputComplete, &__txnMgr);
-
-    /*
-     * Preserve the supplied InputMgr API ordering.
-     *
-     * This requires run() not to deliver completion synchronously
-     * before commit() installs the output buffer.
-     */
-    inmgr()->commit(amountStr, NULL, sizeof(amountStr));
 }
 
 static void enterBillId(void) {
