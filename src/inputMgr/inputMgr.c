@@ -76,10 +76,7 @@ STATE_DEF_ENTER(Input) {
     ui_show(__inputmgr.ctrl);
 }
 
-STATE_DEF_EXIT(Input) {
-    __inputmgr.ctrl->provider->stop();
-    ui_hide();
-}
+STATE_DEF_EXIT(Input) {}
 
 STATE_DEF_HANDLE(Input, KeypadEvent) {
     if (__inputmgr.ctrl->cfg.type != INPUT_TYPE_KEYPAD) {
@@ -98,11 +95,15 @@ STATE_DEF_HANDLE(Input, KeypadEvent) {
             snprintf(__inputmgr.oformated, __inputmgr.outlen, "%s",
                      __inputmgr.finput);
         }
+        __inputmgr.ctrl->provider->stop();
+        ui_hide();
         if (__inputmgr.cb) {
             __inputmgr.cb(res, __inputmgr.cbData);
         }
         return;
     } else if (res == INPUT_RES_CANCELED) {
+        __inputmgr.ctrl->provider->stop();
+        ui_hide();
         if (__inputmgr.cb) {
             __inputmgr.cb(res, __inputmgr.cbData);
         }
@@ -119,8 +120,20 @@ STATE_DEF_HANDLE(Input, PedEvent) {
     input.type      = INPUT_EV_PED;
     input.ped       = *ev;
     InputResult res = inputUpdate(__inputmgr.ctrl, &input);
-    if (__inputmgr.cb) {
-        __inputmgr.cb(res, __inputmgr.cbData);
+    if (res == INPUT_RES_FINISHED) {
+        __inputmgr.ctrl->provider->stop();
+        ui_hide();
+        if (__inputmgr.cb) {
+            __inputmgr.cb(res, __inputmgr.cbData);
+        }
+        return;
+    } else if (res == INPUT_RES_CANCELED) {
+        __inputmgr.ctrl->provider->stop();
+        ui_hide();
+        if (__inputmgr.cb) {
+            __inputmgr.cb(res, __inputmgr.cbData);
+        }
+        return;
     }
     ui_show(__inputmgr.ctrl);
 }

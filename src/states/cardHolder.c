@@ -19,6 +19,7 @@
 #include "menuMgr/menuMgr.h"
 #include "transactions/txnMgr.h"
 #include "transactions/txnConfig.h"
+#include "infoMgr/infoMgr.h"
 
 size_t                  LEN_CARDHOLDER_ITEMS;
 static Menu*            menu;
@@ -26,31 +27,7 @@ static Menu             chargeMenu;
 static CardHolderItems* activeItems[LEN_MAX_CARDHOLDER_ITEMS];
 static CardHolderItems* selected;
 
-static void transactionDone(TxnMgrResult result, TxnMgrStep step,
-                            TxnMgrError err, int respCode) {
-
-    if (result == TXN_MGR_RESULT_REJECT) {
-        /* Display approval or print the transaction receipt. */
-        return;
-    }
-
-    if (result == TXN_MGR_RESULT_SUCCESS) {
-        /* Display approval or print the transaction receipt. */
-        return;
-    }
-
-    if (err != TXN_MGR_ERR_NONE) {
-        /*
-         * Handle a local failure.
-         * respCode may still contain approval if persistence failed
-         * after receiving a successful host response.
-         */
-        return;
-    }
-
-    /* Handle the host decline in respCode. */
-    (void)step;
-}
+static void transactionDone(InfoResult res, void* arg) { SM_GOTO(STATE_IDLE); }
 
 static void onPurchase() { txnMgr()->run(&purchaseTxnCfg, transactionDone); }
 

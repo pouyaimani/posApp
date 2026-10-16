@@ -5,7 +5,6 @@
 #include "eventAll.h"
 #include "eventloop.h"
 #include "receipt/receiptTemplates.h"
-#include "txnFlow/txnPendingMgr.h"
 #include "record/txnRecs.h"
 #include "phrases/phrases.h"
 #include "ui/infoPage.h"

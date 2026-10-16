@@ -120,7 +120,7 @@ struct TxnFlow {
 
     TxnFlowStage stage;
 
-    TxnData data;
+    TxnData* data;
 
     void* userData;
 };

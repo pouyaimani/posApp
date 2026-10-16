@@ -71,7 +71,7 @@ Result_t buildReceipt(Receipt* rec, ReceiptData* data);
 
 ReceiptBuilder getReceiptBuilder(Receipt* rec, ReceiptData* data);
 
-Result_t showDigitalRec(const TxnData* data);
+Result_t showDigitalRec(TxnData* data);
 void     hideDigitalRec();
 
 #endif

@@ -10,38 +10,24 @@
 #include "ui/menu.h"
 #include "ui/infoPage.h"
 #include "txnFlow/txnFLow.h"
-#include "txnCommon.h"
 #include "menuMgr/menuMgr.h"
 #include "transactions/txnMgr.h"
 #include "transactions/txnConfig.h"
+#include "infoMgr/infoMgr.h"
+#include "supporter.h"
 
 /******************** Configuration sub state **********************/
 
 static Menu* cfgMenu;
 
-static void transactionDone(TxnMgrResult result, TxnMgrStep step,
-                            TxnMgrError err, int respCode) {
-
-    if (result == TXN_MGR_RESULT_REJECT) {
-        /* Display approval or print the transaction receipt. */
-        return;
+static void transactionDone(InfoResult res, void* arg) {
+    TxnFlowStatus* status = (TxnFlowStatus*)arg;
+    if (status->result == TXN_FLOW_SUCCESS && status->code == 0) {
+        settings()->save();
     }
-    if (result == TXN_MGR_RESULT_SUCCESS) {
-        /* Display approval or print the transaction receipt. */
-        return;
-    }
-
-    if (err != TXN_MGR_ERR_NONE) {
-        /*
-         * Handle a local failure.
-         * respCode may still contain approval if persistence failed
-         * after receiving a successful host response.
-         */
-        return;
-    }
-
-    /* Handle the host decline in respCode. */
-    (void)step;
+    State* nextState = ((Supporter*)(STATE_SUPPORTER))
+                           ->substate.supervisor->substate.configuration;
+    SM_GOTO(nextState);
 }
 
 static void onLogon() { txnMgr()->run(&logonTxnCfg, transactionDone); }

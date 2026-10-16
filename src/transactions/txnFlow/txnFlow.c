@@ -22,6 +22,8 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
         return;
     }
 
+    LOG_TRACE("Txn flow: on complete ...");
+
     TxnFlowStatus status = {
         .result = result, .stage = flow->stage, .code = code};
 
@@ -36,6 +38,8 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
     txnTraceInfo()->inc();
 
     txnFlowRelease(flow);
+
+    LOG_TRACE("Txn flow: respcode = %d", flow->data->core.respCode);
 
     if (done) {
         done(flow, &status);
@@ -73,9 +77,6 @@ bool txnFlowPrepare(TxnFlow* flow, State* owner, const TxnFlowConfig* cfg) {
 
     flow->owner = owner;
     flow->cfg   = cfg;
-
-    flow->data.core.mti     = cfg->mti;
-    flow->data.core.txnType = cfg->type;
 
     return true;
 }
@@ -161,7 +162,7 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
      * the final transaction identifiers and request data.
      */
     if (flow->cfg->compose) {
-        int rc = flow->cfg->compose(&flow->data);
+        int rc = flow->cfg->compose(flow->data);
 
         if (rc != ERR_OK) {
             complete(flow, TXN_FLOW_FAILED, rc);
@@ -224,10 +225,12 @@ static int8_t onSent(NthTransaction* tx, void* ctx) {
 
 static int8_t onReceive(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
+    LOG_TRACE("Txn flow: on Receive ...");
 
     TxnFlow* flow = ctx;
     flow->stage   = TXN_STAGE_PARSING;
     int rc        = flow->cfg->parse(flow, &tx->rxBuffer);
+    LOG_TRACE("Txn flow: respcode = %d", flow->data->core.respCode);
     complete(flow, rc == ERR_NOK ? TXN_FLOW_FAILED : TXN_FLOW_SUCCESS, rc);
     return 0;
 }

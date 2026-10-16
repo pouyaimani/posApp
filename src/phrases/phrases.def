@@ -236,6 +236,10 @@ X(PHRASE_OFF_RANGE              ,   "بازه خاموشی"                     
 )
 X(PHRASE_INVALID_INPUT              ,   "ورودی نا معتبر است"                                     ,   "wage"
 )
+X(PHRASE_TXN_REJECTED              ,   "تراکنش رد شد"                                     ,   "wage"
+)
+X(PHRASE_TXN_CANCELLED              ,   "تراکنش لغو شد"                                     ,   "wage"
+)
 /**********************************************************************
  *
  *                              Shift

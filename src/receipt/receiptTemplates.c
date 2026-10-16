@@ -823,14 +823,15 @@ void createDigitalRec() {
     ui_receipt_create(&digitalReceipt, &header, &details, &buttons);
 }
 
-static void DigRecfillCommon(const TxnData* data) {
+static void DigRecfillCommon(TxnData* data) {
     uint32_t idate, itime;
-    unpackDateTime(&data->dateTime, &idate, &itime);
+    // LOG_DEBUG("dt = %llu", data->dateTime);
+    uint64_t dt = data->dateTime;
+    unpackDateTime(&dt, &idate, &itime);
     DEFINE_STRING(dateStr, 24);
     DEFINE_STRING(timeStr, 24);
     dateToJalaliStr(idate, dateStr, sizeof(dateStr));
     timeToStr(itime, timeStr, sizeof(timeStr));
-
     LOG_TRACE("packed dt = %llu, date = %lu, time = %lu, date str "
               "= %s, time str = %s",
               data->dateTime, idate, itime, dateStr, timeStr);
@@ -841,13 +842,11 @@ static void DigRecfillCommon(const TxnData* data) {
     header.statusTitle =
         phraseGetDef(data->core.respCode == 0 ? PHRASE_SUCCESSFUL_TXN
                                               : PHRASE_UNSUCCESSFUL_TXN);
-
     details.count = 3;
     DEFINE_STRING(bin, LEN_MAX_BIN + 1);
     extractBin(data->core.pan, bin, sizeof(bin), LEN_MAX_BIN);
     DEFINE_STRING(maskedPan, LEN_MAX_PAN + 1);
     maskPan(data->core.pan, maskedPan, sizeof(maskedPan));
-
     DEFINE_STRING(refTrace, 64);
     snprintf(refTrace, sizeof(refTrace), "%llu - %llu", data->core.rrn,
              data->core.trace);
@@ -946,8 +945,15 @@ static int8_t digRecBuildBalance(const TxnData* data) {
     return ERR_OK;
 }
 
-Result_t showDigitalRec(const TxnData* data) {
+Result_t showDigitalRec(TxnData* data) {
+    /* After checking data for NULL: */
+    LOG_TRACE("DigitalRec: before initialization; data=%p, pan buffer=%p",
+              (void*)data, (void*)data->core.pan);
+
     CALL_ONCE(createDigitalRec(););
+
+    LOG_TRACE("DigitalRec: after initialization; data=%p, pan buffer=%p",
+              (void*)data, (void*)data->core.pan);
     DigRecfillCommon(data);
     DigitalReceiptBuilder builder = NULL;
     switch (data->core.txnType) {

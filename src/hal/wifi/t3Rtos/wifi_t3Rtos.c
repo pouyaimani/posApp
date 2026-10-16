@@ -53,7 +53,9 @@ static void filterEmptySSID(WifiAPInfo* wifiApInfo, u32* num) {
     memcpy(tempInfo, wifiApInfo, sizeof(WifiAPInfo) * tempNum);
 
     for (i = 0; i < tempNum; i++) {
+        LOG_TRACE("before encoding = %s", tempInfo[i].mSsid);
         libEncodeSsid(tempInfo[i].mSsid, sizeof(tempInfo[i].mSsid));
+        LOG_TRACE("after encoding = %s", tempInfo[i].mSsid);
         if (strlen(tempInfo[i].mSsid) > 0 && tempInfo[i].mSecMode != 0) {
             memcpy(&wifiApInfo[j], &tempInfo[i], sizeof(WifiAPInfo));
             j++;

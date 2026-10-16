@@ -7,6 +7,7 @@
 #include "oop.h"
 #include "state.h"
 #include "txnFlow/txnFlow.h"
+#include "infoMgr/infoMgr.h"
 
 typedef enum {
     TXN_STEP_IDLE = 0,
@@ -54,6 +55,7 @@ typedef enum {
 /* Manager-level errors; step handlers may also pass their own codes. */
 typedef enum {
     TXN_MGR_ERR_NONE = 0,
+    TXN_MGR_ERR_RESP_CODE,
     TXN_MGR_ERR_INPUT,
     TXN_MGR_ERR_CANCELED,
     TXN_MGR_ERR_TIMEOUT,
@@ -66,14 +68,23 @@ typedef enum {
     TXN_MGR_ERR_COMMUNICATION
 } TxnMgrError;
 
+typedef struct {
+    TxnMgrResult   result;
+    TxnMgrStep     step;
+    TxnMgrError    err;
+    TxnFlowStatus* flowStatus;
+    bool           digitalRec;
+    TxnData*       data;
+    InfoDone       onDone;
+} TxnResultHandle;
+
 /* No valid host response was received. */
 #define TXN_MGR_RESP_NONE (-1)
 
 typedef void (*TxnMgrSuccessCb)(void);
 typedef void (*TxnMgrFailureCb)(TxnMgrStep step, int code);
 
-typedef void (*TxnMgrDoneCb)(TxnMgrResult result, TxnMgrStep step,
-                             TxnMgrError err, int respCode);
+typedef void (*TxnMgrDoneCb)(TxnResultHandle handle);
 
 typedef struct {
     TxnFlowConfig*  txnFlowCfg;
@@ -84,13 +95,15 @@ typedef struct {
 OOP_CLASS(TxnMgr) {
     TxnMgrCfg config;
 
-    TxnMgrDoneCb done;
+    InfoDone done;
 
     State*  smState;
     TxnData data;
 
-    TxnFlow*   flow;
-    TxnMgrStep step;
+    TxnFlow* flow;
+
+    TxnFlowStatus flowStatus;
+    TxnMgrStep    step;
 
     TxnMgrResult result;
     TxnMgrStep   completedStep;
@@ -103,7 +116,7 @@ OOP_CLASS(TxnMgr) {
     bool active;
     bool stepStarted;
 
-    bool (*run)(TxnMgrCfg* cfg, TxnMgrDoneCb done);
+    bool (*run)(TxnMgrCfg* cfg, InfoDone done);
 
     /*
      * Called after the current step succeeds.
@@ -142,5 +155,7 @@ OOP_CLASS(TxnMgr) {
 };
 
 TxnMgr* txnMgr(void);
+
+void txnResultHandle(TxnResultHandle handle);
 
 #endif

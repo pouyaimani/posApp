@@ -19,6 +19,7 @@
  * - Implement unfinished step templates before enabling their table entries.
  */
 #include "txnMgr.h"
+#include "logger.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -28,27 +29,10 @@
 #include "ui/infoPage.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
-
-#define RECOVERY_TXN_DATA_ADDR "/mtd0/txn_rec"
-#define TAG_PENDING_TXN        0x0501
-
-extern const TxnFlowConfig settlementTxnFlowCfg;
-extern const TxnFlowConfig reverseTxnFlowCfg;
-
-/*
- * Recovery uses separate storage from the new transaction.
- *
- * __txnMgr.data and __txnMgr.flow belong to the new operation.
- * pendingData and recoveryFlow belong to the older operation.
- */
-static TxnData pendingData;
-static TxnFlow recoveryFlow;
+#include "infoMgr/infoMgr.h"
 
 /* True only while the manager is waiting for recovery completion. */
-static bool recoveryActive;
-
-static const DataDescriptor pendingTxnDsc[] = {
-    DSC_BIN_ID(TAG_PENDING_TXN, pendingData)};
+extern bool recoveryActive;
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -58,27 +42,25 @@ static TxnFlow __flow;
 
 /* Snapshot configuration; caller may release its configuration structure. */
 static TxnFlowConfig operationCfg;
-static TxnFlowConfig recoveryCfg;
 
 /* Guard fallback handling after a synchronous completion starts another run. */
-static uint64_t operationId;
-static bool     communicationNotified;
-static bool     recoveryNotified;
+uint64_t    operationId;
+static bool communicationNotified;
+extern bool recoveryNotified;
+
+/*
+ * Recovery uses separate storage from the new transaction.
+ *
+ * __txnMgr.data and __txnMgr.flow belong to the new operation.
+ * pendingData and recoveryFlow belong to the older operation.
+ */
+extern TxnData pendingData;
+extern TxnFlow recoveryFlow;
 
 /* All manager entry points and provider callbacks must be serialized.
  * Provider cancellation and stale-event filtering remain provider contracts.
  * See TODO comments before enabling the unimplemented transaction steps.
  */
-
-/*
- * Persistent input configuration and output storage.
- *
- * The configuration remains valid while InputMgr is running, even if
- * InputMgr retains its pointer rather than copying the structure.
- *
- * Reserve an additional byte for the amount string terminator.
- */
-static InputCfg inputCfg;
 
 /******************************************************************
  *                      Forward declarations
@@ -88,20 +70,71 @@ static void executeStep(void);
 void        settleDone(TxnFlow* flow, const TxnFlowStatus* status);
 void        reverseDone(TxnFlow* flow, const TxnFlowStatus* status);
 
-static void enterAmount(void);
-static void enterBillId(void);
-static void enterPaymentId(void);
-static void selectOperator(void);
-static void enterChargeAmount(void);
-static void enterPhone(void);
-static void enterPin(void);
-static void checkPending(void);
-static void communication(void);
+void enterAmount(void);
+void enterBillId(void);
+void enterPaymentId(void);
+void selectOperator(void);
+void enterChargeAmount(void);
+void enterPhone(void);
+void enterPin(void);
+void checkPending(void);
+void communication(void);
 
-static void onInputComplete(InputResult result, void* userData);
-static void onInputTimeout(InputResult result, void* userData);
+void onInputComplete(InputResult result, void* userData);
+void onInputTimeout(InputResult result, void* userData);
 
-static void complete(TxnMgrResult result, TxnMgrError err, int respCode);
+void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status);
+
+Error_t pendingLoad(void);
+
+void checkPending(void);
+
+/*
+ * Persist a complete record.
+ *
+ * Restore the in-memory record if saving fails.
+ * Atomicity of the on-disk write remains the storage layer's
+ * responsibility.
+ */
+Error_t pendingSave(const TxnData* data);
+
+/*
+ * Store a transaction with a new recovery status.
+ *
+ * Update the caller's status only after persistence succeeds.
+ * Do not overwrite the record while recovery is in progress.
+ */
+Error_t pendingUpdate(TxnStatus status, TxnData* data);
+
+/*
+ * Record a new transaction requiring reversal if communication
+ * does not reach the appropriate final outcome.
+ *
+ * Call only after the pending step has resolved the older record.
+ */
+Error_t pendingNew(TxnData* data);
+
+/*
+ * Change only the status of the persisted record.
+ *
+ * Load first so a status change cannot accidentally save an
+ * uninitialized or stale transaction after a restart.
+ */
+Error_t pendingMark(TxnStatus status);
+/*
+ * Explicitly clear the recovery record.
+ *
+ * Use only when the application knows recovery is no longer needed.
+ * Never reset merely because recovery communication failed.
+ */
+Error_t pendingReset(void);
+
+/*
+ * Check persisted recovery state without starting communication.
+ *
+ * The boolean output is valid only when ERR_OK is returned.
+ */
+Error_t pendingCheck(bool* hasPending);
 
 /******************************************************************
  *                      Transaction definitions
@@ -114,7 +147,8 @@ static void complete(TxnMgrResult result, TxnMgrError err, int respCode);
  * fail(code). Internal steps do not require separate State objects.
  */
 static const TxnMgrStep purchaseSteps[] = {
-    TXN_STEP_AMOUNT, TXN_STEP_PIN, TXN_STEP_PENDING, TXN_STEP_COMMUNICATION};
+    TXN_STEP_AMOUNT, TXN_STEP_PIN, TXN_STEP_PENDING, TXN_STEP_COMMUNICATION,
+    TXN_STEP_PENDING};
 
 static const TxnMgrStep balanceSteps[] = {TXN_STEP_PIN, TXN_STEP_COMMUNICATION};
 
@@ -131,6 +165,7 @@ static const TxnMgrStep topupSteps[] = {
     TXN_STEP_PIN,      TXN_STEP_PENDING,       TXN_STEP_COMMUNICATION};
 
 static const TxnMgrStep configSteps[] = {TXN_STEP_COMMUNICATION};
+static const TxnMgrStep logonSteps[]  = {TXN_STEP_COMMUNICATION};
 
 typedef struct {
     TxnType           type;
@@ -146,7 +181,8 @@ static const TxnDefinition definitions[] = {
     TXN_DEFINITION(TXN_BILL, billSteps),
     TXN_DEFINITION(TXN_VOUCHER, voucherSteps),
     TXN_DEFINITION(TXN_TOPUP, topupSteps),
-    TXN_DEFINITION(TXN_CFG, configSteps)};
+    TXN_DEFINITION(TXN_CFG, configSteps),
+    TXN_DEFINITION(TXN_LOGON, logonSteps)};
 
 /*
  * Return the definition for a supported transaction.
@@ -160,498 +196,6 @@ static const TxnDefinition* findDefinition(TxnType type) {
     }
 
     return NULL;
-}
-
-/******************************************************************
- *                      Input result handling
- ******************************************************************/
-
-/*
- * Recognize only input steps currently connected to these callbacks.
- *
- * Extend this function when the remaining input handlers are
- * implemented and connected to onInputComplete().
- *
- * This is a step guard, not protection against callbacks belonging
- * to an older transaction. InputMgr must stop delivering old events
- * before a new transaction starts.
- */
-static bool isInputStep(const TxnMgr* mgr) {
-    if (!mgr || !mgr->active || !mgr->stepStarted) {
-        return false;
-    }
-
-    return mgr->step == TXN_STEP_AMOUNT || mgr->step == TXN_STEP_PIN;
-}
-
-/*
- * Validate and store the amount before advancing to PIN.
- *
- * The minimum-length rule preserves the existing behavior.
- * Add transaction-specific numeric limits here when available.
- */
-static bool saveAmount(TxnMgr* mgr) {
-    uint64_t amount = 0;
-    size_t   len    = 0;
-
-    if (!mgr) {
-        return false;
-    }
-
-    if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
-        // infoMgr()->run(enterAmount, enterAmount, INFO_ERROR,
-        //           phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
-        return false;
-    }
-
-    if (!str2u64(inmgr()->input, &amount)) {
-        LOG_FATAL("Converting amount form string to u64 failed.");
-        return false;
-    }
-
-    /* TODO: Apply numeric minimum/maximum rules for your payment protocol. */
-    mgr->data.core.amount = amount;
-    return true;
-}
-
-/*
- * Handle completion from the currently active input provider.
- *
- * InputMgr must commit its output buffer before invoking this
- * callback. Its provider cleanup must also permit starting another
- * input operation from next().
- */
-static void onInputComplete(InputResult result, void* userData) {
-    TxnMgr* mgr = userData;
-
-    if (!isInputStep(mgr)) {
-        return;
-    }
-
-    switch (result) {
-    case INPUT_RES_FINISHED:
-        switch (mgr->step) {
-        case TXN_STEP_AMOUNT:
-            if (!saveAmount(mgr)) {
-                // err
-                return;
-            }
-            break;
-
-        case TXN_STEP_PIN:
-            /*
-             * PIN processing belongs to the PED provider.
-             * Do not copy plaintext PIN input into transaction data.
-             *
-             * TODO:
-             * Confirm that INPUT_RES_FINISHED means the required
-             * PED result is ready for transaction composition.
-             */
-            break;
-
-        default:
-            return;
-        }
-
-        mgr->next();
-        return;
-
-    case INPUT_RES_CANCELED:
-        mgr->fail(TXN_MGR_ERR_CANCELED);
-        return;
-
-    default:
-        /* Processing notifications do not complete the step. */
-        return;
-    }
-}
-
-/*
- * Report timeout through the same failure path as other errors.
- * The application's onFailure callback owns result navigation.
- */
-static void onInputTimeout(InputResult result, void* userData) {
-    TxnMgr* mgr = userData;
-
-    (void)result;
-
-    if (!isInputStep(mgr)) {
-        return;
-    }
-
-    mgr->fail(TXN_MGR_ERR_TIMEOUT);
-}
-
-/******************************************************************
- *                         Input steps
- ******************************************************************/
-
-static void enterAmount(void) {
-    inputCfg = (InputCfg){.mode    = INMD_ENTER_AMOUNT,
-                          .title   = phraseGetDef(PHRASE_AMOUNT),
-                          .info    = phraseGetDef(PHRASE_TO_RIAL_1),
-                          .maxLen  = LEN_MAX_AMOUNT,
-                          .timeout = BACK_IDLE_TMO,
-                          .tocb    = onInputTimeout,
-                          .cbData  = &__txnMgr};
-
-    inmgr()->run(&inputCfg, onInputComplete, &__txnMgr);
-}
-
-static void enterBillId(void) {
-    /*
-     * TODO:
-     * Start numeric input for the bill identifier.
-     * Bind output to the appropriate TxnData bill field.
-     *
-     * On completion:
-     *   - Validate the bill identifier.
-     *   - Save the validated value.
-     *   - Call next() on success or fail(code) on failure.
-     *
-     * Connect cancellation and timeout to fail().
-     *
-     * The current TxnData bill layout and validation declarations
-     * are needed to implement this step.
-     */
-}
-
-static void enterPaymentId(void) {
-    /*
-     * TODO:
-     * Start numeric input for the payment identifier.
-     * Bind output to the appropriate TxnData payment field.
-     *
-     * On completion:
-     *   - Validate the payment identifier with the saved bill ID.
-     *   - Extract and validate the bill amount.
-     *   - Store identifiers and mgr->data.core.amount.
-     *   - Call next() on success or fail(code) on failure.
-     *
-     * Connect cancellation and timeout to fail().
-     */
-}
-
-static void selectOperator(void) {
-    /*
-     * TODO:
-     * Open the operator selection menu.
-     * Store the selected operator in the appropriate TxnData field.
-     *
-     * Call next() after a valid selection.
-     * Call fail(code) on cancellation, timeout, or menu failure.
-     *
-     * The menu API and operator data definitions are needed here.
-     */
-}
-
-static void enterChargeAmount(void) {
-    /*
-     * TODO:
-     * Show the selected operator's supported charge amounts.
-     * Support custom amount input if the operator allows it.
-     *
-     * Validate the selected amount and store it in transaction data,
-     * including any operator-specific product or denomination field.
-     *
-     * Call next() on success or fail(code) on failure.
-     */
-}
-
-static void enterPhone(void) {
-    /*
-     * TODO:
-     * Start phone-number input.
-     * Validate and normalize the number using project rules.
-     * Store it in the appropriate TxnData field.
-     *
-     * Call next() on success.
-     * Call fail(code) on invalid input, cancellation, or timeout.
-     */
-}
-
-static void enterPin(void) {
-    /*
-     * Amount validation belongs to the amount step.
-     * Balance and other transactions may reach PIN without amount
-     * input, so do not inspect the previous input buffer here.
-     */
-    inputCfg = (InputCfg){.type    = INPUT_TYPE_PED,
-                          .mode    = INMD_ENTER_PIN,
-                          .title   = phraseGetDef(PHRASE_CARD_PIN),
-                          .info    = phraseGetDef(PHRASE_BY_CUSTOMER),
-                          .maxLen  = LEN_MAX_CARD_PIN,
-                          .timeout = BACK_IDLE_TMO,
-                          .tocb    = onInputTimeout,
-                          .cbData  = &__txnMgr};
-
-    /*
-     * TODO:
-     * Supply the balance fee message here if required.
-     * Keep any dynamically formatted message valid for the complete
-     * lifetime of the input screen.
-     */
-
-    inmgr()->run(&inputCfg, onInputComplete, &__txnMgr);
-}
-
-/******************************************************************
- *                  Pending transaction persistence
- ******************************************************************/
-
-static bool pendingRequired(const TxnData* data) {
-    return data && (data->status == TXN_STATUS_PENDING_REVERSE ||
-                    data->status == TXN_STATUS_PENDING_SETTLEMENT);
-}
-
-/*
- * Load the persisted record.
- *
- * Storage errors must not be interpreted as "nothing pending".
- * No caller may inspect pendingData after a failed load.
- */
-static Error_t pendingLoad(void) {
-    TxnData previous = pendingData;
-    Error_t err = storage()->load(pendingTxnDsc, ARRAY_COUNT(pendingTxnDsc),
-                                  RECOVERY_TXN_DATA_ADDR);
-    if (err != ERR_OK) {
-        /* A failed load may have partially changed descriptor destinations. */
-        pendingData = previous;
-    }
-    /* TODO: Map only a documented NOT_FOUND result to first-boot creation.
-     * Do not treat malformed/corrupt data or IO failure as an empty record.
-     * Validate stored enum/status values using the complete TxnStatus enum.
-     */
-    return err;
-}
-
-/*
- * Persist a complete record.
- *
- * Restore the in-memory record if saving fails.
- * Atomicity of the on-disk write remains the storage layer's
- * responsibility.
- */
-static Error_t pendingSave(const TxnData* data) {
-    if (!data) {
-        return ERR_NOK;
-    }
-
-    TxnData previous = pendingData;
-
-    pendingData = *data;
-
-    Error_t err = storage()->save(pendingTxnDsc, ARRAY_COUNT(pendingTxnDsc),
-                                  RECOVERY_TXN_DATA_ADDR);
-
-    if (err != ERR_OK) {
-        pendingData = previous;
-    }
-
-    return err;
-}
-
-/*
- * Store a transaction with a new recovery status.
- *
- * Update the caller's status only after persistence succeeds.
- * Do not overwrite the record while recovery is in progress.
- */
-static Error_t pendingUpdate(TxnStatus status, TxnData* data) {
-    if (!data || recoveryActive) {
-        return ERR_NOK;
-    }
-
-    TxnData updated = *data;
-    updated.status  = status;
-
-    Error_t err = pendingSave(&updated);
-
-    if (err == ERR_OK) {
-        data->status = status;
-    }
-
-    return err;
-}
-
-/*
- * Record a new transaction requiring reversal if communication
- * does not reach the appropriate final outcome.
- *
- * Call only after the pending step has resolved the older record.
- */
-static Error_t pendingNew(TxnData* data) {
-    if (!data || recoveryActive) {
-        return ERR_NOK;
-    }
-
-    /* Never replace an unresolved older record, even if a caller skipped
-     * TXN_STEP_PENDING or supplied an inconsistent flow configuration. */
-    Error_t err = pendingLoad();
-    if (err != ERR_OK) {
-        return err;
-    }
-    if (pendingRequired(&pendingData)) {
-        return ERR_NOK;
-    }
-    return pendingUpdate(TXN_STATUS_PENDING_REVERSE, data);
-}
-
-/*
- * Change only the status of the persisted record.
- *
- * Load first so a status change cannot accidentally save an
- * uninitialized or stale transaction after a restart.
- */
-static Error_t pendingMark(TxnStatus status) {
-    if (recoveryActive) {
-        return ERR_NOK;
-    }
-
-    Error_t err = pendingLoad();
-
-    if (err != ERR_OK) {
-        return err;
-    }
-
-    TxnData updated = pendingData;
-    updated.status  = status;
-
-    return pendingSave(&updated);
-}
-
-/*
- * Explicitly clear the recovery record.
- *
- * Use only when the application knows recovery is no longer needed.
- * Never reset merely because recovery communication failed.
- */
-static Error_t pendingReset(void) {
-    if (recoveryActive) {
-        return ERR_NOK;
-    }
-
-    TxnData empty = {0};
-
-    return pendingSave(&empty);
-}
-
-/*
- * Check persisted recovery state without starting communication.
- *
- * The boolean output is valid only when ERR_OK is returned.
- */
-static Error_t pendingCheck(bool* hasPending) {
-    if (!hasPending) {
-        return ERR_NOK;
-    }
-
-    *hasPending = false;
-
-    if (recoveryActive) {
-        return ERR_NOK;
-    }
-
-    Error_t err = pendingLoad();
-
-    if (err != ERR_OK) {
-        return err;
-    }
-
-    *hasPending = pendingRequired(&pendingData);
-
-    return ERR_OK;
-}
-
-/******************************************************************
- *                       Recovery completion
- ******************************************************************/
-
-/*
- * Confirm that this callback belongs to the recovery flow while
- * the manager is waiting on the pending step.
- *
- * The flow must deliver one terminal callback and stop its timers
- * and transport work before another recovery operation can start.
- */
-static bool isRecoveryCompletion(const TxnFlow* flow) {
-    TxnMgr* mgr = &__txnMgr;
-
-    return flow == &recoveryFlow && recoveryActive && mgr->active &&
-           mgr->stepStarted && mgr->step == TXN_STEP_PENDING;
-}
-
-/*
- * Finish recovery of the old transaction.
- *
- * Success must be persisted before the new transaction advances.
- * On failure, leave the pending record available for a later retry.
- *
- * This preserves the existing success rule:
- * TXN_FLOW_SUCCESS together with RESP_CODE_SUCESS.
- */
-static void recoveryDone(TxnFlow* flow, const TxnFlowStatus* status,
-                         TxnStatus expectedStatus, TxnStatus completedStatus) {
-
-    TxnMgr* mgr = &__txnMgr;
-
-    if (!isRecoveryCompletion(flow)) {
-        return;
-    }
-
-    /*
-     * The matching recovery callback must correspond to the
-     * operation selected from the stored record.
-     */
-    recoveryNotified = true;
-
-    if (status->result != TXN_FLOW_SUCCESS) {
-        recoveryActive = false;
-
-        mgr->fail(status->result == TXN_FLOW_TIMEOUT
-                      ? TXN_MGR_ERR_TIMEOUT
-                      : TXN_MGR_ERR_PENDING_FLOW);
-        return;
-    }
-
-    if (status->code != RESP_CODE_SUCESS) {
-        recoveryActive = false;
-
-        complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_NONE, status->code);
-        return;
-    }
-
-    /*
-     * Preserve the original transaction fields.
-     * Only its recovery status changes here.
-     */
-    TxnData completed = pendingData;
-    completed.status  = completedStatus;
-
-    Error_t err = pendingSave(&completed);
-
-    recoveryActive = false;
-
-    if (err != ERR_OK) {
-        complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_PENDING_SAVE,
-                 status->code);
-        return;
-    }
-
-    /*
-     * Recovery is complete and durably recorded.
-     * Continue the new transaction's sequence.
-     */
-    mgr->next();
-}
-
-void settleDone(TxnFlow* flow, const TxnFlowStatus* status) {
-    recoveryDone(flow, status, TXN_STATUS_PENDING_SETTLEMENT,
-                 TXN_STATUS_APPROVED);
-}
-
-void reverseDone(TxnFlow* flow, const TxnFlowStatus* status) {
-    recoveryDone(flow, status, TXN_STATUS_PENDING_REVERSE, TXN_STATUS_REVERSED);
 }
 
 /******************************************************************
@@ -675,20 +219,26 @@ static int beforeCommunicationSend(TxnFlow* flow) {
 
     if (!flow || flow != mgr->flow || !flow->cfg || !mgr->active ||
         mgr->step != TXN_STEP_COMMUNICATION || !mgr->stepStarted) {
+        LOG_TRACE("TxnMgr: before-send rejected: invalid or inactive flow");
         return ERR_NOK;
     }
 
     if (!flow->cfg->needSettlement) {
+        LOG_TRACE("TxnMgr: before-send: recovery persistence not required");
         return ERR_OK;
     }
 
-    Error_t err = mgr->pendingNew(&flow->data);
+    LOG_TRACE("TxnMgr: saving reversal record before transmission");
+    Error_t err = mgr->pendingNew(flow->data);
 
     if (err != ERR_OK) {
+        LOG_TRACE("TxnMgr: transmission blocked: pending save code=%d",
+                  (int)err);
         return TXN_MGR_ERR_PENDING_SAVE;
     }
 
     currentPendingSaved = true;
+    LOG_TRACE("TxnMgr: reversal record saved; transmission allowed");
 
     return ERR_OK;
 }
@@ -697,23 +247,34 @@ static int beforeCommunicationSend(TxnFlow* flow) {
  * Complete the current transaction after TxnFlow releases its
  * communication resources.
  */
-static void communicationDone(TxnFlow* flow, const TxnFlowStatus* status) {
+static void txnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
+    LOG_TRACE("Txn Mgr: txnFlowDone ...");
+    LOG_TRACE("Txn Mgr: respcode = %d", flow->data->core.respCode);
 
     TxnMgr* mgr = &__txnMgr;
 
     if (!flow || flow != mgr->flow || !mgr->active || !mgr->stepStarted ||
         mgr->step != TXN_STEP_COMMUNICATION) {
+        LOG_TRACE(
+            "TxnMgr: ignoring communication completion outside active step");
         return;
     }
 
     communicationNotified = true;
     if (!status) {
+        LOG_TRACE("TxnMgr: communication completion has no status");
         mgr->fail(ERR_NOK);
         return;
     }
-    mgr->data = flow->data;
+    LOG_TRACE("TxnMgr: communication result=%d, stage=%d, code=%d",
+              (int)status->result, (int)status->stage, status->code);
+
+    LOG_TRACE("mgr->data->core.pan = %s", mgr->data.core.pan);
+
+    mgr->flowStatus = *status;
 
     if (status->result != TXN_FLOW_SUCCESS) {
+        mgr->pendingReset();
         /* No valid host response: code may be a transport/parser error. */
         mgr->fail(status->result == TXN_FLOW_TIMEOUT
                       ? TXN_MGR_ERR_TIMEOUT
@@ -722,15 +283,18 @@ static void communicationDone(TxnFlow* flow, const TxnFlowStatus* status) {
     }
 
     if (status->code != RESP_CODE_SUCESS) {
+        LOG_TRACE("TxnMgr: host declined; response=%d", status->code);
         /*
          * A valid host decline is not a local manager error.
          * Preserve the existing recovery-record policy here.
          */
-        complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_NONE, status->code);
+        mgr->pendingReset();
+        complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_RESP_CODE, status);
         return;
     }
 
     if (currentPendingSaved) {
+        LOG_TRACE("TxnMgr: host approved; persisting settlement record");
         /*
          * Persist the approved response, including host identifiers,
          * before reporting success to the application.
@@ -744,105 +308,14 @@ static void communicationDone(TxnFlow* flow, const TxnFlowStatus* status) {
              * persistence failed. Preserve the response in mgr->data
              * and report the local error.
              */
-            complete(
-                TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_PENDING_SAVE,
-                status->code); /* Host approved; local persistence failed. */
-            return;
+            complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_PENDING_SAVE,
+                     status); /* Host approved; local persistence failed. */
             return;
         }
     }
 
+    LOG_TRACE("TxnMgr: communication completed successfully");
     mgr->next();
-}
-
-static void checkPending(void) {
-    TxnMgr* mgr = &__txnMgr;
-
-    if (!mgr->active || !mgr->stepStarted || mgr->step != TXN_STEP_PENDING ||
-        recoveryActive) {
-        return;
-    }
-
-    /*
-     * Fail closed on storage errors.
-     * An unreadable record may contain an unresolved transaction.
-     */
-    Error_t err = pendingLoad();
-
-    if (err != ERR_OK) {
-        mgr->fail(TXN_MGR_ERR_PENDING_LOAD);
-        return;
-    }
-
-    const TxnFlowConfig* cfg = NULL;
-
-    if (pendingData.status == TXN_STATUS_PENDING_REVERSE) {
-        cfg = &reverseTxnFlowCfg;
-    } else if (pendingData.status == TXN_STATUS_PENDING_SETTLEMENT) {
-        cfg = &settlementTxnFlowCfg;
-    } else {
-        /* No recovery is required; continue immediately. */
-        mgr->next();
-        return;
-    }
-
-    /*
-     * Prepare only the recovery flow.
-     * Do not reset or overwrite mgr->data or mgr->flow.
-     *
-     * Preserve the existing NULL-owner convention. Confirm it
-     * remains valid for your current TxnFlow implementation.
-     */
-    recoveryCfg            = *cfg;
-    recoveryCfg.done       = pendingData.status == TXN_STATUS_PENDING_REVERSE
-                                 ? reverseDone
-                                 : settleDone;
-    recoveryCfg.beforeSend = NULL;
-    /* Original fields must not be replaced by new-transaction composition.
-     * Recovery-specific build() must likewise preserve original identifiers. */
-    recoveryCfg.compose = NULL;
-
-    if (!txnFlowPrepare(&recoveryFlow, NULL, &recoveryCfg)) {
-        mgr->fail(TXN_MGR_ERR_PENDING_PREPARE);
-        return;
-    }
-
-    /*
-     * Restore original transaction fields after preparation.
-     * Override only the outgoing recovery operation identifiers.
-     */
-    recoveryFlow.data = pendingData;
-
-    recoveryFlow.data.core.mti     = cfg->mti;
-    recoveryFlow.data.core.txnType = cfg->type;
-
-    /*
-     * Static storage keeps the address valid if the flow retains
-     * the pointer for asynchronous communication.
-     */
-    static char recoveryIp[32];
-
-    normalizeIp(settings()->server.mainServerIp, recoveryIp,
-                sizeof(recoveryIp));
-
-    /*
-     * Set the flag before connecting because completion may be
-     * reported synchronously.
-     */
-    recoveryActive = true;
-
-    recoveryNotified   = false;
-    uint64_t startedId = operationId;
-    bool     started   = txnFlowConnect(&recoveryFlow, recoveryIp,
-                                        settings()->server.mainServerPort);
-
-    /* Some false returns invoke done synchronously, others do not.
-     * Never fail a new operation started from a completion callback. */
-    if (!started && operationId == startedId && !recoveryNotified &&
-        mgr->active && recoveryActive) {
-        recoveryActive = false;
-        mgr->fail(TXN_MGR_ERR_PENDING_FLOW);
-    }
 }
 
 /******************************************************************
@@ -853,6 +326,7 @@ static TxnFlowConfig communicationCfg;
 static char          communicationIp[32];
 
 static void communication(void) {
+    LOG_TRACE("TxnMgr: communication step entered");
     TxnMgr* mgr = &__txnMgr;
 
     currentPendingSaved = false;
@@ -863,29 +337,34 @@ static void communication(void) {
      */
     communicationCfg            = *mgr->config.txnFlowCfg;
     communicationCfg.beforeSend = beforeCommunicationSend;
-    communicationCfg.done       = communicationDone;
+    communicationCfg.done       = txnFlowDone;
 
     if (!txnFlowPrepare(mgr->flow, NULL, &communicationCfg)) {
+        LOG_TRACE("TxnMgr: communication flow preparation failed");
         mgr->fail(TXN_MGR_ERR_COMMUNICATION);
         return;
     }
-
-    /* Restore the data collected by the manager's input steps. */
-    mgr->flow->data = mgr->data;
-
-    mgr->flow->data.core.mti     = communicationCfg.mti;
-    mgr->flow->data.core.txnType = communicationCfg.type;
+    mgr->flow->data        = &mgr->data;
+    mgr->data.core.mti     = communicationCfg.mti;
+    mgr->data.core.txnType = communicationCfg.type;
 
     normalizeIp(settings()->server.mainServerIp, communicationIp,
                 sizeof(communicationIp));
 
+    LOG_TRACE("TxnMgr: starting transaction connection");
     communicationNotified = false;
     uint64_t startedId    = operationId;
     bool     started      = txnFlowConnect(mgr->flow, communicationIp,
                                            settings()->server.mainServerPort);
 
+    LOG_TRACE(
+        "TxnMgr: communication connect returned started=%d; operation=%llu",
+        (int)started, (unsigned long long)startedId);
+
     if (!started && operationId == startedId && !communicationNotified &&
         mgr->active && mgr->step == TXN_STEP_COMMUNICATION) {
+        LOG_TRACE(
+            "TxnMgr: communication start failed without completion callback");
         mgr->fail(TXN_MGR_ERR_COMMUNICATION);
     }
 }
@@ -927,6 +406,7 @@ static void onStep(TxnMgrStep step) {
     }
 
     /* Missing or unassigned handlers terminate the transaction. */
+    LOG_TRACE("TxnMgr: step missing or unimplemented; step=%d", (int)step);
     __txnMgr.fail(TXN_MGR_ERR_UNSUPPORTED_STEP);
 }
 
@@ -941,12 +421,19 @@ static void executeStep(void) {
 
     if (!mgr->active || mgr->stepStarted || !mgr->onStep ||
         mgr->stepIndex >= mgr->stepCount) {
+        LOG_TRACE("TxnMgr: dispatch skipped; active=%d, started=%d, index=%lu, "
+                  "count=%lu",
+                  (int)mgr->active, (int)mgr->stepStarted,
+                  (unsigned long)mgr->stepIndex, (unsigned long)mgr->stepCount);
         return;
     }
 
     mgr->step        = mgr->steps[mgr->stepIndex];
     mgr->stepStarted = true;
 
+    LOG_TRACE("TxnMgr: dispatch operation=%llu, step=%d, index=%lu",
+              (unsigned long long)operationId, (int)mgr->step,
+              (unsigned long)mgr->stepIndex);
     mgr->onStep(mgr->step);
 }
 
@@ -955,11 +442,13 @@ static void executeStep(void) {
  ******************************************************************/
 
 STATE_DEF_EXIT(TxnMgr) {
+    LOG_TRACE("TxnMgr: State exited; operation lifetime unchanged");
     (void)state;
     /* Temporary UI ownership changes do not finish the operation. */
 }
 
 STATE_DEF_ENTER(TxnMgr) {
+    LOG_TRACE("TxnMgr: State entered");
     (void)state;
 
     executeStep();
@@ -975,9 +464,18 @@ STATE_DEF_ENTER(TxnMgr) {
  * The existing manager state and active transaction are untouched.
  * TXN_STEP_IDLE means the requested transaction never started.
  */
-static bool rejectRun(TxnMgrDoneCb done, TxnMgrError err) {
+static bool rejectRun(InfoDone done, TxnMgrError err) {
+    LOG_TRACE("TxnMgr: run rejected; error=%d, callback=%d", (int)err,
+              done != NULL);
     if (done) {
-        done(TXN_MGR_RESULT_REJECT, TXN_STEP_IDLE, err, TXN_MGR_RESP_NONE);
+        TxnResultHandle resHandle = {.result     = TXN_MGR_RESULT_REJECT,
+                                     .step       = TXN_STEP_IDLE,
+                                     .err        = err,
+                                     .flowStatus = &__txnMgr.flowStatus,
+                                     .digitalRec = false,
+                                     .data       = &__txnMgr.data,
+                                     .onDone     = __txnMgr.done};
+        txnResultHandle(resHandle);
     }
 
     return false;
@@ -996,14 +494,17 @@ static bool rejectRun(TxnMgrDoneCb done, TxnMgrError err) {
  *
  * When several conditions are invalid, the first check wins.
  */
-static bool run(TxnMgrCfg* cfg, TxnMgrDoneCb done) {
+static bool run(TxnMgrCfg* cfg, InfoDone done) {
+    LOG_TRACE("TxnMgr: run requested. done cb address = %p", done);
     TxnMgr* mgr = &__txnMgr;
 
     if (!cfg) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_CONFIG");
         return rejectRun(done, TXN_MGR_ERR_NULL_CONFIG);
     }
 
     if (!cfg->txnFlowCfg) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_FLOW_CONFIG");
         return rejectRun(done, TXN_MGR_ERR_NULL_FLOW_CONFIG);
     }
 
@@ -1012,26 +513,34 @@ static bool run(TxnMgrCfg* cfg, TxnMgrDoneCb done) {
      * normally also has mgr->active set.
      */
     if (recoveryActive) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_RECOVERY_BUSY");
         return rejectRun(done, TXN_MGR_ERR_RECOVERY_BUSY);
     }
 
     if (mgr->active) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_BUSY");
         return rejectRun(done, TXN_MGR_ERR_BUSY);
     }
 
     if (!mgr->onStep) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NO_DISPATCHER");
         return rejectRun(done, TXN_MGR_ERR_NO_DISPATCHER);
     }
 
     if (!cfg->txnFlowCfg->build) {
+        LOG_TRACE(
+            "TxnMgr: run rejection reason: TXN_MGR_ERR_NO_BUILD_CALLBACK");
         return rejectRun(done, TXN_MGR_ERR_NO_BUILD_CALLBACK);
     }
 
     if (!cfg->txnFlowCfg->parse) {
+        LOG_TRACE(
+            "TxnMgr: run rejection reason: TXN_MGR_ERR_NO_PARSE_CALLBACK");
         return rejectRun(done, TXN_MGR_ERR_NO_PARSE_CALLBACK);
     }
 
     if (!mgr->flow) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_FLOW");
         return rejectRun(done, TXN_MGR_ERR_NULL_FLOW);
     }
 
@@ -1040,24 +549,32 @@ static bool run(TxnMgrCfg* cfg, TxnMgrDoneCb done) {
      * or has an unfinished communication stage.
      */
     if (mgr->flow->tx || mgr->flow->stage != TXN_STAGE_IDLE) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_FLOW_BUSY");
         return rejectRun(done, TXN_MGR_ERR_FLOW_BUSY);
     }
 
     if (recoveryFlow.tx || recoveryFlow.stage != TXN_STAGE_IDLE) {
+        LOG_TRACE(
+            "TxnMgr: run rejection reason: TXN_MGR_ERR_RECOVERY_FLOW_BUSY");
         return rejectRun(done, TXN_MGR_ERR_RECOVERY_FLOW_BUSY);
     }
 
     if (operationId == UINT64_MAX) {
+        LOG_TRACE(
+            "TxnMgr: run rejection reason: TXN_MGR_ERR_OPERATION_ID_EXHAUSTED");
         return rejectRun(done, TXN_MGR_ERR_OPERATION_ID_EXHAUSTED);
     }
 
     const TxnDefinition* def = findDefinition(cfg->txnFlowCfg->type);
 
     if (!def) {
+        LOG_TRACE("TxnMgr: run rejection reason: "
+                  "TXN_MGR_ERR_UNSUPPORTED_TRANSACTION");
         return rejectRun(done, TXN_MGR_ERR_UNSUPPORTED_TRANSACTION);
     }
 
     if (!def->steps || def->stepCount == 0) {
+        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_EMPTY_SEQUENCE");
         return rejectRun(done, TXN_MGR_ERR_EMPTY_SEQUENCE);
     }
 
@@ -1066,6 +583,8 @@ static bool run(TxnMgrCfg* cfg, TxnMgrDoneCb done) {
      * Do not silently replace an existing callback.
      */
     if (cfg->txnFlowCfg->beforeSend) {
+        LOG_TRACE(
+            "TxnMgr: run rejection reason: TXN_MGR_ERR_BEFORE_SEND_CONFLICT");
         return rejectRun(done, TXN_MGR_ERR_BEFORE_SEND_CONFLICT);
     }
 
@@ -1080,6 +599,8 @@ static bool run(TxnMgrCfg* cfg, TxnMgrDoneCb done) {
         }
 
         if (!hasPendingStep) {
+            LOG_TRACE("TxnMgr: run rejection reason: "
+                      "TXN_MGR_ERR_PENDING_STEP_REQUIRED");
             return rejectRun(done, TXN_MGR_ERR_PENDING_STEP_REQUIRED);
         }
     }
@@ -1120,6 +641,10 @@ static bool run(TxnMgrCfg* cfg, TxnMgrDoneCb done) {
      * The manager's State entry dispatches the first step.
      * Same-State restart handling still depends on your SM API.
      */
+    LOG_TRACE(
+        "TxnMgr: run accepted; operation=%llu, type=%d, steps=%lu, done=%d",
+        (unsigned long long)operationId, (int)operationCfg.type,
+        (unsigned long)mgr->stepCount, done != NULL);
     SM_GOTO(mgr->smState);
 
     return true;
@@ -1131,27 +656,35 @@ static bool run(TxnMgrCfg* cfg, TxnMgrDoneCb done) {
  * err describes a local manager failure.
  * respCode is a valid host response, or TXN_MGR_RESP_NONE.
  *
- * A host decline is FAILURE with err == TXN_MGR_ERR_NONE.
+ * A host decline is FAILURE with err == TXN_MGR_ERR_RESP_CODE.
  */
-static void complete(TxnMgrResult result, TxnMgrError err, int respCode) {
+void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
+    HIDE_INFO();
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->active) {
+        LOG_TRACE("TxnMgr: completion ignored: no active operation");
         return;
     }
 
     TxnMgrStep completedStep = mgr->step;
+    LOG_TRACE("TxnMgr: complete operation=%llu, result=%d, step=%d, error=%d, "
+              "response=%d",
+              (unsigned long long)operationId, (int)result, (int)completedStep,
+              (int)err, status->code);
 
     /*
      * Capture callbacks before notification: a callback may start
      * another transaction and replace the manager configuration.
      */
-    TxnMgrDoneCb    done      = mgr->done;
+    LOG_TRACE("mgr->data->core.pan = %s", mgr->data.core.pan);
+    LOG_TRACE("mgr Mgr: respcode = %d", mgr->data.core.respCode);
+    InfoDone        done      = mgr->done;
     TxnMgrSuccessCb onSuccess = mgr->config.onSuccess;
     TxnMgrFailureCb onFailure = mgr->config.onFailure;
 
     /* Retain the existing combined code for legacy callbacks. */
-    int code = err != TXN_MGR_ERR_NONE ? (int)err : respCode;
+    int code = err != TXN_MGR_ERR_RESP_CODE ? (int)err : status->code;
 
     mgr->result        = result;
     mgr->completedStep = completedStep;
@@ -1171,15 +704,26 @@ static void complete(TxnMgrResult result, TxnMgrError err, int respCode) {
      * Do not modify manager state after invoking a callback.
      */
     if (done) {
-        done(result, completedStep, err, respCode);
+        LOG_TRACE("TxnMgr: notifying done callback");
+        TxnResultHandle resHandle = {.result     = result,
+                                     .step       = completedStep,
+                                     .err        = err,
+                                     .flowStatus = status,
+                                     .digitalRec =
+                                         mgr->config.txnFlowCfg->digitalReceipt,
+                                     .data   = &mgr->data,
+                                     .onDone = done};
+        txnResultHandle(resHandle);
         return;
     }
 
     if (result == TXN_MGR_RESULT_SUCCESS) {
         if (onSuccess) {
+            LOG_TRACE("TxnMgr: notifying legacy success callback");
             onSuccess();
         }
     } else if (onFailure) {
+        LOG_TRACE("TxnMgr: notifying legacy failure callback");
         onFailure(completedStep, code);
     }
 }
@@ -1196,11 +740,14 @@ static bool next(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->active || !mgr->stepStarted) {
+        LOG_TRACE("TxnMgr: next rejected; active=%d, started=%d",
+                  (int)mgr->active, (int)mgr->stepStarted);
         return false;
     }
 
+    LOG_TRACE("TxnMgr: step succeeded; step=%d", (int)mgr->step);
     if (mgr->stepIndex + 1 >= mgr->stepCount) {
-        complete(TXN_MGR_RESULT_SUCCESS, TXN_MGR_ERR_NONE, RESP_CODE_SUCESS);
+        complete(TXN_MGR_RESULT_SUCCESS, TXN_MGR_ERR_NONE, &mgr->flowStatus);
 
         return true;
     }
@@ -1217,7 +764,8 @@ static bool next(void) {
 
 /* Local failure without a valid host response. */
 static void fail(TxnMgrError err) {
-    complete(TXN_MGR_RESULT_FAILURE, err, TXN_MGR_RESP_NONE);
+    LOG_TRACE("TxnMgr: failure reported; error=%d", (int)err);
+    complete(TXN_MGR_RESULT_FAILURE, err, &__txnMgr.flowStatus);
 }
 
 /******************************************************************
@@ -1225,6 +773,7 @@ static void fail(TxnMgrError err) {
  ******************************************************************/
 
 OOP_CTOR(TxnMgr) {
+    LOG_TRACE("TxnMgr: initializing singleton");
     self->smState = &__txnMgrState;
     self->flow    = &__flow;
 

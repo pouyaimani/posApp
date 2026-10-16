@@ -6,9 +6,7 @@
 #include "settings/settings.h"
 #include "sys/sys.h"
 #include "magReader/magReader.h"
-#include "txnFlow/txnPendingMgr.h"
 #include "states.h"
-#include "txnCommon.h"
 #include "iso/iso8583.h"
 #include "states/states.h"
 #include "states/supporter.h"
@@ -61,7 +59,7 @@ static const uint8_t isoFeildsBill[] = {ELEMENT_PAN,
 /******************************************************************
  *                Configuration Transaction config
  ******************************************************************/
-static const uint8_t isoFeilds[] = {
+static const uint8_t isoFeildsCfg[] = {
     ELEMENT_PROCESSING_CODE, ELEMENT_STAN, ELEMENT_TIME_LOCAL_TRANSACTION,
     ELEMENT_DATE_LOCAL_TRANSACTION, ELEMENT_NETWORK_INTL_ID,
     // ELEMENT_ACQUIRING_INSTITUTION_ID,
@@ -182,7 +180,6 @@ static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
                                            ELEMENT_SECURITY_CONTROL_INFO,
                                            ELEMENT_MAC};
 
-static uint64_t     amount;
 static TxnExtention data;
 static uint64_t     selectedAmnt;
 
@@ -227,6 +224,7 @@ int8_t txnStart(TxnFlowConfig* cfg, TxnFlow* flow, State* owner) {
 
 int composeCommon(TxnData* data) {
     magreader()->getPan(data->core.pan, sizeof(data->core.pan));
+    LOG_TRACE("data->core.pan = %s", data->core.pan);
     // DateTime* dt = OOP_CALL(sys(), getDateTime);
     // iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION,
     //                   (const DL_UINT8*)dt->time);
@@ -236,14 +234,14 @@ int composeCommon(TxnData* data) {
 }
 
 int buildCommon(TxnFlow* flow, ByteArray* ba) {
-    flow->data.core.processCode = flow->cfg->prcode;
-    flow->data.core.stan        = txnTraceInfo()->stan;
+    flow->data->core.processCode = flow->cfg->prcode;
+    flow->data->core.stan        = txnTraceInfo()->stan;
     return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
-                    flow->cfg->feildsCnt, &flow->data, ba);
+                    flow->cfg->feildsCnt, flow->data, ba);
 }
 
 int parseCommon(TxnFlow* flow, ByteArray* ba) {
-    return isoParse(flow->cfg->mti, flow->cfg->prcode, &flow->data, ba);
+    return isoParse(flow->cfg->mti, flow->cfg->prcode, flow->data, ba);
 }
 
 void showConnecting(TxnFlow* f) {
@@ -262,7 +260,7 @@ void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
                 State* onFail, bool showSucMsg) {
     LOG_TRACE("transaction result = %d", st->result);
     if (st->result == TXN_FLOW_SUCCESS) {
-        GOTO_TXN_RES(flow->cfg, &flow->data, st, onSuc, onFail);
+        GOTO_TXN_RES(flow->cfg, flow->data, st, onSuc, onFail);
         return;
     }
 
@@ -317,7 +315,7 @@ const TxnFlowConfig balanceTxnFlowCfg = {
 
     .feilds = isoFeildsBalance,
 
-    .feildsCnt = sizeof(isoFeilds),
+    .feildsCnt = sizeof(isoFeildsBalance),
 
     .compose = composeCommon,
 
@@ -336,7 +334,7 @@ const TxnMgrCfg balanceTxnCfg = {
 
 static int composeBill(TxnData* txnData) {
     composeCommon(txnData);
-    txnData->core.amount    = amount;
+    // txnData->core.amount    = amount;
     txnData->extention.bill = data.bill;
 }
 
@@ -352,7 +350,7 @@ const TxnFlowConfig billTxnFlowCfg = {
 
     .feilds = isoFeildsBill,
 
-    .feildsCnt = sizeof(isoFeilds),
+    .feildsCnt = sizeof(isoFeildsBill),
 
     .compose = composeBill,
 
@@ -388,9 +386,9 @@ const TxnFlowConfig cfgTxnFlowCfg = {
 
     .prcode = PRC_CFG,
 
-    .feilds = isoFeilds,
+    .feilds = isoFeildsCfg,
 
-    .feildsCnt = sizeof(isoFeilds),
+    .feildsCnt = sizeof(isoFeildsCfg),
 
     .needSettlement = false,
 
@@ -429,7 +427,7 @@ const TxnFlowConfig logOnTxnFlowCfg = {
 
     .feilds = isoFeildsLogon,
 
-    .feildsCnt = sizeof(isoFeilds),
+    .feildsCnt = sizeof(isoFeildsLogon),
 
     .needSettlement = false,
 
@@ -448,8 +446,8 @@ const TxnMgrCfg logonTxnCfg = {
  *
  **********************************************************************/
 static int composePurchase(TxnData* data) {
+    LOG_TRACE("Compose purchase ...");
     composeCommon(data);
-    data->core.amount = amount;
 }
 
 const TxnFlowConfig purchaseTxnFlowCfg = {
@@ -466,7 +464,7 @@ const TxnFlowConfig purchaseTxnFlowCfg = {
 
     .needSettlement = true,
 
-    .feildsCnt = sizeof(isoFeilds),
+    .feildsCnt = sizeof(isoFeildsPurchase),
 
     .compose = composePurchase,
 
@@ -489,7 +487,7 @@ static int composeReverse(TxnData* data) {
 
 int buildReverse(TxnFlow* flow, ByteArray* ba) {
     return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
-                    flow->cfg->feildsCnt, &flow->data, ba);
+                    flow->cfg->feildsCnt, flow->data, ba);
 }
 
 const TxnFlowConfig reverseTxnFlowCfg = {
@@ -504,7 +502,7 @@ const TxnFlowConfig reverseTxnFlowCfg = {
 
     .feilds = isoFeildsReverse,
 
-    .feildsCnt = sizeof(isoFeilds),
+    .feildsCnt = sizeof(isoFeildsReverse),
 
     .needSettlement = false,
 
@@ -532,7 +530,7 @@ static int composeSettle(TxnData* data) {
 
 int buildSettle(TxnFlow* flow, ByteArray* ba) {
     return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
-                    flow->cfg->feildsCnt, &flow->data, ba);
+                    flow->cfg->feildsCnt, flow->data, ba);
 }
 
 const TxnFlowConfig settlementTxnFlowCfg = {
@@ -547,7 +545,7 @@ const TxnFlowConfig settlementTxnFlowCfg = {
 
     .feilds = isoFeildsSettle,
 
-    .feildsCnt = sizeof(isoFeilds),
+    .feildsCnt = sizeof(isoFeildsSettle),
 
     .needSettlement = false,
 

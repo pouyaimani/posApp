@@ -6,6 +6,7 @@
 #include "error.h"
 #include "states/states.h"
 #include "ui/devInfoPage.h"
+#include "receipt/receiptTemplates.h"
 
 static InfoMgr __infomgr;
 
@@ -46,8 +47,11 @@ STATE_DEF_HANDLE(InfoMgr, KeypadEvent) {
     } else if (__infomgr.mode == INFO_MODE_DEV_INFO) {
         ui_dev_info_hide(devInfoPage);
         ui_dev_info_destroy(devInfoPage);
+    } else if (__infomgr.mode == INFO_MODE_DIGITAL_REC) {
+        hideDigitalRec();
     }
     if (__infomgr.finishCtx.done) {
+        LOG_TRACE("InfoMgr: calling done callback.");
         __infomgr.finishCtx.done(res, __infomgr.finishCtx.userData);
     }
 }
@@ -58,6 +62,8 @@ STATE_DEF_HANDLE(InfoMgr, TimeOutEvent) {
     } else if (__infomgr.mode == INFO_MODE_DEV_INFO) {
         ui_dev_info_hide(devInfoPage);
         ui_dev_info_destroy(devInfoPage);
+    } else if (__infomgr.mode == INFO_MODE_DIGITAL_REC) {
+        hideDigitalRec();
     }
     SM_GOTO(STATE_IDLE);
 }
@@ -79,12 +85,29 @@ static void runDevInfo(InfoFinishCtx* ctx) {
     ui_dev_info_show(devInfoPage);
     SM_GOTO(__infomgr.state);
 }
+static void runDigitalReceipt(InfoFinishCtx* ctx, TxnData* txnData) {
+    if (!ctx || !txnData) {
+        LOG_ERROR("InfoMgr: missing receipt context or transaction data");
+        return;
+    }
+
+    LOG_TRACE("InfoMgr: data=%p, pan buffer=%p", (void*)txnData,
+              (void*)txnData->core.pan);
+
+    __infomgr.finishCtx = *ctx;
+    __infomgr.mode      = INFO_MODE_DIGITAL_REC;
+
+    showDigitalRec(txnData);
+
+    SM_GOTO(__infomgr.state);
+}
 
 OOP_CTOR(InfoMgr) {
     self->state = MEM_ALLOC(sizeof(State));
     OOP_CALL_CTOR(State, self->state, NULL, "");
     self->run                         = run;
     self->runDevInfo                  = runDevInfo;
+    self->runDigitalReceipt           = runDigitalReceipt;
     self->state->vtable.enter         = STATE_ENTER(InfoMgr);
     self->state->vtable.handleKeypad  = STATE_HANDLE(InfoMgr, KeypadEvent);
     self->state->vtable.handleTimeout = STATE_HANDLE(InfoMgr, TimeOutEvent);
