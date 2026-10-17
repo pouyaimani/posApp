@@ -93,22 +93,34 @@ static void handleVoucherSerial(LtvStructInfo* tag, TxnData* txn) {
 }
 
 static void handleVoucherPin(LtvStructInfo* tag, TxnData* txn) {
+    if (!tag || !txn) {
+        LOG_TRACE("handleVoucherPin: rejected: tag or txn is NULL");
+        return;
+    }
+    TRACE_POINT;
     char          temp[128] = {0};
     int           pinLen    = 0;
     unsigned char pinTemp[64];
     unsigned char pinBytes[32];
     unsigned char pinData[32];
     unsigned int  outLen = 0;
+    TRACE_POINT;
     strcpy(temp, tag->data);
+    TRACE_POINT;
     pinLen = strlen(temp) / 2;
     memset(pinTemp, 0x00, sizeof(pinTemp));
     memset(pinBytes, 0x00, sizeof(pinBytes));
     memset(pinData, 0x00, sizeof(pinData));
+    TRACE_POINT;
     hexStringToBytes(temp, pinLen, pinTemp); // Pin
+    TRACE_POINT;
     pinLen /= 2;
     hex2data(pinBytes, pinTemp, pinLen);
+    TRACE_POINT;
     pedDecrypt(pinBytes, 16, pinData);
+    TRACE_POINT;
     strcpy(txn->extention.charge.chargePin, (const char*)pinData);
+    TRACE_POINT;
     LOG_TRACE("charge pin = %s", pinData);
 }
 
@@ -145,6 +157,7 @@ void decodeMerchantDesc(char* buffer, TxnData* txn) {
             break;
         case TAG_VOUCHER_SERIAL:
             handleVoucherSerial(&tags[i], txn);
+            break;
         case TAG_VOUCHER_PIN:
             handleVoucherPin(&tags[i], txn);
             break;
@@ -211,27 +224,50 @@ static int8_t setBit11(TxnData* data) {
     stan[LEN_MAX_STAN] = 0;
     LOG_TRACE("| Bit 11 - (Stan) | -> %s", stan);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
-    data->dateTime = OOP_CALL(sys(), getPackedDateTime);
     return ERR_OK;
 }
 static int8_t setBit12(TxnData* data) {
     (void)data;
-    DateTime* dt = OOP_CALL(sys(), getDateTime);
-    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION,
-                      (const DL_UINT8*)dt->time);
-    LOG_TRACE("| Bit 12 - (Time) | -> %s", dt->time);
-    data->dateTime = OOP_CALL(sys(), getPackedDateTime);
+    DEFINE_STRING(timeStr, 6 + 1);
+    if (data->dateTime == 0) {
+        LOG_TRACE(" Setting Bit 13: txn data has no date time information. "
+                  "setting current time.");
+        DateTime* dt = OOP_CALL(sys(), getDateTime);
+        memcpy(timeStr, dt->time, 6);
+    } else {
+        LOG_TRACE(" Setting Bit 13: txn data has date time information.");
+        uint64_t dt = data->dateTime;
+        uint32_t itime, idate;
+        unpackDateTime(&dt, &idate, &itime);
+        timeToRawStr(itime, timeStr, sizeof(timeStr));
+    }
+    iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION, (const DL_UINT8*)timeStr);
+    LOG_TRACE("| Bit 12 - (Time) | -> %s", timeStr);
     return ERR_OK;
 }
+
 static int8_t setBit13(TxnData* data) {
     (void)data;
-    DateTime* dt = OOP_CALL(sys(), getDateTime);
-    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION,
-                      (const DL_UINT8*)dt->date + 2);
-    LOG_TRACE("| Bit 13 - (Date) | -> %s", dt->date + 2);
-    data->dateTime = OOP_CALL(sys(), getPackedDateTime);
+    DEFINE_STRING(dateStr, 4 + 1);
+    if (data->dateTime == 0) {
+        LOG_TRACE(" Setting Bit 13: txn data has no date time information. "
+                  "setting current date.");
+        DateTime* dt = OOP_CALL(sys(), getDateTime);
+        memcpy(dateStr, dt->date + 2, 4);
+    } else {
+        LOG_TRACE(" Setting Bit 13: txn data has date time information.");
+        DEFINE_STRING(dateTmp, 12);
+        uint64_t dt = data->dateTime;
+        uint32_t itime, idate;
+        unpackDateTime(&dt, &idate, &itime);
+        dateToRawStr(idate, dateTmp, sizeof(dateTmp));
+        memcpy(dateStr, dateTmp + 4, 4);
+    }
+    iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION, (const DL_UINT8*)dateStr);
+    LOG_TRACE("| Bit 13 - (Date) | -> %s", dateStr);
     return ERR_OK;
 }
+
 static int8_t setBit22(TxnData* data) {
     (void)data;
     iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, "021");
@@ -410,7 +446,178 @@ static int8_t setMac(TxnData* data, uint8_t feild) {
 
 static int8_t setBit64(TxnData* data) { return setMac(data, ELEMENT_MAC); }
 
-static int8_t setBit90(TxnData* data) { return setMac(data, ELEMENT_MAC_2); }
+// static int8_t setBit90(TxnData* data) {
+//     DEFINE_STRING(mtistr, (LEN_MAX_MTI + 1));
+//     prependZerosInt(data->core.mti, LEN_MAX_MTI, mtistr, sizeof(mtistr));
+//     mtistr[LEN_MAX_MTI] = 0;
+
+//     DEFINE_STRING(stan, (LEN_MAX_STAN + 1));
+//     uint16_t istan = data->core.stan;
+//     prependZerosInt(istan, LEN_MAX_STAN, stan, sizeof(stan));
+//     stan[LEN_MAX_STAN] = 0;
+
+//     uint32_t date, time;
+//     uint64_t dateTime = data->dateTime;
+//     DEFINE_STRING(dtStr, 24);
+//     unpackDateTime(&dateTime, &date, &time);
+//     dateTimeToRawStr(date, time, dtStr, sizeof(dtStr));
+
+//     DEFINE_STRING(paddedIin, 12);
+//     if (strlen(settings()->terminal.acquirerIIN) > 0) {
+//         snprintf(paddedIin, sizeof(paddedIin), "%011s",
+//                  settings()->terminal.acquirerIIN);
+//     } else {
+//         snprintf(paddedIin, sizeof(paddedIin), "%s", "00000000000");
+//     }
+
+//     DEFINE_STRING(forwardingId, 12);
+//     snprintf(forwardingId, sizeof(forwardingId), "%s", "00000");
+//     memcpy(forwardingId, data->core.pan, 6);
+
+//     DEFINE_STRING(feild, 128);
+//     int idx = 0;
+//     memcpy(feild, mtistr, 4);
+//     idx += 4;
+//     memcpy(feild + idx, stan, LEN_MAX_STAN);
+//     idx += LEN_MAX_STAN;
+//     memcpy(feild + idx, dtStr + 4, 10);
+//     idx += 10;
+//     memcpy(feild + idx, paddedIin, 11);
+//     idx += 11;
+//     memcpy(feild + idx, forwardingId, 11);
+
+//     iso8583()->setStr(ELEMENT_ORIGINAL_DATA_ELEMENTS, (const
+//     DL_UINT8*)feild); LOG_TRACE("Bit 90 | (Original Data Elements): %s",
+//     feild); return ERR_OK;
+// }
+
+/*
+ * Format an institution ID as eleven numeric characters.
+ * Empty IDs are rejected; supply "00000000000" explicitly if the
+ * protocol permits an absent institution ID to be represented by zeros.
+ */
+static bool formatBit90Id(const char* source, char out[12]) {
+    if (!source) {
+        return false;
+    }
+
+    size_t length = 0;
+
+    while (source[length] != '\0') {
+        if (length >= 11 || source[length] < '0' || source[length] > '9') {
+            return false;
+        }
+
+        ++length;
+    }
+
+    if (length == 0) {
+        return false;
+    }
+
+    memset(out, '0', 11);
+    memcpy(out + 11 - length, source, length);
+    out[11] = '\0';
+
+    return true;
+}
+
+/*
+ * Set field 90 from the ORIGINAL transaction.
+ *
+ * data->core.mti must still contain the original MTI.
+ * data->core.stan must still contain the original STAN.
+ *
+ * Assumes dateTimeToRawStr() produces YYYYMMDDhhmmss.
+ * The resulting string is checked before extracting MMDDhhmmss.
+ *
+ * acquirerIin:  original field 32.
+ * forwardingId: original field 33.
+ */
+static int8_t setBit90(TxnData* data) {
+    if (!data) {
+        LOG_TRACE("Bit90: original transaction is NULL");
+        return ERR_NOK;
+    }
+
+    /* Validate before formatting; never truncate original identifiers. */
+    if ((uint64_t)data->core.stan > 999999ULL) {
+        LOG_TRACE("Bit90: original MTI or STAN exceeds field width");
+        return ERR_NOK;
+    }
+
+    char mti[5];
+    char stan[7];
+
+    if (snprintf(mti, sizeof(mti), "%04lu", (unsigned long)200) != 4 ||
+        snprintf(stan, sizeof(stan), "%06lu", (unsigned long)data->core.stan) !=
+            6) {
+        LOG_TRACE("Bit90: MTI or STAN formatting failed");
+        return ERR_NOK;
+    }
+
+    uint32_t date           = 0;
+    uint32_t time           = 0;
+    uint64_t packedDateTime = data->dateTime;
+
+    char dateTimeText[24] = {0};
+
+    unpackDateTime(&packedDateTime, &date, &time);
+    dateTimeToRawStr(date, time, dateTimeText, sizeof(dateTimeText));
+
+    /* Require exactly YYYYMMDDhhmmss before removing the year. */
+    for (size_t i = 0; i < 14; ++i) {
+        if (dateTimeText[i] < '0' || dateTimeText[i] > '9') {
+            LOG_TRACE("Bit90: invalid original date/time format");
+            return ERR_NOK;
+        }
+    }
+
+    if (dateTimeText[14] != '\0') {
+        LOG_TRACE("Bit90: original date/time must contain fourteen digits");
+        return ERR_NOK;
+    }
+
+    char acquiring[12];
+    char forwarding[12];
+
+    char* acquirerIin = strlen(settings()->terminal.acquirerIIN) != 0
+                            ? settings()->terminal.acquirerIIN
+                            : "000000000";
+
+    DEFINE_STRING(forwardingId, 6 + 1);
+    memcpy(forwardingId, data->core.pan, 6);
+
+    if (!formatBit90Id(acquirerIin, acquiring)) {
+        LOG_TRACE("Bit90: invalid original field 32");
+        return ERR_NOK;
+    }
+
+    if (!formatBit90Id(forwardingId, forwarding)) {
+        LOG_TRACE("Bit90: invalid original field 33");
+        return ERR_NOK;
+    }
+
+    char field[43];
+
+    memcpy(field, mti, 4);
+    memcpy(field + 4, stan, 6);
+    memcpy(field + 10, dateTimeText + 4, 10);
+    memcpy(field + 20, acquiring, 11);
+    memcpy(field + 31, forwarding, 11);
+
+    field[42] = '\0';
+
+    /*
+     * Uses your existing setter API.
+     * If setStr() returns a status, check and propagate its failure.
+     */
+    iso8583()->setStr(ELEMENT_ORIGINAL_DATA_ELEMENTS, (const DL_UINT8*)field);
+
+    LOG_TRACE("Bit 90 | (Original Data Elements): %s", field);
+
+    return ERR_OK;
+}
 
 static int8_t setBit128(TxnData* data) { return setMac(data, ELEMENT_MAC_2); }
 

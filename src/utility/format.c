@@ -123,6 +123,20 @@ void dateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {
              ss);
 }
 
+void dateTimeToRawStr(uint32_t date, uint32_t time, char* str, size_t size) {
+    char dt[24] = {0};
+    int  yy     = date / 10000;
+    int  tmp    = (date % 10000);
+    int  mm     = tmp / 100;
+    int  dd     = tmp % 100;
+
+    int hh  = time / 10000;
+    tmp     = (time % 10000);
+    int min = tmp / 100;
+    int ss  = tmp % 100;
+    snprintf(str, size, "%04d%02d%02d%02d%02d%02d", yy, mm, dd, hh, min, ss);
+}
+
 void dateTimeToStrJal(uint32_t date, uint32_t time, char* str, size_t size) {
     int year  = (int)(date / 10000U);
     int month = (int)((date / 100U) % 100U);
@@ -167,6 +181,14 @@ void dateToStr(uint32_t date, char* str, size_t size) {
     snprintf(str, size, "%04d/%02d/%02d", yy, mm, dd);
 }
 
+void dateToRawStr(uint32_t date, char* str, size_t size) {
+    int yy  = date / 10000;
+    int tmp = (date % 10000);
+    int mm  = tmp / 100;
+    int dd  = tmp % 100;
+    snprintf(str, size, "%04d%02d%02d", yy, mm, dd);
+}
+
 void dateToJalaliStr(uint32_t date, char* out, size_t size) {
     int yy  = date / 10000;
     int tmp = (date % 10000);
@@ -190,6 +212,14 @@ void timeToStr(uint32_t time, char* str, size_t size) {
     int min = tmp / 100;
     int ss  = tmp % 100;
     snprintf(str, size, "%02d:%02d:%02d", hh, min, ss);
+}
+
+void timeToRawStr(uint32_t time, char* str, size_t size) {
+    int hh  = time / 10000;
+    int tmp = (time % 10000);
+    int min = tmp / 100;
+    int ss  = tmp % 100;
+    snprintf(str, size, "%02d%02d%02d", hh, min, ss);
 }
 
 void shortDateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size) {

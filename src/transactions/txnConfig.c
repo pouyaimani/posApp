@@ -225,11 +225,7 @@ int8_t txnStart(TxnFlowConfig* cfg, TxnFlow* flow, State* owner) {
 int composeCommon(TxnData* data) {
     magreader()->getPan(data->core.pan, sizeof(data->core.pan));
     LOG_TRACE("data->core.pan = %s", data->core.pan);
-    // DateTime* dt = OOP_CALL(sys(), getDateTime);
-    // iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION,
-    //                   (const DL_UINT8*)dt->time);
-    // LOG_TRACE("| Bit 12 - (Time) | -> %s", dt->time);
-    // data->dateTime = OOP_CALL(sys(), getPackedDateTime);
+    data->dateTime = OOP_CALL(sys(), getPackedDateTime);
     return ERR_OK;
 }
 
@@ -332,12 +328,6 @@ const TxnMgrCfg balanceTxnCfg = {
  *
  **********************************************************************/
 
-static int composeBill(TxnData* txnData) {
-    composeCommon(txnData);
-    // txnData->core.amount    = amount;
-    txnData->extention.bill = data.bill;
-}
-
 const TxnFlowConfig billTxnFlowCfg = {
 
     TXN_FLOW_COMMON,
@@ -352,7 +342,7 @@ const TxnFlowConfig billTxnFlowCfg = {
 
     .feildsCnt = sizeof(isoFeildsBill),
 
-    .compose = composeBill,
+    .compose = composeCommon,
 
     .done = financeTxnDone,
 };
@@ -445,10 +435,6 @@ const TxnMgrCfg logonTxnCfg = {
  *                     Purchase Transaction config
  *
  **********************************************************************/
-static int composePurchase(TxnData* data) {
-    LOG_TRACE("Compose purchase ...");
-    composeCommon(data);
-}
 
 const TxnFlowConfig purchaseTxnFlowCfg = {
 
@@ -466,7 +452,7 @@ const TxnFlowConfig purchaseTxnFlowCfg = {
 
     .feildsCnt = sizeof(isoFeildsPurchase),
 
-    .compose = composePurchase,
+    .compose = composeCommon,
 
     .done = financeTxnDone,
 };
@@ -482,6 +468,8 @@ const TxnMgrCfg purchaseTxnCfg = {
 extern void reverseDone(TxnFlow* flow, const TxnFlowStatus* st);
 
 static int composeReverse(TxnData* data) {
+    LOG_TRACE("composeReverse: stan before = %lu, stan after = %lu",
+              data->core.stan, txnTraceInfo()->stan);
     data->core.stan = txnTraceInfo()->stan;
 }
 
@@ -564,14 +552,6 @@ const TxnMgrCfg settlementTxnCfg = {
  *
  **********************************************************************/
 
-static int composeTopUp(TxnData* data) {
-    composeCommon(data);
-    data->core.amount         = selectedAmnt;
-    data->extention.charge.op = selectedOp;
-    memcpy(data->extention.charge.phoneNumber, phoneNum,
-           sizeof(data->extention.charge.phoneNumber));
-}
-
 const TxnFlowConfig topupTxnFlowCfg = {
 
     TXN_FLOW_COMMON,
@@ -588,7 +568,7 @@ const TxnFlowConfig topupTxnFlowCfg = {
 
     .needSettlement = true,
 
-    .compose = composeTopUp,
+    .compose = composeCommon,
 
     .done = financeTxnDone};
 
@@ -600,12 +580,6 @@ const TxnMgrCfg topupTxnCfg = {
  *                     Voucher Transaction config
  *
  **********************************************************************/
-
-static int composeVoucher(TxnData* data) {
-    composeCommon(data);
-    data->core.amount         = selectedAmnt;
-    data->extention.charge.op = selectedOp;
-}
 
 const TxnFlowConfig voucherTxnFlowCfg = {
 
@@ -623,7 +597,7 @@ const TxnFlowConfig voucherTxnFlowCfg = {
 
     .needSettlement = true,
 
-    .compose = composeVoucher,
+    .compose = composeCommon,
 
     .done = financeTxnDone};
 

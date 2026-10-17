@@ -30,8 +30,8 @@ typedef enum {
     TXN_STEP_BILL_ID,
     TXN_STEP_PAYMENT_ID,
     TXN_STEP_OPERATOR,
-    TXN_STEP_CHARGE_AMOUNT,
     TXN_STEP_PHONE,
+    TXN_STEP_CHARGE_AMOUNT,
     TXN_STEP_PIN,
     TXN_STEP_PENDING,
     TXN_STEP_COMMUNICATION
@@ -123,6 +123,12 @@ OOP_CLASS(TxnMgr) {
      * Input must be validated and saved before calling next().
      */
     bool (*next)(void);
+
+    bool (*previous)(void);
+
+    bool (*retry)(void);
+
+    bool (*reset)(void);
 
     /* Report failure of any step and stop sequencing. */
     void (*fail)(int code);

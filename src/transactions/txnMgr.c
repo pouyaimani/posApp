@@ -152,17 +152,17 @@ static const TxnMgrStep purchaseSteps[] = {
 
 static const TxnMgrStep balanceSteps[] = {TXN_STEP_PIN, TXN_STEP_COMMUNICATION};
 
-static const TxnMgrStep billSteps[] = {TXN_STEP_BILL_ID, TXN_STEP_PAYMENT_ID,
-                                       TXN_STEP_PIN, TXN_STEP_PENDING,
-                                       TXN_STEP_COMMUNICATION};
+static const TxnMgrStep billSteps[] = {
+    TXN_STEP_BILL_ID, TXN_STEP_PAYMENT_ID,    TXN_STEP_PIN,
+    TXN_STEP_PENDING, TXN_STEP_COMMUNICATION, TXN_STEP_PENDING};
 
 static const TxnMgrStep voucherSteps[] = {
-    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PIN, TXN_STEP_PENDING,
-    TXN_STEP_COMMUNICATION};
+    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PIN,
+    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_PENDING};
 
 static const TxnMgrStep topupSteps[] = {
-    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PHONE,
-    TXN_STEP_PIN,      TXN_STEP_PENDING,       TXN_STEP_COMMUNICATION};
+    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PHONE,  TXN_STEP_PIN,
+    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_PENDING};
 
 static const TxnMgrStep configSteps[] = {TXN_STEP_COMMUNICATION};
 static const TxnMgrStep logonSteps[]  = {TXN_STEP_COMMUNICATION};
@@ -383,11 +383,11 @@ typedef struct {
 
 static const ManagerStepEntry stepMap[] = {
     {TXN_STEP_AMOUNT, enterAmount, true},
-    {TXN_STEP_BILL_ID, enterBillId, false},
-    {TXN_STEP_PAYMENT_ID, enterPaymentId, false},
-    {TXN_STEP_OPERATOR, selectOperator, false},
-    {TXN_STEP_CHARGE_AMOUNT, enterChargeAmount, false},
-    {TXN_STEP_PHONE, enterPhone, false},
+    {TXN_STEP_BILL_ID, enterBillId, true},
+    {TXN_STEP_PAYMENT_ID, enterPaymentId, true},
+    {TXN_STEP_OPERATOR, selectOperator, true},
+    {TXN_STEP_CHARGE_AMOUNT, enterChargeAmount, true},
+    {TXN_STEP_PHONE, enterPhone, true},
     {TXN_STEP_PIN, enterPin, true},
     {TXN_STEP_PENDING, checkPending, true},
     {TXN_STEP_COMMUNICATION, communication, true}};
@@ -479,6 +479,61 @@ static bool rejectRun(InfoDone done, TxnMgrError err) {
     }
 
     return false;
+}
+
+/*
+ * Reset the manager to its initial idle condition.
+ *
+ * Returns false if transaction or recovery work is still active.
+ * This is not a cancellation function.
+ *
+ * Clears transaction data and callbacks, but preserves:
+ * - State and flow objects
+ * - Operation function pointers
+ * - Persisted pending transactions
+ * - operationId, which must not be reused
+ */
+static bool reset(void) {
+    TxnMgr* mgr = &__txnMgr;
+
+    if (mgr->active || recoveryActive) {
+        LOG_TRACE("TxnMgr: reset rejected; transaction or recovery active");
+        return false;
+    }
+
+    if ((mgr->flow && (mgr->flow->tx || mgr->flow->stage != TXN_STAGE_IDLE)) ||
+        recoveryFlow.tx || recoveryFlow.stage != TXN_STAGE_IDLE) {
+        LOG_TRACE("TxnMgr: reset rejected; flow not released");
+        return false;
+    }
+
+    memset(&mgr->data, 0, sizeof(mgr->data));
+
+    mgr->config = (TxnMgrCfg){0};
+    mgr->done   = NULL;
+
+    mgr->flowStatus = (TxnFlowStatus){.result = TXN_FLOW_FAILED,
+                                      .stage  = TXN_STAGE_IDLE,
+                                      .code   = TXN_MGR_RESP_NONE};
+
+    mgr->steps     = NULL;
+    mgr->stepCount = 0;
+    mgr->stepIndex = 0;
+
+    mgr->step        = TXN_STEP_IDLE;
+    mgr->stepStarted = false;
+    mgr->active      = false;
+
+    mgr->result        = TXN_MGR_RESULT_NONE;
+    mgr->completedStep = TXN_STEP_IDLE;
+    mgr->resultCode    = 0;
+
+    currentPendingSaved   = false;
+    communicationNotified = false;
+    recoveryNotified      = false;
+
+    LOG_TRACE("TxnMgr: reset complete; no transaction started");
+    return true;
 }
 
 /*
@@ -762,6 +817,108 @@ static bool next(void) {
     return true;
 }
 
+/*
+ * Restart the current logical step.
+ *
+ * Preserves transaction data. The handler decides which input to reset.
+ * Stop the current input provider and its timers before calling.
+ *
+ * Recovery and communication require a separate retry policy.
+ */
+static bool retry(void) {
+    TxnMgr* mgr = &__txnMgr;
+
+    if (!mgr->active || !mgr->stepStarted) {
+        LOG_TRACE("TxnMgr: retry rejected; active=%d, started=%d",
+                  (int)mgr->active, (int)mgr->stepStarted);
+        return false;
+    }
+
+    if (!mgr->steps || mgr->stepIndex >= mgr->stepCount) {
+        LOG_TRACE("TxnMgr: retry rejected; invalid step sequence");
+        return false;
+    }
+
+    TxnMgrStep step = mgr->steps[mgr->stepIndex];
+
+    if (step == TXN_STEP_PENDING || step == TXN_STEP_COMMUNICATION) {
+        LOG_TRACE("TxnMgr: retry rejected; step=%d requires recovery policy",
+                  (int)step);
+        return false;
+    }
+
+    LOG_TRACE("TxnMgr: retrying step=%d", (int)step);
+
+    mgr->step        = step;
+    mgr->stepStarted = false;
+
+    executeStep();
+
+    return true;
+}
+
+/*
+ * Return to the previous logical step.
+ *
+ * Preserves transaction data; the previous handler decides whether
+ * to reuse or clear its input.
+ *
+ * Stop the current input provider and its timers before calling.
+ * Do not use this to rewind pending recovery or communication.
+ */
+static bool previous(void) {
+    TxnMgr* mgr = &__txnMgr;
+
+    if (!mgr->active || !mgr->stepStarted) {
+        LOG_TRACE("TxnMgr: previous rejected; active=%d, started=%d",
+                  (int)mgr->active, (int)mgr->stepStarted);
+        return false;
+    }
+
+    if (!mgr->steps || mgr->stepIndex >= mgr->stepCount) {
+        LOG_TRACE("TxnMgr: previous rejected; invalid step sequence");
+        return false;
+    }
+
+    if (mgr->stepIndex == 0) {
+        LOG_TRACE("TxnMgr: already at first step. retrying first step");
+        retry();
+        return false;
+    }
+
+    /*
+     * These steps may have network or persistence side effects.
+     * Returning to input requires an explicit cancellation/recovery
+     * policy rather than simply decrementing the index.
+     */
+    if (mgr->step == TXN_STEP_PENDING || mgr->step == TXN_STEP_COMMUNICATION) {
+        LOG_TRACE("TxnMgr: previous rejected; step=%d cannot be rewound",
+                  (int)mgr->step);
+        return false;
+    }
+
+    TxnMgrStep previousStep = mgr->steps[mgr->stepIndex - 1];
+
+    if (previousStep == TXN_STEP_PENDING ||
+        previousStep == TXN_STEP_COMMUNICATION) {
+        LOG_TRACE("TxnMgr: previous rejected; target step=%d",
+                  (int)previousStep);
+        return false;
+    }
+
+    LOG_TRACE("TxnMgr: previous; from=%d, to=%d", (int)mgr->step,
+              (int)previousStep);
+
+    --mgr->stepIndex;
+
+    mgr->step        = previousStep;
+    mgr->stepStarted = false;
+
+    executeStep();
+
+    return true;
+}
+
 /* Local failure without a valid host response. */
 static void fail(TxnMgrError err) {
     LOG_TRACE("TxnMgr: failure reported; error=%d", (int)err);
@@ -785,11 +942,14 @@ OOP_CTOR(TxnMgr) {
     self->stepCount = 0;
     self->stepIndex = 0;
 
-    self->run    = run;
-    self->next   = next;
-    self->fail   = fail;
-    self->onStep = onStep;
-    self->done   = NULL;
+    self->run      = run;
+    self->next     = next;
+    self->previous = previous;
+    self->retry    = retry;
+    self->reset    = reset;
+    self->fail     = fail;
+    self->onStep   = onStep;
+    self->done     = NULL;
 
     self->config = (TxnMgrCfg){0};
 

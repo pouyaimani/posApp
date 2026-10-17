@@ -48,6 +48,8 @@ void extractDatetimeStr(const char* buf, char* date, char* time);
 
 void shortDateTimeToStr(uint32_t date, uint32_t time, char* str, size_t size);
 
+void dateTimeToRawStr(uint32_t date, uint32_t time, char* str, size_t size);
+
 void extractDatetimeInt(const char* buf, uint32_t* date, uint32_t* time);
 
 void dateFormat(const char* in, char* out);
@@ -60,7 +62,11 @@ void dateToJalaliStr(uint32_t date, char* str, size_t size);
 
 void dateToStr(uint32_t date, char* str, size_t size);
 
+void dateToRawStr(uint32_t date, char* str, size_t size);
+
 void timeToStr(uint32_t time, char* str, size_t size);
+
+void timeToRawStr(uint32_t time, char* str, size_t size);
 
 bool isValidJalaliDate(Date_t date);
 

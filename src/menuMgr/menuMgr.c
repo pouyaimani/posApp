@@ -67,6 +67,27 @@ static bool keyToMenuIndex(int key, uint16_t* outIndex) {
     }
 }
 
+static void deleteMenu() {
+    Menu* menu = __menuMgr.menu;
+
+    /*
+     * Invalidate the singleton's active-menu pointer before invoking any UI
+     * destruction path.
+     */
+    __menuMgr.menu = NULL;
+
+    if (menu == NULL) {
+        return;
+    }
+
+    ui_menu_hide(menu);
+    ui_menu_destroy(menu);
+
+    if (__menuMgr.cfg.ownsMenu) {
+        MEM_FREE(menu);
+    }
+}
+
 /**
  * @brief Activate one menu item safely.
  *
@@ -111,6 +132,10 @@ static void activateItem(Menu* menu, uint16_t idx) {
     void*      userData  = menu->userData[idx];
     State*     nextState = menu->state[idx];
 
+    bool activeMenu = (__menuMgr.menu == menu);
+
+    deleteMenu();
+
     if (callback != NULL) {
         callback(userData);
     }
@@ -119,7 +144,7 @@ static void activateItem(Menu* menu, uint16_t idx) {
      * If the callback changed state, STATE_DEF_EXIT(MenuMgr) clears
      * __menuMgr.menu. Do not override that transition.
      */
-    if ((__menuMgr.menu == menu) && (nextState != NULL)) {
+    if (activeMenu && (nextState != NULL)) {
         SM_GOTO(nextState);
     }
 }
@@ -131,6 +156,7 @@ static void activateItem(Menu* menu, uint16_t idx) {
  */
 void back2idle(void* arg) {
     VAR_UNUSED(arg);
+    deleteMenu();
     SM_GOTO(STATE_IDLE);
 }
 
@@ -177,26 +203,7 @@ STATE_DEF_ENTER(MenuMgr) {
  * leaving a dangling singleton pointer and makes callback-driven state changes
  * detectable by activateItem().
  */
-STATE_DEF_EXIT(MenuMgr) {
-    Menu* menu = __menuMgr.menu;
-
-    /*
-     * Invalidate the singleton's active-menu pointer before invoking any UI
-     * destruction path.
-     */
-    __menuMgr.menu = NULL;
-
-    if (menu == NULL) {
-        return;
-    }
-
-    ui_menu_hide(menu);
-    ui_menu_destroy(menu);
-
-    if (__menuMgr.cfg.ownsMenu) {
-        MEM_FREE(menu);
-    }
-}
+STATE_DEF_EXIT(MenuMgr) {}
 
 /**
  * @brief Handle an inactivity timeout.
@@ -266,6 +273,10 @@ STATE_DEF_HANDLE(MenuMgr, KeypadEvent) {
         void*      userData = __menuMgr.cfg.userData;
         State*     backTo   = __menuMgr.backTo;
 
+        bool activeMenu = (__menuMgr.menu == menu);
+
+        deleteMenu();
+
         if (onExit != NULL) {
             onExit(userData);
         }
@@ -274,7 +285,7 @@ STATE_DEF_HANDLE(MenuMgr, KeypadEvent) {
          * The exit callback may perform its own SM_GOTO(). Only apply the
          * configured back transition if this menu is still active afterward.
          */
-        if ((__menuMgr.menu == menu) && (backTo != NULL)) {
+        if (activeMenu && (backTo != NULL)) {
             SM_GOTO(backTo);
         }
     }
@@ -292,7 +303,6 @@ STATE_DEF_HANDLE(MenuMgr, KeypadEvent) {
  */
 static void run(Menu* menu, State* backTo, const MenuMgrCfg* cfg) {
     RETURN_IF_NULL(menu, ;);
-    RETURN_IF_NULL(backTo, ;);
     RETURN_IF_NULL(cfg, ;);
 
     if (__menuMgr.menu != NULL) {

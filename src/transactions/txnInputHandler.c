@@ -10,6 +10,8 @@
 #include "storage/storage.h"
 #include "settings/settings.h"
 #include "infoMgr/infoMgr.h"
+#include "display/display.h"
+#include "menuMgr/menuMgr.h"
 
 /*
  * Persistent input configuration and output storage.
@@ -20,6 +22,8 @@
  * Reserve an additional byte for the amount string terminator.
  */
 static InputCfg inputCfg;
+
+void onSimCharge();
 
 /******************************************************************
  *                      Input result handling
@@ -39,18 +43,25 @@ bool isInputStep(const TxnMgr* mgr) {
     if (!mgr || !mgr->active || !mgr->stepStarted) {
         return false;
     }
-
-    return mgr->step == TXN_STEP_AMOUNT || mgr->step == TXN_STEP_PIN;
+    return mgr->step == TXN_STEP_AMOUNT || mgr->step == TXN_STEP_PIN ||
+           mgr->step == TXN_STEP_BILL_ID || mgr->step == TXN_STEP_PAYMENT_ID ||
+           mgr->step == TXN_STEP_OPERATOR || mgr->step == TXN_STEP_PHONE ||
+           mgr->step == TXN_STEP_CHARGE_AMOUNT;
 }
 
 void amountErrInfoDone(InfoResult res, void* arg) {
     LOG_TRACE("TxnMgr: amount error screen closed; restarting amount input");
-    enterAmount();
+    txnMgr()->retry();
 }
 
 void billIdErrInfoDone(InfoResult res, void* arg) {
     LOG_TRACE("TxnMgr: amount error screen closed; restarting amount input");
-    enterBillId();
+    txnMgr()->retry();
+}
+
+void payIdErrInfoDone(InfoResult res, void* arg) {
+    LOG_TRACE("TxnMgr: amount error screen closed; restarting amount input");
+    txnMgr()->previous();
 }
 
 /*
@@ -108,8 +119,8 @@ bool validateBillId(TxnMgr* mgr) {
 
 bool validatePaymentId(TxnMgr* mgr) {
     LOG_TRACE("PaymentId id = %s", inmgr()->input);
-    if (!isBillIdValid(inmgr()->input)) {
-        infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = billIdErrInfoDone},
+    if (!isBillValid(mgr->data.extention.bill.billId, inmgr()->input)) {
+        infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = payIdErrInfoDone},
                        phraseGetDef(PHRASE_BILL_INVALID), "");
         return false;
     }
@@ -125,6 +136,11 @@ bool validatePaymentId(TxnMgr* mgr) {
     }
     mgr->data.core.amount = amount;
     return true;
+}
+
+void setPhoneNum(TxnMgr* mgr) {
+    memcpy(mgr->data.extention.charge.phoneNumber, inmgr()->input,
+           sizeof(mgr->data.extention.charge.phoneNumber));
 }
 
 bool onPinEntryDone(TxnMgr* mgr) {}
@@ -163,6 +179,13 @@ void onInputComplete(InputResult result, void* userData) {
             if (!validatePaymentId(mgr)) {
                 return;
             }
+            break;
+        case TXN_STEP_OPERATOR:
+            break;
+        case TXN_STEP_CHARGE_AMOUNT:
+            break;
+        case TXN_STEP_PHONE:
+            setPhoneNum(mgr);
             break;
 
         case TXN_STEP_PIN:
@@ -253,42 +276,90 @@ void enterPaymentId(void) {
     inmgr()->run(&inputCfg, onInputComplete, txnMgr());
 }
 
+void setOperator(void* arg) {
+    int idx = *(((int*)arg));
+    LOG_TRACE("setOperator(): idx = %d", idx);
+    SimCardOp_t selectedOp;
+    switch (idx) {
+    case 0:
+        selectedOp = OPERATOR_MCI;
+        break;
+    case 1:
+        selectedOp = OPERATOR_MTN;
+        break;
+    case 2:
+        selectedOp = OPERATOR_RIGHTEL;
+        break;
+    default:
+        break;
+    }
+    txnMgr()->data.extention.charge.op = selectedOp;
+    onInputComplete(INPUT_RES_FINISHED, txnMgr());
+}
+
+static Menu       menu;
+static MenuMgrCfg menucfg;
+
+
+static txnCancel(void* arg) { txnMgr()->fail(TXN_MGR_ERR_CANCELED); }
+
 void selectOperator(void) {
-    /*
-     * TODO:
-     * Open the operator selection menu.
-     * Store the selected operator in the appropriate TxnData field.
-     *
-     * Call next() after a valid selection.
-     * Call fail(code) on cancellation, timeout, or menu failure.
-     *
-     * The menu API and operator data definitions are needed here.
-     */
+    menucfg        = menuCfgBack2idleOBC;
+    menucfg.onExit = txnCancel;
+    ui_menu_create(&menu, disp()->screen);
+    ui_menu_addItem(&menu, phraseGetDef(PHRASE_SIM_OP_MCI), LV_TEXT_ALIGN_RIGHT,
+                    NULL, setOperator, NULL);
+    ui_menu_addItem(&menu, phraseGetDef(PHRASE_SIM_OP_MTN), LV_TEXT_ALIGN_RIGHT,
+                    NULL, setOperator, NULL);
+    ui_menu_addItem(&menu, phraseGetDef(PHRASE_SIM_OP_RIGHTEL),
+                    LV_TEXT_ALIGN_RIGHT, NULL, setOperator, NULL);
+    menuMgr()->run(&menu, NULL, &menucfg);
+}
+
+static desiredAmnt[LEN_MAX_AMOUNT + 1];
+
+static const uint64_t amnt[] = {
+    200000, // 0
+    500000, // 1
+    1000000 // 2
+};
+
+static void setAmnt(void* arg) {
+    txnMgr()->data.core.amount = *((uint64_t*)arg);
+    onInputComplete(INPUT_RES_FINISHED, txnMgr());
+}
+
+void setChargeAmnt() {
+    // 5-10-20-50
+    ui_menu_addItem(&menu, "200,000", LV_TEXT_ALIGN_LEFT, NULL, setAmnt,
+                    &amnt[0]);
+    ui_menu_addItem(&menu, "500,000", LV_TEXT_ALIGN_LEFT, NULL, setAmnt,
+                    &amnt[1]);
+    ui_menu_addItem(&menu, "1,000,000", LV_TEXT_ALIGN_LEFT, NULL, setAmnt,
+                    &amnt[2]);
+    ui_menu_addItem(&menu, phraseGetDef(PHRASE_ENTER_CHARGE_AMNT),
+                    LV_TEXT_ALIGN_LEFT, NULL, enterAmount, NULL);
 }
 
 void enterChargeAmount(void) {
-    /*
-     * TODO:
-     * Show the selected operator's supported charge amounts.
-     * Support custom amount input if the operator allows it.
-     *
-     * Validate the selected amount and store it in transaction data,
-     * including any operator-specific product or denomination field.
-     *
-     * Call next() on success or fail(code) on failure.
-     */
+    ui_menu_create(&menu, disp()->screen);
+    setChargeAmnt();
+    menucfg        = menuCfgBack2idleOBC;
+    menucfg.onExit = txnCancel;
+    menuMgr()->run(&menu, NULL, &menucfg);
 }
 
 void enterPhone(void) {
-    /*
-     * TODO:
-     * Start phone-number input.
-     * Validate and normalize the number using project rules.
-     * Store it in the appropriate TxnData field.
-     *
-     * Call next() on success.
-     * Call fail(code) on invalid input, cancellation, or timeout.
-     */
+    memset(&inFinishCtx, 0, sizeof(InputFinishCtx));
+    inmgr()->run(&(InputCfg){.type    = INPUT_TYPE_KEYPAD,
+                             .mode    = INMD_ENTER_NUMBERS,
+                             .title   = phraseGetDef(PHRASE_PHONE_NUMBER),
+                             .info    = "",
+                             .maxLen  = LEN_MAX_PHONE_NUMBER,
+                             .timeout = BACK_IDLE_TMO,
+                             .tocb    = back2idle},
+                 onInputComplete, txnMgr());
+    inmgr()->set(INPUT_TYPE_KEYPAD, "09");
 }
 
 void enterPin(void) {

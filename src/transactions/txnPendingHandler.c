@@ -356,12 +356,12 @@ void checkPending(void) {
 
     const TxnFlowConfig* cfg = NULL;
 
-    if (pendingData.status == TXN_STATUS_PENDING_REVERSE) {
+    if (pendingData.status == TXN_STATUS_PENDING_SETTLEMENT) {
         LOG_TRACE("TxnMgr: pending reversal selected");
-        cfg = &reverseTxnFlowCfg;
-    } else if (pendingData.status == TXN_STATUS_PENDING_SETTLEMENT) {
-        LOG_TRACE("TxnMgr: pending settlement selected");
         cfg = &settlementTxnFlowCfg;
+    } else if (pendingData.status == TXN_STATUS_PENDING_REVERSE) {
+        LOG_TRACE("TxnMgr: pending settlement selected");
+        cfg = &reverseTxnFlowCfg;
     } else {
         /* No recovery is required; continue immediately. */
         LOG_TRACE("TxnMgr: no recovery required");
@@ -399,6 +399,7 @@ void checkPending(void) {
 
     recoveryFlow.data->core.mti     = cfg->mti;
     recoveryFlow.data->core.txnType = cfg->type;
+    // recoveryFlow.data->core.stan    = txnTraceInfo()->stan;
 
     /*
      * Static storage keeps the address valid if the flow retains

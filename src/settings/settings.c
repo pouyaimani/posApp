@@ -189,8 +189,10 @@ DevSettings* settings(void) {
 }
 
 static Error_t loadTxnTraceInfo(void) {
-    return storage()->load(txnTraceInfoDsc, ARRAY_COUNT(txnTraceInfoDsc),
-                           TXN_TRACE_FILE_ADDR);
+    Error_t err = storage()->load(txnTraceInfoDsc, ARRAY_COUNT(txnTraceInfoDsc),
+                                  TXN_TRACE_FILE_ADDR);
+    LOG_TRACE("loaded stan = %lu", __txnTraceInfo.stan);
+    return err;
 }
 
 static Error_t incTxnTraceInfo(void) {
@@ -198,7 +200,7 @@ static Error_t incTxnTraceInfo(void) {
 
     if (result != ERR_OK)
         return result;
-
+    LOG_TRACE("stan before increasing = %lu", __txnTraceInfo.stan);
     __txnTraceInfo.stan++;
     if (__txnTraceInfo.stan >= 999999u) {
         __txnTraceInfo.stan = 1u;
@@ -207,7 +209,7 @@ static Error_t incTxnTraceInfo(void) {
         if (__txnTraceInfo.batch >= 999999u)
             __txnTraceInfo.batch = 1u;
     }
-
+    LOG_TRACE("stan after increasing = %lu", __txnTraceInfo.stan);
     return storage()->save(txnTraceInfoDsc, ARRAY_COUNT(txnTraceInfoDsc),
                            TXN_TRACE_FILE_ADDR);
 }

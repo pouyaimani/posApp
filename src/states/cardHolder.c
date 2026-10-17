@@ -39,7 +39,7 @@ static void onTopup() { txnMgr()->run(&topupTxnCfg, transactionDone); }
 
 static void onVoucher() { txnMgr()->run(&voucherTxnCfg, transactionDone); }
 
-static void onSimCharge() {
+void onSimCharge() {
     ui_menu_create(&chargeMenu, disp()->screen);
     ui_menu_addItem(&chargeMenu, phraseGetDef(PHRASE_TXN_TOPUP),
                     LV_TEXT_ALIGN_RIGHT, NULL, onTopup, NULL);
