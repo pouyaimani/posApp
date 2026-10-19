@@ -22,7 +22,6 @@ typedef enum StateId_t {
     STATE_ID_FIXED_AMOUNT,
     STATE_ID_MENU,
     STATE_ID_ISO_TRANSMITTER,
-    STATE_ID_TXN_RES,
     STATE_ID_HTTP_TRANSMITTER,
     STATE_ID_NET_CONNECT,
     STATE_ID_NET_SEND,
@@ -46,37 +45,6 @@ OOP_CTOR(Idle, State* parent, const char* name);
 
 #define STATE_IDLE  getState(STATE_ID_IDLE)
 #define GOTO_IDLE() SM_GOTO(STATE_IDLE)
-
-/**********************Input**********************/
-
-#define INPUT_MAX_LEN 64
-
-typedef enum {
-    IN_MODE_AMOUNT,
-    IN_MODE_PASSWORD,
-    IN_MODE_NUMBERS,
-    IN_MODE_ALPHAB,
-    IN_MODE_TIME,
-    IN_MODE_DATE,
-    IN_MODE_IP,
-} InputMode_t;
-
-OOP_CLASS(Input) {
-    OOP_EXTENDS(State);
-    OOP_METHOD(void, setMode, InputMode_t);
-    OOP_METHOD(void, setData, const char*, const char*);
-    OOP_METHOD(void, setMax, int);
-    OOP_METHOD(void, reset);
-    OOP_METHOD(void, setInput, const char*);
-    char* input;
-    char* password;
-    char* ip;
-    char* out;
-};
-
-OOP_CTOR(Input, State* parent, const char* name);
-
-#define STATE_INPUT getState(STATE_ID_INPUT)
 
 /**********************Card Holder**********************/
 
@@ -103,23 +71,6 @@ OOP_CLASS(DevInfo) { OOP_EXTENDS(State); };
 
 OOP_CTOR(DevInfo, State* parent, const char* name);
 
-/**************************Ginfo*************************/
-
-OOP_CLASS(Ginfo) {
-    OOP_EXTENDS(State);
-    OOP_METHOD(void, setText, const char*);
-    OOP_METHOD(void, setImg, const char*);
-};
-
-OOP_CTOR(Ginfo, State* parent, const char* name);
-
-#define GOTO_GINFO(state, text, img)                                           \
-    OOP_CALL(getState(STATE_ID_GINFO), setNext, state);                        \
-    Ginfo* info = (Ginfo*)getState(STATE_ID_GINFO);                            \
-    info->setText(title);                                                      \
-    info->setImg(body);                                                        \
-    SM_GOTO(getState(STATE_ID_GINFO));
-
 /************************Dialogue***********************/
 
 OOP_CLASS(Dialogue) {
@@ -141,30 +92,9 @@ OOP_CLASS(FixedAmount) { OOP_EXTENDS(State); };
 
 OOP_CTOR(FixedAmount, State* parent, const char* name);
 
-/*************************** Txn Result ***********************/
-
-OOP_CLASS(TxnResult) {
-    OOP_EXTENDS(State);
-    TxnData        data;
-    TxnFlowConfig* txnCfg;
-    TxnFlowStatus  st;
-    State*         onSuccess;
-    State*         onFailure;
-};
-
-OOP_CTOR(TxnResult, State* parent, const char* name);
-
-#define STATE_TXN_RES getState(STATE_ID_TXN_RES)
-
 // Helper functions
 
 #define STATE_SUPPORTER  getState(STATE_ID_SUPPORTER)
 #define GOTO_SUPPORTER() SM_GOTO(STATE_SUPPORTER)
-
-void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
-                  State* onSuccess, State* onFailure);
-void GOTO_NET_CONNNECT();
-void GOTO_NET_SEND();
-void GOTO_NET_RECEIVE();
 
 #endif

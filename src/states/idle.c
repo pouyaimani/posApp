@@ -43,6 +43,36 @@ static lv_obj_t* merchantName;
 static Timer*    timer;
 static SwipeHint swipe;
 
+static void showDevInfo(void* arg) {
+    State* state = (State*)arg;
+    infoMgrsetCommon(state, state);
+    infoMgr()->runDevInfo(&infoFinishCtx);
+}
+
+static void go2Supporter(void* arg) {
+    VAR_UNUSED(arg);
+    SM_GOTO(getState(STATE_ID_SUPPORTER));
+}
+
+void showKahrobaMenu(void* arg);
+
+static const KeyHandler keyHandler[] = {
+    {KEY_0, showKahrobaMenu},
+    {KEY_1, NULL},
+    {KEY_2, NULL},
+    {KEY_3, NULL},
+    {KEY_4, NULL},
+    {KEY_5, NULL},
+    {KEY_6, NULL},
+    {KEY_7, NULL},
+    {KEY_8, NULL},
+    {KEY_9, NULL},
+    {KEY_ENTER, NULL},
+    {KEY_CLEAR, showDevInfo},
+    {KEY_ESC, NULL},
+    {KEY_FUNCTION, go2Supporter},
+};
+
 static void wifiAutoConnect() {
     WifiScanSt_t    scanSt    = OOP_CALL(wifi(), hgetScanStatus);
     WifiConnectSt_t connectSt = OOP_CALL(wifi(), getConnectStatus);
@@ -192,163 +222,13 @@ STATE_DEF_EXIT(Idle) {
 
 STATE_DEF_HANDLE(Idle, TimeOutEvent) {}
 
-#include "receipt/receipt.h"
-#include "printer/printer.h"
-TxnData     txn;
-ReceiptData data;
-static void print() {
-    data.txn        = txn;
-    data.type       = DOC_TXN;
-    txn.core.amount = 1240000;
-    snprintf(txn.core.pan, sizeof(txn.core.pan), "%s", "6037991622221111");
-    txn.core.processCode = 12;
-    txn.core.rrn         = 1399;
-    txn.core.trace       = 6419;
-    txn.core.stan        = 19000;
-    txn.core.txnType     = TXN_PURCHASE;
-    txn.dateTime         = OOP_CALL(sys(), getPackedDateTime);
-    Receipt rec;
-    buildReceipt(&rec, &data);
-    OOP_CALL(&rec, flush);
-    OOP_CALL(&rec, destroy);
-}
-
-static uint32_t seed = 123456789;
-
-static uint32_t my_rand() {
-    seed = (1103515245 * seed + 12345);
-    return seed;
-}
-
-static uint32_t my_rand_range(uint32_t max) { return my_rand() % max; }
-
-static void rand_digits(char* buf, size_t len) {
-    for (size_t i = 0; i < len; i++)
-        buf[i] = '0' + my_rand_range(10);
-    buf[len] = '\0';
-}
-
-static void rand_alnum(char* buf, size_t len) {
-    const char chars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for (size_t i = 0; i < len; i++)
-        buf[i] = chars[my_rand_range(36)];
-    buf[len] = '\0';
-}
-
-static void rand_letters(char* buf, size_t len) {
-    const char chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for (size_t i = 0; i < len; i++)
-        buf[i] = chars[my_rand_range(26)];
-    buf[len] = '\0';
-}
-
-void generate_random_txn(TxnData* t) {
-    t->core.txnType     = my_rand_range(255);
-    t->core.processCode = my_rand_range(255);
-    t->core.rrn         = my_rand_range(255);
-    t->core.trace       = my_rand_range(255);
-    t->core.stan        = my_rand_range(255);
-    t->core.respCode    = my_rand_range(255);
-
-    uint32_t date, time;
-    getDateTimeUint(&date, &time);
-    LOG_DEBUG("date = %u, time = %u", date, time);
-    t->dateTime = packDateTime(date, time);
-}
-
-static void insertTxn() {
-    TxnData txn;
-    generate_random_txn(&txn);
-    txnrecord()->insert(&txn);
-}
-
-static bool txnHand(const TxnData* txn, void* userData) {
-    uint32_t date, time;
-    unpackDateTime(&txn->dateTime, &date, &time);
-    LOG_DEBUG(
-        "txn: date = %lu, time = %lu, trace = %s, refNum = %s, stan = %s, "
-        "amount = %s",
-        date, time, txn->core.trace, txn->core.rrn, txn->core.stan,
-        txn->core.amount);
-}
-
-static void home_cb(lv_event_t* e) {
-    LV_UNUSED(e);
-    printf("Home clicked\n");
-}
-
-static void print_cb(lv_event_t* e) {
-    LV_UNUSED(e);
-    printf("Print clicked\n");
-}
-
-void show_receipt_page(void) {
-    static ReceiptPage page;
-    ReceiptHeader header = {.dateTitle = "تاریخ",
-                            .date      = "1405/04/23",
-
-                            .timeTitle = "ساعت",
-                            .time      = "21:13:52",
-
-                            .amount   = "17,210,816",
-                            .currency = "ریال",
-
-                            .statusTitle       = "انتقال موفق",
-                            .statusDescription = "تراکنش با موفقیت انجام شد",
-
-                            .statusIcon = ICON_SUCCEED};
-
-    ReceiptDetails details = {
-        .count = 3,
-
-        .details = {{.icon       = ICON_TERMINAL,
-                     .title      = "کد کارتخوان",
-                     .value      = "17210864",
-                     .valueColor = lv_palette_main(LV_PALETTE_RED)},
-
-                    {.icon       = ICON_DOC1,
-                     .title      = "مرجع",
-                     .value      = "51724693300412121212121212121212",
-                     .valueColor = lv_color_black()},
-
-                    {.icon       = ICON_BANK,
-                     .title      = "بانک",
-                     .value      = "بانک سامان",
-                     .valueColor = lv_palette_main(LV_PALETTE_RED)},
-
-                    {.icon       = ICON_DOC2,
-                     .title      = "پیگیری",
-                     .value      = "621986-X-1315",
-                     .valueColor = lv_color_black()}}};
-
-    ReceiptButtons buttons = {.left = {.text     = "صفحه اصلی",
-                                       .icon     = "",
-                                       .callback = home_cb,
-                                       .primary  = false},
-
-                              .right = {.text     = "چاپ رسید",
-                                        .icon     = "",
-                                        .callback = print_cb,
-                                        .primary  = true}};
-
-    lv_obj_t* receipt = ui_receipt_create(&page, &header, &details, &buttons);
-    LV_SHOW(receipt);
-}
-static int pendMgrDone() { SM_GOTO(STATE_IDLE); }
-
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
-    if (ev->key == KEY_FUNCTION) {
-        SM_GOTO(getState(STATE_ID_SUPPORTER));
-    } else if (ev->key == KEY_CLEAR) {
-        infoMgrsetCommon(state, state);
-        infoMgr()->runDevInfo(&infoFinishCtx);
-    } else if (ev->key == KEY_1) {
-        print();
+    KeyHandler* handler =
+        findKeyHandler(keyHandler, ARRAY_COUNT(keyHandler), ev->key);
+    if (handler->handle)
+        handler->handle(state);
+    else if (ev->key == KEY_1) {
     } else if (ev->key == KEY_2) {
-        DEFINE_BYTE_ARRAY(stan, 7);
-        txnTraceInfo()->inc();
-        prependZerosInt(txnTraceInfo()->stan, 6, stan, sizeof(stan));
-        LOG_DEBUG("stan int= %u, stan string = %s", txnTraceInfo()->stan, stan);
     } else if (ev->key == KEY_3) {
         OOP_CALL(file(), remove, "/mtd0/txn_t_info");
     } else if (ev->key == KEY_4) {
@@ -356,19 +236,12 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     } else if (ev->key == KEY_5) {
         txnMgr()->pendingReset();
     } else if (ev->key == KEY_6) {
-        insertTxn();
     } else if (ev->key == KEY_7) {
-        txnrecord()->iterate();
     } else if (ev->key == KEY_8) {
         txnrecord()->reset();
     } else if (ev->key == KEY_9) {
         txnrecord()->init();
     } else if (ev->key == KEY_0) {
-        QueryOperator op;
-        txnquery()->init(&op);
-        uint64_t dt = 3683180498412;
-        // txnquery()->where(&op, TXN_REC_FIELD_TIMESTAMP, SELECT_EQ, &dt);
-        txnrecord()->select(&op, txnHand, NULL);
     }
 }
 

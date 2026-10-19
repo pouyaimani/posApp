@@ -483,7 +483,7 @@ X(PHRASE_GPRS                   ,   "جی پی آر اس"                    ,  
  * 
  **********************************************************************/
 
-X(PHRASE_UPDATE_APP         ,   "به روز رسانی اپلیکیشن"       ,   "update app"
+X(PHRASE_UPDATE_APP                 ,   "به روز رسانی اپلیکیشن"       ,   "update app"
 )
 X(PHRASE_RESET_MERCHAT_PIN  ,   "بازنشانی رمز پذیرنده"        ,   "reset merchant pin"
 )
@@ -527,7 +527,8 @@ X(PHRASE_UPDATE_FAILED          ,   "خطا در به روز رسانی دستگ
 )
 X(PHRASE_UPDATE_SUCCEED          ,   "دستگاه با موفقیت به روزرسانی شد"         ,  "phone number"
 )
-
+X(PHRASE_TAP_PHONE              ,   "لطفا تلغن همراه خود را نزدیک کنید"        ,  "phone number"
+)
 
 /**********************************************************************
  *

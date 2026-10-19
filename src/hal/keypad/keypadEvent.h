@@ -25,6 +25,13 @@ typedef enum Key_t {
     KEY_POWER
 } Key_t;
 
+typedef struct {
+    Key_t key;
+    void (*handle)(void* arg);
+} KeyHandler;
+
+const KeyHandler* findKeyHandler(KeyHandler* handler, size_t size, Key_t key);
+
 OOP_CLASS(KeypadEvent) {
     OOP_EXTENDS(Event);
     Key_t key;

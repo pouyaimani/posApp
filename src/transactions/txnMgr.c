@@ -34,8 +34,6 @@
 /* True only while the manager is waiting for recovery completion. */
 extern bool recoveryActive;
 
-#define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
-
 static TxnMgr  __txnMgr;
 static State   __txnMgrState;
 static TxnFlow __flow;
@@ -95,6 +93,7 @@ void enterPhone(void);
 void enterPin(void);
 void checkPending(void);
 void communication(void);
+void getNfcData(void);
 
 void onInputComplete(InputResult result, void* userData);
 void onInputTimeout(InputResult result, void* userData);
@@ -183,6 +182,14 @@ static const TxnMgrStep topupSteps[] = {
 static const TxnMgrStep configSteps[] = {TXN_STEP_COMMUNICATION};
 static const TxnMgrStep logonSteps[]  = {TXN_STEP_COMMUNICATION};
 
+static const TxnMgrStep kahrobaPurchaseSteps[] = {
+    TXN_STEP_AMOUNT, TXN_STEP_NFC, TXN_STEP_PENDING, TXN_STEP_COMMUNICATION,
+    TXN_STEP_SETTLEMENT};
+
+static const TxnMgrStep kahrobaBalanceSteps[] = {
+    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PHONE,     TXN_STEP_PIN,
+    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
+
 typedef struct {
     TxnType           type;
     const TxnMgrStep* steps;
@@ -198,7 +205,10 @@ static const TxnDefinition definitions[] = {
     TXN_DEFINITION(TXN_VOUCHER, voucherSteps),
     TXN_DEFINITION(TXN_TOPUP, topupSteps),
     TXN_DEFINITION(TXN_CFG, configSteps),
-    TXN_DEFINITION(TXN_LOGON, logonSteps)};
+    TXN_DEFINITION(TXN_LOGON, logonSteps),
+    TXN_DEFINITION(TXN_KAHROBA_PURCHASE, kahrobaPurchaseSteps),
+    TXN_DEFINITION(TXN_KAHROBA_BALANCE, kahrobaBalanceSteps),
+};
 
 /*
  * Return the definition for a supported transaction.
@@ -629,6 +639,7 @@ static const ManagerStepEntry stepMap[] = {
     {TXN_STEP_PENDING, checkPending, true},
     {TXN_STEP_COMMUNICATION, communication, true},
     {TXN_STEP_SETTLEMENT, settleCurrentTransaction, true},
+    {TXN_STEP_NFC, getNfcData, true},
 };
 
 /* Find and execute the handler for the requested logical step. */

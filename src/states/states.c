@@ -4,12 +4,10 @@
 
 static Startup*     startup;
 static Idle*        idle;
-static Input*       input;
 static CardHolder*  cardHolder;
 static Dialogue*    dialogue;
 static Supporter*   supporter;
 static FixedAmount* fixedAmount;
-static TxnResult*   txnRes;
 
 State* getState(StateId_t id) {
     switch (id) {
@@ -37,24 +35,9 @@ State* getState(StateId_t id) {
         CALL_ONCE(fixedAmount = MEM_ALLOC(sizeof(FixedAmount)); OOP_CALL_CTOR(
                       FixedAmount, fixedAmount, idle, "fixed Amount"););
         return (State*)fixedAmount;
-    case STATE_ID_TXN_RES:
-        CALL_ONCE(txnRes = MEM_ALLOC(sizeof(TxnResult));
-                  OOP_CALL_CTOR(TxnResult, txnRes, idle, "txn result"););
-        return (State*)txnRes;
     default:
         break;
     }
-}
-
-void GOTO_TXN_RES(TxnFlowConfig* cfg, TxnData* data, const TxnFlowStatus* st,
-                  State* onSuccess, State* onFailure) {
-    TxnResult* res = getState(STATE_ID_TXN_RES);
-    res->data      = *data;
-    res->txnCfg    = cfg;
-    res->st        = *st;
-    res->onSuccess = onSuccess;
-    res->onFailure = onFailure;
-    SM_GOTO(getState(STATE_ID_TXN_RES));
 }
 
 void GOTO_DIAL(State* prev, State* next, const char* title, const char* body,

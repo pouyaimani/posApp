@@ -11,8 +11,6 @@
 #include "settings/settings.h"
 #include "infoMgr/infoMgr.h"
 
-#define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
-
 #define RECOVERY_TXN_DATA_ADDR "/mtd0/txn_rec"
 #define TAG_PENDING_TXN        0x0501
 

@@ -20,9 +20,6 @@ static const StageMessage stageMessages[] = {
     {TXN_STAGE_SENDING, PHRASE_SENDING_DATA_ERR},
     {TXN_STAGE_RECEIVING, PHRASE_RECEIVING_DATA_ERR},
     {TXN_STAGE_PARSING, PHRASE_PARSE_ERROR}};
-
-#define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
-
 /*
  * Choose a message from the flow status.
  * A timeout takes precedence over the communication stage.

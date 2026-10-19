@@ -65,7 +65,7 @@ static void startReprintByTxnType(TxnType txnType) {
     SM_GOTO(extractData);
 }
 
-static void runReportInput(InputMode_t mode, const char* title, char* output,
+static void runReportInput(InputMode mode, const char* title, char* output,
                            size_t outputSize, uint16_t max, SubState* next,
                            CallBack_t cb, void* userData) {
     memset(&inFinishCtx, 0, sizeof(InputFinishCtx));

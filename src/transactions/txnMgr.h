@@ -35,6 +35,7 @@ typedef enum {
     TXN_STEP_PIN,
     TXN_STEP_PENDING,
     TXN_STEP_COMMUNICATION,
+    TXN_STEP_NFC,
     TXN_STEP_SETTLEMENT
 } TxnMgrStep;
 

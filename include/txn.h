@@ -121,6 +121,8 @@ typedef enum {
     TXN_CFG,
     TXN_SETTLE,
     TXN_REVERSE,
+    TXN_KAHROBA_PURCHASE,
+    TXN_KAHROBA_BALANCE,
     TXN_ALL
 } TxnType;
 

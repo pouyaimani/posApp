@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include "error.h"
 
+#define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
+
 #define MERCHANT_DEFAULT_PIN "1111"
 
 /**********************************************************/

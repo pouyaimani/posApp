@@ -17,3 +17,13 @@ static void keypad_dispatchTo(Event* self, State* state) {
 OOP_CTOR(KeypadEvent) { self->base.vtable.dispatchTo = keypad_dispatchTo; }
 
 void keypadEventRegister(void) { EVENT_REGISTER(SM_EVENT_KEYPAD, KeypadEvent); }
+
+const KeyHandler* findKeyHandler(KeyHandler* handler, size_t size, Key_t key) {
+    for (size_t i = 0; i < size; ++i) {
+        if (handler[i].key == key) {
+            return &handler[i];
+        }
+    }
+
+    return NULL;
+}

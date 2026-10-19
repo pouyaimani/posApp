@@ -46,8 +46,6 @@ static TxnTraceInfo __txnTraceInfo;
 #define DEFAULT_MERCHANT_PIN         MERCHANT_DEFAULT_PIN
 #define DEFAULT_BALANCE_INQUIRY_WAGE "1800"
 
-#define ARRAY_COUNT(array_) (sizeof(array_) / sizeof((array_)[0]))
-
 static const DataDescriptor txnTraceInfoDsc[] = {
     DSC_U32_ID(SETTING_TAG_TRACE_STAN, __txnTraceInfo.stan, "1"),
     DSC_U32_ID(SETTING_TAG_TRACE_BATCH, __txnTraceInfo.batch, "1"),

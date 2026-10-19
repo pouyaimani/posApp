@@ -12,5 +12,7 @@ extern const TxnMgrCfg reverseTxnCfg;
 extern const TxnMgrCfg settlementTxnCfg;
 extern const TxnMgrCfg topupTxnCfg;
 extern const TxnMgrCfg voucherTxnCfg;
+extern const TxnMgrCfg kahrobaPurchaseTxnCfg;
+extern const TxnMgrCfg kahrobaBalanceTxnCfg;
 
 #endif

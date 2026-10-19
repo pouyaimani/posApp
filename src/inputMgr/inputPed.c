@@ -15,7 +15,8 @@ static uint8_t len;
 static bool start() {
     LOG_TRACE("input provider started");
     keypad()->unregisterIo();
-    RETURN_IF_NOT(ped()->enterPinEntryMode(), PED_ERR_OK, ;);
+    RETURN_VALUE_IF_NOT(ped()->enterPinEntryMode(), PED_ERR_OK, ;, false);
+    return true;
 }
 
 static bool poll(InputProvider* self, InputEvent* ev) {}
