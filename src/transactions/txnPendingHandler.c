@@ -21,6 +21,8 @@ extern const TxnFlowConfig reverseTxnFlowCfg;
 
 /* Snapshot configuration; caller may release its configuration structure. */
 static TxnFlowConfig recoveryCfg;
+/* Persistent working storage for asynchronous recovery. */
+static TxnData recoveryData;
 
 extern uint64_t operationId;
 
@@ -271,6 +273,25 @@ static void recoveryDone(TxnFlow* flow, const TxnFlowStatus* status,
         return;
     }
 
+    recoveryNotified = true;
+
+    if (!status) {
+        recoveryActive = false;
+        complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_PENDING_FLOW, NULL);
+        return;
+    }
+
+    mgr->flowStatus = *status;
+
+    if (pendingData.status != expectedStatus) {
+        LOG_TRACE("TxnMgr: recovery status mismatch; expected=%d, actual=%d",
+                  (int)expectedStatus, (int)pendingData.status);
+
+        recoveryActive = false;
+        mgr->fail(TXN_MGR_ERR_PENDING_FLOW);
+        return;
+    }
+
     /*
      * The matching recovery callback must correspond to the
      * operation selected from the stored record.
@@ -281,7 +302,6 @@ static void recoveryDone(TxnFlow* flow, const TxnFlowStatus* status,
     LOG_TRACE("TxnMgr: recovery flow result=%d, stage=%d, code=%d",
               status ? (int)status->result : -1,
               status ? (int)status->stage : -1, status ? status->code : -1);
-    recoveryNotified = true;
 
     if (status->result != TXN_FLOW_SUCCESS) {
         recoveryActive = false;
@@ -395,10 +415,12 @@ void checkPending(void) {
      * Restore original transaction fields after preparation.
      * Override only the outgoing recovery operation identifiers.
      */
-    recoveryFlow.data = &pendingData;
+    recoveryData = pendingData;
 
-    recoveryFlow.data->core.mti     = cfg->mti;
-    recoveryFlow.data->core.txnType = cfg->type;
+    recoveryData.core.mti     = cfg->mti;
+    recoveryData.core.txnType = cfg->type;
+
+    recoveryFlow.data = &recoveryData;
     // recoveryFlow.data->core.stan    = txnTraceInfo()->stan;
 
     /*

@@ -57,6 +57,22 @@ extern bool recoveryNotified;
 extern TxnData pendingData;
 extern TxnFlow recoveryFlow;
 
+extern const TxnFlowConfig settlementTxnFlowCfg;
+
+/*
+ * Settlement has its own flow and working data.
+ *
+ * The main transaction data remains available for the result screen.
+ * In particular, do not overwrite its MTI, transaction type, or
+ * original-data snapshot with settlement request values.
+ */
+static TxnFlow       settlementFlow;
+static TxnFlowConfig settlementConfig;
+static TxnData       settlementData;
+
+static bool     settlementActive;
+static uint64_t settlementOperationId;
+
 /* All manager entry points and provider callbacks must be serialized.
  * Provider cancellation and stale-event filtering remain provider contracts.
  * See TODO comments before enabling the unimplemented transaction steps.
@@ -148,21 +164,21 @@ Error_t pendingCheck(bool* hasPending);
  */
 static const TxnMgrStep purchaseSteps[] = {
     TXN_STEP_AMOUNT, TXN_STEP_PIN, TXN_STEP_PENDING, TXN_STEP_COMMUNICATION,
-    TXN_STEP_PENDING};
+    TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep balanceSteps[] = {TXN_STEP_PIN, TXN_STEP_COMMUNICATION};
 
 static const TxnMgrStep billSteps[] = {
     TXN_STEP_BILL_ID, TXN_STEP_PAYMENT_ID,    TXN_STEP_PIN,
-    TXN_STEP_PENDING, TXN_STEP_COMMUNICATION, TXN_STEP_PENDING};
+    TXN_STEP_PENDING, TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep voucherSteps[] = {
     TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PIN,
-    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_PENDING};
+    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep topupSteps[] = {
-    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PHONE,  TXN_STEP_PIN,
-    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_PENDING};
+    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PHONE,     TXN_STEP_PIN,
+    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep configSteps[] = {TXN_STEP_COMMUNICATION};
 static const TxnMgrStep logonSteps[]  = {TXN_STEP_COMMUNICATION};
@@ -247,9 +263,8 @@ static int beforeCommunicationSend(TxnFlow* flow) {
  * Complete the current transaction after TxnFlow releases its
  * communication resources.
  */
-static void txnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
-    LOG_TRACE("Txn Mgr: txnFlowDone ...");
-    LOG_TRACE("Txn Mgr: respcode = %d", flow->data->core.respCode);
+static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
+    LOG_TRACE("Txn Mgr: mainTxnFlowDone ...");
 
     TxnMgr* mgr = &__txnMgr;
 
@@ -260,6 +275,8 @@ static void txnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
         return;
     }
 
+    LOG_TRACE("Txn Mgr: respcode = %d", flow->data->core.respCode);
+
     communicationNotified = true;
     if (!status) {
         LOG_TRACE("TxnMgr: communication completion has no status");
@@ -269,12 +286,9 @@ static void txnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
     LOG_TRACE("TxnMgr: communication result=%d, stage=%d, code=%d",
               (int)status->result, (int)status->stage, status->code);
 
-    LOG_TRACE("mgr->data->core.pan = %s", mgr->data.core.pan);
-
     mgr->flowStatus = *status;
 
     if (status->result != TXN_FLOW_SUCCESS) {
-        mgr->pendingReset();
         /* No valid host response: code may be a transport/parser error. */
         mgr->fail(status->result == TXN_FLOW_TIMEOUT
                       ? TXN_MGR_ERR_TIMEOUT
@@ -292,6 +306,8 @@ static void txnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
         complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_RESP_CODE, status);
         return;
     }
+
+    mgr->data.status = TXN_STATUS_APPROVED;
 
     if (currentPendingSaved) {
         LOG_TRACE("TxnMgr: host approved; persisting settlement record");
@@ -312,10 +328,231 @@ static void txnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
                      status); /* Host approved; local persistence failed. */
             return;
         }
+
+        mgr->data.status = TXN_STATUS_PENDING_SETTLEMENT;
     }
 
-    LOG_TRACE("TxnMgr: communication completed successfully");
+    LOG_TRACE("TxnMgr: main communication completed successfully");
     mgr->next();
+}
+
+/******************************************************************
+ *                      Settlement steps
+ ******************************************************************/
+
+/*
+ * Return true only while the manager is waiting for this settlement.
+ *
+ * Transport callbacks must be stopped by txnFlowRelease() before
+ * settlementFlow can be reused for another operation.
+ */
+static bool isSettlementStep(const TxnMgr* mgr) {
+    return mgr && mgr->active && mgr->stepStarted &&
+           mgr->step == TXN_STEP_SETTLEMENT;
+}
+
+/*
+ * TxnFlow calls this after releasing its transport resources.
+ * Copy the status because the callback argument may be stack-owned.
+ */
+static void onSettlementDone(TxnFlow* flow, const TxnFlowStatus* status) {
+    TxnMgr* mgr = &__txnMgr;
+
+    if (flow != &settlementFlow || !settlementActive ||
+        settlementOperationId != operationId || !isSettlementStep(mgr)) {
+        LOG_TRACE("TxnMgr: ignoring unexpected settlement completion");
+        if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
+            ERR_OK) {
+            mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
+            return;
+        }
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_FLOW);
+        return;
+    }
+
+    settlementActive = false;
+
+    if (!status) {
+        LOG_TRACE("TxnMgr: settlement completed without status");
+        if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
+            ERR_OK) {
+            mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
+            return;
+        }
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_FLOW);
+        return;
+    }
+
+    mgr->flowStatus = *status;
+
+    LOG_TRACE("TxnMgr: settlement completed; result=%d, stage=%d, code=%d",
+              (int)status->result, (int)status->stage, status->code);
+
+    if (status->result != TXN_FLOW_SUCCESS) {
+        if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
+            ERR_OK) {
+            mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
+            return;
+        }
+        /*
+         * Preserve the pending settlement for later recovery.
+         * A timeout does not establish whether the host settled it.
+         */
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_FLOW);
+        return;
+    }
+
+    if (status->code != RESP_CODE_SUCESS) {
+        LOG_TRACE("TxnMgr: settlement rejected by host; code=%d", status->code);
+        if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
+            ERR_OK) {
+            mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
+            return;
+        }
+
+        /* Keep the original pending settlement record. */
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_FLOW);
+        return;
+    }
+
+    /*
+     * Persist completion using MAIN transaction data.
+     *
+     * Do not save settlementData here: its MTI and transaction type
+     * describe the settlement request, not the original payment.
+     *
+     * Use a copy because pendingUpdate() may modify its argument
+     * even when the storage write fails.
+     */
+    TxnData approvedData = mgr->data;
+
+    Error_t err = mgr->pendingUpdate(TXN_STATUS_APPROVED, &approvedData);
+
+    if (err != ERR_OK) {
+        LOG_TRACE("TxnMgr: settlement approved but saving completion "
+                  "failed; error=%d",
+                  (int)err);
+
+        mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
+        return;
+    }
+
+    mgr->data.status = TXN_STATUS_APPROVED;
+
+    LOG_TRACE("TxnMgr: settlement approved and completion saved");
+
+    /*
+     * With settlement as the last step, next() completes the manager.
+     * No success notification is emitted before this point.
+     */
+    mgr->next();
+}
+
+static void settleCurrentTransaction(void) {
+    TxnMgr* mgr = &__txnMgr;
+
+    if (!isSettlementStep(mgr)) {
+        LOG_TRACE("TxnMgr: settlement ignored outside settlement step");
+        return;
+    }
+
+    if (!mgr->config.txnFlowCfg) {
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_CONTEXT);
+        return;
+    }
+
+    if (!mgr->config.txnFlowCfg->needSettlement) {
+        LOG_TRACE("TxnMgr: settlement not required");
+        mgr->next();
+        return;
+    }
+
+    /*
+     * Communication must have received approval and durably saved
+     * this transaction as pending settlement before advancing here.
+     *
+     * currentPendingSaved alone is insufficient: it may refer to
+     * the pending reversal saved before the original send.
+     */
+    if (mgr->flowStatus.result != TXN_FLOW_SUCCESS ||
+        mgr->flowStatus.code != RESP_CODE_SUCESS || !currentPendingSaved ||
+        mgr->data.status != TXN_STATUS_PENDING_SETTLEMENT) {
+        LOG_TRACE("TxnMgr: settlement rejected; "
+                  "approved pending-settlement context missing");
+
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_CONTEXT);
+        return;
+    }
+
+    if (settlementActive || settlementFlow.tx ||
+        settlementFlow.stage != TXN_STAGE_IDLE) {
+        LOG_TRACE("TxnMgr: settlement flow is busy");
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_BUSY);
+        return;
+    }
+
+    txnFlowInit(&settlementFlow);
+    settlementActive      = false;
+    settlementOperationId = 0;
+
+    settlementConfig      = settlementTxnFlowCfg;
+    settlementConfig.done = onSettlementDone;
+
+    /*
+     * Settlement must not create another pending reversal.
+     * Preserve the original transaction identifiers.
+     *
+     * If your protocol requires settlement-specific composition,
+     * use a dedicated composer instead of NULL. It must preserve
+     * the original-data snapshot.
+     */
+    settlementConfig.beforeSend = NULL;
+    settlementConfig.compose    = NULL;
+
+    if (!txnFlowPrepare(&settlementFlow, NULL, &settlementConfig)) {
+        LOG_TRACE("TxnMgr: settlement preparation failed");
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_PREPARE);
+        return;
+    }
+
+    settlementData = mgr->data;
+
+    settlementData.core.mti     = settlementConfig.mti;
+    settlementData.core.txnType = settlementConfig.type;
+
+    /* Attach after prepare(), which initializes the flow. */
+    settlementFlow.data = &settlementData;
+
+    char host[32] = {0};
+
+    normalizeIp(settings()->server.mainServerIp, host, sizeof(host));
+
+    settlementOperationId = operationId;
+    settlementActive      = true;
+
+    /*
+     * connect() may synchronously call onSettlementDone().
+     * Capture the operation ID so a callback starting another
+     * transaction cannot cause the fallback to fail that transaction.
+     */
+    uint64_t startedOperation = operationId;
+
+    LOG_TRACE("TxnMgr: starting settlement; operation=%llu",
+              (unsigned long long)startedOperation);
+
+    bool started = txnFlowConnect(&settlementFlow, host,
+                                  settings()->server.mainServerPort);
+
+    if (!started && operationId == startedOperation && settlementActive &&
+        isSettlementStep(mgr)) {
+        /*
+         * connect() returned false without delivering completion.
+         */
+        settlementActive = false;
+
+        LOG_TRACE("TxnMgr: settlement could not start");
+        mgr->fail(TXN_MGR_ERR_SETTLEMENT_START);
+    }
 }
 
 /******************************************************************
@@ -325,7 +562,7 @@ static void txnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
 static TxnFlowConfig communicationCfg;
 static char          communicationIp[32];
 
-static void communication(void) {
+void communication(void) {
     LOG_TRACE("TxnMgr: communication step entered");
     TxnMgr* mgr = &__txnMgr;
 
@@ -337,7 +574,7 @@ static void communication(void) {
      */
     communicationCfg            = *mgr->config.txnFlowCfg;
     communicationCfg.beforeSend = beforeCommunicationSend;
-    communicationCfg.done       = txnFlowDone;
+    communicationCfg.done       = mainTxnFlowDone;
 
     if (!txnFlowPrepare(mgr->flow, NULL, &communicationCfg)) {
         LOG_TRACE("TxnMgr: communication flow preparation failed");
@@ -390,7 +627,9 @@ static const ManagerStepEntry stepMap[] = {
     {TXN_STEP_PHONE, enterPhone, true},
     {TXN_STEP_PIN, enterPin, true},
     {TXN_STEP_PENDING, checkPending, true},
-    {TXN_STEP_COMMUNICATION, communication, true}};
+    {TXN_STEP_COMMUNICATION, communication, true},
+    {TXN_STEP_SETTLEMENT, settleCurrentTransaction, true},
+};
 
 /* Find and execute the handler for the requested logical step. */
 static void onStep(TxnMgrStep step) {
@@ -471,10 +710,10 @@ static bool rejectRun(InfoDone done, TxnMgrError err) {
         TxnResultHandle resHandle = {.result     = TXN_MGR_RESULT_REJECT,
                                      .step       = TXN_STEP_IDLE,
                                      .err        = err,
-                                     .flowStatus = &__txnMgr.flowStatus,
+                                     .flowStatus = NULL,
                                      .digitalRec = false,
-                                     .data       = &__txnMgr.data,
-                                     .onDone     = __txnMgr.done};
+                                     .data       = NULL,
+                                     .onDone     = done};
         txnResultHandle(resHandle);
     }
 
@@ -643,6 +882,10 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
         return rejectRun(done, TXN_MGR_ERR_BEFORE_SEND_CONFLICT);
     }
 
+    mgr->flowStatus = (TxnFlowStatus){.result = TXN_FLOW_FAILED,
+                                      .stage  = TXN_STAGE_IDLE,
+                                      .code   = TXN_MGR_RESP_NONE};
+
     if (cfg->txnFlowCfg->needSettlement) {
         bool hasPendingStep = false;
 
@@ -658,6 +901,12 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
                       "TXN_MGR_ERR_PENDING_STEP_REQUIRED");
             return rejectRun(done, TXN_MGR_ERR_PENDING_STEP_REQUIRED);
         }
+    }
+
+    if (settlementActive || settlementFlow.tx ||
+        settlementFlow.stage != TXN_STAGE_IDLE) {
+        LOG_TRACE("TxnMgr: run rejected; settlement flow busy");
+        return rejectRun(done, TXN_MGR_ERR_SETTLEMENT_BUSY);
     }
 
     /*
@@ -676,6 +925,8 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
     recoveryNotified      = false;
 
     memset(&mgr->data, 0, sizeof(mgr->data));
+
+    mgr->data.status = TXN_STATUS_DECLINED;
 
     mgr->config            = requested;
     mgr->done              = done;
@@ -714,13 +965,24 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
  * A host decline is FAILURE with err == TXN_MGR_ERR_RESP_CODE.
  */
 void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
-    HIDE_INFO();
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->active) {
         LOG_TRACE("TxnMgr: completion ignored: no active operation");
         return;
     }
+
+    if (status) {
+        mgr->flowStatus = *status;
+    } else {
+        mgr->flowStatus = (TxnFlowStatus){.result = TXN_FLOW_FAILED,
+                                          .stage  = TXN_STAGE_IDLE,
+                                          .code   = TXN_MGR_RESP_NONE};
+    }
+
+    status = &mgr->flowStatus;
+
+    HIDE_INFO();
 
     TxnMgrStep completedStep = mgr->step;
     LOG_TRACE("TxnMgr: complete operation=%llu, result=%d, step=%d, error=%d, "
@@ -732,8 +994,6 @@ void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
      * Capture callbacks before notification: a callback may start
      * another transaction and replace the manager configuration.
      */
-    LOG_TRACE("mgr->data->core.pan = %s", mgr->data.core.pan);
-    LOG_TRACE("mgr Mgr: respcode = %d", mgr->data.core.respCode);
     InfoDone        done      = mgr->done;
     TxnMgrSuccessCb onSuccess = mgr->config.onSuccess;
     TxnMgrFailureCb onFailure = mgr->config.onFailure;
@@ -797,6 +1057,12 @@ static bool next(void) {
     if (!mgr->active || !mgr->stepStarted) {
         LOG_TRACE("TxnMgr: next rejected; active=%d, started=%d",
                   (int)mgr->active, (int)mgr->stepStarted);
+        return false;
+    }
+
+    if (settlementActive || settlementFlow.tx ||
+        settlementFlow.stage != TXN_STAGE_IDLE) {
+        LOG_TRACE("TxnMgr: run rejected; settlement flow busy");
         return false;
     }
 
@@ -974,6 +1240,10 @@ OOP_CTOR(TxnMgr) {
     communicationNotified = false;
     recoveryNotified      = false;
     operationId           = 0;
+
+    txnFlowInit(&settlementFlow);
+    settlementActive      = false;
+    settlementOperationId = 0;
 
     OOP_CALL_CTOR(State, self->smState, NULL, "transaction manager");
 

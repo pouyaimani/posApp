@@ -97,6 +97,10 @@ static bool showTransactionResult(const TxnFlowStatus* st, const TxnData* data,
         return false;
     }
 
+    resultData   = *data;
+    resultStatus = *st;
+    resultCfg    = *mgr->config.txnFlowCfg;
+
     memset(&infoFinishCtx, 0, sizeof(InfoFinishCtx));
     if (digitalRec) {
         infoFinishCtx.done     = digitalRecDone;
@@ -196,7 +200,6 @@ static void handleFailure(TxnResultHandle handle) {
          * A host response is meaningful only after successful parsing.
          * Missing or inconsistent result data falls back to an error.
          */
-        LOG_TRACE("data->core.pan = %s", handle.data->core.pan);
         if (handle.step == TXN_STEP_COMMUNICATION && handle.flowStatus &&
             handle.flowStatus->result == TXN_FLOW_SUCCESS &&
             handle.flowStatus->code != RESP_CODE_SUCESS &&
@@ -253,8 +256,6 @@ void txnResultHandle(TxnResultHandle handle) {
     LOG_TRACE("TxnResult: completion; result=%d, step=%d, error=%d",
               (int)handle.result, (int)handle.step, (int)handle.err);
 
-    LOG_TRACE("mgr Mgr: respcode = %d", handle.data->core.respCode);
-
     if (handle.result == TXN_MGR_RESULT_REJECT) {
         handleRejected(handle.err, handle.onDone);
         return;
@@ -266,8 +267,8 @@ void txnResultHandle(TxnResultHandle handle) {
          */
         if (handle.err != TXN_MGR_ERR_NONE ||
             (handle.step != TXN_STEP_COMMUNICATION &&
-             handle.step != TXN_STEP_PENDING) ||
-            !handle.flowStatus ||
+             handle.step != TXN_STEP_SETTLEMENT) ||
+            !handle.data || !handle.flowStatus ||
             handle.flowStatus->result != TXN_FLOW_SUCCESS ||
             handle.flowStatus->code != RESP_CODE_SUCESS) {
             LOG_TRACE("TxnResult: inconsistent success notification");
@@ -282,6 +283,15 @@ void txnResultHandle(TxnResultHandle handle) {
             showFailure("", handle.onDone);
         }
 
+        return;
+    }
+
+    if (handle.result == TXN_MGR_RESULT_FAILURE &&
+        handle.step == TXN_STEP_SETTLEMENT) {
+        if (!showTransactionResult(handle.flowStatus, handle.data,
+                                   handle.onDone, true)) {
+            showFailure("", handle.onDone);
+        }
         return;
     }
 

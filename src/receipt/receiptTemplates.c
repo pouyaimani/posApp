@@ -836,12 +836,13 @@ static void DigRecfillCommon(TxnData* data) {
               "= %s, time str = %s",
               data->dateTime, idate, itime, dateStr, timeStr);
 
-    lv_palette_t palette =
-        data->core.respCode == 0 ? LV_PALETTE_GREEN : LV_PALETTE_RED;
-    header.statusIcon = data->core.respCode == 0 ? ICON_SUCCEED : ICON_FAILED;
+    bool success =
+        (data->core.respCode == 0) && (data->status == TXN_STATUS_APPROVED);
+
+    lv_palette_t palette = success ? LV_PALETTE_GREEN : LV_PALETTE_RED;
+    header.statusIcon    = success ? ICON_SUCCEED : ICON_FAILED;
     header.statusTitle =
-        phraseGetDef(data->core.respCode == 0 ? PHRASE_SUCCESSFUL_TXN
-                                              : PHRASE_UNSUCCESSFUL_TXN);
+        phraseGetDef(success ? PHRASE_SUCCESSFUL_TXN : PHRASE_UNSUCCESSFUL_TXN);
     details.count = 3;
     DEFINE_STRING(bin, LEN_MAX_BIN + 1);
     extractBin(data->core.pan, bin, sizeof(bin), LEN_MAX_BIN);

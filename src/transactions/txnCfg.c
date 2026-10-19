@@ -1,4 +1,4 @@
-#include "txnConfig.h"
+#include "txnCfg.h"
 #include "txnFlow/txnFLow.h"
 #include "phrases/phrases.h"
 #include "states/states.h"
@@ -180,47 +180,11 @@ static const uint8_t isoFeildsVoucher[] = {ELEMENT_PAN,
                                            ELEMENT_SECURITY_CONTROL_INFO,
                                            ELEMENT_MAC};
 
-static TxnExtention data;
-static uint64_t     selectedAmnt;
-
 /**********************************************************************
  *
  *                     Common Transaction config
  *
  **********************************************************************/
-
-static TxnFlowConfig* txnCfg;
-static TxnFlow*       txnFlow;
-static State*         txnOwnerState;
-static SimCardOp_t    selectedOp;
-static TxnType        txn;
-static char           phoneNum[LEN_MAX_PHONE_NUMBER + 1];
-
-static int pendMgrDone(TxnData* data) {
-    LOG_TRACE("Pending manager done callback is called.");
-    if (data) {
-        if (data->core.respCode != RESP_CODE_SUCESS) {
-            infoMgrsetCommon(STATE_IDLE, STATE_IDLE);
-            infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-                           phraseGetDef(PHRASE_PENDED_TXN_FAILURE), "");
-            return;
-        }
-    }
-    DEFINE_STRING(ip, 32);
-    normalizeIp(settings()->server.mainServerIp, ip, sizeof(ip));
-    txnRun(txnFlow, txnOwnerState, ip, settings()->server.mainServerPort,
-           txnCfg);
-}
-
-int8_t txnStart(TxnFlowConfig* cfg, TxnFlow* flow, State* owner) {
-    txnCfg        = cfg;
-    txnFlow       = flow;
-    txnOwnerState = owner;
-    // if (!txnPendingMgr()->run(pendMgrDone)) {
-    //     pendMgrDone(NULL);
-    // }
-    return ERR_OK;
-}
 
 int composeCommon(TxnData* data) {
     magreader()->getPan(data->core.pan, sizeof(data->core.pan));
@@ -252,42 +216,6 @@ void showReceiving(TxnFlow* f) {
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_RECEIVING_DATA), "");
 }
 
-void commonDone(TxnFlow* flow, const TxnFlowStatus* st, State* onSuc,
-                State* onFail, bool showSucMsg) {
-    LOG_TRACE("transaction result = %d", st->result);
-    if (st->result == TXN_FLOW_SUCCESS) {
-        GOTO_TXN_RES(flow->cfg, flow->data, st, onSuc, onFail);
-        return;
-    }
-
-    Phrases_t body = PHRASE_CONNECTION_ERR;
-    LOG_TRACE("transaction stage = %d", st->stage);
-    switch (st->stage) {
-    case TXN_STAGE_SENDING:
-        body = PHRASE_SENDING_DATA_ERR;
-        break;
-
-    case TXN_STAGE_RECEIVING:
-        body = PHRASE_RECEIVING_DATA_ERR;
-        break;
-    case TXN_STAGE_PARSING:
-        body = PHRASE_PARSE_ERROR;
-        break;
-
-    default:
-        break;
-    }
-    infoMgrsetCommon(onFail, onFail);
-    infoMgr()->run(
-        INFO_ERROR, &infoFinishCtx, phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
-        st->result == TXN_FLOW_TIMEOUT ? phraseGetDef(PHRASE_TIME_OUT)
-                                       : phraseGetDef(body));
-}
-
-void financeTxnDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    commonDone(flow, st, STATE_IDLE, STATE_IDLE, false);
-}
-
 #define TXN_FLOW_COMMON                                                        \
     .build = buildCommon, .parse = parseCommon,                                \
     .onConnecting = showConnecting, .onSending = showSending,                  \
@@ -315,8 +243,6 @@ const TxnFlowConfig balanceTxnFlowCfg = {
 
     .compose = composeCommon,
 
-    .done = financeTxnDone,
-
     .needSettlement = false};
 
 const TxnMgrCfg balanceTxnCfg = {
@@ -343,8 +269,6 @@ const TxnFlowConfig billTxnFlowCfg = {
     .feildsCnt = sizeof(isoFeildsBill),
 
     .compose = composeCommon,
-
-    .done = financeTxnDone,
 };
 
 const TxnMgrCfg billTxnCfg = {
@@ -355,16 +279,6 @@ const TxnMgrCfg billTxnCfg = {
  *                     Config Transaction config
  *
  **********************************************************************/
-static void cfgDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        LOG_TRACE(
-            "config transaction is done successfully. saving settings ...");
-        settings()->save();
-    }
-    Supporter* state = (Supporter*)STATE_SUPPORTER;
-    commonDone(flow, st, state->substate.supervisor->substate.configuration,
-               state->substate.supervisor->substate.configuration, true);
-}
 
 const TxnFlowConfig cfgTxnFlowCfg = {
 
@@ -384,8 +298,6 @@ const TxnFlowConfig cfgTxnFlowCfg = {
 
     .compose = NULL,
 
-    .done = cfgDone,
-
     .digitalReceipt = false};
 
 const TxnMgrCfg cfgTxnCfg = {
@@ -396,14 +308,6 @@ const TxnMgrCfg cfgTxnCfg = {
  *                     Logon Transaction config
  *
  **********************************************************************/
-static void logOnDone(TxnFlow* flow, const TxnFlowStatus* st) {
-    if (st->result == TXN_FLOW_SUCCESS && st->code == 0) {
-        settings()->save();
-    }
-    Supporter* state = (Supporter*)STATE_SUPPORTER;
-    commonDone(flow, st, state->substate.supervisor->substate.configuration,
-               state->substate.supervisor->substate.configuration, true);
-}
 
 const TxnFlowConfig logOnTxnFlowCfg = {
 
@@ -422,8 +326,6 @@ const TxnFlowConfig logOnTxnFlowCfg = {
     .needSettlement = false,
 
     .compose = NULL,
-
-    .done = logOnDone,
 
     .digitalReceipt = false};
 
@@ -453,8 +355,6 @@ const TxnFlowConfig purchaseTxnFlowCfg = {
     .feildsCnt = sizeof(isoFeildsPurchase),
 
     .compose = composeCommon,
-
-    .done = financeTxnDone,
 };
 
 const TxnMgrCfg purchaseTxnCfg = {
@@ -465,8 +365,6 @@ const TxnMgrCfg purchaseTxnCfg = {
  *                     Reverse Transaction config
  *
  **********************************************************************/
-extern void reverseDone(TxnFlow* flow, const TxnFlowStatus* st);
-
 static int composeReverse(TxnData* data) {
     LOG_TRACE("composeReverse: stan before = %lu, stan after = %lu",
               data->core.stan, txnTraceInfo()->stan);
@@ -497,8 +395,6 @@ const TxnFlowConfig reverseTxnFlowCfg = {
     .compose = composeReverse,
 
     .build = buildReverse,
-
-    .done = reverseDone,
 };
 
 const TxnMgrCfg reverseTxnCfg = {
@@ -509,8 +405,6 @@ const TxnMgrCfg reverseTxnCfg = {
  *                     Settle Transaction config
  *
  **********************************************************************/
-
-extern void settleDone(TxnFlow* flow, const TxnFlowStatus* st);
 
 static int composeSettle(TxnData* data) {
     data->core.stan = txnTraceInfo()->stan;
@@ -540,8 +434,6 @@ const TxnFlowConfig settlementTxnFlowCfg = {
     .compose = composeSettle,
 
     .build = buildSettle,
-
-    .done = settleDone,
 };
 
 const TxnMgrCfg settlementTxnCfg = {
@@ -568,9 +460,7 @@ const TxnFlowConfig topupTxnFlowCfg = {
 
     .needSettlement = true,
 
-    .compose = composeCommon,
-
-    .done = financeTxnDone};
+    .compose = composeCommon};
 
 const TxnMgrCfg topupTxnCfg = {
     .txnFlowCfg = &topupTxnFlowCfg, .onSuccess = NULL, .onFailure = NULL};
@@ -598,8 +488,7 @@ const TxnFlowConfig voucherTxnFlowCfg = {
     .needSettlement = true,
 
     .compose = composeCommon,
-
-    .done = financeTxnDone};
+};
 
 const TxnMgrCfg voucherTxnCfg = {
     .txnFlowCfg = &voucherTxnFlowCfg, .onSuccess = NULL, .onFailure = NULL};
