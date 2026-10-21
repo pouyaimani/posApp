@@ -11,8 +11,8 @@
 #include "ui/infoPage.h"
 #include "txnFlow/txnFLow.h"
 #include "menuMgr/menuMgr.h"
-#include "transactions/txnMgr.h"
-#include "transactions/txnCfg.h"
+#include "txnMgr/txnMgr.h"
+#include "txnMgr/txnCfg.h"
 #include "infoMgr/infoMgr.h"
 #include "supporter.h"
 
