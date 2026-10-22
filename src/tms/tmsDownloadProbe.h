@@ -9,7 +9,7 @@ TmsDownloadResult tmsDownloadProbeInit();
 TmsDownloadResult tmsDownloadProbeQueue(const char* url, uint32_t expected);
 
 /* Call after nth.tick returns, from the same owner task. */
-void tmsDownloadProbeTick(void);
+void tmsDownloadProbeTick(TmsDownloadProgress cb);
 
 TmsDownloadResult tmsDownloadProbeCancel(void);
 

@@ -54,7 +54,7 @@ TmsDownloadResult tmsDownloadProbeQueue(const char* url, uint32_t expected) {
     return TMS_DL_OK;
 }
 
-void tmsDownloadProbeTick(void) {
+void tmsDownloadProbeTick(TmsDownloadProgress cb) {
     TmsDownloadResult rc;
     /* Temporary diagnostic: logs once per 1000 calls. */
     static unsigned diagnosticTicks = 0;
@@ -80,7 +80,7 @@ void tmsDownloadProbeTick(void) {
     pending      = false;
     last_percent = 0;
     rc = tms_download_start(download, queued_url, TMS_UPG_FILE, queued_size,
-                            300000, progress, done, NULL);
+                            300000, cb, done, NULL);
     if (rc != TMS_DL_OK)
         LOG_TRACE("TMS download start rejected: result=%d", (int)rc);
 }

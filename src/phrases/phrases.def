@@ -240,6 +240,10 @@ X(PHRASE_TXN_REJECTED              ,   "تراکنش رد شد"                 
 )
 X(PHRASE_TXN_CANCELLED              ,   "تراکنش لغو شد"                                     ,   "wage"
 )
+X(PHRASE_UPDATING              ,   "در حال به روز رسانی"                                    ,   "wage"
+)
+
+
 /**********************************************************************
  *
  *                              Shift
@@ -529,7 +533,8 @@ X(PHRASE_UPDATE_SUCCEED          ,   "دستگاه با موفقیت به روز
 )
 X(PHRASE_TAP_PHONE              ,   "لطفا تلغن همراه خود را نزدیک کنید"        ,  "phone number"
 )
-
+X(PHRASE_CHECK_UPG              ,   "بررسی نسخه"        ,  "phone number"
+)
 /**********************************************************************
  *
  *                          Key management 
