@@ -518,6 +518,12 @@ static void nth_handleReceiving(NthTransaction* tx) {
 
     RETURN_IF_NULL(tx, ;);
 
+    if (tx->streamRx && tx->onChunk == NULL) {
+        NTH_LOG("nth: streaming receive requires onChunk");
+        nth_fail(tx, NTH_ERR_INTERNAL);
+        return;
+    }
+
     if (tx->rxOffset > tx->rxBuffer.capacity) {
         nth_fail(tx, NTH_ERR_INTERNAL);
         return;
@@ -617,6 +623,16 @@ static void nth_handleReceiving(NthTransaction* tx) {
     switch (decision) {
 
     case NTH_RX_MORE:
+        if (tx->streamRx) {
+            /*
+             * onChunk and isComplete have finished processing
+             * these bytes. Reuse the buffer for the next receive.
+             *
+             * Do not retain pointers into rxBuffer/onChunk data.
+             */
+            tx->rxOffset     = 0U;
+            tx->rxBuffer.len = 0U;
+        }
         return;
 
     case NTH_RX_COMPLETE:

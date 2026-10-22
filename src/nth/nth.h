@@ -47,6 +47,19 @@ typedef struct NthTransaction {
     size_t txOffset;
     size_t rxOffset;
 
+    /*
+     * false:
+     *   Accumulate the complete response in rxBuffer.
+     *
+     * true:
+     *   Deliver bytes through onChunk, then reuse rxBuffer while
+     *   waiting for more data. The application/parser owns any
+     *   information that must survive the callback.
+     *
+     * Requires onChunk.
+     */
+    bool streamRx;
+
     bool peerClosed;
 
     uint32_t timeoutMs;
