@@ -545,8 +545,24 @@ static void nth_handleReceiving(NthTransaction* tx) {
 
     switch (ioStatus) {
 
-    case NTH_IO_WOULD_BLOCK:
+    case NTH_IO_WOULD_BLOCK: {
+        /* Temporary diagnostic; shared log throttle across transactions. */
+        static uint32_t lastLogTick = 0U;
+        uint32_t        now         = nth_getTick();
+        uint32_t        elapsed     = (uint32_t)(now - tx->startTick);
+
+        if ((uint32_t)(now - lastLogTick) >= 5000U) {
+            lastLogTick = now;
+
+            LOG_TRACE("NTH waiting: fd=%d now=%lu start=%lu "
+                      "elapsed=%lu timeout=%lu",
+                      tx->socketFd, (unsigned long)now,
+                      (unsigned long)tx->startTick, (unsigned long)elapsed,
+                      (unsigned long)tx->timeoutMs);
+        }
+
         return;
+    }
 
     case NTH_IO_ERROR:
         NTH_LOG("nth: receiving data failed.");

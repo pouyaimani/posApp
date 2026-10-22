@@ -13,16 +13,15 @@ static bool exists(File* self, const char* path) {
 }
 
 static bool createEmptyFile(const char* path) {
-    int ret = sdkFileCreate(path, 1, 0);
-    return true;
+    int ret;
+
+    if (path == NULL || *path == '\0')
+        return false;
+
+    ret = sdkFileCreate(path, 1, 0);
 
     if (ret != SDK_FILE_OK) {
-        uint32_t freeSpace = 0;
-
-        LOG_ERROR("Could not create file '%s': %d", path, ret);
-        sdkFileGetFreeSpace(&freeSpace);
-        LOG_ERROR("Flash free space: %u", freeSpace);
-
+        LOG_ERROR("Could not create file '%s': error=%d", path, ret);
         return false;
     }
 

@@ -1,32 +1,25 @@
 #include "tmsUpgradeCheck.h"
 #include "logger.h"
+#include "tmsDownloadProbe.h"
 
 static TmsApi* api;
+TmsUpgCheckCb  callback;
 
 static void checkDone(TmsApi* context, const TmsCheckResult* r, void* user) {
     (void)context;
     (void)user;
-    LOG_TRACE("TMS check: result=%d HTTP=%u transport=%d parser=%d",
-              (int)r->result, r->http.http_status, (int)r->http.result,
-              (int)r->http.http_result);
-    if (r->has_server_code)
-        LOG_TRACE("TMS server: code=%ld message=%s", (long)r->server_code,
-                  r->upgrade.message);
-    if (r->result != TMS_API_OK)
-        return;
-    if (!r->upgrade.has_update) {
-        LOG_TRACE("TMS: no update available");
-        return;
+    if (callback) {
+        callback(r, user);
     }
-    LOG_TRACE("TMS: update available version=%s size=%lu", r->upgrade.version,
-              (unsigned long)r->upgrade.file_size);
-    /* Metadata is available in r->upgrade. No download/install is started. */
 }
+
 TmsApiResult tmsUpgradeCheckStart(const char* host, uint16_t port,
                                   const char* serial, const char* brand,
-                                  const char* current_version) {
+                                  const char*   current_version,
+                                  TmsUpgCheckCb cb) {
     TmsCheckRequest request = {0};
     TmsApiResult    result;
+    callback                   = cb;
     api                        = MEM_ALLOC(sizeof(TmsApi));
     request.host               = host;
     request.port               = port;
@@ -41,4 +34,5 @@ TmsApiResult tmsUpgradeCheckStart(const char* host, uint16_t port,
         LOG_TRACE("TMS start rejected: result=%d", (int)result);
     return result;
 }
+
 TmsApiResult tmsUpgradeCheckCancel(void) { return tms_api_cancel(api); }

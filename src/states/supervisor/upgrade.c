@@ -6,6 +6,8 @@
 #include "settings/settings.h"
 #include "tms/tmsTimeSync.h"
 #include "tms/tmsUpgradeCheck.h"
+#include "tms/tmsDownload.h"
+#include "tms/tmsDownloadProbe.h"
 #include "ui/infoPage.h"
 #include "phrases/phrases.h"
 #include "timer.h"
@@ -78,6 +80,38 @@ static bool isBatteryOk() {
 //     }
 // }
 
+static void upgCheckDone(const TmsCheckResult* r, void* user) {
+    (void)user;
+    LOG_TRACE("TMS check: result=%d HTTP=%u transport=%d parser=%d",
+              (int)r->result, r->http.http_status, (int)r->http.result,
+              (int)r->http.http_result);
+    if (r->has_server_code)
+        LOG_TRACE("TMS server: code=%ld message=%s", (long)r->server_code,
+                  r->upgrade.message);
+    if (r->result != TMS_API_OK)
+        return;
+    if (!r->upgrade.has_update) {
+        LOG_TRACE("TMS: no update available");
+        return;
+    }
+    LOG_TRACE("TMS: update available version=%s size=%lu", r->upgrade.version,
+              (unsigned long)r->upgrade.file_size);
+    /* Metadata is available in r->upgrade. No download/install is started. */
+    if (tmsDownloadProbeInit() != TMS_DL_OK) {
+        return;
+    }
+    LOG_TRACE("TMS URL: length=%lu prefix=%.8s",
+              (unsigned long)strlen(r->upgrade.url), r->upgrade.url);
+
+    TmsDownloadResult rc =
+        tmsDownloadProbeQueue(r->upgrade.url, r->upgrade.file_size);
+    if (rc == TMS_DL_OK) {
+        smCore()->registerCallback(tmsDownloadProbeTick);
+    }
+
+    LOG_TRACE("TMS download queued: result=%d", (int)rc);
+}
+
 STATE_DEF_ENTER(Upgrade) {
     // tmsUpgrade = MEM_ALLOC(sizeof(TmsUpgrade));
     // infoMgrsetCommon(state->parent, state->parent);
@@ -126,8 +160,8 @@ STATE_DEF_ENTER(Upgrade) {
 
     tmsUpgradeCheckStart(TMS_HOST, /* Same host as your successful probe */
                          TMS_PORT, sn, BRAND_CODE,
-                         appVersion /* Same version format as legacy TMS */
-    );
+                         appVersion, /* Same version format as legacy TMS */
+                         upgCheckDone);
 
     // HttpClientResult result = tmsHttpProbeStart(TMS_HOST, TMS_PORT);
 }
