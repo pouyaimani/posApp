@@ -202,7 +202,7 @@ static void nth_closeSocketOnly(NthTransaction* tx) {
     RETURN_IF_NULL(tx, ;);
 
     if (tx->socketFd >= 0) {
-        NTH_LOG("nth: closing failed connection socket = %d", tx->socketFd);
+        NTH_LOG("nth: closing connection socket = %d", tx->socketFd);
 
         g_transport->close(tx->socketFd);
     }

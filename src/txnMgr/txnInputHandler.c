@@ -385,12 +385,12 @@ void enterPin(void) {
     inmgr()->run(&inputCfg, onInputComplete, txnMgr());
 }
 
-// /**
-//  * @brief Handles the result of an NFC acquisition request.
-//  *
-//  * @param status    NFC acquisition result and reader status.
-//  * @param userData  Optional application context passed to nfcmgr()->run().
-//  */
+/**
+ * @brief Handles the result of an NFC acquisition request.
+ *
+ * @param status    NFC acquisition result and reader status.
+ * @param userData  Optional application context passed to nfcmgr()->run().
+ */
 // static void onNfcComplete(const NfcStatus* status, void* userData) {
 //     TxnMgr* mgr = userData;
 //     LOG_TRACE("NFC callback: entered status=%p userData=%p",

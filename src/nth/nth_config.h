@@ -11,7 +11,8 @@
 #define NT_TX_BUFFER_SIZE   2048U
 #define NT_RX_BUFFER_SIZE   6144U
 
-#define NT_IO_BUFFER_SIZE 6144U
+// #define NT_IO_BUFFER_SIZE 6144U
+#define NT_IO_BUFFER_SIZE 2048U
 
 /*
  * Compatibility for older TX-oriented code.
