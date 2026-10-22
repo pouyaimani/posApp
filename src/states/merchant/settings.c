@@ -13,7 +13,6 @@
 #include "inputMgr/inputMgr.h"
 #include "utility/convert.h"
 #include "common.h"
-#include "tms/tmsTimeSync.h"
 #include "menuMgr/menuMgr.h"
 #include "infoMgr/infoMgr.h"
 
@@ -396,66 +395,66 @@ static void TouchSettings(State* parent) {
 }
 
 /******************** date time sub state **********************/
-static TmsTimeSync* timeSync;
+// static TmsTimeSync* timeSync;
 
-static void timeSyncDone(TmsTimeSync* sync, TmsTimeSyncResult result,
-                         void* userData) {
-    const char* dateTime;
-    State*      state = (State*)userData;
+// static void timeSyncDone(TmsTimeSync* sync, TmsTimeSyncResult result,
+//                          void* userData) {
+//     const char* dateTime;
+//     State*      state = (State*)userData;
 
-    if (result != TMS_TIME_SYNC_RESULT_OK) {
-        LOG_TRACE("Time sync failed: result=%d, serverCode=%d", result,
-                  sync->serverCode);
-        infoMgrsetCommon(state->parent, state->parent);
-        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-                       phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
-        return;
-    }
+//     if (result != TMS_TIME_SYNC_RESULT_OK) {
+//         LOG_TRACE("Time sync failed: result=%d, serverCode=%d", result,
+//                   sync->serverCode);
+//         infoMgrsetCommon(state->parent, state->parent);
+//         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+//                        phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
+//         return;
+//     }
 
-    dateTime = tmsTimeSyncGetDateTime(sync);
+// dateTime = tmsTimeSyncGetDateTime(sync);
 
-    if (dateTime != NULL) {
-        LOG_TRACE("Server time: %s", dateTime);
-        DateTime dt;
-        int      year, month, day, hour, minute, second;
+// if (dateTime != NULL) {
+//     LOG_TRACE("Server time: %s", dateTime);
+//     DateTime dt;
+//     int      year, month, day, hour, minute, second;
 
-        sscanf(dateTime, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour,
-               &minute, &second);
-        snprintf(dt.date, sizeof(dt.date), "%d%d%d", year, month, day);
-        snprintf(dt.time, sizeof(dt.time), "%d%d%d", hour, minute, second);
-        LOG_TRACE("date = %s", dt.date);
-        LOG_TRACE("time = %s", dt.time);
-        OOP_CALL(sys(), setDateTime, &dt);
-    }
+//     sscanf(dateTime, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour,
+//            &minute, &second);
+//     snprintf(dt.date, sizeof(dt.date), "%d%d%d", year, month, day);
+//     snprintf(dt.time, sizeof(dt.time), "%d%d%d", hour, minute, second);
+//     LOG_TRACE("date = %s", dt.date);
+//     LOG_TRACE("time = %s", dt.time);
+//     OOP_CALL(sys(), setDateTime, &dt);
+// }
 
-    infoMgrsetCommon(state->parent, state->parent);
-    infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
-                   phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
-}
+// infoMgrsetCommon(state->parent, state->parent);
+// infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+//                phraseGetDef(PHRASE_UPDATE_SUCCEED), "");
+// }
 
 #define TMS_HOST "sabztms.ir"
 #define TMS_PORT 18094U
 
 STATE_DEF_ENTER(DateTimeSettings) {
-    timeSync = MEM_ALLOC(sizeof(*timeSync));
-    infoMgrsetCommon(state->parent, state->parent);
-    RETURN_IF_NULL(timeSync,
-                   infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-                                  phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
-                                  ""););
-    tmsTimeSyncInit(timeSync, TMS_HOST, TMS_PORT, timeSyncDone, state);
+    // timeSync = MEM_ALLOC(sizeof(*timeSync));
+    // infoMgrsetCommon(state->parent, state->parent);
+    // RETURN_IF_NULL(timeSync,
+    //                infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+    //                               phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION),
+    //                               ""););
+    // tmsTimeSyncInit(timeSync, TMS_HOST, TMS_PORT, timeSyncDone, state);
 
-    TmsTimeSyncResult result;
+    // TmsTimeSyncResult result;
 
-    result = tmsTimeSyncStart(timeSync);
-    infoMgrsetCommon(state->parent, state->parent);
-    RETURN_IF_NOT(result, TMS_TIME_SYNC_RESULT_OK, {
-        LOG_TRACE("Could not start time sync: %d", result);
-        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-                       phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
-    });
+    // result = tmsTimeSyncStart(timeSync);
+    // infoMgrsetCommon(state->parent, state->parent);
+    // RETURN_IF_NOT(result, TMS_TIME_SYNC_RESULT_OK, {
+    //     LOG_TRACE("Could not start time sync: %d", result);
+    //     infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+    //                    phraseGetDef(PHRASE_UNSUCCESSFUL_OPERATION), "");
+    // });
 
-    SHOW_INFO(INFO_WAITING, "لطفا منتظر بمانید", "");
+    // SHOW_INFO(INFO_WAITING, "لطفا منتظر بمانید", "");
 }
 
 STATE_DEF_EXIT(DateTimeSettings) {}
