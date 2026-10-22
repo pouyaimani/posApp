@@ -1,5 +1,5 @@
-#ifndef TMS_HTTP_PROBE_H
-#define TMS_HTTP_PROBE_H
+#ifndef TMS_TIME_SYNC_H
+#define TMS_TIME_SYNC_H
 #include "http/httpClient.h"
 /* Call from the same task that calls nth.tick. Uses plain HTTP.
  * This only logs /api/ntp/sync; it does not change the device clock. */

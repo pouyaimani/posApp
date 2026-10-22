@@ -4,7 +4,8 @@
 #include "version.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
-#include "tms/tmsHttpProbe.h"
+#include "tms/tmsTimeSync.h"
+#include "tms/tmsUpgradeCheck.h"
 #include "ui/infoPage.h"
 #include "phrases/phrases.h"
 #include "timer.h"
@@ -118,7 +119,17 @@ STATE_DEF_ENTER(Upgrade) {
 
     // ui_download_progress_show(progressBar, false);
 
-    HttpClientResult result = tmsHttpProbeStart(TMS_HOST, TMS_PORT);
+    DEFINE_STRING(appVersion, 128);
+    DEFINE_STRING(sn, 128);
+    sprintf(appVersion, "V%s", PNA_TMS_VERSION);
+    OOP_CALL(sys(), getSN, sn, sizeof(sn));
+
+    tmsUpgradeCheckStart(TMS_HOST, /* Same host as your successful probe */
+                         TMS_PORT, sn, BRAND_CODE,
+                         appVersion /* Same version format as legacy TMS */
+    );
+
+    // HttpClientResult result = tmsHttpProbeStart(TMS_HOST, TMS_PORT);
 }
 
 OOP_CTOR(Upgrade, State* parent, const char* name) {
