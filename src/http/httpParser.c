@@ -3,8 +3,45 @@
 #include "error.h"
 
 #include <string.h>
+#include <stdint.h>
 
 #include "picohttpparser/picohttpparser.h"
+
+/*
+ * HTTP parser diagnostics.
+ *
+ * This parser receives an accumulated RX buffer on every invocation. Log the
+ * headers and body ONCE per successfully decoded message, not on every poll.
+ * Body logging is for development only: JSON may contain private device data.
+ */
+#ifndef HTTP_PARSER_TRACE_HEADERS
+#define HTTP_PARSER_TRACE_HEADERS 1
+#endif
+
+#ifndef HTTP_PARSER_TRACE_BODY
+#define HTTP_PARSER_TRACE_BODY 1
+#endif
+
+#ifndef HTTP_PARSER_TRACE_MAX_BYTES
+#define HTTP_PARSER_TRACE_MAX_BYTES 512u
+#endif
+
+static const char* httpParseResultText(HttpParseResult result) {
+    switch (result) {
+    case HTTP_PARSE_OK:
+        return "OK";
+    case HTTP_PARSE_INCOMPLETE:
+        return "INCOMPLETE";
+    case HTTP_PARSE_ERROR:
+        return "ERROR";
+    case HTTP_PARSE_OVERFLOW:
+        return "OVERFLOW";
+    case HTTP_PARSE_UNSUPPORTED:
+        return "UNSUPPORTED";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 static bool sliceEqualsIgnoreCase(HttpSlice slice, const char* str) {
     size_t len;
@@ -34,22 +71,179 @@ static bool sliceEqualsIgnoreCase(HttpSlice slice, const char* str) {
     return true;
 }
 
+#if HTTP_PARSER_TRACE_HEADERS
+/* Escape non-printable bytes and honor explicit slice lengths. */
+static void httpParserSafeText(char* out, size_t capacity, const char* data,
+                               size_t length) {
+    size_t n = length;
+    if (out == NULL || capacity == 0u)
+        return;
+    if (data == NULL) {
+        out[0] = '\0';
+        return;
+    }
+    if (n >= capacity)
+        n = capacity - 1u;
+    for (size_t i = 0u; i < n; i++) {
+        unsigned char c = (unsigned char)data[i];
+        out[i]          = (c >= 32u && c <= 126u) ? (char)c : '.';
+    }
+    out[n] = '\0';
+}
+#endif
+
+#if HTTP_PARSER_TRACE_HEADERS
+static bool httpParserSensitiveHeader(HttpSlice name) {
+    return sliceEqualsIgnoreCase(name, "Authorization") ||
+           sliceEqualsIgnoreCase(name, "Proxy-Authorization") ||
+           sliceEqualsIgnoreCase(name, "Cookie") ||
+           sliceEqualsIgnoreCase(name, "Set-Cookie") ||
+           sliceEqualsIgnoreCase(name, "X-API-Key") ||
+           sliceEqualsIgnoreCase(name, "X-Auth-Token") ||
+           sliceEqualsIgnoreCase(name, "WWW-Authenticate") ||
+           sliceEqualsIgnoreCase(name, "Proxy-Authenticate");
+}
+
+static void httpParserTraceHeaders(const HttpParser* parser) {
+    if (parser == NULL || !parser->headerComplete)
+        return;
+
+    char reason[81];
+    httpParserSafeText(reason, sizeof(reason),
+                       parser->response.reasonPhrase.data,
+                       parser->response.reasonPhrase.len);
+    LOG_TRACE("HTTP PARSER RX: HTTP/1.%d status=%d reason=%s headers=%lu",
+              parser->response.version == HTTP_VERSION_1_0 ? 0 : 1,
+              parser->response.statusCode, reason,
+              (unsigned long)parser->response.headers.count);
+
+    for (size_t i = 0u; i < parser->response.headers.count; i++) {
+        const HttpHeader* h = &parser->response.headers.headers[i];
+        char              name[81];
+        char              value[161];
+        httpParserSafeText(name, sizeof(name), h->name.data, h->name.len);
+        if (httpParserSensitiveHeader(h->name)) {
+            LOG_TRACE("HTTP PARSER RX HEADER[%lu]: %s: [REDACTED]",
+                      (unsigned long)i, name);
+        } else {
+            httpParserSafeText(value, sizeof(value), h->value.data,
+                               h->value.len);
+            LOG_TRACE("HTTP PARSER RX HEADER[%lu]: %s: %s%s", (unsigned long)i,
+                      name, value,
+                      h->value.len >= sizeof(value) ? " [TRUNCATED]" : "");
+        }
+    }
+    LOG_TRACE("HTTP PARSER RX FRAME: chunked=%d hasContentLength=%d "
+              "contentLength=%lu connectionClose=%d bodyForbidden=%d",
+              (int)parser->chunked, (int)parser->hasContentLength,
+              (unsigned long)parser->contentLength,
+              (int)parser->connectionClose,
+              (int)parser->response.bodyForbidden);
+}
+#endif
+
+#if HTTP_PARSER_TRACE_BODY
+static void httpParserTraceBody(const HttpParser* parser, const uint8_t* data,
+                                size_t totalLength) {
+    if (parser == NULL || data == NULL || !parser->messageComplete ||
+        !parser->headerComplete || parser->response.bodyForbidden)
+        return;
+    if (parser->headerBytes > totalLength) {
+        LOG_ERROR("HTTP PARSER RX BODY: bad offset headerBytes=%lu rxLen=%lu",
+                  (unsigned long)parser->headerBytes,
+                  (unsigned long)totalLength);
+        return;
+    }
+
+    /* Chunk framing has already been decoded in place by Pico. */
+    size_t available = totalLength - parser->headerBytes;
+    size_t length    = parser->bodyReceived;
+    if (length > available) {
+        LOG_ERROR(
+            "HTTP PARSER RX BODY: invalid decoded length=%lu available=%lu",
+            (unsigned long)length, (unsigned long)available);
+        return;
+    }
+    const uint8_t* body  = data + parser->headerBytes;
+    size_t         shown = length;
+    if (shown > HTTP_PARSER_TRACE_MAX_BYTES)
+        shown = HTTP_PARSER_TRACE_MAX_BYTES;
+
+    LOG_TRACE("HTTP PARSER RX BODY: decodedLen=%lu showing=%lu chunked=%d",
+              (unsigned long)length, (unsigned long)shown,
+              (int)parser->chunked);
+    if (shown == 0u)
+        return;
+
+    bool textBody = true;
+    for (size_t i = 0u; i < shown; i++) {
+        uint8_t c = body[i];
+        if (!(c >= 32u && c <= 126u) && c != '\r' && c != '\n' && c != '\t') {
+            textBody = false;
+            break;
+        }
+    }
+
+    /* Limit each LOG_TRACE argument to a small on-stack buffer. */
+    for (size_t offset = 0u; offset < shown;) {
+        size_t segment = shown - offset;
+        if (textBody) {
+            char line[81];
+            if (segment > sizeof(line) - 1u)
+                segment = sizeof(line) - 1u;
+            for (size_t j = 0u; j < segment; j++) {
+                uint8_t c = body[offset + j];
+                line[j] = (c == '\r' || c == '\n' || c == '\t') ? ' ' : (char)c;
+            }
+            line[segment] = '\0';
+            LOG_TRACE("HTTP PARSER RX BODY TEXT[%lu]: %s",
+                      (unsigned long)offset, line);
+        } else {
+            char              hex[3u * 16u + 1u];
+            static const char digits[] = "0123456789ABCDEF";
+            if (segment > 16u)
+                segment = 16u;
+            for (size_t j = 0u; j < segment; j++) {
+                uint8_t c        = body[offset + j];
+                hex[3u * j]      = digits[c >> 4u];
+                hex[3u * j + 1u] = digits[c & 0x0Fu];
+                hex[3u * j + 2u] = ' ';
+            }
+            hex[segment * 3u] = '\0';
+            LOG_TRACE("HTTP PARSER RX BODY HEX[%lu]: %s", (unsigned long)offset,
+                      hex);
+        }
+        offset += segment;
+    }
+    if (shown < length)
+        LOG_TRACE("HTTP PARSER RX BODY: truncated %lu byte(s)",
+                  (unsigned long)(length - shown));
+}
+#endif
+
 static bool parseContentLength(HttpSlice value, size_t* result) {
     size_t valueNumber = 0;
 
-    if (value.data == NULL || result == NULL || value.len == 0)
+    if (value.data == NULL || result == NULL || value.len == 0) {
+        LOG_ERROR("HTTP PARSER parseContentLength(): invalid input len=%lu",
+                  (unsigned long)value.len);
         return false;
+    }
 
     for (size_t i = 0; i < value.len; i++) {
 
         char c = value.data[i];
 
-        if (c < '0' || c > '9')
+        if (c < '0' || c > '9') {
+            LOG_ERROR("HTTP PARSER parseContentLength(): invalid digit at %lu",
+                      (unsigned long)i);
             return false;
+        }
 
         size_t digit = (size_t)(c - '0');
 
         if (valueNumber > (SIZE_MAX - digit) / 10U) {
+            LOG_ERROR("HTTP PARSER parseContentLength(): integer overflow");
             return false;
         }
 
@@ -90,16 +284,26 @@ static int hexDigitValue(uint8_t value) {
 
 static HttpParseResult findCrlf(const uint8_t* data, size_t start, size_t len,
                                 size_t maximumLineLength, size_t* lineEnd) {
-    if (data == NULL || lineEnd == NULL || start > len)
+    if (data == NULL || lineEnd == NULL || start > len) {
+        LOG_ERROR(
+            "HTTP PARSER findCrlf(): invalid pointers or start=%lu len=%lu",
+            (unsigned long)start, (unsigned long)len);
         return HTTP_PARSE_ERROR;
+    }
 
     for (size_t i = start; i < len; i++) {
 
-        if (i - start > maximumLineLength)
+        if (i - start > maximumLineLength) {
+            LOG_ERROR("HTTP PARSER findCrlf(): line too long limit=%lu",
+                      (unsigned long)maximumLineLength);
             return HTTP_PARSE_OVERFLOW;
+        }
 
-        if (data[i] == '\n')
+        if (data[i] == '\n') {
+            LOG_ERROR("HTTP PARSER findCrlf(): bare LF at offset=%lu",
+                      (unsigned long)i);
             return HTTP_PARSE_ERROR;
+        }
 
         if (data[i] != '\r')
             continue;
@@ -107,15 +311,21 @@ static HttpParseResult findCrlf(const uint8_t* data, size_t start, size_t len,
         if (i + 1U >= len)
             return HTTP_PARSE_INCOMPLETE;
 
-        if (data[i + 1U] != '\n')
+        if (data[i + 1U] != '\n') {
+            LOG_ERROR("HTTP PARSER findCrlf(): CR without LF offset=%lu",
+                      (unsigned long)i);
             return HTTP_PARSE_ERROR;
+        }
 
         *lineEnd = i;
         return HTTP_PARSE_OK;
     }
 
-    if (len - start > maximumLineLength)
+    if (len - start > maximumLineLength) {
+        LOG_ERROR("HTTP PARSER findCrlf(): incomplete line exceeds limit=%lu",
+                  (unsigned long)maximumLineLength);
         return HTTP_PARSE_OVERFLOW;
+    }
 
     return HTTP_PARSE_INCOMPLETE;
 }
@@ -126,8 +336,10 @@ static HttpParseResult parseChunkSize(const uint8_t* data, size_t start,
     size_t i        = start;
     bool   hasDigit = false;
 
-    if (data == NULL || chunkSize == NULL || start > lineEnd)
+    if (data == NULL || chunkSize == NULL || start > lineEnd) {
+        LOG_ERROR("HTTP PARSER parseChunkSize(): invalid arguments");
         return HTTP_PARSE_ERROR;
+    }
 
     while (i < lineEnd) {
         int digit = hexDigitValue(data[i]);
@@ -137,22 +349,30 @@ static HttpParseResult parseChunkSize(const uint8_t* data, size_t start,
 
         hasDigit = true;
 
-        if (value > (SIZE_MAX - (size_t)digit) / 16U)
+        if (value > (SIZE_MAX - (size_t)digit) / 16U) {
+            LOG_ERROR("HTTP PARSER parseChunkSize(): hex size overflow");
             return HTTP_PARSE_OVERFLOW;
+        }
 
         value = value * 16U + (size_t)digit;
         i++;
     }
 
-    if (!hasDigit)
+    if (!hasDigit) {
+        LOG_ERROR("HTTP PARSER parseChunkSize(): missing hex size");
         return HTTP_PARSE_ERROR;
+    }
 
     /*
      * Anything after the hexadecimal size must be a chunk extension.
      * PicoHTTPParser will fully validate it during final decoding.
      */
-    if (i < lineEnd && data[i] != ';')
+    if (i < lineEnd && data[i] != ';') {
+        LOG_ERROR(
+            "HTTP PARSER parseChunkSize(): malformed extension offset=%lu",
+            (unsigned long)i);
         return HTTP_PARSE_ERROR;
+    }
 
     *chunkSize = value;
     return HTTP_PARSE_OK;
@@ -167,6 +387,9 @@ static HttpParseResult scanChunkedBody(const uint8_t* data, size_t len,
 
     if (data == NULL || decodedLength == NULL || encodedLength == NULL ||
         bodyOffset > len) {
+        LOG_ERROR("HTTP PARSER scanChunkedBody(): invalid input len=%lu "
+                  "bodyOffset=%lu",
+                  (unsigned long)len, (unsigned long)bodyOffset);
         return HTTP_PARSE_ERROR;
     }
 
@@ -203,6 +426,8 @@ static HttpParseResult scanChunkedBody(const uint8_t* data, size_t len,
                 size_t trailerLineStart = position;
 
                 if (position - trailerStart > HTTP_MAX_TRAILER_BYTES) {
+                    LOG_ERROR(
+                        "HTTP PARSER scanChunkedBody(): trailer overflow");
                     return HTTP_PARSE_OVERFLOW;
                 }
 
@@ -212,6 +437,8 @@ static HttpParseResult scanChunkedBody(const uint8_t* data, size_t len,
                 if (result != HTTP_PARSE_OK) {
                     if (result == HTTP_PARSE_INCOMPLETE &&
                         len - trailerStart > HTTP_MAX_TRAILER_BYTES) {
+                        LOG_ERROR("HTTP PARSER scanChunkedBody(): incomplete "
+                                  "trailer exceeds limit");
                         return HTTP_PARSE_OVERFLOW;
                     }
 
@@ -221,12 +448,18 @@ static HttpParseResult scanChunkedBody(const uint8_t* data, size_t len,
                 position = lineEnd + 2U;
 
                 if (position - trailerStart > HTTP_MAX_TRAILER_BYTES) {
+                    LOG_ERROR(
+                        "HTTP PARSER scanChunkedBody(): trailer overflow");
                     return HTTP_PARSE_OVERFLOW;
                 }
 
                 if (lineEnd == trailerLineStart) {
                     *decodedLength = decoded;
                     *encodedLength = position - bodyOffset;
+                    LOG_TRACE("HTTP PARSER scanChunkedBody(): complete "
+                              "chunks=%lu decoded=%lu encoded=%lu",
+                              (unsigned long)chunkCount, (unsigned long)decoded,
+                              (unsigned long)*encodedLength);
                     return HTTP_PARSE_OK;
                 }
             }
@@ -234,11 +467,19 @@ static HttpParseResult scanChunkedBody(const uint8_t* data, size_t len,
 
         chunkCount++;
 
-        if (chunkCount > HTTP_MAX_CHUNKS)
+        if (chunkCount > HTTP_MAX_CHUNKS) {
+            LOG_ERROR("HTTP PARSER scanChunkedBody(): too many chunks=%lu",
+                      (unsigned long)chunkCount);
             return HTTP_PARSE_OVERFLOW;
+        }
 
-        if (chunkSize > HTTP_MAX_BODY_SIZE - decoded)
+        if (decoded > HTTP_MAX_BODY_SIZE ||
+            chunkSize > HTTP_MAX_BODY_SIZE - decoded) {
+            LOG_ERROR("HTTP PARSER scanChunkedBody(): body exceeds limit "
+                      "decoded=%lu chunk=%lu",
+                      (unsigned long)decoded, (unsigned long)chunkSize);
             return HTTP_PARSE_OVERFLOW;
+        }
 
         if (chunkSize > len - position)
             return HTTP_PARSE_INCOMPLETE;
@@ -252,6 +493,9 @@ static HttpParseResult scanChunkedBody(const uint8_t* data, size_t len,
             return HTTP_PARSE_INCOMPLETE;
 
         if (data[position] != '\r' || data[position + 1U] != '\n') {
+            LOG_ERROR(
+                "HTTP PARSER scanChunkedBody(): bad chunk CRLF offset=%lu",
+                (unsigned long)position);
             return HTTP_PARSE_ERROR;
         }
 
@@ -274,9 +518,17 @@ static HttpParseResult parseChunkedBody(HttpParser* parser, uint8_t* data,
     parser->bodyReceived    = decodedLength;
     parser->messageComplete = false;
 
-    if (result != HTTP_PARSE_OK)
+    if (result != HTTP_PARSE_OK) {
+        if (result != HTTP_PARSE_INCOMPLETE)
+            LOG_ERROR(
+                "HTTP PARSER parseChunkedBody(): scan failed result=%s(%d)",
+                httpParseResultText(result), (int)result);
         return result;
+    }
 
+    LOG_TRACE("HTTP PARSER parseChunkedBody(): decoding encoded=%lu "
+              "expectedDecoded=%lu",
+              (unsigned long)encodedLength, (unsigned long)decodedLength);
     memset(&decoder, 0, sizeof(decoder));
 
     /*
@@ -295,12 +547,18 @@ static HttpParseResult parseChunkedBody(HttpParser* parser, uint8_t* data,
      */
     if (picoResult != 0 || picoLength != decodedLength ||
         picoLength > HTTP_MAX_BODY_SIZE) {
+        LOG_ERROR("HTTP PARSER parseChunkedBody(): decoder mismatch "
+                  "picoResult=%ld decoded=%lu expected=%lu",
+                  (long)picoResult, (unsigned long)picoLength,
+                  (unsigned long)decodedLength);
         parser->messageComplete = false;
         return HTTP_PARSE_ERROR;
     }
 
     parser->bodyReceived    = picoLength;
     parser->messageComplete = true;
+    LOG_TRACE("HTTP PARSER parseChunkedBody(): decoded successfully bytes=%lu",
+              (unsigned long)picoLength);
 
     return HTTP_PARSE_OK;
 }
@@ -312,9 +570,12 @@ static void resetResponse(HttpResponse* response) {
 }
 
 void httpParserInit(HttpParser* parser) {
-    if (parser == NULL)
+    if (parser == NULL) {
+        LOG_ERROR("HTTP PARSER httpParserInit(): parser is NULL");
         return;
+    }
 
+    LOG_TRACE("HTTP PARSER httpParserInit(): reset parser");
     memset(parser, 0, sizeof(*parser));
 
     resetResponse(&parser->response);
@@ -323,11 +584,20 @@ void httpParserInit(HttpParser* parser) {
 static HttpParseResult parseHeaders(HttpParser*              parser,
                                     const struct phr_header* headers,
                                     size_t                   headerCount) {
-    if (parser == NULL || headers == NULL)
+    if (parser == NULL || headers == NULL) {
+        LOG_ERROR("HTTP PARSER parseHeaders(): invalid arguments");
         return HTTP_PARSE_ERROR;
+    }
 
-    if (headerCount > HTTP_MAX_HEADERS)
+    if (headerCount > HTTP_MAX_HEADERS) {
+        LOG_ERROR(
+            "HTTP PARSER parseHeaders(): too many headers count=%lu max=%lu",
+            (unsigned long)headerCount, (unsigned long)HTTP_MAX_HEADERS);
         return HTTP_PARSE_OVERFLOW;
+    }
+
+    LOG_TRACE("HTTP PARSER parseHeaders(): headerCount=%lu",
+              (unsigned long)headerCount);
 
     parser->response.headers.count = 0;
 
@@ -340,6 +610,10 @@ static HttpParseResult parseHeaders(HttpParser*              parser,
 
         if (src->name_len > HTTP_MAX_HEADER_NAME_LEN ||
             src->value_len > HTTP_MAX_HEADER_VALUE_LEN) {
+            LOG_ERROR("HTTP PARSER parseHeaders(): header[%lu] nameLen=%lu "
+                      "valueLen=%lu exceeds maximum",
+                      (unsigned long)i, (unsigned long)src->name_len,
+                      (unsigned long)src->value_len);
             return HTTP_PARSE_OVERFLOW;
         }
 
@@ -362,20 +636,33 @@ static HttpParseResult parseHeaders(HttpParser*              parser,
             size_t contentLength;
 
             if (!parseContentLength(dst->value, &contentLength)) {
+                LOG_ERROR("HTTP PARSER parseHeaders(): invalid Content-Length");
                 return HTTP_PARSE_ERROR;
             }
 
-            if (contentLength > HTTP_MAX_BODY_SIZE)
+            if (contentLength > HTTP_MAX_BODY_SIZE) {
+                LOG_ERROR("HTTP PARSER parseHeaders(): Content-Length=%lu "
+                          "exceeds max=%lu",
+                          (unsigned long)contentLength,
+                          (unsigned long)HTTP_MAX_BODY_SIZE);
                 return HTTP_PARSE_OVERFLOW;
+            }
 
             if (parser->hasContentLength) {
-                if (parser->contentLength != contentLength)
+                if (parser->contentLength != contentLength) {
+                    LOG_ERROR("HTTP PARSER parseHeaders(): conflicting "
+                              "Content-Length %lu vs %lu",
+                              (unsigned long)parser->contentLength,
+                              (unsigned long)contentLength);
                     return HTTP_PARSE_ERROR;
+                }
             }
 
             parser->hasContentLength       = true;
             parser->contentLength          = contentLength;
             parser->response.contentLength = contentLength;
+            LOG_TRACE("HTTP PARSER parseHeaders(): Content-Length=%lu",
+                      (unsigned long)contentLength);
         }
 
         /*
@@ -388,16 +675,22 @@ static HttpParseResult parseHeaders(HttpParser*              parser,
              * This implementation supports only plain chunked encoding.
              * For example, "gzip, chunked" remains unsupported.
              */
-            if (!sliceEqualsIgnoreCase(encoding, "chunked"))
+            if (!sliceEqualsIgnoreCase(encoding, "chunked")) {
+                LOG_ERROR("HTTP PARSER parseHeaders(): unsupported "
+                          "Transfer-Encoding");
                 return HTTP_PARSE_UNSUPPORTED;
+            }
 
             /*
              * Chunked must not be applied more than once.
              */
-            if (parser->chunked)
+            if (parser->chunked) {
+                LOG_ERROR("HTTP PARSER parseHeaders(): duplicate chunked "
+                          "Transfer-Encoding");
                 return HTTP_PARSE_ERROR;
+            }
 
-            LOG_TRACE("parseHeaders(): chunked data detected.");
+            LOG_TRACE("HTTP PARSER parseHeaders(): Transfer-Encoding=chunked");
 
             parser->chunked          = true;
             parser->response.chunked = true;
@@ -412,11 +705,13 @@ static HttpParseResult parseHeaders(HttpParser*              parser,
 
                 parser->connectionClose          = true;
                 parser->response.connectionClose = true;
+                LOG_TRACE("HTTP PARSER parseHeaders(): Connection=close");
             }
 
             else if (sliceEqualsIgnoreCase(dst->value, "keep-alive")) {
 
                 parser->response.connectionKeepAlive = true;
+                LOG_TRACE("HTTP PARSER parseHeaders(): Connection=keep-alive");
             }
         }
     }
@@ -424,14 +719,17 @@ static HttpParseResult parseHeaders(HttpParser*              parser,
     /*
      * Reject ambiguous response framing.
      */
-    if (parser->chunked && parser->hasContentLength)
+    if (parser->chunked && parser->hasContentLength) {
+        LOG_ERROR("HTTP PARSER parseHeaders(): ambiguous framing: chunked + "
+                  "Content-Length");
         return HTTP_PARSE_ERROR;
+    }
 
     return HTTP_PARSE_OK;
 }
 
-HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
-                                        size_t len) {
+static HttpParseResult httpParserParseResponseImpl(HttpParser* parser,
+                                                   uint8_t* data, size_t len) {
     RETURN_VALUE_IF_NULL(parser, ;, HTTP_PARSE_ERROR);
     RETURN_VALUE_IF_NULL(data, ;, HTTP_PARSE_ERROR);
 
@@ -453,14 +751,18 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
         /*
          * The accumulated buffer must never become shorter.
          */
-        RETURN_VALUE_IF(
-            (len < parser->parsedBytesPreviously || parser->headerBytes > len),
-            true,
-            ;, HTTP_PARSE_ERROR);
+        if (len < parser->parsedBytesPreviously || parser->headerBytes > len) {
+            LOG_ERROR("HTTP PARSER parseResponse(): RX buffer shrank "
+                      "previous=%lu current=%lu headerBytes=%lu",
+                      (unsigned long)parser->parsedBytesPreviously,
+                      (unsigned long)len, (unsigned long)parser->headerBytes);
+            return HTTP_PARSE_ERROR;
+        }
 
         parser->parsedBytesPreviously = len;
 
         if (parser->response.bodyForbidden) {
+            LOG_TRACE("HTTP PARSER parseResponse(): body forbidden; complete");
             parser->bodyReceived    = 0u;
             parser->messageComplete = true;
             return HTTP_PARSE_OK;
@@ -471,11 +773,20 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
 
         availableBody = len - parser->headerBytes;
 
-        RETURN_VALUE_IF_GREATER(availableBody, HTTP_MAX_BODY_SIZE, ;
-                                , HTTP_PARSE_OVERFLOW);
+        if (availableBody > HTTP_MAX_BODY_SIZE) {
+            LOG_ERROR("HTTP PARSER parseResponse(): body exceeds max=%lu "
+                      "available=%lu",
+                      (unsigned long)HTTP_MAX_BODY_SIZE,
+                      (unsigned long)availableBody);
+            return HTTP_PARSE_OVERFLOW;
+        }
 
         if (parser->hasContentLength) {
             if (availableBody >= parser->contentLength) {
+                LOG_TRACE("HTTP PARSER parseResponse(): Content-Length "
+                          "complete received=%lu expected=%lu",
+                          (unsigned long)availableBody,
+                          (unsigned long)parser->contentLength);
                 parser->bodyReceived    = parser->contentLength;
                 parser->messageComplete = true;
                 return HTTP_PARSE_OK;
@@ -517,6 +828,10 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
     int ret = phr_parse_response((const char*)data, len, &minorVersion, &status,
                                  &msg, &msgLen, headers, &headerCount,
                                  parser->parsedBytesPreviously);
+    if (ret != -2)
+        LOG_TRACE(
+            "HTTP PARSER parseResponse(): pico result=%d rxLen=%lu headers=%lu",
+            ret, (unsigned long)len, (unsigned long)headerCount);
 
     /*
      * Save the amount of data supplied to this attempt.
@@ -532,19 +847,32 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
      * Check this before distinguishing Pico's -2 and -1 results.
      */
 
-    RETURN_VALUE_IF((ret < 0 && len >= HTTP_MAX_HEADER_BYTES), true, ;
-                    , HTTP_PARSE_OVERFLOW);
+    if (ret < 0 && len >= HTTP_MAX_HEADER_BYTES) {
+        LOG_ERROR("HTTP PARSER parseResponse(): header limit exceeded "
+                  "rxLen=%lu max=%lu pico=%d",
+                  (unsigned long)len, (unsigned long)HTTP_MAX_HEADER_BYTES,
+                  ret);
+        return HTTP_PARSE_OVERFLOW;
+    }
 
-    RETURN_VALUE_IF(ret, -2, ;, HTTP_PARSE_INCOMPLETE);
+    if (ret == -2)
+        return HTTP_PARSE_INCOMPLETE;
     /*
      * Invalid HTTP response.
      */
-    RETURN_VALUE_IF_LIITLE(ret, 0, ;, HTTP_PARSE_ERROR);
+    if (ret < 0) {
+        LOG_ERROR(
+            "HTTP PARSER parseResponse(): malformed status/headers pico=%d",
+            ret);
+        return HTTP_PARSE_ERROR;
+    }
 
-    RETURN_VALUE_IF_GREATER(ret, HTTP_MAX_HEADER_BYTES, ;, HTTP_PARSE_OVERFLOW);
-
-    RETURN_VALUE_IF_GREATER(msgLen, HTTP_MAX_TARGET_LEN, ;
-                            , HTTP_PARSE_OVERFLOW);
+    if ((size_t)ret > HTTP_MAX_HEADER_BYTES || msgLen > HTTP_MAX_TARGET_LEN) {
+        LOG_ERROR("HTTP PARSER parseResponse(): oversized status/header "
+                  "bytes=%d reasonLen=%lu",
+                  ret, (unsigned long)msgLen);
+        return HTTP_PARSE_OVERFLOW;
+    }
 
     /*
      * Header has been parsed successfully.
@@ -562,9 +890,16 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
     parser->response.version =
         (minorVersion == 0) ? HTTP_VERSION_1_0 : HTTP_VERSION_1_1;
 
+    LOG_TRACE("HTTP PARSER parseResponse(): HTTP/1.%d status=%d headerBytes=%d",
+              minorVersion, status, ret);
+
     HttpParseResult result = parseHeaders(parser, headers, headerCount);
 
-    RETURN_VALUE_IF_NOT(result, HTTP_PARSE_OK, ;, result);
+    if (result != HTTP_PARSE_OK) {
+        LOG_ERROR("HTTP PARSER parseResponse(): headers rejected result=%s(%d)",
+                  httpParseResultText(result), (int)result);
+        return result;
+    }
 
     /*
      * HTTP responses without a body.
@@ -575,6 +910,8 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
 
         parser->response.bodyForbidden = true;
         parser->messageComplete        = true;
+        LOG_TRACE("HTTP PARSER parseResponse(): status=%d forbids body",
+                  status);
 
         return HTTP_PARSE_OK;
     }
@@ -595,11 +932,19 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
 
         size_t availableBody;
 
-        RETURN_VALUE_IF_GREATER(ret, len, ;, HTTP_PARSE_ERROR);
+        if (ret < 0 || (size_t)ret > len) {
+            LOG_ERROR("HTTP PARSER parseResponse(): headerBytes=%d exceeds RX "
+                      "len=%lu",
+                      ret, (unsigned long)len);
+            return HTTP_PARSE_ERROR;
+        }
 
         availableBody = len - (size_t)ret;
 
         parser->bodyReceived = availableBody;
+        LOG_TRACE(
+            "HTTP PARSER parseResponse(): first body bytes=%lu expected=%lu",
+            (unsigned long)availableBody, (unsigned long)parser->contentLength);
 
         if (availableBody >= parser->contentLength) {
             parser->bodyReceived    = parser->contentLength;
@@ -641,16 +986,71 @@ HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
      * to assume complete.
      */
     parser->messageComplete = false;
+    LOG_TRACE(
+        "HTTP PARSER parseResponse(): waiting for EOF (no length delimiter)");
 
     return HTTP_PARSE_INCOMPLETE;
 }
 
-HttpParseResult httpParserFinish(HttpParser* parser) {
-    if (parser == NULL)
-        return HTTP_PARSE_ERROR;
+/*
+ * Trace transitions once. The NTH layer calls with an accumulated buffer:
+ * printing it on each invocation would duplicate earlier bytes.
+ */
+HttpParseResult httpParserParseResponse(HttpParser* parser, uint8_t* data,
+                                        size_t len) {
+#if HTTP_PARSER_TRACE_HEADERS
+    bool hadHeaders = parser != NULL && parser->headerComplete;
+#endif
+    bool   wasComplete  = parser != NULL && parser->messageComplete;
+    size_t previousBody = parser != NULL ? parser->bodyReceived : 0u;
 
-    if (!parser->headerComplete)
+    HttpParseResult result = httpParserParseResponseImpl(parser, data, len);
+
+    if (parser != NULL) {
+#if HTTP_PARSER_TRACE_HEADERS
+        if (!hadHeaders && parser->headerComplete &&
+            (result == HTTP_PARSE_OK || result == HTTP_PARSE_INCOMPLETE))
+            httpParserTraceHeaders(parser);
+#endif
+        if (result != HTTP_PARSE_OK && result != HTTP_PARSE_INCOMPLETE) {
+            LOG_ERROR("HTTP PARSER parseResponse(): FAILED result=%s(%d) "
+                      "rxLen=%lu headerComplete=%d bodyReceived=%lu",
+                      httpParseResultText(result), (int)result,
+                      (unsigned long)len, (int)parser->headerComplete,
+                      (unsigned long)parser->bodyReceived);
+        } else if (!wasComplete && parser->messageComplete) {
+            LOG_TRACE("HTTP PARSER parseResponse(): COMPLETE status=%d "
+                      "body=%lu totalRx=%lu",
+                      parser->response.statusCode,
+                      (unsigned long)parser->bodyReceived, (unsigned long)len);
+#if HTTP_PARSER_TRACE_BODY
+            httpParserTraceBody(parser, data, len);
+#endif
+        } else if (parser->bodyReceived != previousBody) {
+            LOG_TRACE("HTTP PARSER parseResponse(): body progress=%lu bytes",
+                      (unsigned long)parser->bodyReceived);
+        }
+    }
+    return result;
+}
+
+HttpParseResult httpParserFinish(HttpParser* parser) {
+    if (parser == NULL) {
+        LOG_ERROR("HTTP PARSER httpParserFinish(): parser is NULL");
         return HTTP_PARSE_ERROR;
+    }
+
+    LOG_TRACE("HTTP PARSER httpParserFinish(): EOF headers=%d complete=%d "
+              "chunked=%d contentLength=%lu received=%lu",
+              (int)parser->headerComplete, (int)parser->messageComplete,
+              (int)parser->chunked, (unsigned long)parser->contentLength,
+              (unsigned long)parser->bodyReceived);
+
+    if (!parser->headerComplete) {
+        LOG_ERROR(
+            "HTTP PARSER httpParserFinish(): EOF before complete headers");
+        return HTTP_PARSE_ERROR;
+    }
 
     if (parser->messageComplete)
         return HTTP_PARSE_OK;
@@ -658,24 +1058,42 @@ HttpParseResult httpParserFinish(HttpParser* parser) {
     /*
      * EOF is not a valid replacement for the terminal zero chunk.
      */
-    if (parser->chunked)
+    if (parser->chunked) {
+        LOG_ERROR(
+            "HTTP PARSER httpParserFinish(): EOF before terminal zero chunk");
         return HTTP_PARSE_ERROR;
+    }
 
     /*
      * EOF before Content-Length is a truncated response.
      */
     if (parser->hasContentLength) {
-        if (parser->bodyReceived != parser->contentLength)
+        if (parser->bodyReceived != parser->contentLength) {
+            LOG_ERROR("HTTP PARSER httpParserFinish(): truncated body "
+                      "expected=%lu received=%lu",
+                      (unsigned long)parser->contentLength,
+                      (unsigned long)parser->bodyReceived);
             return HTTP_PARSE_ERROR;
+        }
 
         parser->messageComplete = true;
+        LOG_TRACE(
+            "HTTP PARSER httpParserFinish(): complete Content-Length body");
         return HTTP_PARSE_OK;
     }
 
-    if (parser->bodyReceived > HTTP_MAX_BODY_SIZE)
+    if (parser->bodyReceived > HTTP_MAX_BODY_SIZE) {
+        LOG_ERROR("HTTP PARSER httpParserFinish(): body overflow received=%lu "
+                  "max=%lu",
+                  (unsigned long)parser->bodyReceived,
+                  (unsigned long)HTTP_MAX_BODY_SIZE);
         return HTTP_PARSE_OVERFLOW;
+    }
 
     parser->messageComplete = true;
+    LOG_TRACE("HTTP PARSER httpParserFinish(): close-delimited body completed "
+              "bytes=%lu",
+              (unsigned long)parser->bodyReceived);
     return HTTP_PARSE_OK;
 }
 
@@ -689,9 +1107,6 @@ bool httpParserIsHeaderComplete(const HttpParser* parser) {
 bool httpParserIsMessageComplete(const HttpParser* parser) {
     if (parser == NULL)
         return false;
-
-    LOG_TRACE("httpParserIsMessageComplete(): parser->messageComplete = %d",
-              parser->messageComplete);
 
     return parser->messageComplete;
 }
