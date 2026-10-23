@@ -11,6 +11,7 @@ static void checkDone(TmsApi* context, const TmsCheckResult* r, void* user) {
     if (callback) {
         callback(r, user);
     }
+    MEM_FREE(api);
 }
 
 TmsApiResult tmsUpgradeCheckStart(const char* host, uint16_t port,
@@ -36,4 +37,8 @@ TmsApiResult tmsUpgradeCheckStart(const char* host, uint16_t port,
     return result;
 }
 
-TmsApiResult tmsUpgradeCheckCancel(void) { return tms_api_cancel(api); }
+TmsApiResult tmsUpgradeCheckCancel(void) {
+    TmsApiResult res = tms_api_cancel(api);
+    MEM_FREE(api);
+    return res;
+}

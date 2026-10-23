@@ -12,11 +12,23 @@ static unsigned     last_percent;
 
 #define TMS_UPG_FILE "/mtd0/tms-download.part"
 
-TmsDownloadResult tmsDownloadProbeInit() {
+static bool alllocateMem() {
     download = MEM_ALLOC(sizeof(TmsDownload));
-    RETURN_VALUE_IF_NULL(download, ;, TMS_DL_CANCELLED);
+    RETURN_VALUE_IF_NULL(download, ;, false);
     queued_url = MEM_ALLOC(sizeof_queued_url);
-    RETURN_VALUE_IF_NULL(queued_url, ;, TMS_DL_CANCELLED);
+    RETURN_VALUE_IF_NULL(queued_url, ;, false);
+    return true;
+}
+
+static void freeMem() {
+    if (download)
+        MEM_FREE(download);
+    if (queued_url)
+        MEM_FREE(queued_url);
+}
+
+TmsDownloadResult tmsDownloadProbeInit() {
+    RETURN_VALUE_IF_NOT(alllocateMem(), true, ;, TMS_DL_CANCELLED);
     return TMS_DL_OK;
 }
 
@@ -41,6 +53,7 @@ static void done(TmsDownload* d, const TmsDownloadStatus* s, void* user) {
     if (s->result == TMS_DL_OK)
         LOG_TRACE("TMS package saved: /mtd2/tms-download.part (size checked; "
                   "not installed)");
+    freeMem();
 }
 
 TmsDownloadResult tmsDownloadProbeQueue(const char* url, uint32_t expected) {
@@ -86,6 +99,8 @@ void tmsDownloadProbeTick(TmsDownloadProgress cb) {
 }
 
 TmsDownloadResult tmsDownloadProbeCancel(void) {
-    pending = false;
-    return tms_download_cancel(download);
+    pending               = false;
+    TmsDownloadResult res = tms_download_cancel(download);
+    freeMem();
+    return res;
 }
