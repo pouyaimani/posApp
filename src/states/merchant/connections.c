@@ -15,6 +15,7 @@
 #include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
 #include "infoMgr/infoMgr.h"
+#include "wifiPwdMgr/wifiPwdMgr.h"
 
 static Cellular* cel;
 static Network*  net;
@@ -63,6 +64,29 @@ static void saveWifiInfo(State* parent, WifiApInfo_t* ap, const char* pwd) {
     // settings()->terminal.netRoute = NET_ROUTE_WIFI;
     settings()->save();
 }
+
+// static void saveConnectedWifi(State* parent, const WifiApInfo_t* ap,
+//                               const char* pwd) {
+//     WifiPmAccessPoint pmAp;
+//     WifiPmResult      saved;
+//     if (ap == NULL || pwd == NULL)
+//         return;
+//     memcpy(pmAp.ssid, WIFI_PM_SSID_CAPACITY - 1, ap->essid);
+//     memcpy(pmAp.bssid, WIFI_PM_BSSID_CAPACITY, ap->mac);
+//     pmAp.security = (uint32_t)ap->secMode;
+//     saved         = wifiPwdMgr()->rememberSuccess(&pmAp, pwd);
+//     if (saved != WIFI_PM_OK)
+//         LOG_ERROR("Wi-Fi connected but credential save failed: %d", saved);
+//     LOG_TRACE("saveConnectedWifi: setting route to %d", NET_ROUTE_WIFI);
+//     Result_t res = network()->setRoute(NET_ROUTE_WIFI);
+//     if (res.err != ERR_DSC_OK) {
+//         LOG_TRACE("Unable to set device route.");
+//         infoMgrsetCommon(parent, parent);
+//         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+//                        phraseGetDef(PHRASE_CONNECTION_ERR), "");
+//         return;
+//     }
+// }
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
     if (connectState == WIFI_DISCONNECT_STATE) {

@@ -2,11 +2,11 @@
 
 #include "logger.h"
 #include "storage/storage.h"
+#include "dcfg.h"
 
 static DevSettings  __settings;
 static TxnTraceInfo __txnTraceInfo;
 
-#define USER_DATA_ROOT_DIR  "/mtd0/"
 #define SETTINGS_FILE_ADDR  USER_DATA_ROOT_DIR "settings.bin"
 #define TXN_TRACE_FILE_ADDR USER_DATA_ROOT_DIR "txn_t_info.bin"
 

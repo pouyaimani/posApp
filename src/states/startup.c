@@ -17,6 +17,7 @@
 #include "error.h"
 #include "record/txnRecs.h"
 #include "file/file.h"
+#include "wifiPwdMgr/wifiPwdMgr.h"
 
 static lv_obj_t* startUpPage;
 static lv_obj_t* label;
@@ -47,6 +48,12 @@ STATE_DEF_ENTER(Startup) {
     // shifts()->init();
 
     // txnrecord()->init();
+    // WifiPmResult wpmres = wifiPwdMgr()->init(WIFI_PM_STORAGE_SLOTS);
+    // if (wpmres != WIFI_PM_OK) {
+    //     LOG_ERROR("Wifi password Managr could not be initialized. "
+    //               "initialization result = %d",
+    //               wpmres);
+    // }
 
     LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
     OOP_CALL(sys(), setVolume, settings()->terminal.devVolume);
