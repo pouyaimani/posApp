@@ -23,8 +23,8 @@
 
 size_t                  LEN_CARDHOLDER_ITEMS;
 static Menu*            menu;
-static Menu             chargeMenu;
-static Menu             kahrobaMenu;
+static Menu*            chargeMenu;
+static Menu*            kahrobaMenu;
 static CardHolderItems* activeItems[LEN_MAX_CARDHOLDER_ITEMS];
 static CardHolderItems* selected;
 
@@ -49,21 +49,23 @@ static void onKahrobaBalance() {
 }
 
 void onSimCharge() {
-    ui_menu_create(&chargeMenu, disp()->screen);
-    ui_menu_addItem(&chargeMenu, phraseGetDef(PHRASE_TXN_TOPUP),
+    chargeMenu = MEM_ALLOC(sizeof(Menu));
+    ui_menu_create(chargeMenu, disp()->screen);
+    ui_menu_addItem(chargeMenu, phraseGetDef(PHRASE_TXN_TOPUP),
                     LV_TEXT_ALIGN_RIGHT, NULL, onTopup, NULL);
-    ui_menu_addItem(&chargeMenu, phraseGetDef(PHRASE_TXN_VOUCHER),
+    ui_menu_addItem(chargeMenu, phraseGetDef(PHRASE_TXN_VOUCHER),
                     LV_TEXT_ALIGN_RIGHT, NULL, onVoucher, NULL);
-    menuMgr()->run(&chargeMenu, STATE_IDLE, &menuCfgBack2idleOBC);
+    menuMgr()->run(chargeMenu, STATE_IDLE, &menuCfgBack2idleOBM);
 }
 
 void showKahrobaMenu(void* arg) {
-    ui_menu_create(&kahrobaMenu, disp()->screen);
-    ui_menu_addItem(&kahrobaMenu, phraseGetDef(PHRASE_TXN_PURCHASE),
+    kahrobaMenu = MEM_ALLOC(sizeof(Menu));
+    ui_menu_create(kahrobaMenu, disp()->screen);
+    ui_menu_addItem(kahrobaMenu, phraseGetDef(PHRASE_TXN_PURCHASE),
                     LV_TEXT_ALIGN_RIGHT, NULL, onKahrobaPurchase, NULL);
-    ui_menu_addItem(&kahrobaMenu, phraseGetDef(PHRASE_TXN_BALANCE),
+    ui_menu_addItem(kahrobaMenu, phraseGetDef(PHRASE_TXN_BALANCE),
                     LV_TEXT_ALIGN_RIGHT, NULL, onKahrobaBalance, NULL);
-    menuMgr()->run(&kahrobaMenu, STATE_IDLE, &menuCfgBack2idleOBC);
+    menuMgr()->run(kahrobaMenu, STATE_IDLE, &menuCfgBack2idleOBC);
 }
 
 static CardHolderItems __cardHolderItems[] = {
