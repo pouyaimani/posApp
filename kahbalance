@@ -1,0 +1,367 @@
+
+(2879278,+19842)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:57][posInterface.c][kbGetKey](233):_key is [30][48]
+(2879281,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:57][business_common.c][splashMenu](3325):After createPageGeneric splash
+(2879282,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:57][business_common.c][splashMenu](3334):deInit tpRes[-1] ret[0]
+(2879282,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:57][main.c][appMain](47):@@ mainapp::splashMenu [8] @@
+(2879283,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:57][business_pna.c][splashMenuActionPna](2918):splashMenuAction::action [8]
+(2879365,+0082)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:57][menu.c][showMenu](94):@(00)@ Items in the View [1]@(00)@
+(2879753,+0388)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:58][posInterface.c][kbGetKey](233):_key is [03][03]
+(2879754,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:58][menu.c][showMenu](350):Same page navigation: prev=0, current=1
+(2880463,+0709)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][posInterface.c][kbGetKey](233):_key is [01][01]
+(2880464,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][libUi.c][createBackEmptyPage](1027):=== CREATING BACK EMPTY PAGE ===
+(2880465,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][libUi.c][createBackEmptyPage](1046):Step 1: Setting up screen...
+(2880666,+0201)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][business_common.c][getPosStateFirst](191):::::::::::::::::::::::::::::::::::::::sdkSysGetBatteryStatus [level(5)] [charging(1)]
+(2880667,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][business_common.c][isConfigDone](171):isConfigDone::strlen(config.TerminalNo):[8]strlen(config.MerchantNo):[15]
+(2880668,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][business_common.c][getPosStateFirst](206):::::::::::::::::::::::::::::::::::::::isConfigDone[1]
+(2880672,+0004)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][crossCutting.c][checkLastTransactionStatus](1321):[-103] = pubLoadTempTrx(); <<<=================[0]
+(2880673,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][crossCutting.c][checkLastTransactionStatus](1498): @@@@@@@@@INFO::checkLastTransactionStatus[Empty Database]
+(2880674,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][business_common.c][getPosStateFirst](237):::::::::::::::::::::::::::::::::::::::checkLastTransactionStatus[1]
+(2880677,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:43:59][libUi.c][createBackNFCPage](1622):Step 3: Creating header...
+(2881176,+0499)[ERROR][sdkPiccPowerOn 80]: ddi_rf_poweron:0
+(2882177,+1001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3765):sdkPiccDetect Success: 0
+
+(2882178,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][send_select_ppse](3633):=== SELECT PPSE ===
+
+(2882179,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][send_select_ppse](3648):Request:
+(2882180,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):00A404000E325041592E5359532E4444463031
+(2882181,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][send_select_ppse](3650):
+
+(2882297,+0116)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][send_select_ppse](3654):Response:
+(2882298,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):6F39840E325041592E5359532E4444463031A527BF0C2461224F07A0000008030001500544656269748701019F2A048A0682619F0A050364020101
+(2882299,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][send_select_ppse](3656):
+SW: 9000
+
+(2882299,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][send_select_ppse](3664):SELECT PPSE SUCCESS
+
+(2882300,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3778):APDU 2: SELECT AID
+
+(2882301,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3790):Request:
+(2882302,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):A0000008030001
+(2882302,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3792):
+
+(2882326,+0024)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3803):Response:
+(2882328,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):6F4D8407A0000008030001A542500544656269748701015F2D0266619F3810C7059F02065F2A029F1A029F35019C019F1101069F1209E3C7D1CA20E6E2CFE9BF0C0D42036037999F0A050364020101
+(2882329,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3805):
+SW: 9000
+
+(2882329,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3806):APDU 2 SUCCESS
+
+(2882330,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3818):Stored Application Label (5 bytes):
+(2882331,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):4465626974
+(2882332,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3820):
+
+(2882333,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3842):APDU 3: GPO for Balance Inquiry
+
+(2882333,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3869):Request:
+(2882334,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):83113400400288000000000000097803642131
+(2882335,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3871):
+
+(2882359,+0024)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3882):Response:
+(2882360,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):770D82020800940408010200C50185
+(2882361,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3884):
+SW: 9000
+
+(2882362,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3885):GPO SUCCESS
+
+(2882362,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3896):Stored AIP:
+(2882363,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][TraceHex](3555):0800
+(2882364,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3898):
+
+(2882364,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:00][business_common.c][getNFCBalanceInquiry](3917):Found AFL: len=4
+
+(2882365,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):08010200
+(2882365,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3919):
+
+(2882366,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3945):Processing SFI: 1, Records: 1-2
+
+(2882367,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3960):READ RECORD 1:
+(2882367,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):00B2010C
+(2882368,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3962):
+
+(2882401,+0033)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3968):Response:
+(2882404,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):7081AA5F24033110235A0A9364017040426175483F5F3401009F0702FF009F0D05B4700480009F0E0500009800009F0F05B4700480005F280203648C219F02069F03069F1A0295055F2A029A039C019F37049F35019F34039F21039F4E1457139364017040426175483D31102011861000000F9F080200019F6E04103000009F601D39373030495831434D4530454A324A4E563242324D4649315451504A319F61060970901000039F25021799
+(2882405,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3970):
+SW: 9000
+
+(2882406,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3982):Stored Track2 (19 bytes):
+(2882407,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):9364017040426175483D31102011861000000F
+(2882407,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3984):
+
+(2882408,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4000):Stored PAN (10 bytes):
+(2882409,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):9364017040426175483F
+(2882409,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4002):
+
+(2882410,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4018):CDOL1 found: len=33
+
+(2882411,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):9F02069F03069F1A0295055F2A029A039C019F37049F35019F34039F21039F4E14
+(2882412,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4020):
+
+(2882413,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F02, Length: 6
+
+(2882413,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F03, Length: 6
+
+(2882414,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F1A, Length: 2
+
+(2882415,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9500, Length: 5
+
+(2882415,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 5F2A, Length: 2
+
+(2882416,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9A00, Length: 3
+
+(2882417,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9C00, Length: 1
+
+(2882417,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F37, Length: 4
+
+(2882418,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F35, Length: 1
+
+(2882419,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F34, Length: 3
+
+(2882419,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F21, Length: 3
+
+(2882420,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4048):CDOL1 Tag: 9F4E, Length: 20
+
+(2882421,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3960):READ RECORD 2:
+(2882422,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):00B2020C
+(2882422,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3962):
+
+(2882439,+0017)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3968):Response:
+(2882439,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):7004DF700100
+(2882440,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](3970):
+SW: 9000
+
+(2882441,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4084):Track2 ASCII: 9364017040426175483=31102011861000000F
+
+(2882442,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4088):PAN from Track2: 9364017040426175483
+
+(2882442,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4089):Last 4 digits: 5483
+
+(2882443,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4098):APDU GENERATE AC for Balance Inquiry
+
+(2882444,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4130):Added Amount (Balance):
+(2882445,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):000000000000
+(2882445,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4132):
+
+(2882446,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4138):Added Other Amount: 000000000000
+
+(2882447,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4145):Added Country Code: 0364
+
+(2882447,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4151):Added TVR:
+(2882448,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):8000000000
+(2882449,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4153):
+
+(2882449,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4160):Added Currency Code: 0978
+
+(2882450,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4166):Added Date:
+(2882451,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):261025
+(2882451,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4168):
+
+(2882452,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4174):Added Transaction Type: 31 (Balance Inquiry)
+
+(2882453,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4180):Added Unpredictable Number:
+(2882454,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):F054BB66
+(2882454,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4182):
+
+(2882455,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4188):Added Terminal Type: 21
+
+(2882456,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4194):Added CVM Result:
+(2882456,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):240002
+(2882457,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4196):
+
+(2882460,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4204):
+
+(2882462,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4224):Added Merchant Name: پرداخت سبز
+
+(2882463,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4241):Final CDOL1 data for Balance Inquiry (56 bytes):
+(2882521,+0056)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4257):GENERATE AC Response:
+(2882522,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):773A9F2701809F360200029F26083C5DB8D804A8C9489F10200FA500A08101400004F081635BAFEF650F000000000000000000000000000000C50185
+(2882523,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4259):
+SW: 9000
+
+(2882523,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4272):Stored ARQC:
+(2882524,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):3C5DB8D804A8C948
+(2882525,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4274):
+
+(2882525,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4288):Stored CID: 80
+
+(2882526,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4303):Stored ATC:
+(2882527,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):0002
+(2882527,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4305):
+
+(2882528,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4321):Stored IAD (32 bytes):
+(2882529,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][TraceHex](3555):0FA500A08101400004F081635BAFEF650F000000000000000000000000000000
+(2882530,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:01][business_common.c][getNFCBalanceInquiry](4323):
+
+(2884883,+2144)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:03][posInterface.c][kbGetKey](233):_key is [03][03]
+(2884884,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:03][posInterface.c][getPinBlock](664):@@ getPinBlock::key[01]len[0]minLen[4]maxLen[4]
+(2885063,+0179)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:03][posInterface.c][kbGetKey](233):_key is [03][03]
+(2885064,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:03][posInterface.c][getPinBlock](664):@@ getPinBlock::key[01]len[1]minLen[4]maxLen[4]
+(2885363,+0299)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][posInterface.c][kbGetKey](233):_key is [03][03]
+(2885364,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][posInterface.c][getPinBlock](664):@@ getPinBlock::key[01]len[2]minLen[4]maxLen[4]
+(2885793,+0429)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][posInterface.c][kbGetKey](233):_key is [03][03]
+(2885794,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][posInterface.c][getPinBlock](664):@@ getPinBlock::key[01]len[3]minLen[4]maxLen[4]
+(2886173,+0379)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][posInterface.c][kbGetKey](233):_key is [01][01]
+(2886174,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][posInterface.c][getPinBlock](683):@@ getPinBlock::lem[4]maxLen[4]
+(2886175,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][posInterface.c][getPinBlock](692):Done !
+(2886183,+0008)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:44:04][posInterface.c][getPinBlock](720):@@ getPinBlock::pinBlock [0] @@
+(2886186,+0003)[DEBUG][pubDebugPrintHex 130]: 1.1DCCE0DA239BCC9B000200009364017040426175483F0000080000003534383300000000000000000000000010A70600261025000000704042617548F567020010440000800000000000000080000000020000000100000001000000B06502002400020004AC0600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000(2886187,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(2886188,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][business_common.c][getNFCBalanceInquiry](4381):=== Building EMV Field 55 for Balance Inquiry ===
+
+(2886189,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][business_common.c][getNFCBalanceInquiry](4491):✅ NFC Balance Inquiry completed successfully!
+
+(2886190,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][business_common.c][getNFCBalanceInquiry](4492):✅ EMV Field 55 length: 168 bytes
+
+(2886191,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][business_common.c][getNFCBalanceInquiry](4493):✅ Transaction Type: 31 (Balance Inquiry)
+
+(2886192,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][business_common.c][getNFCBalanceInquiry](4494):✅ Amount: 000000000000 (Zero for Balance Inquiry)
+
+(2886200,+0008)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][pna_transactions.c][doTransaction](4487):START Transaction(66)
+(2886201,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][libUi.c][createBackEmptyPage](1027):=== CREATING BACK EMPTY PAGE ===
+(2886202,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:04][libUi.c][createBackEmptyPage](1046):Step 1: Setting up screen...
+(2886401,+0199)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][posInterface.c][commOpenSocket](1499):+++ [218103808] = sdkNetCreateSocket(87.107.134.151, 4080)
+(2886460,+0059)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][posInterface.c][commOpenSocket](1514):sdkNetGetSocketStatus[1] socketId[218103808] Connected
+(2886461,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][tryConnect](4263):[1] = commOpenSocket(87.107.134.151, 4080, 0) ==> [218103808]
+(2886462,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][getKahrobaBalanceTransaction](3445):in else condition: 9364017040426175483
+(2886463,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][setTransactionDateTime](768):===============>>>>>>> getTransactionDateAndTimeX::_time[104405]
+(2886464,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][setTransactionDateTime](769):===============>>>>>>> getTransactionDateAndTimeX::_date[20261025]
+(2886465,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][setTransactionDateTime](770):===============>>>>>>> getTransactionDateAndTimeX::_dateTime[20261025104405]
+(2886468,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][setStanNumberPna](31):<======= turnRow.StanNo[000035] =======>
+(2886469,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][setStanNumberPna](48):<======= turnRow.StanNo[000036] =======>
+(2886599,+0130)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:44:05][pna_transactions.c][getKahrobaBalanceTransaction](3456):EMV Data(168)
+(2886603,+0004)[DEBUG][pubDebugPrintHex 130]: 1.5F2A02097882020800950580000000009A032610259C01319F02060000000000009F03060000000000009F10200FA500A08101400004F081635BAFEF650F0000000000000000000000000000009F1A0203649F26083C5DB8D804A8C9489F2701809F360200029F3704F054BB66DF7001008407A00000080300019F34032400029F6E041030000057139364017040426175483D31102011861000000F5A0A9364017040426175483F0000000000000000000000000000000000000000000000000000000000000000(2886604,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(2886605,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 0
+(2886606,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 8
+(2886607,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 8
+(2886607,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](475):2)iFieldDefPtr->varLen : 0
+(2886608,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](476):2)actLen: 8
+(2886609,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](477):2)reqLen: 8
+(2886609,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 3
+(2886610,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 168
+(2886611,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 999
+(2886612,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](475):2)iFieldDefPtr->varLen : 3
+(2886613,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](476):2)actLen: 168
+(2886613,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](477):2)reqLen: 168
+(2886614,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 0
+(2886615,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 8
+(2886616,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 8
+(2886616,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](475):2)iFieldDefPtr->varLen : 0
+(2886634,+0014)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:44:05][posInterface.c][pedGetMacBytes](550):&&& sdkPedGetMac[0] :
+(2886638,+0004)[DEBUG][pubDebugPrintHex 130]: 1.DD7AFB488A2E7F8494821A015C5F0200B4490200E35A1301B449020000000000899E06000000000000000000000000005B01000025A60600C2A30600F7A7060000000000000000000400000050FB020000000000000000001300000020FB02000600000000FB0200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000E0FA020006000000C0FA020004000000A0FA020000000000000000000000000000000000(2886638,+0000)[DEBUG][pubDebugPrintHex 138]: 2.(2886639,+0001)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:44:05][posInterface.c][pedGetMacAscii](563):getMacAscii [DD7AFB48] Result[0]
+(2886643,+0004)[DEBUG][pubDebugPrintHex 130]: 1.4444374146423438000000005B01000025A60600C2A30600F7A7060000000000000000000400000050FB020000000000000000001300000020FB02000600000000FB0200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000E0FA020006000000C0FA020004000000A0FA020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000(2886643,+0000)[DEBUG][pubDebugPrintHex 138]: 2.(2886645,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 0
+(2886646,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 8
+(2886646,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 8
+(2886647,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](475):2)iFieldDefPtr->varLen : 0
+(2886648,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](476):2)actLen: 8
+(2886648,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](477):2)reqLen: 8
+(2886649,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 3
+(2886650,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 168
+(2886651,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 999
+(2886652,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](475):2)iFieldDefPtr->varLen : 3
+(2886652,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](476):2)actLen: 168
+(2886653,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](477):2)reqLen: 168
+(2886654,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 0
+(2886655,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 8
+(2886655,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 8
+(2886656,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](475):2)iFieldDefPtr->varLen : 0
+(2886657,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](476):2)actLen: 8
+(2886657,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](477):2)reqLen: 8
+(2886658,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][getKahrobaBalanceTransaction](3500):SIPA_ISO8583_MSG_Pack is [0]
+(2886660,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][getKahrobaBalanceTransaction](3506):
+--------------- ISO8583 MSG DUMP ---------------
+[000] [04] 0100
+[002] [19] 9364017040426175483
+[003] [06] 310000
+[011] [06] 000036
+[012] [06] 104405
+[013] [04] 1025
+[022] [03] 021
+[023] [03] 000
+[024] [04] 0008
+[025] [02] 14
+[032] [09] 000000000
+[035] [38] 9364017040426175483=31102011861000000F
+[041] [08] 30819879
+[042] [15] 300000001316447
+[048] [78] 150154333333353330313030333930351302303930313236303631303052020330050454333247
+[049] [03] 364
+[052] [08] ▒▒▒#▒̛
+[053] [16] 0800030202031500
+[055] [168] _*  x▒
+[116] [11] 73000d02116
+[128] [08] DD7AFB48
+------------------------------------------------
+
+
+(2886662,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][getKahrobaBalanceTransaction](3535):6. packSize is :352
+(2886663,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][doTransaction](4599):After getKahrobaPurchaseTransaction
+(2886663,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][doTransaction](4600):getPurchaseTransaction(354)
+(2886992,+0326)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][trxAction](4347):***************** netSend => [354] *****************
+(2887002,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][libUi.c][createBackEmptyPage](1027):=== CREATING BACK EMPTY PAGE ===
+(2887003,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][libUi.c][createBackEmptyPage](1046):Step 1: Setting up screen...
+(2887131,+0128)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][trxAction](4401):### sdkNetSocketRecv::len[2]lenR[2]
+(2887137,+0004)[DEBUG][pubDebugPrintHex 130]: 1.007B000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000(2887138,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(2887139,+0001)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:44:05][pna_transactions.c][trxAction](4463):### RECV_DATA(125)
+(2887142,+0003)[DEBUG][pubDebugPrintHex 130]: 1.007B60000000080110743801000E818001190936401704042617548331000000000000000000000000000000003610440510250066353138393530353233343434353831383632353533303831393837390031039932321550323032363130323531303434303510983137323130383135343336343446363131384345000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000(2887143,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(2887145,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][doTransaction](4784):########### trxAction::recvLen[125]result[1] ###########
+(2887147,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][parseKahrobaBalanceTransaction](3564):
+--------------- ISO8583 MSG DUMP ---------------
+[000] [04] 0110
+[002] [19] 9364017040426175483
+[003] [06] 310000
+[004] [12] 000000000000
+[006] [12] 000000000000
+[011] [06] 000036
+[012] [06] 104405
+[013] [04] 1025
+[024] [04] 0066
+[037] [12] 518950523444
+[038] [06] 581862
+[039] [02] 55
+[041] [08] 30819879
+[048] [62] 03993232155032303236313032353130343430351098313732313038313534
+[049] [03] 364
+[064] [08] 4F6118CE
+------------------------------------------------
+
+
+(2887148,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][processField48](523):is going to decodeMerchantDesc(f48)
+(2887149,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][processField48](524):f48 is : 03993232155032303236313032353130343430351098313732313038313534
+(2887150,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][processField48](525):sizeof f48: 512
+(2887151,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](332):size of buffer: 4
+(2887152,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](340):before unpackLtv
+(2887153,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](344):Count is [3]
+(2887153,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](349):TAG [99]
+(2887154,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](503):TAG 99
+(2887155,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](349):TAG [50]
+(2887155,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](407):dateTime(15) [3230323631303235313034343035]
+(2887156,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](434):setSwitchDateTime::[0] = dtSetSystemDateTime(20261025104405);
+(2887157,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](349):TAG [98]
+(2887158,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](493):*****************************************
+(2887159,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](494):*****************************************
+(2887159,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](495):config.MerchantUniqueId [172108154]
+(2887160,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](496):*****************************************
+(2887161,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][decodeMerchantDesc](497):*****************************************
+(2887312,+0151)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:05][pna_transactions.c][processField48](529):decodeMerchantDesc
+(2887449,+0137)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][pna_transactions.c][checkMacReturn](97):[MacReturn (8)] [4F6118CE]
+(2887458,+0009)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:44:06][posInterface.c][pedGetMacBytes](550):&&& sdkPedGetMac[0] :
+(2887462,+0004)[DEBUG][pubDebugPrintHex 130]: 1.8A2D29506382553F94821A01000000006E000000DD041201A8490200C0490200000000000000000000000000000000000800000030F90200344636313138434500000000F4590200F44902000300000076000000F459020076000000F4490200F451020033221701000000000110743801000E81800119093640170404261754833100000000000000000000000000000000361044051025006635313839353035323334343435383138363235353330383139383739003103993232155032303236313032353130(2887467,+0003)[DEBUG][pubDebugPrintHex 130]: 1.384132443239353000000000000000000800000030F90200344636313138434500000000F4590200F44902000300000076000000F459020076000000F4490200F451020033221701000000000110743801000E818001190936401704042617548331000000000000000000000000000000003610440510250066353138393530353233343434353831383632353533303831393837390031039932321550323032363130323531303434303510983137323130383135343336340000363131384345000000000000(2887469,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][pna_transactions.c][checkMacReturn](102):MAC_COMPARE[-1]
+(2887470,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][pna_transactions.c][checkMacReturn](106):+++++++++++++ parseBalanceTransaction::mac:::::::::check mac failed !!!!
+
+(2887471,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][pna_transactions.c][doTransaction](4825):parseKahrobaBalanceTransaction():-142
+(2887577,+0106)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][display.c][showDateTime](794):----> showDateTime : 20261025104405
+(2887578,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][crossCutting.c][dtMiladyToShamsi](826):****************** gy[2026]
+(2887578,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][crossCutting.c][dtMiladyToShamsi](838):10
+(2887579,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][crossCutting.c][dtMiladyToShamsi](845):11 out[3] is [949]
+(2887579,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][crossCutting.c][dtMiladyToShamsi](861):******************
+(2887580,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][crossCutting.c][dtExtractTransactionDateTime](1117):>>>> --------------------------------------------------------- <<<<
+(2887581,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][crossCutting.c][dtExtractTransactionDateTime](1118):>>>> TransactionDateTime(1)::miladiDateTime[20261025104405]shamsiDate[1405/08/03-10:44:05] <<<<
+(2887582,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][crossCutting.c][dtExtractTransactionDateTime](1119):>>>> --------------------------------------------------------- <<<<
+(2888093,+0511)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:06][display.c][displayTransactionResult](1627):
+ @@@@@@ displayTransactionResult::soundNotification[0] @@@@@@
+
+(2890303,+2210)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:08][posInterface.c][kbGetKey](233):_key is [02][02]
+(2890304,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:08][display.c][displayTransactionResult](1637):+++++++++++++++ displayTransactionResult [-16] ++++++++++++++++++++++++
+(2890355,+0051)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][posInterface.c][commCloseSocket](1590):##### sdkNetCloseSocket(218103808) result[0] #####
+(2890377,+0022)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][business_common.c][splashMenu](3319):Init tpRes[-1] ret[0]
+(2890378,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][business_common.c][splashMenu](3323):Before createPageGeneric splash
+(2890381,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][crossCutting.c][dtMiladyToShamsi](826):****************** gy[2026]
+(2890382,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][crossCutting.c][dtMiladyToShamsi](838):10
+(2890383,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][crossCutting.c][dtMiladyToShamsi](845):11 out[3] is [949]
+(2890384,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][crossCutting.c][dtMiladyToShamsi](861):******************
+(2890385,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][crossCutting.c][getWd](933):weekDay is (0) [يکشنبه]
+(2890385,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:44:09][crossCutting.c][dtGetDateTimeWeekDayPersian2](1018):pdt is [03/08/05-10:44:09]

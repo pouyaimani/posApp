@@ -91,6 +91,7 @@ static void ui_show(bool multiple) {
     LV_SHOW(iconLabel);
     LV_SHOW(infoLabel);
     info_start_pulse();
+    disp()->refreshNow();
 }
 
 /** Build a minimal screen using the same UI helpers as inputMgr. */

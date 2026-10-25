@@ -1,0 +1,370 @@
+
+(3078139,+0581)[ERROR][sdkPiccPowerOn 80]: ddi_rf_poweron:0
+(3079191,+1052)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][send_select_ppse](3633):=== SELECT PPSE ===
+
+(3079192,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][send_select_ppse](3648):Request:
+(3079193,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][TraceHex](3555):00A404000E325041592E5359532E4444463031
+(3079194,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][send_select_ppse](3650):
+
+(3079290,+0096)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][send_select_ppse](3654):Response:
+(3079292,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][TraceHex](3555):6F39840E325041592E5359532E4444463031A527BF0C2461224F07A0000008030001500544656269748701019F2A048A0682619F0A050364020101
+(3079292,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][send_select_ppse](3656):
+SW: 9000
+
+(3079293,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][send_select_ppse](3664):SELECT PPSE SUCCESS
+
+(3079323,+0030)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][getNFC](4623):Stored Application Label (5 bytes):
+(3079351,+0026)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][getNFC](4712):Stored AIP:
+(3079351,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][TraceHex](3555):0800
+(3079356,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][getNFC](4735):
+
+(3079356,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][getNFC](4761):Processing SFI: 1, Records: 1-2
+
+(3079360,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][getNFC](4778):
+
+(3079405,+0045)[ERROR][sdkPiccExchangeApdu 206]: ddi_rf_exchange_apdu:-1
+(3079700,+0295)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][getNFC](4776):READ RECORD 2:
+(3079701,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][TraceHex](3555):00B2020C
+(3079702,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:19][business_common.c][getNFC](4778):
+
+(3079747,+0045)[ERROR][sdkPiccExchangeApdu 206]: ddi_rf_exchange_apdu:-1
+(3080045,+0298)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][business_common.c][getNFC](4886):CDOL1 not found in records. Aborting.
+
+(3080053,+0008)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][posInterface.c][commCloseSocket](1590):##### sdkNetCloseSocket(-1) result[-1001] #####
+(3080075,+0022)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][business_common.c][splashMenu](3319):Init tpRes[-1] ret[0]
+(3080076,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][business_common.c][splashMenu](3323):Before createPageGeneric splash
+(3080079,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][crossCutting.c][dtMiladyToShamsi](826):****************** gy[2026]
+(3080079,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][crossCutting.c][dtMiladyToShamsi](838):10
+(3080080,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][crossCutting.c][dtMiladyToShamsi](845):11 out[3] is [949]
+(3080081,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][crossCutting.c][dtMiladyToShamsi](861):******************
+(3080082,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][crossCutting.c][getWd](933):weekDay is (0) [يکشنبه]
+(3080083,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:20][crossCutting.c][dtGetDateTimeWeekDayPersian2](1018):pdt is [03/08/05-10:47:20]
+(3085194,+5111)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:25][posInterface.c][kbGetKey](233):_key is [30][48]
+(3085196,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:25][business_common.c][splashMenu](3325):After createPageGeneric splash
+(3085197,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:25][business_common.c][splashMenu](3334):deInit tpRes[-1] ret[0]
+(3085198,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:25][main.c][appMain](47):@@ mainapp::splashMenu [8] @@
+(3085199,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:25][business_pna.c][splashMenuActionPna](2918):splashMenuAction::action [8]
+(3085377,+0178)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:25][menu.c][showMenu](94):@(00)@ Items in the View [1]@(00)@
+(3085963,+0586)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:26][posInterface.c][kbGetKey](233):_key is [03][03]
+(3085964,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:26][menu.c][showMenu](350):Same page navigation: prev=0, current=1
+(3086723,+0759)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:26][posInterface.c][kbGetKey](233):_key is [04][04]
+(3086724,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:26][menu.c][showMenu](417):Same page navigation: prev=1, current=0
+(3087163,+0439)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][posInterface.c][kbGetKey](233):_key is [01][01]
+(3087164,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][libUi.c][createBackEmptyPage](1027):=== CREATING BACK EMPTY PAGE ===
+(3087165,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][libUi.c][createBackEmptyPage](1046):Step 1: Setting up screen...
+(3087319,+0154)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][business_common.c][getPosStateFirst](191):::::::::::::::::::::::::::::::::::::::sdkSysGetBatteryStatus [level(5)] [charging(1)]
+(3087320,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][business_common.c][isConfigDone](171):isConfigDone::strlen(config.TerminalNo):[8]strlen(config.MerchantNo):[15]
+(3087321,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][business_common.c][getPosStateFirst](206):::::::::::::::::::::::::::::::::::::::isConfigDone[1]
+(3087324,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][crossCutting.c][checkLastTransactionStatus](1321):[-103] = pubLoadTempTrx(); <<<=================[0]
+(3087325,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][crossCutting.c][checkLastTransactionStatus](1498): @@@@@@@@@INFO::checkLastTransactionStatus[Empty Database]
+(3087326,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][business_common.c][getPosStateFirst](237):::::::::::::::::::::::::::::::::::::::checkLastTransactionStatus[1]
+(3087743,+0417)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:27][posInterface.c][kbGetKey](233):_key is [31][49]
+(3088183,+0440)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:28][posInterface.c][kbGetKey](233):_key is [30][48]
+(3088333,+0150)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:28][posInterface.c][kbGetKey](233):_key is [30][48]
+(3088483,+0150)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:28][posInterface.c][kbGetKey](233):_key is [30][48]
+(3088633,+0150)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:28][posInterface.c][kbGetKey](233):_key is [30][48]
+(3088883,+0250)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:29][posInterface.c][kbGetKey](233):_key is [30][48]
+(3089283,+0400)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:29][posInterface.c][kbGetKey](233):_key is [30][48]
+(3090033,+0750)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:30][posInterface.c][kbGetKey](233):_key is [05][05]
+(3090034,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:30][display.c][getString](540):********************* CLEAR *********************
+(3090593,+0559)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:30][posInterface.c][kbGetKey](233):_key is [01][01]
+(3090594,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:30][business_common.c][getAmount](5352):price[100000]length[6]=>result[1]
+(3090595,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:30][business_common.c][getAmount](5363):iPrice[100000]=>mPrice[999999999999]
+(3090598,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:30][libUi.c][createBackNFCPage](1622):Step 3: Creating header...
+(3091180,+0582)[ERROR][sdkPiccPowerOn 80]: ddi_rf_poweron:0
+(3092309,+1129)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][send_select_ppse](3633):=== SELECT PPSE ===
+
+(3092310,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][send_select_ppse](3648):Request:
+(3092312,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):00A404000E325041592E5359532E4444463031
+(3092312,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][send_select_ppse](3650):
+
+(3092413,+0101)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][send_select_ppse](3654):Response:
+(3092415,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):6F39840E325041592E5359532E4444463031A527BF0C2461224F07A0000008030001500544656269748701019F2A048A0682619F0A050364020101
+(3092415,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][send_select_ppse](3656):
+SW: 9000
+
+(3092416,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][send_select_ppse](3664):SELECT PPSE SUCCESS
+
+(3092442,+0026)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4623):Stored Application Label (5 bytes):
+(3092468,+0024)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4712):Stored AIP:
+(3092471,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4733):Found AFL: len=4
+
+(3092472,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):08010200
+(3092473,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4735):
+
+(3092474,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4761):Processing SFI: 1, Records: 1-2
+
+(3092474,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4776):READ RECORD 1:
+(3092475,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):00B2010C
+(3092508,+0032)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4784):Response:
+(3092511,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):7081AA5F24033110235A0A9364017040426175483F5F3401009F0702FF009F0D05B4700480009F0E0500009800009F0F05B4700480005F280203648C219F02069F03069F1A0295055F2A029A039C019F37049F35019F34039F21039F4E1457139364017040426175483D31102011861000000F9F080200019F6E04103000009F601D39373030495831434D4530454A324A4E563242324D4649315451504A319F61060970901000039F25021799
+(3092512,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4786):
+SW: 9000
+
+(3092513,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4798):Stored Track2 (19 bytes):
+(3092522,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):9F02069F03069F1A0295055F2A029A039C019F37049F35019F34039F21039F4E14
+(3092523,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4836):
+
+(3092523,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F02, Length: 6
+
+(3092524,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F03, Length: 6
+
+(3092525,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F1A, Length: 2
+
+(3092525,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9500, Length: 5
+
+(3092526,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 5F2A, Length: 2
+
+(3092527,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9A00, Length: 3
+
+(3092527,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9C00, Length: 1
+
+(3092528,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F37, Length: 4
+
+(3092529,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F35, Length: 1
+
+(3092529,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F34, Length: 3
+
+(3092530,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F21, Length: 3
+
+(3092531,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4864):CDOL1 Tag: 9F4E, Length: 20
+
+(3092532,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4776):READ RECORD 2:
+(3092532,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):00B2020C
+(3092533,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4778):
+
+(3092552,+0019)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4784):Response:
+(3092552,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):7004DF700100
+(3092553,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4786):
+SW: 9000
+
+(3092554,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4920):Added Amount:
+(3092554,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):000000100000
+(3092555,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4922):
+
+(3092556,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4928):Added Other Amount: 000000000000
+
+(3092556,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4935):Added Country Code: 0364
+
+(3092557,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4941):Added TVR:
+(3092558,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):8000000000
+(3092558,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4943):
+
+(3092559,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4950):Added Currency Code: 0978
+
+(3092560,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4956):Added Date:
+(3092561,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):261025
+(3092561,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4958):
+
+(3092562,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4964):Added Transaction Type: 00
+
+(3092563,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4970):Added Unpredictable Number:
+(3092563,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):F054BB66
+(3092564,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4972):
+
+(3092565,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4978):Added Terminal Type: 21
+
+(3092566,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4984):Added CVM Result:
+(3092566,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):240002
+(3092567,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4986):
+
+(3092568,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4992):Added Time:
+(3092568,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][TraceHex](3555):104732
+(3092569,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](4994):
+
+(3092570,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](5014):Added Merchant Name: پرداخت سبز
+
+(3092616,+0046)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](5120):TRANSACTION SUCCESSFUL - Valid ARQC received!
+
+(3092617,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][business_common.c][getNFC](5169):=== Building EMV Field 55 ===
+
+(3092626,+0009)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][pna_transactions.c][doTransaction](4487):START Transaction(67)
+(3092627,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][libUi.c][createBackEmptyPage](1027):=== CREATING BACK EMPTY PAGE ===
+(3092628,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:32][libUi.c][createBackEmptyPage](1046):Step 1: Setting up screen...
+(3092771,+0143)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][posInterface.c][commOpenSocket](1499):+++ [218103808] = sdkNetCreateSocket(87.107.134.151, 4080)
+(3092850,+0079)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][posInterface.c][commOpenSocket](1514):sdkNetGetSocketStatus[1] socketId[218103808] Connected
+(3092851,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][tryConnect](4263):[1] = commOpenSocket(87.107.134.151, 4080, 0) ==> [218103808]
+(3092853,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][setTransactionDateTime](768):===============>>>>>>> getTransactionDateAndTimeX::_time[104733]
+(3092853,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][setTransactionDateTime](769):===============>>>>>>> getTransactionDateAndTimeX::_date[20261025]
+(3092854,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][setTransactionDateTime](770):===============>>>>>>> getTransactionDateAndTimeX::_dateTime[20261025104733]
+(3092857,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][setStanNumberPna](31):<======= turnRow.StanNo[000037] =======>
+(3092858,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][setStanNumberPna](48):<======= turnRow.StanNo[000038] =======>
+(3093008,+0150)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:33][pna_transactions.c][getKahrobaPurchaseTransaction](3002):EMV Data(168)
+(3093011,+0003)[DEBUG][pubDebugPrintHex 130]: 1.5F2A02097882020800950580000000009A032610259C01009F02060000001000009F03060000000000009F10200FA500A0810140000260993D5497D1440F0000000000000000000000000000009F1A0203649F2608724F655E654D75E59F2701809F360200059F3704F054BB66DF7001008407A00000080300019F34032400029F6E041030000057139364017040426175483D31102011861000000F5A0A9364017040426175483F0000000000000000000000000000000000000000000000000000000000000000(3093015,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 168
+(3093016,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 999
+(3093021,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 0
+(3093022,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 8
+(3093023,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 8
+(3093027,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][getKahrobaPurchaseTransaction](3036):SIPA_ISO8583_MSG_Pack is (345) [0]
+(3093041,+0014)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:33][posInterface.c][pedGetMacBytes](550):&&& sdkPedGetMac[0] :
+(3093044,+0003)[DEBUG][pubDebugPrintHex 130]: 1.2F23C32620CEBB0B94821A0154650200AC4F0200895E1301AC4F020000000000899E06000000000000000000000000005901000025A60600C2A30600F7A706000200F038078120C18A0000000000000010011993640170404261754830000000000000100000000038104733102500700000000800090000000000379364017040426175483331102011861000000F333038313938373933303030303030303133313634343700391501543333333533303130303339303513023039303132363036313030520203(3093045,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(3093046,+0001)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:33][posInterface.c][pedGetMacAscii](563):getMacAscii [2F23C326] Result[0]
+(3093050,+0004)[DEBUG][pubDebugPrintHex 130]: 1.3246323343333236000000005901000025A60600C2A30600F7A706000200F038078120C18A0000000000000010011993640170404261754830000000000000100000000038104733102500700000000800090000000000379364017040426175483331102011861000000F33303831393837393330303030303030313331363434370039150154333333353330313030333930351302303930313236303631303052020330050454333247333634080003020203150001685F2A0209788202080095058000000000(3093051,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(3093052,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](468):1)iFieldDefPtr->varLen : 3
+(3093053,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](469):1)actLen: 168
+(3093054,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](470):1)reqLen: 999
+(3093054,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](475):2)iFieldDefPtr->varLen : 3
+(3093055,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](476):2)actLen: 168
+(3093056,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](477):2)reqLen: 168
+(3093063,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_iso8583_fields.c][_SIPA_pack_iso_BINARY](477):2)reqLen: 8
+(3093064,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][getKahrobaPurchaseTransaction](3047):SIPA_ISO8583_MSG_Pack is [0]
+(3093066,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][getKahrobaPurchaseTransaction](3053):
+--------------- ISO8583 MSG DUMP ---------------
+[000] [04] 0200
+[002] [19] 9364017040426175483
+[003] [06] 000000
+[004] [12] 000000100000
+[011] [06] 000038
+[012] [06] 104733
+[013] [04] 1025
+[022] [03] 070
+[023] [03] 000
+[024] [04] 0008
+[025] [02] 00
+[032] [09] 000000000
+[035] [38] 9364017040426175483=31102011861000000F
+[041] [08] 30819879
+[042] [15] 300000001316447
+[048] [78] 150154333333353330313030333930351302303930313236303631303052020330050454333247
+[049] [03] 364
+[053] [16] 0800030202031500
+[055] [168] _*  x▒
+[116] [11] 73000d02116
+[128] [08] 2F23C326
+------------------------------------------------
+
+
+(3093068,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][doTransaction](4586):After getKahrobaPurchaseTransaction
+(3093069,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][doTransaction](4587):getPurchaseTransaction(352)
+(3093069,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][pubUpdateTransactionStatus](2698):transactionStatus [0]
+(3093070,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][updateTransaction](2584):^^^
+(3093071,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][pubSaveTempTrx](1961):setting.sqlTrxId [8]
+(3093327,+0256)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][pubSaveTempTrx](1975):currentTransaction.sqlTrx.id[9]result[101]
+(3093328,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][updateTransaction](2586):############### updateTransaction::pubSaveTempTrx [101] ###############
+(3093329,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][doTransaction](4588):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3093330,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][doTransaction](4588):&&& [TransactionStatus is [TS_START] => nextTransactionStatus is [TS_BUILD_REQUEST]]&&&
+(3093331,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][doTransaction](4588):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3093332,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][pubUpdateTransactionStatus](2698):transactionStatus [1]
+(3093333,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][updateTransaction](2584):^^^
+(3093334,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][pubSaveTempTrx](1961):setting.sqlTrxId [8]
+(3093482,+0148)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][pubSaveTempTrx](1975):currentTransaction.sqlTrx.id[9]result[101]
+(3093483,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][crossCutting.c][updateTransaction](2586):############### updateTransaction::pubSaveTempTrx [101] ###############
+(3093484,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][trxAction](4340):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3093485,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][trxAction](4340):&&& [TransactionStatus is [TS_BUILD_REQUEST] => nextTransactionStatus is [TS_REQUEST_SEND]]&&&
+(3093485,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][pna_transactions.c][trxAction](4340):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3093486,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][libUi.c][createBackEmptyPage](1027):=== CREATING BACK EMPTY PAGE ===
+(3093487,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:33][libUi.c][createBackEmptyPage](1046):Step 1: Setting up screen...
+(3093804,+0317)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][trxAction](4347):***************** netSend => [352] *****************
+(3093805,+0001)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:34][pna_transactions.c][trxAction](4360):### [SEND]::LEN[352]
+(3093808,+0003)[DEBUG][pubDebugPrintHex 130]: 1.015E60000800000200F038078120C18A0000000000000010011993640170404261754830000000000000100000000038104733102500700000000800090000000000379364017040426175483331102011861000000F33303831393837393330303030303030313331363434370039150154333333353330313030333930351302303930313236303631303052020330050454333247333634080003020203150001685F2A02097882020800950580000000009A032610259C01009F02060000001000009F030600(3093811,+0003)[DEBUG][pubDebugPrintHex 138]: 2.00000000009F10200FA500A0810140000260993D5497D1440F0000000000000000000000000000009F1A0203649F2608724F655E654D75E59F2701809F360200059F3704F054BB66DF7001008407A00000080300019F34032400029F6E041030000057139364017040426175483D31102011861000000F5A0A9364017040426175483F00113733303030643032313136324632334333323600(3093812,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][pubUpdateTransactionStatus](2698):transactionStatus [11]
+(3093813,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][updateTransaction](2584):^^^
+(3093813,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][pubSaveTempTrx](1961):setting.sqlTrxId [8]
+(3093977,+0164)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][pubSaveTempTrx](1975):currentTransaction.sqlTrx.id[9]result[101]
+(3093978,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][updateTransaction](2586):############### updateTransaction::pubSaveTempTrx [101] ###############
+(3093979,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][trxAction](4364):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3093979,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][trxAction](4364):&&& [TransactionStatus is [TS_REQUEST_SEND] => nextTransactionStatus is [TS_REQUEST_RECIEVE]]&&&
+(3093980,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][trxAction](4364):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3093981,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][libUi.c][createBackEmptyPage](1027):=== CREATING BACK EMPTY PAGE ===
+(3093982,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][libUi.c][createBackEmptyPage](1046):Step 1: Setting up screen...
+(3094800,+0818)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][trxAction](4401):### sdkNetSocketRecv::len[2]lenR[2]
+(3094801,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][trxAction](4415):OTHER ==>> len[163]
+(3094802,+0001)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:35][pna_transactions.c][trxAction](4416):### RECV_LEN is [2] len is [163]
+(3094805,+0003)[DEBUG][pubDebugPrintHex 130]: 1.00A3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000(3094806,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(3094810,+0004)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:35][pna_transactions.c][trxAction](4463):### RECV_DATA(165)
+(3094813,+0003)[DEBUG][pubDebugPrintHex 130]: 1.00A360000000080210FC3800000E818000000000000000100116603799000000179900000000000010000000000010000000000010000000003810473310253531383935303630303239343635343331353030333038313938373900310399323015503230323631303235313034373334109831373231303831353433363400283733303031363230303031363630333739392A2A2A2A2A2A3137393946464638384144380000000000000000000000000000000000000000000000000000000000000000000000(3094814,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(3094816,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][doTransaction](4784):########### trxAction::recvLen[165]result[1] ###########
+(3094817,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][crossCutting.c][pubUpdateTransactionStatus](2698):transactionStatus [12]
+(3094818,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][crossCutting.c][updateTransaction](2584):^^^
+(3094818,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][crossCutting.c][pubSaveTempTrx](1961):setting.sqlTrxId [8]
+(3094959,+0141)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][crossCutting.c][pubSaveTempTrx](1975):currentTransaction.sqlTrx.id[9]result[101]
+(3094960,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][crossCutting.c][updateTransaction](2586):############### updateTransaction::pubSaveTempTrx [101] ###############
+(3094961,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][doTransaction](4815):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3094962,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][doTransaction](4815):&&& [TransactionStatus is [TS_REQUEST_RECIEVE] => nextTransactionStatus is [TS_REQUEST_HAVE_RESPONSE]]&&&
+(3094963,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][doTransaction](4815):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3094965,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][parseKahrobaPurchaseTransaction](3108):
+--------------- ISO8583 MSG DUMP ---------------
+[000] [04] 0210
+[002] [16] 6037990000001799
+[003] [06] 000000
+[004] [12] 000000100000
+[005] [12] 000000100000
+[006] [12] 000000100000
+[011] [06] 000038
+[012] [06] 104733
+[013] [04] 1025
+[037] [12] 518950600294
+[038] [06] 654315
+[039] [02] 00
+[041] [08] 30819879
+[048] [62] 03993230155032303236313032353130343733341098313732313038313534
+[049] [03] 364
+[116] [28] 730016200016603799******1799
+[128] [08] FFF88AD8
+------------------------------------------------
+
+
+(3094966,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][processField48](523):is going to decodeMerchantDesc(f48)
+(3094967,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][processField48](524):f48 is : 03993230155032303236313032353130343733341098313732313038313534
+(3094968,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][processField48](525):sizeof f48: 512
+(3094968,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][decodeMerchantDesc](332):size of buffer: 4
+(3094969,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][decodeMerchantDesc](340):before unpackLtv
+(3094970,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][decodeMerchantDesc](344):Count is [3]
+(3094971,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][decodeMerchantDesc](349):TAG [99]
+(3094972,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][decodeMerchantDesc](503):TAG 99
+(3094972,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][decodeMerchantDesc](349):TAG [50]
+(3094973,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:35][pna_transactions.c][decodeMerchantDesc](407):dateTime(15) [3230323631303235313034373334]
+(3094974,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][decodeMerchantDesc](434):setSwitchDateTime::[0] = dtSetSystemDateTime(20261025104734);
+(3094975,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][decodeMerchantDesc](349):TAG [98]
+(3094975,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][decodeMerchantDesc](493):*****************************************
+(3094976,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][decodeMerchantDesc](494):*****************************************
+(3094977,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][decodeMerchantDesc](495):config.MerchantUniqueId [172108154]
+(3094978,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][decodeMerchantDesc](496):*****************************************
+(3094978,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][decodeMerchantDesc](497):*****************************************
+(3095135,+0157)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][processField48](529):decodeMerchantDesc
+(3095275,+0140)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][checkMacReturn](69):[MacReturn (8)] [FFF88AD8]
+(3095285,+0010)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:34][posInterface.c][pedGetMacBytes](550):&&& sdkPedGetMac[0] :
+(3095288,+0003)[DEBUG][pubDebugPrintHex 130]: 1.FA81F395EFB4CEFB94821A01000000009600000057041201904F0200A84F0200000000000000000000000000000000000800000080E80200464646383841443800000000EC5F0200EC4F0200030000009E0000009E000000EC5F020000000000EC5702005523170110011993640170400000000030000000000000100210FC3800000E818000000000000000100116603799000000179900000000000010000000000010000000000010000000003810473310253531383935303630303239343635343331353030(3095289,+0001)[DEBUG][pubDebugPrintHex 138]: 2.(3095290,+0001)[DEBUG][pubDebugPrintHex 89]: [26-10-25 10:47:34][posInterface.c][pedGetMacAscii](563):getMacAscii [FA81F395] Result[0]
+(3095294,+0004)[DEBUG][pubDebugPrintHex 130]: 1.464138314633393500000000000000000800000080E80200464646383841443800000000EC5F0200EC4F0200030000009E0000009E000000EC5F020000000000EC5702005523170110011993640170400000000030000000000000100210FC3800000E8180000000000000001001166037990000001799000000000000100000000000100000000000100000000038104733102535313839353036303032393436353433313530303330383139383739003103993230155032303236313032353130343733341098(3095294,+0000)[DEBUG][pubDebugPrintHex 138]: 2.(3095295,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][checkMacReturn](74):MAC_COMPARE[1]
+(3095296,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][checkMacReturn](78):+++++++++++++ parseBalanceTransaction::mac:::::::::check mac failed !!!!
+
+(3095297,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][parseKahrobaPurchaseTransaction](3115):MAC RESULT KAHROBA: -142
+(3095298,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][doTransaction](4817):parseKahrobaPurchaseTransaction(518950600294):-142
+(3095298,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][pubUpdateTransactionStatus](2698):transactionStatus [3]
+(3095299,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][updateTransaction](2584):^^^
+(3095300,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][pubSaveTempTrx](1961):setting.sqlTrxId [8]
+(3095464,+0164)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][pubSaveTempTrx](1975):currentTransaction.sqlTrx.id[9]result[101]
+(3095464,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][updateTransaction](2586):############### updateTransaction::pubSaveTempTrx [101] ###############
+(3095465,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][doTransaction](4818):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3095466,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][doTransaction](4818):&&& [TransactionStatus is [TS_REQUEST_HAVE_RESPONSE] => nextTransactionStatus is [TS_REQUEST_HAVE_NO_RESPONSE]]&&&
+(3095467,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][pna_transactions.c][doTransaction](4818):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3095468,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][business_common.c][managePrintReceit](712):managePrintReceit::ProcessCode[000000]Price[000000100000][100000]ResponseCode[][-1]MerchantReceit[0]MinAutoPrintAmount[2000]
+(3095581,+0113)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][display.c][showKahrobaPurchaseResult](1200):Response Code: -1
+(3095582,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][display.c][showDateTime](794):----> showDateTime : 20261025104733
+(3095583,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][dtMiladyToShamsi](826):****************** gy[2026]
+(3095584,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][dtMiladyToShamsi](838):10
+(3095585,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][dtMiladyToShamsi](845):11 out[3] is [949]
+(3095585,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][dtMiladyToShamsi](861):******************
+(3095586,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][dtExtractTransactionDateTime](1117):>>>> --------------------------------------------------------- <<<<
+(3095587,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][dtExtractTransactionDateTime](1118):>>>> TransactionDateTime(1)::miladiDateTime[20261025104733]shamsiDate[1405/08/03-10:47:33] <<<<
+(3095588,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][crossCutting.c][dtExtractTransactionDateTime](1119):>>>> --------------------------------------------------------- <<<<
+(3095611,+0023)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][display.c][showBankCardInfoKahroba](895):*************************************
+(3095612,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:34][display.c][showBankCardInfoKahroba](896):**** showBankCardInfoKahroba ****
+(3098194,+0975)[DEBUG][sdkPrintStart 417]: TYPE_IMG offset:0  size:376*55
+(3099064,+0870)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][print.c][printKahrobaPurchaseTicket](2296):prnPrintStart [0]
+(3099066,+0002)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][print.c][printTransactionTicket](2399):<<<<<<<<<<<<===== printTransactionTicket [0] =====>>>>>>>>>>>>
+(3099067,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][pubUpdateTransactionStatus](2698):transactionStatus [4]
+(3099068,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][updateTransaction](2584):^^^
+(3099068,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][pubSaveTempTrx](1961):setting.sqlTrxId [8]
+(3099215,+0147)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][pubSaveTempTrx](1975):currentTransaction.sqlTrx.id[9]result[101]
+(3099215,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][updateTransaction](2586):############### updateTransaction::pubSaveTempTrx [101] ###############
+(3099216,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][business_common.c][managePrintReceit](720):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3099217,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][business_common.c][managePrintReceit](720):&&& [TransactionStatus is [TS_REQUEST_HAVE_NO_RESPONSE] => nextTransactionStatus is [TS_REQUEST_REVERSE_PRINT_72H]]&&&
+(3099218,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][business_common.c][managePrintReceit](720):&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(3099263,+0045)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][pubAddTransaction](2003):********** ************************************************ **********
+(3099430,+0161)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][pubRemoveTempTrx](1980):********** ************************************************ **********
+(3099431,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][pubRemoveTempTrx](1981):********** pubRemoveTempTrx **********
+(3099532,+0101)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][pubRemoveTempTrx](1984):********** ************************************************ **********
+(3099583,+0051)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][posInterface.c][commCloseSocket](1590):##### sdkNetCloseSocket(218103808) result[0] #####
+(3099605,+0022)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][business_common.c][splashMenu](3319):Init tpRes[-1] ret[0]
+(3099606,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][business_common.c][splashMenu](3323):Before createPageGeneric splash
+(3099609,+0003)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][dtMiladyToShamsi](826):****************** gy[2026]
+(3099609,+0000)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][dtMiladyToShamsi](838):10
+(3099610,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][dtMiladyToShamsi](845):11 out[3] is [949]
+(3099611,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][dtMiladyToShamsi](861):******************
+(3099612,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][getWd](933):weekDay is (0) [يکشنبه]

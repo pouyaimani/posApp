@@ -41,7 +41,7 @@ typedef struct ApduSend_t {
 } ApduReq_t;
 
 typedef struct ApduResp_t {
-    uint32_t* lenOut;
+    uint32_t* lenOut; /* IN: dataOut capacity; OUT: actual response length. */
     uint8_t*  dataOut;
     uint32_t* swa;
     uint32_t* swb;
@@ -54,6 +54,7 @@ OOP_VTABLE(Picc) {
     OOP_IMETHOD(PiccErr_t, Picc, close);
     OOP_IMETHOD(PiccErr_t, Picc, powerOn, PiccTechMask_t technologies);
     OOP_IMETHOD(PiccCardType_t, Picc, detect);
+    OOP_IMETHOD(PiccErr_t, Picc, activate);
     OOP_IMETHOD(PiccErr_t, Picc, exchangeApdu, const ApduReq_t* request,
                 ApduResp_t* response);
     OOP_IMETHOD(PiccErr_t, Picc, remove, PiccRemoveMode_t mode);

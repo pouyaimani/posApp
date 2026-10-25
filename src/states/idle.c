@@ -332,6 +332,8 @@ OOP_CTOR(Idle, State* parent, const char* name) {
     OOP_CALL(&self->base, addTimer, powerOff,
              MINUTES(settings()->terminal.powerOffTimeOut), self);
 
-    timer = TIMER_CREATE(netAutoConnect, SECS(10), false);
-    TIMER_START(timer);
+    OOP_CALL(&self->base, addTimer, netAutoConnect, SECS(10), self);
+
+    // timer = TIMER_CREATE(netAutoConnect, SECS(10), false);
+    // TIMER_START(timer);
 }

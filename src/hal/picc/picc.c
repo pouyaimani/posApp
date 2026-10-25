@@ -49,7 +49,7 @@ PiccErr_t piccStartPolling(Picc* self) {
 void piccStopPolling(Picc* self) {
     if (!self)
         return;
-    getEventloop()->registerChecker(self->ioRead);
+    getEventloop()->unregisterChecker(self->ioRead);
     self->pollingEnabled = false;
 }
 

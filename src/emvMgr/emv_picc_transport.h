@@ -4,9 +4,10 @@
 #include "emv_transport.h"
 #include "picc/picc.h" /* Project HAL, supplied by the device port. */
 
-/** Context for the adapter; Picc is owned by nfcMgr (not emvMgr). */
+/** Adapter borrows the reader; acquisition/transaction code owns its lifecycle.
+ */
 typedef struct {
-    Picc* device; /* Active, powered and exclusively assigned PICC instance. */
+    Picc* device; /* Active, powered, exclusively assigned; polling stopped. */
 } EmvPiccAdapter;
 
 /** Initialize adapter and return a device-independent transport interface. */

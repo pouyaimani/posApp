@@ -8,8 +8,7 @@
  * Missing optional tags are zero-filled; missing critical terminal tags fail.
  * A DOL contains tag+one-byte requested-length entries, NOT TLV values.
  */
-EmvError emvDolBuild(const uint8_t *dol, size_t dol_len,
-                     const EmvTagDb *tags, uint8_t *out, size_t capacity,
-                     size_t *written);
+EmvError emvDolBuild(const uint8_t* dol, size_t dol_len, const EmvTagDb* tags,
+                     uint8_t* out, size_t capacity, size_t* written);
 
 #endif
