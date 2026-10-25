@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "emv_dol.h"
 
 #include "emv_transport.h"
 
@@ -20,8 +21,13 @@ typedef enum {
 typedef enum {
     EMV_MGR_IDLE = 0,
     EMV_MGR_PPSE_SELECTED,
+    EMV_MGR_AID_SELECTED,
+    EMV_MGR_GPO_COMPLETED,
     EMV_MGR_FAILED
 } EmvMgrState;
+
+typedef bool (*EmvDolValueFn)(void* context, uint32_t tag, uint8_t* output,
+                              size_t requiredLength);
 
 /**
  * Public EMV manager interface.
@@ -33,6 +39,11 @@ typedef struct {
     EmvMgrError (*init)(EmvTransport transport);
 
     EmvMgrError (*selectPpse)(const uint8_t* aid, size_t aidLen);
+
+    EmvMgrError (*selectAid)(const uint8_t* aid, size_t aidLen);
+
+    EmvMgrError (*getProcessingOptions)(EmvDolValueFn provider,
+                                        void*         providerContext);
 
     EmvMgrState (*getState)(void);
 

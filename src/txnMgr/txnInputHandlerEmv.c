@@ -269,6 +269,7 @@ void nfcInfoDone(InfoResult res, void* arg) {
 
 static void onNfcComplete(const NfcStatus* status, void* userData) {
     RETURN_IF_NULL(status, ;);
+    TxnMgr* txnMgr = userData;
 
     if (status->result != NFC_RES_DETECTED) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
@@ -289,7 +290,7 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
     case PICC_CARD_B:
         LOG_TRACE("Kahroba: compatible card candidate detected");
         {
-            EmvMgrError err = startKahrobaEmv(picc());
+            EmvMgrError err = startKahrobaEmv(picc(), &txnMgr->data);
             LOG_TRACE("Kahroba: EmvMgrError = %d", err);
             (void)OOP_CALL(picc(), close);
         }

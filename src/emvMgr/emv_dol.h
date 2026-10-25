@@ -1,14 +1,42 @@
 #ifndef EMV_DOL_H
 #define EMV_DOL_H
 
-#include "emv_tag_db.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+typedef struct {
+    uint32_t       tag;
+    const uint8_t* value;
+    size_t         length;
+} EmvTlv;
 
 /**
- * Serialize DOL (PDOL / CDOL) into raw concatenated values.
- * Missing optional tags are zero-filled; missing critical terminal tags fail.
- * A DOL contains tag+one-byte requested-length entries, NOT TLV values.
+ * Supplies one data element requested by a DOL.
+ *
+ * The provider must write exactly requiredLength bytes.
+ * Return false if the value cannot be supplied.
  */
-EmvError emvDolBuild(const uint8_t* dol, size_t dol_len, const EmvTagDb* tags,
-                     uint8_t* out, size_t capacity, size_t* written);
+typedef bool (*EmvDolValueFn)(void* context, uint32_t tag, uint8_t* output,
+                              size_t requiredLength);
+
+/**
+ * Read the next BER-TLV element.
+ *
+ * Returns false for malformed data.
+ * End of input is indicated by *offset == size.
+ */
+bool emvTlvNext(const uint8_t* data, size_t size, size_t* offset,
+                EmvTlv* result);
+
+/**
+ * Build concatenated DOL values in the card-requested order.
+ *
+ * A DOL contains tag-length pairs, not full TLV objects.
+ * Returns false if malformed, unsupported or too large.
+ */
+bool emvDolBuild(const uint8_t* dol, size_t dolLength, EmvDolValueFn provider,
+                 void* providerContext, uint8_t* output, size_t capacity,
+                 size_t* outputLength);
 
 #endif

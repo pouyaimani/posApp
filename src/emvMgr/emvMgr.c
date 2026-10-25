@@ -8,16 +8,21 @@
 #define EMV_PPSE_RESPONSE_MAX 512u
 
 typedef struct {
-    EmvTransport transport;
+    /* Existing fields — keep unchanged */
+    bool         initialized;
     EmvMgrState  state;
+    EmvTransport transport;
 
-    uint8_t response[EMV_PPSE_RESPONSE_MAX];
+    uint8_t response[512];
     size_t  responseLen;
-
     uint8_t sw1;
     uint8_t sw2;
 
-    bool initialized;
+    /* GPO results */
+    uint8_t aip[2];   /* Application Interchange Profile */
+    uint8_t afl[252]; /* Application File Locator */
+    size_t  aflLen;   /* Actual AFL length in bytes */
+
 } EmvContext;
 
 static EmvContext ctx;
@@ -30,6 +35,170 @@ static void secureWipe(void* buffer, size_t length) {
 
     while (length-- != 0u)
         *p++ = 0u;
+}
+
+/**
+ * Find PDOL (9F38) inside:
+ *
+ * 6F
+ *   84 ...
+ *   A5
+ *     9F38 ...
+ *
+ * PDOL is optional. If absent, length is zero.
+ */
+static bool extractPdol(const uint8_t* fci, size_t fciLength,
+                        const uint8_t** pdol, size_t* pdolLength) {
+    EmvTlv root;
+    EmvTlv child;
+    EmvTlv item;
+
+    size_t offset    = 0u;
+    bool   foundA5   = false;
+    bool   foundPdol = false;
+
+    if (!fci || !pdol || !pdolLength)
+        return false;
+
+    *pdol       = NULL;
+    *pdolLength = 0u;
+
+    if (!emvTlvNext(fci, fciLength, &offset, &root))
+        return false;
+
+    if (root.tag != 0x6Fu || offset != fciLength)
+        return false;
+
+    offset = 0u;
+
+    while (offset < root.length) {
+        if (!emvTlvNext(root.value, root.length, &offset, &child))
+            return false;
+
+        if (child.tag != 0xA5u)
+            continue;
+
+        if (foundA5)
+            return false;
+
+        foundA5 = true;
+
+        size_t innerOffset = 0u;
+
+        while (innerOffset < child.length) {
+            if (!emvTlvNext(child.value, child.length, &innerOffset, &item))
+                return false;
+
+            if (item.tag == 0x9F38u) {
+                if (foundPdol)
+                    return false;
+
+                *pdol       = item.value;
+                *pdolLength = item.length;
+                foundPdol   = true;
+            }
+        }
+    }
+
+    return foundA5;
+}
+
+static bool parseGpoResponse(const uint8_t* response, size_t responseLength) {
+    EmvTlv root;
+    EmvTlv item;
+
+    const uint8_t* aip = NULL;
+    const uint8_t* afl = NULL;
+
+    size_t aipLen = 0u;
+    size_t aflLen = 0u;
+    size_t offset = 0u;
+
+    bool foundAip = false;
+    bool foundAfl = false;
+
+    if (!response || responseLength < 2u)
+        return false;
+
+    if (!emvTlvNext(response, responseLength, &offset, &root))
+        return false;
+
+    if (offset != responseLength)
+        return false;
+
+    if (root.tag == 0x80u) {
+
+        /* Format 1: AIP (2 bytes) followed by AFL. */
+        if (root.length < 2u)
+            return false;
+
+        aip    = root.value;
+        aipLen = 2u;
+
+        afl    = root.value + 2u;
+        aflLen = root.length - 2u;
+
+    } else if (root.tag == 0x77u) {
+
+        /* Format 2: constructed response. */
+        offset = 0u;
+
+        while (offset < root.length) {
+            if (!emvTlvNext(root.value, root.length, &offset, &item))
+                return false;
+
+            if (item.tag == 0x82u) {
+                if (foundAip)
+                    return false;
+
+                aip      = item.value;
+                aipLen   = item.length;
+                foundAip = true;
+
+            } else if (item.tag == 0x94u) {
+                if (foundAfl)
+                    return false;
+
+                afl      = item.value;
+                aflLen   = item.length;
+                foundAfl = true;
+            }
+        }
+
+        if (!foundAip || !foundAfl)
+            return false;
+
+    } else {
+        return false;
+    }
+
+    if (!aip || !afl || aipLen != 2u || aflLen > sizeof(ctx.afl) ||
+        (aflLen % 4u) != 0u)
+        return false;
+
+    /* Validate AFL entries before using them for READ RECORD. */
+    for (size_t i = 0u; i < aflLen; i += 4u) {
+        uint8_t sfi       = (uint8_t)(afl[i] >> 3u);
+        uint8_t first     = afl[i + 1u];
+        uint8_t last      = afl[i + 2u];
+        uint8_t authCount = afl[i + 3u];
+
+        if ((afl[i] & 0x07u) != 0u || sfi == 0u || sfi > 30u || first == 0u ||
+            last < first || authCount > (unsigned int)(last - first + 1u))
+            return false;
+    }
+
+    memcpy(ctx.aip, aip, 2u);
+
+    if (aflLen != 0u)
+        memcpy(ctx.afl, afl, aflLen);
+
+    ctx.aflLen = aflLen;
+
+    LOG_TRACE("EMV: GPO parsed AIP=%02X%02X AFL entries=%lu", ctx.aip[0],
+              ctx.aip[1], (unsigned long)(ctx.aflLen / 4u));
+
+    return true;
 }
 
 /**
@@ -160,24 +329,46 @@ static void reset(void) {
     ctx.sw2         = 0u;
 
     ctx.state = EMV_MGR_IDLE;
+
+    memset(ctx.aip, 0, sizeof(ctx.aip));
+    memset(ctx.afl, 0, sizeof(ctx.afl));
+    ctx.aflLen = 0u;
 }
 
-/** Initialize the manager for an activated PICC reader. */
+/**
+ * @brief Initialize EMV manager for a new activated PICC session.
+ *
+ * Resets previous session data and binds the supplied transport.
+ *
+ * @param transport Initialized EMV transport interface.
+ * @return EMV_MGR_OK on success.
+ */
 static EmvMgrError init(EmvTransport transport) {
-    if (transport.exchange == NULL)
+
+    if (transport.exchange == NULL) {
+        LOG_TRACE("EMV: init rejected invalid transport");
         return EMV_MGR_ERR_ARGUMENT;
+    }
 
     /*
-     * Do not rebind the transport during an active session.
-     * For Phase 1, any non-idle state requires reset().
+     * Reject initialization while an EMV session is active.
+     * Completed and failed sessions can be restarted.
      */
-    if (ctx.initialized && ctx.state != EMV_MGR_IDLE)
-        return EMV_MGR_ERR_STATE;
+    if (ctx.initialized && ctx.state != EMV_MGR_IDLE &&
+        ctx.state != EMV_MGR_FAILED && ctx.state != EMV_MGR_GPO_COMPLETED) {
 
+        LOG_TRACE("EMV: init rejected active state=%d", (int)ctx.state);
+
+        return EMV_MGR_ERR_STATE;
+    }
+
+    /* Clear previous EMV session data. */
     reset();
 
+    /* Bind transport for the new session. */
     ctx.transport   = transport;
     ctx.initialized = true;
+    ctx.state       = EMV_MGR_IDLE;
 
     LOG_TRACE("EMV: manager initialized");
 
@@ -283,11 +474,427 @@ failed:
     return result;
 }
 
+/**
+ * @brief Decode a definite BER-TLV length.
+ *
+ * Supports short-form and long-form lengths up to two bytes.
+ */
+static bool readTlvLength(const uint8_t* data, size_t size, size_t* pos,
+                          size_t* valueLen) {
+    uint8_t first;
+    size_t  count;
+    size_t  i;
+    size_t  value = 0u;
+
+    if (data == NULL || pos == NULL || valueLen == NULL || *pos >= size)
+        return false;
+
+    first = data[(*pos)++];
+
+    if ((first & 0x80u) == 0u) {
+        *valueLen = first;
+        return true;
+    }
+
+    count = first & 0x7Fu;
+
+    if (count == 0u || count > 2u || count > size - *pos)
+        return false;
+
+    for (i = 0u; i < count; ++i) {
+        value = (value << 8u) | data[(*pos)++];
+    }
+
+    if (value < 128u || (count == 2u && value <= 255u))
+        return false;
+
+    *valueLen = value;
+    return true;
+}
+
+/**
+ * @brief Validate SELECT AID FCI and its DF Name.
+ *
+ * Expected structure:
+ *
+ * 6F
+ *   84 <selected AID>
+ *   A5 ...
+ *
+ * Tag 84 must be a direct child of 6F.
+ */
+static bool findDfName(const uint8_t* data, size_t length, const uint8_t* aid,
+                       size_t aidLen) {
+    size_t pos = 1u;
+    size_t fciLen;
+    size_t fciEnd;
+    bool   found = false;
+
+    if (data == NULL || aid == NULL || length < 2u || data[0] != 0x6Fu)
+        return false;
+
+    if (!readTlvLength(data, length, &pos, &fciLen))
+        return false;
+
+    if (fciLen != length - pos)
+        return false;
+
+    fciEnd = length;
+
+    while (pos < fciEnd) {
+        uint8_t tag;
+        size_t  valueLen;
+
+        tag = data[pos++];
+
+        /*
+         * Direct children of FCI typically include
+         * primitive tag 84 and constructed tag A5.
+         *
+         * This Phase 2 validator supports single-byte
+         * tags at this level.
+         */
+        if ((tag & 0x1Fu) == 0x1Fu)
+            return false;
+
+        if (!readTlvLength(data, fciEnd, &pos, &valueLen))
+            return false;
+
+        if (valueLen > fciEnd - pos)
+            return false;
+
+        if (tag == 0x84u) {
+            if (found || valueLen != aidLen ||
+                memcmp(data + pos, aid, aidLen) != 0)
+                return false;
+
+            found = true;
+        }
+
+        pos += valueLen;
+    }
+
+    return found;
+}
+
+/**
+ * @brief Select an EMV application using its AID.
+ *
+ * Requirements:
+ * - SELECT PPSE must have succeeded.
+ * - The PICC reader must remain activated.
+ * - The transport must be initialized.
+ *
+ * On success, the SELECT AID response is retained in ctx.response
+ * for subsequent FCI/PDOL processing.
+ *
+ * @param aid    Application identifier to select.
+ * @param aidLen AID length in bytes (5..16).
+ *
+ * @return EMV_MGR_OK on success, otherwise an EMV manager error.
+ */
+static EmvMgrError selectAid(const uint8_t* aid, size_t aidLen) {
+    EmvApduCommand  cmd  = {0};
+    EmvApduResponse resp = {0};
+
+    EmvMgrError result;
+    int         rc;
+
+    if (!ctx.initialized || ctx.transport.exchange == NULL)
+        return EMV_MGR_ERR_STATE;
+
+    if (aid == NULL || aidLen < 5u || aidLen > 16u)
+        return EMV_MGR_ERR_ARGUMENT;
+
+    if (ctx.state != EMV_MGR_PPSE_SELECTED) {
+        LOG_TRACE("EMV: SELECT AID rejected state=%d", (int)ctx.state);
+        return EMV_MGR_ERR_STATE;
+    }
+
+    /*
+     * SELECT by DF name:
+     * CLA = 00
+     * INS = A4
+     * P1  = 04
+     * P2  = 00
+     * Data = AID
+     *
+     * Le=0 matches the working Trendit legacy SDK behavior.
+     */
+    cmd.cla = 0x00u;
+    cmd.ins = 0xA4u;
+    cmd.p1  = 0x04u;
+    cmd.p2  = 0x00u;
+
+    cmd.data     = aid;
+    cmd.data_len = aidLen;
+
+    cmd.has_le = false;
+    cmd.le     = 0u;
+
+    /*
+     * Clear the previous PPSE response before storing
+     * the SELECT AID response.
+     */
+    secureWipe(ctx.response, sizeof(ctx.response));
+    ctx.responseLen = 0u;
+    ctx.sw1         = 0u;
+    ctx.sw2         = 0u;
+
+    resp.data     = ctx.response;
+    resp.capacity = sizeof(ctx.response);
+
+    LOG_TRACE("EMV: SELECT AID begin aidLen=%lu", (unsigned long)aidLen);
+
+    rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
+
+    if (rc == -2) {
+        result = EMV_MGR_ERR_TIMEOUT;
+        goto failed;
+    }
+
+    if (rc != 0) {
+        result = EMV_MGR_ERR_TRANSPORT;
+        goto failed;
+    }
+
+    if (resp.length > resp.capacity) {
+        result = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    ctx.responseLen = resp.length;
+    ctx.sw1         = resp.sw1;
+    ctx.sw2         = resp.sw2;
+
+    LOG_TRACE("EMV: SELECT AID response len=%lu SW=%02X%02X",
+              (unsigned long)resp.length, (unsigned int)resp.sw1,
+              (unsigned int)resp.sw2);
+
+    if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
+        result = EMV_MGR_ERR_CARD_STATUS;
+        goto failed;
+    }
+
+    /*
+     * FCI must begin with the 6F template.
+     * Further validation follows below.
+     */
+    if (resp.length < 2u || resp.data[0] != 0x6Fu) {
+        LOG_TRACE("EMV: SELECT AID invalid FCI template");
+        result = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    /*
+     * SELECT AID FCI should contain tag 84 (DF Name)
+     * matching the selected AID.
+     */
+    if (!findDfName(resp.data, resp.length, aid, aidLen)) {
+        LOG_TRACE("EMV: SELECT AID missing/mismatched DF name");
+        result = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    ctx.state = EMV_MGR_AID_SELECTED;
+
+    LOG_TRACE("EMV: SELECT AID completed successfully");
+
+    LOG_TRACE("EMV: SELECT AID FCI length=%lu", (unsigned long)ctx.responseLen);
+
+    for (size_t i = 0; i < ctx.responseLen; i += 16u) {
+        char   line[16 * 3 + 1];
+        size_t pos = 0u;
+
+        for (size_t j = i; j < ctx.responseLen && j - i < 16u; ++j) {
+            int n = snprintf(line + pos, sizeof(line) - pos, "%02X ",
+                             ctx.response[j]);
+
+            if (n < 0 || (size_t)n >= sizeof(line) - pos)
+                break;
+
+            pos += (size_t)n;
+        }
+
+        line[pos] = '\0';
+        LOG_TRACE("EMV FCI: %s", line);
+    }
+
+    return EMV_MGR_OK;
+
+failed:
+    LOG_TRACE("EMV: SELECT AID failed error=%d", (int)result);
+
+    secureWipe(ctx.response, sizeof(ctx.response));
+    ctx.responseLen = 0u;
+    ctx.state       = EMV_MGR_FAILED;
+
+    return result;
+}
+
+static EmvMgrError getProcessingOptions(EmvDolValueFn provider,
+                                        void*         providerContext) {
+    const uint8_t* pdol         = NULL;
+    size_t         pdolLength   = 0u;
+    size_t         valuesLength = 0u;
+
+    uint8_t dolValues[127]   = {0};
+    uint8_t commandData[129] = {0};
+
+    EmvApduCommand  cmd  = {0};
+    EmvApduResponse resp = {0};
+
+    EmvMgrError result;
+    int         rc;
+
+    if (!ctx.initialized || ctx.transport.exchange == NULL ||
+        ctx.state != EMV_MGR_AID_SELECTED)
+        return EMV_MGR_ERR_STATE;
+
+    if (!provider)
+        return EMV_MGR_ERR_ARGUMENT;
+
+    LOG_TRACE("EMV: GPO begin");
+
+    /*
+     * SELECT AID FCI is still stored in ctx.response.
+     */
+    if (!extractPdol(ctx.response, ctx.responseLen, &pdol, &pdolLength)) {
+
+        LOG_TRACE("EMV: GPO failed parsing FCI");
+        result = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    LOG_TRACE("EMV: GPO PDOL definition length=%lu", (unsigned long)pdolLength);
+
+    if (!emvDolBuild(pdol, pdolLength, provider, providerContext, dolValues,
+                     sizeof(dolValues), &valuesLength)) {
+
+        LOG_TRACE("EMV: GPO failed building PDOL");
+        result = EMV_MGR_ERR_ARGUMENT;
+        goto failed;
+    }
+
+    /*
+     * This implementation supports short-form 83 lengths
+     * up to 127 bytes. The current card requests 17 bytes.
+     *
+     * Data = 83 <length> <concatenated DOL values>
+     */
+    commandData[0] = 0x83u;
+    commandData[1] = (uint8_t)valuesLength;
+
+    if (valuesLength != 0u) {
+        memcpy(commandData + 2u, dolValues, valuesLength);
+    }
+
+    cmd.cla = 0x80u;
+    cmd.ins = 0xA8u;
+    cmd.p1  = 0x00u;
+    cmd.p2  = 0x00u;
+
+    cmd.data     = commandData;
+    cmd.data_len = valuesLength + 2u;
+
+    /*
+     * Keep the confirmed working Trendit SDK convention.
+     */
+    cmd.has_le = false;
+    cmd.le     = 0u;
+
+    /* The FCI is no longer needed after building GPO. */
+    secureWipe(ctx.response, sizeof(ctx.response));
+    ctx.responseLen = 0u;
+
+    memset(ctx.aip, 0, sizeof(ctx.aip));
+    memset(ctx.afl, 0, sizeof(ctx.afl));
+    ctx.aflLen = 0u;
+
+    resp.data     = ctx.response;
+    resp.capacity = sizeof(ctx.response);
+
+    LOG_TRACE("EMV: GPO exchange Lc=%lu PDOL bytes=%lu",
+              (unsigned long)cmd.data_len, (unsigned long)valuesLength);
+
+    rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
+
+    if (rc == -2) {
+        result = EMV_MGR_ERR_TIMEOUT;
+        goto failed;
+    }
+
+    if (rc != 0) {
+        result = EMV_MGR_ERR_TRANSPORT;
+        goto failed;
+    }
+
+    if (resp.length > resp.capacity) {
+        result = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    ctx.responseLen = resp.length;
+
+    LOG_TRACE("EMV: GPO response len=%lu SW=%02X%02X",
+              (unsigned long)resp.length, resp.sw1, resp.sw2);
+
+    if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
+        result = EMV_MGR_ERR_CARD_STATUS;
+        goto failed;
+    }
+
+    if (!parseGpoResponse(ctx.response, ctx.responseLen)) {
+
+        LOG_TRACE("EMV: GPO invalid AIP/AFL");
+        result = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    for (size_t i = 0; i < ctx.aflLen; i += 4u) {
+        uint8_t sfi       = (uint8_t)(ctx.afl[i] >> 3u);
+        uint8_t first     = ctx.afl[i + 1u];
+        uint8_t last      = ctx.afl[i + 2u];
+        uint8_t authCount = ctx.afl[i + 3u];
+
+        LOG_TRACE("EMV AFL[%lu]: SFI=%u first=%u last=%u authCount=%u",
+                  (unsigned long)(i / 4u), (unsigned int)sfi,
+                  (unsigned int)first, (unsigned int)last,
+                  (unsigned int)authCount);
+    }
+
+    ctx.state = EMV_MGR_GPO_COMPLETED;
+
+    LOG_TRACE("EMV: GPO completed successfully");
+
+    secureWipe(dolValues, sizeof(dolValues));
+    secureWipe(commandData, sizeof(commandData));
+
+    return EMV_MGR_OK;
+
+failed:
+    LOG_TRACE("EMV: GPO failed error=%d", (int)result);
+
+    secureWipe(dolValues, sizeof(dolValues));
+    secureWipe(commandData, sizeof(commandData));
+    secureWipe(ctx.response, sizeof(ctx.response));
+
+    ctx.responseLen = 0u;
+    memset(ctx.aip, 0, sizeof(ctx.aip));
+    memset(ctx.afl, 0, sizeof(ctx.afl));
+    ctx.aflLen = 0u;
+    ctx.state  = EMV_MGR_FAILED;
+
+    return result;
+}
+
 EmvMgr* emvMgr(void) {
-    static EmvMgr manager = {.init       = init,
-                             .selectPpse = selectPpse,
-                             .getState   = getState,
-                             .reset      = reset};
+    static EmvMgr manager = {.init                 = init,
+                             .selectPpse           = selectPpse,
+                             .getState             = getState,
+                             .reset                = reset,
+                             .selectAid            = selectAid,
+                             .getProcessingOptions = getProcessingOptions};
 
     return &manager;
 }

@@ -1,66 +1,154 @@
-// #include "emv_dol.h"
-// #include <string.h>
+#include "emv_dol.h"
 
-// /* Supplying dummy values for these inputs would corrupt transaction
-// semantics. */
-// /** Terminal-sourced DOL values that must not be silently zero-filled. */
-// static bool critical_terminal_tag(EmvTag tag) {
-//     switch (tag) {
-//         case 0x9F02u: /* Authorized amount */
-//         case 0x9F37u: /* Unpredictable number */
-//         case 0x9F1Au: /* Terminal country */
-//         case 0x5F2Au: /* Transaction currency */
-//         case 0x9Au:   /* Transaction date */
-//         case 0x9Cu:   /* Transaction type */
-//         case 0x95u:   /* TVR, must come from actual terminal processing */
-//         case 0x9F34u: /* CVM result, must come from actual CVM processing */
-//         case 0x9F35u: /* Terminal type */
-//         case 0x9F21u: /* Time */
-//             return true;
-//         default: return false;
-//     }
-// }
+#include <string.h>
 
-// EmvError emvDolBuild(const uint8_t *dol, size_t dol_len,
-//                      const EmvTagDb *tags, uint8_t *out, size_t capacity,
-//                      size_t *written) {
-//     size_t pos = 0u, used = 0u;
-//     if (tags == NULL || out == NULL || written == NULL ||
-//         (dol_len != 0u && dol == NULL)) { return EMV_ERR_ARGUMENT; }
-//     *written = 0u;
-//     while (pos < dol_len) {
-//         EmvTag tag = dol[pos++];
-//         uint8_t b = (uint8_t)tag;
-//         size_t field_len, src_len = 0u, copy_len;
-//         const uint8_t *src = NULL;
-//         if ((b & 0x1Fu) == 0x1Fu) {
-//             unsigned count = 0u;
-//             do {
-//                 if (pos >= dol_len || count >= 2u) { return EMV_ERR_TLV; }
-//                 b = dol[pos++];
-//                 tag = (tag << 8u) | b;
-//                 ++count;
-//             } while ((b & 0x80u) != 0u);
-//         }
-//         if (pos >= dol_len) { return EMV_ERR_TLV; }
-//         field_len = dol[pos++];
-//         if (field_len > capacity - used) { return EMV_ERR_CAPACITY; }
-//         if (!emvTagDbGet(tags, tag, &src, &src_len) &&
-//         critical_terminal_tag(tag)) {
-//             return EMV_ERR_MISSING_TAG;
-//         }
-//         if (src != NULL && critical_terminal_tag(tag) && src_len !=
-//         field_len) {
-//             return EMV_ERR_PROTOCOL;
-//         }
-//         memset(out + used, 0, field_len);
-//         if (tag == 0x9F4Eu) { memset(out + used, 0x20, field_len); }
-//         if (src != NULL) {
-//             copy_len = src_len < field_len ? src_len : field_len;
-//             if (copy_len != 0u) { memcpy(out + used, src, copy_len); }
-//         }
-//         used += field_len;
-//     }
-//     *written = used;
-//     return EMV_OK;
-// }
+/**
+ * Decode an EMV BER tag (1-3 bytes).
+ */
+static bool readTag(const uint8_t* data, size_t size, size_t* offset,
+                    uint32_t* tag) {
+    uint8_t      first;
+    uint32_t     value;
+    unsigned int count = 1u;
+
+    if (!data || !offset || !tag || *offset >= size)
+        return false;
+
+    first = data[(*offset)++];
+
+    if (first == 0x00u || first == 0xFFu)
+        return false;
+
+    value = first;
+
+    if ((first & 0x1Fu) == 0x1Fu) {
+        uint8_t next;
+
+        do {
+            if (*offset >= size || count >= 3u)
+                return false;
+
+            next = data[(*offset)++];
+
+            value = (value << 8u) | next;
+            ++count;
+
+        } while ((next & 0x80u) != 0u);
+    }
+
+    *tag = value;
+    return true;
+}
+
+/**
+ * Decode a definite BER-TLV length.
+ *
+ * Supports short form and 0x81/0x82 long forms.
+ */
+static bool readLength(const uint8_t* data, size_t size, size_t* offset,
+                       size_t* length) {
+    uint8_t first;
+    size_t  count;
+    size_t  value = 0u;
+
+    if (!data || !offset || !length || *offset >= size)
+        return false;
+
+    first = data[(*offset)++];
+
+    if ((first & 0x80u) == 0u) {
+        *length = first;
+        return true;
+    }
+
+    count = first & 0x7Fu;
+
+    if (count == 0u || count > 2u || count > size - *offset)
+        return false;
+
+    for (size_t i = 0u; i < count; ++i)
+        value = (value << 8u) | data[(*offset)++];
+
+    /* Reject non-minimal BER length encoding. */
+    if (value < 128u || (count == 2u && value <= 255u))
+        return false;
+
+    *length = value;
+    return true;
+}
+
+bool emvTlvNext(const uint8_t* data, size_t size, size_t* offset,
+                EmvTlv* result) {
+    uint32_t tag;
+    size_t   length;
+
+    if (!data || !offset || !result || *offset > size)
+        return false;
+
+    if (!readTag(data, size, offset, &tag))
+        return false;
+
+    if (!readLength(data, size, offset, &length))
+        return false;
+
+    if (length > size - *offset)
+        return false;
+
+    result->tag    = tag;
+    result->value  = data + *offset;
+    result->length = length;
+
+    *offset += length;
+
+    return true;
+}
+
+bool emvDolBuild(const uint8_t* dol, size_t dolLength, EmvDolValueFn provider,
+                 void* providerContext, uint8_t* output, size_t capacity,
+                 size_t* outputLength) {
+    size_t offset  = 0u;
+    size_t written = 0u;
+
+    if (!output || !outputLength || !provider || (dolLength != 0u && !dol))
+        return false;
+
+    *outputLength = 0u;
+
+    while (offset < dolLength) {
+        uint32_t tag;
+        size_t   requiredLength;
+
+        if (!readTag(dol, dolLength, &offset, &tag))
+            goto failed;
+
+        if (offset >= dolLength)
+            goto failed;
+
+        /* DOL lengths are encoded in one byte. */
+        requiredLength = dol[offset++];
+
+        if (requiredLength > capacity - written)
+            goto failed;
+
+        /*
+         * A zero-length element does not require a value.
+         * The provider is invoked only for nonzero lengths.
+         */
+        if (requiredLength != 0u) {
+            memset(output + written, 0, requiredLength);
+
+            if (!provider(providerContext, tag, output + written,
+                          requiredLength))
+                goto failed;
+        }
+
+        written += requiredLength;
+    }
+
+    *outputLength = written;
+    return true;
+
+failed:
+    memset(output, 0, capacity);
+    return false;
+}
