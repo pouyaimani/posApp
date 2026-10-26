@@ -3,10 +3,498 @@
 #include "common.h"
 #include "emv_terminal_hooks.h"
 #include "utility/convert.h"
+#include "kahroba_field55.h"
 
 static const uint8_t KAHROBA_AID[] = {0xA0, 0x00, 0x00, 0x08, 0x03, 0x00, 0x01};
 
 static EmvPiccAdapter adapter;
+
+/**
+ * @brief Append Track 2 and PAN to the Kahroba Field 55.
+ *
+ * 57 - Track 2 Equivalent Data
+ * 5A - Application PAN
+ *
+ * Uses the binary values extracted during READ RECORD.
+ *
+ * SECURITY:
+ * - Never log these values.
+ * - Never persist Track 2 equivalent data.
+ * - Clear sensitive buffers after authorization.
+ *
+ * TODO(HOST):
+ * Confirm whether both tags are required by the acquirer.
+ */
+static bool kahrobaAppendCardTags(KahrobaField55Writer*    writer,
+                                  const KahrobaEmvContext* context) {
+    if (!writer || !context || !writer->data)
+        return false;
+
+    const KahrobaCardData* card = &context->card;
+
+    /* Validate the stored card data. */
+    if (card->track2Len == 0u || card->track2Len > sizeof(card->track2) ||
+        card->panLen == 0u || card->panLen > sizeof(card->pan)) {
+
+        LOG_TRACE("Kahroba: invalid PAN or Track2 length");
+        return false;
+    }
+
+    /*
+     * Check total capacity before appending either tag.
+     *
+     * 57: 1 tag + 1 length + Track2 data
+     * 5A: 1 tag + 1 length + PAN data
+     */
+    size_t required = 4u + card->track2Len + card->panLen;
+
+    if (writer->length > writer->capacity ||
+        required > writer->capacity - writer->length) {
+
+        LOG_TRACE("Kahroba: insufficient Field55 capacity");
+        return false;
+    }
+
+    /* 57 - Track 2 Equivalent Data */
+    if (!kahrobaField55Append(writer, 0x57, card->track2, card->track2Len))
+        return false;
+
+    /* 5A - Application PAN */
+    if (!kahrobaField55Append(writer, 0x5A, card->pan, card->panLen))
+        return false;
+
+    LOG_TRACE("Kahroba: card tags appended "
+              "57 len=%lu 5A len=%lu",
+              (unsigned long)card->track2Len, (unsigned long)card->panLen);
+
+    return true;
+}
+
+/**
+ * @brief Append CVM and Form Factor tags to Field 55.
+ *
+ * 9F34 - Cardholder Verification Method Results
+ * 9F6E - Form Factor Indicator
+ */
+static bool kahrobaAppendVerificationTags(KahrobaField55Writer*    writer,
+                                          const KahrobaEmvContext* context) {
+    if (writer == NULL || context == NULL)
+        return false;
+
+    /* 9F6E must have been extracted from READ RECORD. */
+    if (!context->card.hasFormFactor) {
+        LOG_TRACE("Kahroba: 9F6E unavailable");
+        return false;
+    }
+
+    /* 9F34 - CVM Results */
+    if (!kahrobaField55Append(writer, 0x9F34, context->cvmResult,
+                              sizeof(context->cvmResult)))
+        return false;
+
+    /* 9F6E - Form Factor Indicator */
+    if (!kahrobaField55Append(writer, 0x9F6E, context->card.formFactor,
+                              sizeof(context->card.formFactor)))
+        return false;
+
+    LOG_TRACE("Kahroba: verification tags appended "
+              "9F34 len=3 9F6E len=4");
+
+    return true;
+}
+
+/**
+ * @brief Append additional Kahroba EMV tags.
+ *
+ * 9F37 - Unpredictable Number
+ * DF70 - Kahroba proprietary card data
+ * 84   - Application AID
+ *
+ * All values must come from the current EMV transaction.
+ */
+static bool kahrobaAppendApplicationTags(KahrobaField55Writer*    writer,
+                                         const KahrobaEmvContext* context) {
+    static const uint8_t KAHROBA_AID[] = {0xA0, 0x00, 0x00, 0x08,
+                                          0x03, 0x00, 0x01};
+
+    if (!writer || !context)
+        return false;
+
+    /* DF70 must have been extracted during READ RECORD. */
+    if (!context->card.hasDf70) {
+        LOG_TRACE("Kahroba: DF70 unavailable");
+        return false;
+    }
+
+    /*
+     * 9F37 - Unpredictable Number.
+     *
+     * Use exactly the same value supplied to GENERATE AC.
+     *
+     * TODO(SECURITY):
+     * Replace the legacy fixed value with a fresh
+     * cryptographically secure random value per transaction.
+     */
+    if (!kahrobaField55Append(writer, 0x9F37, context->unpredictableNumber,
+                              sizeof(context->unpredictableNumber)))
+        return false;
+
+    /* DF70 - Value extracted from the card. */
+    if (!kahrobaField55Append(writer, 0xDF70, &context->card.df70,
+                              sizeof(context->card.df70)))
+        return false;
+
+    /* 84 - Application AID. */
+    if (!kahrobaField55Append(writer, 0x84, KAHROBA_AID, sizeof(KAHROBA_AID)))
+        return false;
+
+    LOG_TRACE("Kahroba: application tags appended "
+              "9F37 len=4 DF70=%02X AID len=%lu",
+              (unsigned int)context->card.df70,
+              (unsigned long)sizeof(KAHROBA_AID));
+
+    return true;
+}
+
+/**
+ * @brief Append issuer and terminal country information.
+ *
+ * 9F10 - Issuer Application Data
+ * 9F1A - Terminal Country Code
+ */
+static bool kahrobaAppendIssuerTags(KahrobaField55Writer*    writer,
+                                    const KahrobaEmvContext* context) {
+    if (!writer || !context)
+        return false;
+
+    /* Validate IAD returned by GENERATE AC. */
+    if (context->acResult.iadLen == 0u ||
+        context->acResult.iadLen > sizeof(context->acResult.iad))
+        return false;
+
+    /* 9F10 - Issuer Application Data */
+    if (!kahrobaField55Append(writer, 0x9F10, context->acResult.iad,
+                              context->acResult.iadLen))
+        return false;
+
+    /* 9F1A - Terminal Country Code */
+    if (!kahrobaField55Append(writer, 0x9F1A, context->country,
+                              sizeof(context->country)))
+        return false;
+
+    return true;
+}
+
+/**
+ * @brief Encode a decimal amount as 6-byte EMV packed BCD.
+ *
+ * Example:
+ *   100000 -> 00 00 00 10 00 00
+ */
+static bool kahrobaEncodeAmount(uint64_t amount, uint8_t output[6]) {
+    if (!output || amount == 0u || amount > UINT64_C(999999999999))
+        return false;
+
+    for (size_t i = 6u; i > 0u; --i) {
+        uint8_t low = (uint8_t)(amount % 10u);
+        amount /= 10u;
+
+        uint8_t high = (uint8_t)(amount % 10u);
+        amount /= 10u;
+
+        output[i - 1u] = (uint8_t)((high << 4u) | low);
+    }
+
+    return true;
+}
+
+/**
+ * @brief Append amount-related tags to Field 55.
+ *
+ * 9F02 - Amount Authorized
+ * 9F03 - Amount Other
+ */
+static bool kahrobaAppendAmountTags(KahrobaField55Writer* writer,
+                                    const TxnData*        txn) {
+    uint8_t       amountBcd[6]   = {0};
+    const uint8_t otherAmount[6] = {0};
+
+    if (!writer || !txn)
+        return false;
+
+    if (!kahrobaEncodeAmount(txn->core.amount, amountBcd))
+        return false;
+
+    if (!kahrobaField55Append(writer, 0x9F02, amountBcd, sizeof(amountBcd)))
+        return false;
+
+    if (!kahrobaField55Append(writer, 0x9F03, otherAmount, sizeof(otherAmount)))
+        return false;
+
+    return true;
+}
+
+/**
+ * @brief Append the initial terminal and application tags
+ *        to ISO 8583 Field 55.
+ *
+ * Tags:
+ *   5F2A - Transaction Currency Code
+ *   82   - Application Interchange Profile
+ *   95   - Terminal Verification Results
+ *   9A   - Transaction Date
+ *   9C   - Transaction Type
+ *
+ * @return true if all tags were appended successfully.
+ */
+static bool kahrobaAppendBaseTags(KahrobaField55Writer*    writer,
+                                  const KahrobaEmvContext* context) {
+    if (!writer || !context || !context->hasAip)
+        return false;
+
+    if (!kahrobaField55Append(writer, 0x5F2A, context->currency,
+                              sizeof(context->currency)))
+        return false;
+
+    if (!kahrobaField55Append(writer, 0x82, context->aip, sizeof(context->aip)))
+        return false;
+
+    if (!kahrobaField55Append(writer, 0x95, context->tvr, sizeof(context->tvr)))
+        return false;
+
+    if (!kahrobaField55Append(writer, 0x9A, context->transactionDate,
+                              sizeof(context->transactionDate)))
+        return false;
+
+    if (!kahrobaField55Append(writer, 0x9C, &context->transactionType, 1u))
+        return false;
+
+    return true;
+}
+
+/**
+ * @brief Convert EMV tag 5A (packed numeric PAN)
+ *        into a null-terminated decimal string.
+ *
+ * EMV PAN may contain one trailing F padding nibble.
+ *
+ * No card data is logged.
+ */
+static bool kahrobaDecodePan(const uint8_t* src, size_t srcLen, char* dst,
+                             size_t dstSize) {
+    char   result[20];
+    size_t count       = 0u;
+    bool   paddingSeen = false;
+
+    if (!src || !dst || srcLen == 0u || srcLen > 10u)
+        return false;
+
+    for (size_t i = 0u; i < srcLen; ++i) {
+
+        uint8_t high = (uint8_t)(src[i] >> 4u);
+        uint8_t low  = (uint8_t)(src[i] & 0x0Fu);
+
+        if (paddingSeen)
+            return false;
+
+        if (high > 9u)
+            return false;
+
+        if (count >= sizeof(result) - 1u)
+            return false;
+
+        result[count++] = (char)('0' + high);
+
+        if (low == 0x0Fu) {
+            /* F padding is allowed only at the end. */
+            if (i != srcLen - 1u)
+                return false;
+
+            paddingSeen = true;
+        } else {
+            if (low > 9u)
+                return false;
+
+            if (count >= sizeof(result) - 1u)
+                return false;
+
+            result[count++] = (char)('0' + low);
+        }
+    }
+
+    if (count < 12u || count > 19u || count >= dstSize)
+        return false;
+
+    result[count] = '\0';
+
+    memcpy(dst, result, count + 1u);
+
+    return true;
+}
+
+/**
+ * @brief Transfer EMV PAN into the common transaction data.
+ *
+ * Uses tag 5A collected during READ RECORD.
+ */
+static bool kahrobaPopulateTxnPan(const KahrobaCardData* card,
+                                  TxnData*               txnData) {
+    if (!card || !txnData)
+        return false;
+
+    if (card->panLen == 0u || card->panLen > sizeof(card->pan))
+        return false;
+
+    if (!kahrobaDecodePan(card->pan, card->panLen, txnData->core.pan,
+                          sizeof(txnData->core.pan))) {
+
+        LOG_TRACE("Kahroba: invalid Application PAN");
+        return false;
+    }
+
+    LOG_TRACE("Kahroba: transaction PAN populated");
+
+    return true;
+}
+
+/**
+ * @brief Append cryptogram-related EMV tags to Field 55.
+ *
+ * Must be called after a successful GENERATE AC returning ARQC.
+ *
+ * Tags:
+ *   9F26 - Application Cryptogram
+ *   9F27 - Cryptogram Information Data
+ *   9F36 - Application Transaction Counter
+ */
+bool kahrobaAppendCryptogramTags(KahrobaField55Writer*    writer,
+                                 const KahrobaEmvContext* context) {
+    if (writer == NULL || context == NULL)
+        return false;
+
+    /* Only build an online authorization message for ARQC. */
+    if ((context->acResult.cid & 0xC0u) != 0x80u) {
+        LOG_TRACE("Kahroba: expected ARQC, CID=%02X",
+                  (unsigned int)context->acResult.cid);
+        return false;
+    }
+
+    /* 9F26 - Application Cryptogram */
+    if (!kahrobaField55Append(writer, 0x9F26, context->acResult.ac,
+                              sizeof(context->acResult.ac)))
+        return false;
+
+    /* 9F27 - Cryptogram Information Data */
+    if (!kahrobaField55Append(writer, 0x9F27, &context->acResult.cid,
+                              sizeof(context->acResult.cid)))
+        return false;
+
+    /* 9F36 - Application Transaction Counter */
+    if (!kahrobaField55Append(writer, 0x9F36, context->acResult.atc,
+                              sizeof(context->acResult.atc)))
+        return false;
+
+    LOG_TRACE("Kahroba: cryptogram tags appended CID=%02X ATC=%02X%02X",
+              (unsigned int)context->acResult.cid,
+              (unsigned int)context->acResult.atc[0],
+              (unsigned int)context->acResult.atc[1]);
+
+    return true;
+}
+
+/**
+ * @brief Build the complete Kahroba Field 55.
+ *
+ * Uses the 19 legacy-compatible EMV tags.
+ *
+ * Must be called after successful GENERATE AC (ARQC).
+ *
+ * @param txn            Current transaction.
+ * @param context        Current EMV transaction context.
+ * @param output         Destination binary TLV buffer.
+ * @param capacity       Output buffer capacity.
+ * @param outputLength   Number of bytes written.
+ *
+ * @return true on success, false otherwise.
+ *
+ * @note Output contains sensitive payment data.
+ *       Never log or persist the entire buffer.
+ */
+bool kahrobaBuildField55(const TxnData* txn, const KahrobaEmvContext* context,
+                         uint8_t* output, size_t capacity,
+                         size_t* outputLength) {
+    KahrobaField55Writer writer = {0};
+
+    if (outputLength != NULL)
+        *outputLength = 0u;
+
+    if (!txn || !context || !output || !outputLength || capacity == 0u)
+        return false;
+
+    /* Field 55 for online authorization requires ARQC. */
+    if ((context->acResult.cid & 0xC0u) != 0x80u)
+        return false;
+
+    /*
+     * The amount sent to the host must match the amount
+     * supplied during GPO and GENERATE AC.
+     *
+     * authorizedAmount is captured before GENERATE AC.
+     */
+    if (txn->core.amount != context->authorizedAmount)
+        return false;
+
+    if (!kahrobaField55Init(&writer, output, capacity))
+        return false;
+
+    /* 1. 5F2A, 82, 95, 9A, 9C */
+    if (!kahrobaAppendBaseTags(&writer, context))
+        goto failed;
+
+    /* 2. 9F02, 9F03 */
+    if (!kahrobaAppendAmountTags(&writer, txn))
+        goto failed;
+
+    /* 3. 9F10, 9F1A */
+    if (!kahrobaAppendIssuerTags(&writer, context))
+        goto failed;
+
+    /* 4. 9F26, 9F27, 9F36 */
+    if (!kahrobaAppendCryptogramTags(&writer, context))
+        goto failed;
+
+    /* 5. 9F37, DF70, 84 */
+    if (!kahrobaAppendApplicationTags(&writer, context))
+        goto failed;
+
+    /* 6. 9F34, 9F6E */
+    if (!kahrobaAppendVerificationTags(&writer, context))
+        goto failed;
+
+    /* 7. 57, 5A */
+    if (!kahrobaAppendCardTags(&writer, context))
+        goto failed;
+
+    *outputLength = writer.length;
+
+    LOG_TRACE("Kahroba: Field55 built successfully length=%lu",
+              (unsigned long)*outputLength);
+
+    return true;
+
+failed:
+    /* Remove any partially generated sensitive data. */
+    volatile uint8_t* p = (volatile uint8_t*)output;
+
+    for (size_t i = 0u; i < writer.length; ++i)
+        p[i] = 0u;
+
+    *outputLength = 0u;
+
+    LOG_TRACE("Kahroba: Field55 construction failed");
+
+    return false;
+}
 
 /**
  * Convert a decimal amount string to 6-byte packed BCD.
@@ -130,8 +618,8 @@ static bool kahrobaRecordHandler(void* context, uint8_t sfi,
         if (!emvTlvNext(data, length, &offset, &item))
             return false;
 
-        LOG_TRACE("Kahroba: tag=%lX length=%lu", (unsigned long)item.tag,
-                  (unsigned long)item.length);
+        // LOG_TRACE("Kahroba: tag=%lX length=%lu", (unsigned long)item.tag,
+        //           (unsigned long)item.length);
 
         switch (item.tag) {
 
@@ -162,14 +650,46 @@ static bool kahrobaRecordHandler(void* context, uint8_t sfi,
             card->track2Len = item.length;
             break;
 
-        case 0xDF70:
-            if (card->hasDf70 || item.length != 1u)
+        case 0x9F6E: {
+            /* Form Factor Indicator - 4 bytes. */
+            if (item.length != sizeof(card->formFactor)) {
+                LOG_TRACE("Kahroba: invalid 9F6E length=%lu",
+                          (unsigned long)item.length);
                 return false;
+            }
+
+            if (card->hasFormFactor) {
+                LOG_TRACE("Kahroba: duplicate 9F6E");
+                return false;
+            }
+
+            memcpy(card->formFactor, item.value, sizeof(card->formFactor));
+
+            card->hasFormFactor = true;
+
+            LOG_TRACE("Kahroba: 9F6E stored");
+            break;
+        }
+
+        case 0xDF70: {
+            /* Kahroba proprietary data - 1 byte. */
+            if (item.length != 1u) {
+                LOG_TRACE("Kahroba: invalid DF70 length=%lu",
+                          (unsigned long)item.length);
+                return false;
+            }
+
+            if (card->hasDf70) {
+                LOG_TRACE("Kahroba: duplicate DF70");
+                return false;
+            }
 
             card->df70    = item.value[0];
             card->hasDf70 = true;
-            break;
 
+            LOG_TRACE("Kahroba: DF70 stored=%02X", (unsigned int)card->df70);
+            break;
+        }
         default:
             break;
         }
@@ -289,11 +809,54 @@ static bool kahrobaCdolValue(void* context, uint32_t tag, uint8_t* output,
     }
 }
 
-EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn) {
-    EmvMgrError err;
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 
-    if (reader == NULL)
+EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
+                            KahrobaEmvContext* context) {
+    EmvMgrError err;
+    int         piccErr;
+
+    KahrobaGpoData gpoData = {0};
+    KahrobaAcData  acData  = {0};
+
+    char merchantName[64] = {0};
+    char amountDigits[13] = {0};
+
+    uint64_t amount;
+
+    /* ================= Validate arguments ================= */
+
+    if (!reader || !txn || !context)
         return EMV_MGR_ERR_ARGUMENT;
+
+    /*
+     * Defensive EMV 9F02 range check.
+     *
+     * The scheme-specific amount policy must already have
+     * been validated by the transaction handler before NFC.
+     */
+    if (txn->core.amount == 0u || txn->core.amount > UINT64_C(999999999999)) {
+
+        LOG_TRACE("Kahroba: invalid EMV transaction amount");
+        return EMV_MGR_ERR_ARGUMENT;
+    }
+
+    /*
+     * context must be owned by the caller and must remain
+     * valid through subsequent online authorization.
+     */
+    memset(context, 0, sizeof(*context));
+
+    amount = txn->core.amount;
+
+    /* Reuse the existing project conversion utility. */
+    U64_TO_STRING(&amount, amountDigits);
+
+    LOG_TRACE("Kahroba: starting EMV transaction");
+
+    /* ================= Initialize EMV ================= */
 
     adapter.device = reader;
 
@@ -304,140 +867,123 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn) {
     if (err != EMV_MGR_OK)
         return err;
 
-    /* After successful detection of a compatible card. */
-    err = OOP_CALL(picc(), activate);
+    /*
+     * Activate the same reader passed to this function.
+     * nfcMgr remains responsible for its eventual release.
+     */
+    piccErr = (int)OOP_CALL(reader, activate);
 
-    if (err != PICC_ERR_OK) {
-        LOG_TRACE("Kahroba: PICC activation failed error=%d", (int)err);
-        /* Release the retained reader and report failure. */
-        return err;
+    if (piccErr != (int)PICC_ERR_OK) {
+        LOG_TRACE("Kahroba: PICC activation failed error=%d", piccErr);
+
+        return EMV_MGR_ERR_PROTOCOL;
     }
 
-    emvMgr()->selectPpse(KAHROBA_AID, sizeof(KAHROBA_AID));
+    /* ================= SELECT PPSE ================= */
+
+    err = emvMgr()->selectPpse(KAHROBA_AID, sizeof(KAHROBA_AID));
 
     if (err != EMV_MGR_OK) {
         LOG_TRACE("Kahroba: SELECT PPSE failed error=%d", (int)err);
         return err;
     }
 
+    /* ================= SELECT AID ================= */
+
     err = emvMgr()->selectAid(KAHROBA_AID, sizeof(KAHROBA_AID));
 
-    LOG_TRACE("Kahroba: SELECT AID result=%d state=%d", (int)err,
-              (int)emvMgr()->getState());
-
-    if (err != EMV_MGR_OK)
+    if (err != EMV_MGR_OK) {
+        LOG_TRACE("Kahroba: SELECT AID failed error=%d", (int)err);
         return err;
+    }
 
-    uint64_t amount = txn->core.amount;
+    /* ================= GPO ================= */
 
-    DEFINE_STRING(amntStr, LEN_MAX_AMOUNT + 1);
-    U64_TO_STRING(&amount, amntStr);
+    gpoData.amountDigits = amountDigits;
 
-    KahrobaGpoData gpoData = {
-        .amountDigits = amntStr,
+    /* TODO: Replace legacy TTPI with validated scheme values. */
+    static const uint8_t legacyTtpi[5] = {0x34, 0x00, 0x40, 0x02, 0x88};
 
-        /* Preserve the legacy TTPI for initial compatibility. */
-        .ttpi = {0x34, 0x00, 0x40, 0x02, 0x88},
+    memcpy(gpoData.ttpi, legacyTtpi, sizeof(legacyTtpi));
 
-        /*
-         * Legacy currency: 0978 (EUR).
-         * Must be confirmed against Kahroba specifications
-         * before production deployment.
-         */
-        .currency = {0x09, 0x78},
+    /*
+     * TODO: Verify currency against the Kahroba/acquirer spec.
+     * 0978 is ISO 4217 EUR, not IRR.
+     */
+    gpoData.currency[0] = 0x09;
+    gpoData.currency[1] = 0x78;
 
-        .country         = {0x03, 0x64},
-        .terminalType    = 0x21,
-        .transactionType = 0x00};
+    gpoData.country[0] = 0x03;
+    gpoData.country[1] = 0x64;
+
+    gpoData.terminalType    = 0x21;
+    gpoData.transactionType = 0x00;
 
     err = emvMgr()->getProcessingOptions(kahrobaDolValue, &gpoData);
 
-    LOG_TRACE("Kahroba: GPO result=%d state=%d", (int)err,
-              (int)emvMgr()->getState());
-
-    if (err != EMV_MGR_OK)
+    if (err != EMV_MGR_OK) {
+        LOG_TRACE("Kahroba: GPO failed error=%d", (int)err);
         return err;
-
-    /* Phase 4: READ RECORD */
-    KahrobaCardData cardData = {0};
-
-    err = emvMgr()->readRecords(kahrobaRecordHandler, &cardData);
-
-    size_t offset          = 0u;
-    size_t totalDataLength = 0u;
-    size_t tagCount        = 0u;
-
-    while (offset < cardData.cdol1Len) {
-        uint32_t tag = 0u;
-        uint8_t  first;
-        uint8_t  next;
-        uint8_t  requiredLength;
-        size_t   tagBytes = 1u;
-
-        /* Read the first tag byte. */
-        first = cardData.cdol1[offset++];
-
-        if (first == 0x00u || first == 0xFFu) {
-            LOG_TRACE("Kahroba: CDOL1 invalid tag");
-            return false;
-        }
-
-        tag = first;
-
-        /* Parse multi-byte BER tags. */
-        if ((first & 0x1Fu) == 0x1Fu) {
-            do {
-                if (offset >= cardData.cdol1Len || tagBytes >= 3u) {
-                    LOG_TRACE("Kahroba: CDOL1 invalid tag encoding");
-                    return false;
-                }
-
-                next = cardData.cdol1[offset++];
-                tag  = (tag << 8u) | next;
-                ++tagBytes;
-
-            } while ((next & 0x80u) != 0u);
-        }
-
-        /* Every DOL tag must be followed by one length byte. */
-        if (offset >= cardData.cdol1Len) {
-            LOG_TRACE("Kahroba: CDOL1 missing length");
-            return false;
-        }
-
-        requiredLength = cardData.cdol1[offset++];
-
-        LOG_TRACE("Kahroba: CDOL1 tag=%lX requiredLength=%u",
-                  (unsigned long)tag, (unsigned int)requiredLength);
-
-        totalDataLength += requiredLength;
-        ++tagCount;
-
-        /* Short APDU data limit. */
-        if (totalDataLength > 255u) {
-            LOG_TRACE("Kahroba: CDOL1 data exceeds APDU limit");
-            return false;
-        }
     }
 
-    LOG_TRACE("Kahroba: CDOL1 parsed tags=%lu dataLength=%lu",
-              (unsigned long)tagCount, (unsigned long)totalDataLength);
+    /* Save AIP directly in the transaction's EMV context. */
+    err = emvMgr()->getAip(context->aip);
 
-    if (err != EMV_MGR_OK)
+    if (err != EMV_MGR_OK) {
+        LOG_TRACE("Kahroba: failed to retrieve AIP error=%d", (int)err);
+
         return err;
+    }
 
-    if (cardData.cdol1Len == 0u) {
-        LOG_TRACE("Kahroba: CDOL1 missing");
+    context->hasAip = true;
+
+    LOG_TRACE("Kahroba: AIP stored=%02X%02X", (unsigned int)context->aip[0],
+              (unsigned int)context->aip[1]);
+
+    /* ================= READ RECORD ================= */
+
+    err = emvMgr()->readRecords(kahrobaRecordHandler, &context->card);
+
+    if (err != EMV_MGR_OK) {
+        LOG_TRACE("Kahroba: READ RECORD failed error=%d", (int)err);
+        return err;
+    }
+
+    if (context->card.cdol1Len == 0u ||
+        context->card.cdol1Len > sizeof(context->card.cdol1)) {
+
+        LOG_TRACE("Kahroba: missing or invalid CDOL1");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
-    KahrobaAcData       acData   = {0};
-    EmvGenerateAcResult acResult = {0};
+    if (!context->card.hasFormFactor || !context->card.hasDf70) {
 
-    char merchantName[64] = {0};
+        LOG_TRACE("Kahroba: required card data missing "
+                  "9F6E=%u DF70=%u",
+                  (unsigned int)context->card.hasFormFactor,
+                  (unsigned int)context->card.hasDf70);
 
-    /* Transaction parameters already validated for GPO. */
-    acData.amountDigits = amntStr;
+        return EMV_MGR_ERR_PROTOCOL;
+    }
+
+    context->authorizedAmount = txn->core.amount;
+
+    /* Verify data retained by READ RECORD. */
+    // LOG_TRACE("Kahroba: DF70 verification hasDf70=%d value=%02X",
+    //           (int)context->card.hasDf70, (unsigned int)context->card.df70);
+
+    // LOG_TRACE("Kahroba: card data stored "
+    //           "9F6E=%02X%02X%02X%02X DF70=%02X",
+    //           context->card.formFactor[0], context->card.formFactor[1],
+    //           context->card.formFactor[2], context->card.formFactor[3],
+    //           context->card.df70);
+
+    // LOG_TRACE("Kahroba: card records read successfully, CDOL1 len=%lu",
+    //           (unsigned long)context->card.cdol1Len);
+
+    /* ================= Prepare GENERATE AC ================= */
+
+    acData.amountDigits = amountDigits;
 
     memcpy(acData.country, gpoData.country, sizeof(acData.country));
 
@@ -446,81 +992,113 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn) {
     acData.terminalType    = gpoData.terminalType;
     acData.transactionType = gpoData.transactionType;
 
-    /* RTC date and time */
+    /* Transaction date and time. */
     if (!getDateTimeBcd(acData.date, acData.time)) {
         LOG_TRACE("Kahroba: invalid terminal date/time");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
-    /* Merchant name */
+    /* Merchant name; local storage remains valid during call. */
     if (!emvGetMerchantName(merchantName, sizeof(merchantName))) {
 
         LOG_TRACE("Kahroba: merchant name unavailable");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
+    merchantName[sizeof(merchantName) - 1u] = '\0';
+
     acData.merchantName    = (const uint8_t*)merchantName;
     acData.merchantNameLen = strlen(merchantName);
 
-    /* Actual TVR and CVM processing results */
-    if (!txnEmvGetVerifiedChecks(txn, /* Actual TxnMgr pointer, not NULL */
-                                 acData.tvr, acData.cvmResult)) {
+    /*
+     * TODO(PRODUCTION):
+     * Replace legacy TVR/CVM constants with actual EMV checks.
+     *
+     * Ensure this hook takes const TxnData*, not TxnMgr*.
+     */
+    if (!txnEmvGetVerifiedChecks(txn, acData.tvr, acData.cvmResult)) {
 
         LOG_TRACE("Kahroba: terminal checks unavailable");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
     /*
-     *   TODO
-     * Generate a fresh unpredictable number using the
-     * device's approved cryptographic random generator.
-     * Do not reuse the legacy fixed F0 54 BB 66 value.
+     * TODO(SECURITY - PRODUCTION BLOCKER):
+     * Replace legacy fixed value with device-approved secure RNG.
      */
-
     if (!txnEmvGetUnpredictableNumber(acData.unpredictableNumber)) {
+
         LOG_TRACE("Kahroba: unpredictable number unavailable");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
-    // /* Fresh unpredictable number */
-    // if (!txnEmvGetUnpredictableNumber(acData.unpredictableNumber)) {
+    /* Save precisely the values supplied to GENERATE AC. */
+    memcpy(context->unpredictableNumber, acData.unpredictableNumber,
+           sizeof(context->unpredictableNumber));
 
-    //     LOG_TRACE("Kahroba: random generation failed");
-    //     return EMV_MGR_ERR_PROTOCOL;
-    // }
+    memcpy(context->tvr, acData.tvr, sizeof(context->tvr));
 
-    /* Execute GENERATE AC only after all inputs are valid. */
-    err = emvMgr()->generateAc(cardData.cdol1, cardData.cdol1Len,
-                               kahrobaCdolValue, &acData, &acResult);
+    memcpy(context->cvmResult, acData.cvmResult, sizeof(context->cvmResult));
 
-    if (err != EMV_MGR_OK)
+    memcpy(context->transactionDate, acData.date,
+           sizeof(context->transactionDate));
+
+    memcpy(context->transactionTime, acData.time,
+           sizeof(context->transactionTime));
+
+    memcpy(context->currency, acData.currency, sizeof(context->currency));
+
+    memcpy(context->country, acData.country, sizeof(context->country));
+
+    context->terminalType    = acData.terminalType;
+    context->transactionType = acData.transactionType;
+
+    /* ================= GENERATE AC ================= */
+
+    err = emvMgr()->generateAc(context->card.cdol1, context->card.cdol1Len,
+                               kahrobaCdolValue, &acData, &context->acResult);
+
+    if (err != EMV_MGR_OK) {
+        LOG_TRACE("Kahroba: GENERATE AC failed error=%d", (int)err);
         return err;
+    }
 
-    switch (acResult.cid & 0xC0u) {
+    /* ================= Validate cryptogram type ================= */
+
+    switch (context->acResult.cid & 0xC0u) {
 
     case 0x80u:
-        LOG_TRACE("Kahroba: ARQC received - online required");
-        /* Continue to online authorization. */
+        LOG_TRACE("Kahroba: ARQC received - online authorization required");
         break;
 
     case 0x00u:
         LOG_TRACE("Kahroba: AAC received - card declined");
-        /* Stop transaction as declined. */
-        break;
+
+        txn->status = TXN_STATUS_DECLINED;
+
+        /* TODO: Introduce a distinct card-declined outcome. */
+        return EMV_MGR_ERR_PROTOCOL;
 
     case 0x40u:
-        LOG_TRACE("Kahroba: TC received");
-        /* Handle according to the applicable scheme rules. */
-        break;
+        LOG_TRACE("Kahroba: TC received - unexpected online flow");
+
+        /* TODO: Handle according to confirmed Kahroba rules. */
+        return EMV_MGR_ERR_PROTOCOL;
 
     default:
-        LOG_TRACE("Kahroba: invalid cryptogram type");
-        /* Reject unexpected response. */
-        break;
+        LOG_TRACE("Kahroba: unexpected CID=%02X", context->acResult.cid);
+        return EMV_MGR_ERR_PROTOCOL;
     }
 
-    if (err != EMV_MGR_OK)
-        return err;
+    /* ================= Transfer PAN ================= */
+
+    if (!kahrobaPopulateTxnPan(&context->card, txn)) {
+
+        LOG_TRACE("Kahroba: failed to populate transaction PAN");
+        return EMV_MGR_ERR_PROTOCOL;
+    }
+
+    LOG_TRACE("Kahroba: EMV complete; ready for online authorization");
 
     return EMV_MGR_OK;
 }

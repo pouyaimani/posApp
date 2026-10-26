@@ -73,6 +73,8 @@ typedef struct {
                               EmvDolValueFn provider, void* providerContext,
                               EmvGenerateAcResult* result);
 
+    EmvMgrError (*getAip)(uint8_t aip[2]);
+
     EmvMgrState (*getState)(void);
 
     void (*reset)(void);

@@ -8,6 +8,7 @@
 #include "state.h"
 #include "txnFlow/txnFlow.h"
 #include "infoMgr/infoMgr.h"
+#include "emvMgr/emv_kahroba.h"
 
 typedef enum {
     TXN_STEP_IDLE = 0,

@@ -1330,6 +1330,44 @@ failed:
     return error;
 }
 
+/**
+ * @brief Get the AIP extracted from the GPO response.
+ *
+ * AIP is valid after GPO, READ RECORD, and GENERATE AC.
+ * The function does not communicate with the card.
+ */
+static EmvMgrError getAip(uint8_t aip[2]) {
+
+    if (aip == NULL) {
+        LOG_TRACE("EMV: getAip invalid argument");
+        return EMV_MGR_ERR_ARGUMENT;
+    }
+
+    if (!ctx.initialized) {
+        LOG_TRACE("EMV: getAip manager not initialized");
+        return EMV_MGR_ERR_STATE;
+    }
+
+    switch (ctx.state) {
+
+    case EMV_MGR_GPO_COMPLETED:
+    case EMV_MGR_RECORDS_READ:
+    case EMV_MGR_AC_GENERATED:
+        break;
+
+    default:
+        LOG_TRACE("EMV: getAip invalid state=%d", (int)ctx.state);
+        return EMV_MGR_ERR_STATE;
+    }
+
+    memcpy(aip, ctx.aip, 2u);
+
+    LOG_TRACE("EMV: getAip success AIP=%02X%02X", (unsigned int)aip[0],
+              (unsigned int)aip[1]);
+
+    return EMV_MGR_OK;
+}
+
 EmvMgr* emvMgr(void) {
     static EmvMgr manager = {
         .init                 = init,
@@ -1340,6 +1378,7 @@ EmvMgr* emvMgr(void) {
         .getProcessingOptions = getProcessingOptions,
         .readRecords          = readRecords,
         .generateAc           = generateAc,
+        .getAip               = getAip,
     };
 
     return &manager;
