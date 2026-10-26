@@ -888,13 +888,459 @@ failed:
     return result;
 }
 
+#define EMV_MAX_RECORD_EXCHANGES 64u
+
+/**
+ * @brief Read all application records specified by the AFL.
+ *
+ * Requires a successful GPO operation.
+ *
+ * On success:
+ *   ctx.state = EMV_MGR_RECORDS_READ
+ *
+ * On failure:
+ *   ctx.state = EMV_MGR_FAILED
+ *
+ * @param callback Record-processing callback.
+ * @param userData User context passed to callback.
+ *
+ * @return EMV_MGR_OK on success.
+ */
+static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
+    EmvApduCommand  cmd;
+    EmvApduResponse resp;
+    EmvTlv          record;
+
+    EmvMgrError result = EMV_MGR_OK;
+
+    size_t totalRecords = 0u;
+    size_t offset;
+
+    int rc;
+
+    if (!ctx.initialized || ctx.transport.exchange == NULL ||
+        ctx.state != EMV_MGR_GPO_COMPLETED) {
+
+        LOG_TRACE("EMV: READ RECORD rejected state=%d", (int)ctx.state);
+
+        return EMV_MGR_ERR_STATE;
+    }
+
+    if (callback == NULL)
+        return EMV_MGR_ERR_ARGUMENT;
+
+    if (ctx.aflLen == 0u || ctx.aflLen > sizeof(ctx.afl) ||
+        (ctx.aflLen % 4u) != 0u) {
+
+        result = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    /*
+     * Validate the entire AFL before sending APDUs.
+     */
+    for (size_t i = 0u; i < ctx.aflLen; i += 4u) {
+        uint8_t sfi       = (uint8_t)(ctx.afl[i] >> 3u);
+        uint8_t first     = ctx.afl[i + 1u];
+        uint8_t last      = ctx.afl[i + 2u];
+        uint8_t authCount = ctx.afl[i + 3u];
+
+        if ((ctx.afl[i] & 0x07u) != 0u || sfi == 0u || sfi > 30u ||
+            first == 0u || last < first ||
+            authCount > (unsigned int)(last - first + 1u)) {
+
+            result = EMV_MGR_ERR_PROTOCOL;
+            goto failed;
+        }
+
+        totalRecords += (size_t)last - first + 1u;
+
+        if (totalRecords > EMV_MAX_RECORD_EXCHANGES) {
+            LOG_TRACE("EMV: AFL exceeds record limit");
+            result = EMV_MGR_ERR_PROTOCOL;
+            goto failed;
+        }
+    }
+
+    LOG_TRACE("EMV: READ RECORD begin entries=%lu records=%lu",
+              (unsigned long)(ctx.aflLen / 4u), (unsigned long)totalRecords);
+
+    for (size_t i = 0u; i < ctx.aflLen; i += 4u) {
+
+        uint8_t sfi = (uint8_t)(ctx.afl[i] >> 3u);
+
+        uint8_t first = ctx.afl[i + 1u];
+
+        uint8_t last = ctx.afl[i + 2u];
+
+        for (unsigned int number = first; number <= last; ++number) {
+
+            memset(&cmd, 0, sizeof(cmd));
+            memset(&resp, 0, sizeof(resp));
+
+            cmd.cla = 0x00u;
+            cmd.ins = 0xB2u;
+            cmd.p1  = (uint8_t)number;
+            cmd.p2  = (uint8_t)((sfi << 3u) | 0x04u);
+
+            cmd.data     = NULL;
+            cmd.data_len = 0u;
+
+            /* Trendit-compatible Le convention. */
+            cmd.has_le = false;
+            cmd.le     = 0u;
+
+            /*
+             * Reuse the response buffer.
+             * The callback must copy any data it needs later.
+             */
+            secureWipe(ctx.response, sizeof(ctx.response));
+
+            ctx.responseLen = 0u;
+
+            resp.data     = ctx.response;
+            resp.capacity = sizeof(ctx.response);
+
+            LOG_TRACE("EMV: READ RECORD SFI=%u record=%u P2=%02X",
+                      (unsigned int)sfi, number, (unsigned int)cmd.p2);
+
+            rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
+
+            if (rc == -2) {
+                result = EMV_MGR_ERR_TIMEOUT;
+                goto failed;
+            }
+
+            if (rc != 0) {
+                result = EMV_MGR_ERR_TRANSPORT;
+                goto failed;
+            }
+
+            if (resp.length > resp.capacity) {
+                result = EMV_MGR_ERR_PROTOCOL;
+                goto failed;
+            }
+
+            ctx.responseLen = resp.length;
+
+            LOG_TRACE("EMV: READ RECORD response SFI=%u "
+                      "record=%u len=%lu SW=%02X%02X",
+                      (unsigned int)sfi, number, (unsigned long)resp.length,
+                      (unsigned int)resp.sw1, (unsigned int)resp.sw2);
+
+            if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
+
+                result = EMV_MGR_ERR_CARD_STATUS;
+                goto failed;
+            }
+
+            /*
+             * EMV READ RECORD normally returns:
+             *
+             * 70 <length> <record TLVs>
+             */
+            offset = 0u;
+
+            if (!emvTlvNext(resp.data, resp.length, &offset, &record)) {
+
+                result = EMV_MGR_ERR_PROTOCOL;
+                goto failed;
+            }
+
+            if (record.tag != 0x70u || offset != resp.length) {
+
+                LOG_TRACE("EMV: READ RECORD invalid template");
+
+                result = EMV_MGR_ERR_PROTOCOL;
+                goto failed;
+            }
+
+            /*
+             * Parse/retain record data through the callback.
+             */
+            if (!callback(userData, sfi, (uint8_t)number, record.value,
+                          record.length)) {
+
+                LOG_TRACE("EMV: READ RECORD handler rejected record");
+
+                result = EMV_MGR_ERR_PROTOCOL;
+                goto failed;
+            }
+        }
+    }
+
+    ctx.state = EMV_MGR_RECORDS_READ;
+
+    LOG_TRACE("EMV: READ RECORD completed successfully");
+
+    return EMV_MGR_OK;
+
+failed:
+    LOG_TRACE("EMV: READ RECORD failed error=%d", (int)result);
+
+    secureWipe(ctx.response, sizeof(ctx.response));
+
+    ctx.responseLen = 0u;
+    ctx.state       = EMV_MGR_FAILED;
+
+    return result;
+}
+
+static bool parseGenerateAcResponse(const uint8_t* data, size_t length,
+                                    EmvGenerateAcResult* out) {
+    EmvTlv root;
+    EmvTlv item;
+    size_t offset = 0u;
+
+    bool hasCid = false;
+    bool hasAtc = false;
+    bool hasAc  = false;
+    bool hasIad = false;
+
+    if (!data || !out)
+        return false;
+
+    memset(out, 0, sizeof(*out));
+
+    if (!emvTlvNext(data, length, &offset, &root) || offset != length)
+        return false;
+
+    if (root.tag == 0x80u) {
+        /*
+         * Format 1:
+         * CID(1) + ATC(2) + AC(8) + optional IAD.
+         */
+        if (root.length < 11u || root.length - 11u > sizeof(out->iad))
+            return false;
+
+        out->cid = root.value[0];
+
+        memcpy(out->atc, root.value + 1u, 2u);
+        memcpy(out->ac, root.value + 3u, 8u);
+
+        out->iadLen = root.length - 11u;
+
+        if (out->iadLen != 0u) {
+            memcpy(out->iad, root.value + 11u, out->iadLen);
+        }
+
+        return true;
+    }
+
+    if (root.tag != 0x77u)
+        return false;
+
+    /*
+     * Format 2: constructed BER-TLV.
+     */
+    offset = 0u;
+
+    while (offset < root.length) {
+        if (!emvTlvNext(root.value, root.length, &offset, &item))
+            return false;
+
+        switch (item.tag) {
+
+        case 0x9F27: /* CID */
+            if (hasCid || item.length != 1u)
+                return false;
+
+            out->cid = item.value[0];
+            hasCid   = true;
+            break;
+
+        case 0x9F36: /* ATC */
+            if (hasAtc || item.length != 2u)
+                return false;
+
+            memcpy(out->atc, item.value, 2u);
+            hasAtc = true;
+            break;
+
+        case 0x9F26: /* AC */
+            if (hasAc || item.length != 8u)
+                return false;
+
+            memcpy(out->ac, item.value, 8u);
+            hasAc = true;
+            break;
+
+        case 0x9F10: /* IAD */
+            if (hasIad || item.length > sizeof(out->iad))
+                return false;
+
+            if (item.length != 0u)
+                memcpy(out->iad, item.value, item.length);
+
+            out->iadLen = item.length;
+            hasIad      = true;
+            break;
+
+        default:
+            /* Ignore unrelated optional TLVs. */
+            break;
+        }
+    }
+
+    return hasCid && hasAtc && hasAc;
+}
+
+static EmvMgrError generateAc(const uint8_t* cdol1, size_t cdol1Len,
+                              EmvDolValueFn provider, void* providerContext,
+                              EmvGenerateAcResult* result) {
+    uint8_t commandData[255] = {0};
+    size_t  commandLength    = 0u;
+
+    EmvApduCommand  cmd  = {0};
+    EmvApduResponse resp = {0};
+
+    EmvMgrError error = EMV_MGR_OK;
+    int         rc;
+
+    if (!ctx.initialized || ctx.transport.exchange == NULL ||
+        ctx.state != EMV_MGR_RECORDS_READ)
+        return EMV_MGR_ERR_STATE;
+
+    if (!cdol1 || cdol1Len == 0u || !provider || !result)
+        return EMV_MGR_ERR_ARGUMENT;
+
+    memset(result, 0, sizeof(*result));
+
+    LOG_TRACE("EMV: GENERATE AC begin");
+
+    if (!emvDolBuild(cdol1, cdol1Len, provider, providerContext, commandData,
+                     sizeof(commandData), &commandLength)) {
+
+        LOG_TRACE("EMV: GENERATE AC CDOL1 build failed");
+
+        error = EMV_MGR_ERR_ARGUMENT;
+        goto failed;
+    }
+
+    if (commandLength == 0u) {
+        error = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    LOG_TRACE("EMV: GENERATE AC CDOL1 data length=%lu",
+              (unsigned long)commandLength);
+
+    LOG_TRACE("EMV: GENERATE AC CDOL1 length=%lu",
+              (unsigned long)commandLength);
+
+    /*
+     * Debug only: inspect terminal-supplied CDOL values.
+     * Do not enable unrestricted payment data logging
+     * in production.
+     */
+    for (size_t i = 0u; i < commandLength; i += 16u) {
+        char   line[16 * 3 + 1] = {0};
+        size_t pos              = 0u;
+
+        for (size_t j = i; j < commandLength && j < i + 16u; ++j) {
+
+            int n = snprintf(line + pos, sizeof(line) - pos, "%02X ",
+                             commandData[j]);
+
+            if (n < 0 || (size_t)n >= sizeof(line) - pos)
+                break;
+
+            pos += (size_t)n;
+        }
+
+        LOG_TRACE("EMV: CDOL1 offset=%lu data=%s", (unsigned long)i, line);
+    }
+
+    cmd.cla = 0x80u;
+    cmd.ins = 0xAEu;
+    cmd.p1  = 0x80u; /* Request ARQC, no CDA requested */
+    cmd.p2  = 0x00u;
+
+    cmd.data     = commandData;
+    cmd.data_len = commandLength;
+
+    /* Existing Trendit SDK convention */
+    cmd.has_le = false;
+    cmd.le     = 0u;
+
+    secureWipe(ctx.response, sizeof(ctx.response));
+    ctx.responseLen = 0u;
+
+    resp.data     = ctx.response;
+    resp.capacity = sizeof(ctx.response);
+
+    rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
+
+    if (rc == -2) {
+        error = EMV_MGR_ERR_TIMEOUT;
+        goto failed;
+    }
+
+    if (rc != 0) {
+        error = EMV_MGR_ERR_TRANSPORT;
+        goto failed;
+    }
+
+    if (resp.length > resp.capacity) {
+        error = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    ctx.responseLen = resp.length;
+
+    LOG_TRACE("EMV: GENERATE AC response len=%lu SW=%02X%02X",
+              (unsigned long)resp.length, (unsigned int)resp.sw1,
+              (unsigned int)resp.sw2);
+
+    if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
+        error = EMV_MGR_ERR_CARD_STATUS;
+        goto failed;
+    }
+
+    if (!parseGenerateAcResponse(resp.data, resp.length, result)) {
+
+        LOG_TRACE("EMV: GENERATE AC invalid response");
+
+        error = EMV_MGR_ERR_PROTOCOL;
+        goto failed;
+    }
+
+    LOG_TRACE("EMV: GENERATE AC parsed CID=%02X ATC=%02X%02X IAD len=%lu",
+              (unsigned int)result->cid, (unsigned int)result->atc[0],
+              (unsigned int)result->atc[1], (unsigned long)result->iadLen);
+
+    ctx.state = EMV_MGR_AC_GENERATED;
+
+    secureWipe(commandData, sizeof(commandData));
+    secureWipe(ctx.response, sizeof(ctx.response));
+    ctx.responseLen = 0u;
+
+    return EMV_MGR_OK;
+
+failed:
+    LOG_TRACE("EMV: GENERATE AC failed error=%d", (int)error);
+
+    memset(result, 0, sizeof(*result));
+    secureWipe(commandData, sizeof(commandData));
+    secureWipe(ctx.response, sizeof(ctx.response));
+
+    ctx.responseLen = 0u;
+    ctx.state       = EMV_MGR_FAILED;
+
+    return error;
+}
+
 EmvMgr* emvMgr(void) {
-    static EmvMgr manager = {.init                 = init,
-                             .selectPpse           = selectPpse,
-                             .getState             = getState,
-                             .reset                = reset,
-                             .selectAid            = selectAid,
-                             .getProcessingOptions = getProcessingOptions};
+    static EmvMgr manager = {
+        .init                 = init,
+        .selectPpse           = selectPpse,
+        .getState             = getState,
+        .reset                = reset,
+        .selectAid            = selectAid,
+        .getProcessingOptions = getProcessingOptions,
+        .readRecords          = readRecords,
+        .generateAc           = generateAc,
+    };
 
     return &manager;
 }

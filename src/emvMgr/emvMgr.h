@@ -23,11 +23,33 @@ typedef enum {
     EMV_MGR_PPSE_SELECTED,
     EMV_MGR_AID_SELECTED,
     EMV_MGR_GPO_COMPLETED,
-    EMV_MGR_FAILED
+    EMV_MGR_FAILED,
+    EMV_MGR_RECORDS_READ,
+    EMV_MGR_AC_GENERATED
 } EmvMgrState;
+
+typedef struct {
+    uint8_t cid;    /* 9F27 - Cryptogram Information Data */
+    uint8_t atc[2]; /* 9F36 - Application Transaction Counter */
+    uint8_t ac[8];  /* 9F26 - Application Cryptogram */
+
+    uint8_t iad[32]; /* 9F10 - Issuer Application Data */
+    size_t  iadLen;
+} EmvGenerateAcResult;
 
 typedef bool (*EmvDolValueFn)(void* context, uint32_t tag, uint8_t* output,
                               size_t requiredLength);
+
+/**
+ * Called after a successful READ RECORD.
+ *
+ * data points to the contents of template 70.
+ * The pointer remains valid only during this callback.
+ *
+ * Return false if the record cannot be processed.
+ */
+typedef bool (*EmvRecordFn)(void* context, uint8_t sfi, uint8_t recordNumber,
+                            const uint8_t* data, size_t length);
 
 /**
  * Public EMV manager interface.
@@ -44,6 +66,12 @@ typedef struct {
 
     EmvMgrError (*getProcessingOptions)(EmvDolValueFn provider,
                                         void*         providerContext);
+
+    EmvMgrError (*readRecords)(EmvRecordFn callback, void* userData);
+
+    EmvMgrError (*generateAc)(const uint8_t* cdol1, size_t cdol1Len,
+                              EmvDolValueFn provider, void* providerContext,
+                              EmvGenerateAcResult* result);
 
     EmvMgrState (*getState)(void);
 
