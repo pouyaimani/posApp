@@ -61,7 +61,7 @@ typedef void (*TxnFlowDone)(TxnFlow* flow, const TxnFlowStatus* status);
 
 typedef void (*TxnFlowStageCb)(TxnFlow* flow);
 
-typedef int (*TxnComposeFn)(TxnData* data);
+typedef int (*TxnComposeFn)(TxnFlow* flow);
 
 /*
  * Called after successful composition and building, immediately

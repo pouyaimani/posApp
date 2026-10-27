@@ -7,7 +7,7 @@
 #include "txn.h"
 
 Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* feild, uint16_t feildsCnt,
-                 TxnData* txn, ByteArray* buf);
+                 TxnData* txn, ByteArray* buf, void* userData);
 RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf);
 
 typedef int8_t (*TxnIsoBuilder)(TxnData* txn, ByteArray*);

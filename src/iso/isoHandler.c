@@ -309,28 +309,71 @@ const IsoTransaction* isoFindTransaction(Mti_t mti, PrCode_t prcode) {
     return NULL;
 }
 
-Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* feild, uint16_t feildsCnt,
-                 TxnData* txn, ByteArray* buf) {
-    LOG_TRACE("ISO Buider: mti = %u, process code = %u", mti, prcode);
+Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* fields,
+                 uint16_t fieldsCnt, TxnData* txn, ByteArray* buf,
+                 void* userData) {
+    if (!txn || !buf || (fieldsCnt > 0u && !fields)) {
+        LOG_TRACE("ISO Builder: invalid arguments");
+        return ERR_NOK;
+    }
+
+    if (txn->core.txnType == TXN_KAHROBA_PURCHASE && !userData) {
+        LOG_TRACE("ISO Builder: Kahroba context missing");
+        return ERR_NOK;
+    }
+
+    LOG_TRACE("ISO Builder: MTI=%u PRCode=%u fieldCount=%u", (unsigned)mti,
+              (unsigned)prcode, (unsigned)fieldsCnt);
+
     IsoTransaction* itxn = isoFindTransaction(mti, prcode);
-    RETURN_VALUE_IF_NULL(itxn, ;, ERR_NOK);
+    if (!itxn)
+        return ERR_NOK;
+
     iso8583()->reset();
     setMti(mti);
-    LOG_TRACE("ISO Buider: feilds count = %u", feildsCnt);
-    for (size_t i = 0; i < feildsCnt; i++) {
-        for (size_t j = 0; j < sizeof(isoHelper); j++) {
-            if (isoHelper[j].feild == feild[i]) {
-                if (isoHelper[j].set) {
-                    isoHelper[j].set(txn);
-                    break;
-                }
+
+    for (size_t i = 0u; i < fieldsCnt; ++i) {
+        bool found = false;
+
+        for (size_t j = 0u; j < ARRAY_SIZE(isoHelper); ++j) {
+            if (isoHelper[j].feild != fields[i])
+                continue;
+
+            found = true;
+
+            if (!isoHelper[j].set) {
+                LOG_TRACE("ISO Builder: setter unavailable field=%u",
+                          (unsigned)fields[i]);
+                return ERR_NOK;
             }
+
+            int8_t rc = isoHelper[j].set(txn, userData);
+
+            if (rc != ERR_OK) {
+                LOG_ERROR("ISO Builder: field=%u failed, rc=%d",
+                          (unsigned)fields[i], (int)rc);
+            }
+
+            break;
+        }
+
+        if (!found) {
+            LOG_TRACE("ISO Builder: unsupported field=%u", (unsigned)fields[i]);
+            return ERR_NOK;
         }
     }
+
     if (itxn->builder) {
-        RETURN_VALUE_IF_NOT(itxn->builder(txn, buf), ERR_OK, ;, ERR_NOK);
+        if (itxn->builder(txn, buf) != ERR_OK)
+            return ERR_NOK;
     }
-    return isoPack(buf);
+
+    Error_t rc = isoPack(buf);
+
+    LOG_TRACE("ISO Builder: pack result=%d length=%lu", (int)rc,
+              (unsigned long)buf->len);
+
+    return rc;
 }
 
 RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {

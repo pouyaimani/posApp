@@ -5,7 +5,7 @@
 #include "txn.h"
 #include "error.h"
 
-typedef int8_t (*FeildSetter)(TxnData* txn);
+typedef int8_t (*FeildSetter)(TxnData* txn, void* userData);
 typedef int8_t (*FeildGetter)(TxnData* txn);
 
 typedef struct {

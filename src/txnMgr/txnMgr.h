@@ -37,6 +37,7 @@ typedef enum {
     TXN_STEP_PENDING,
     TXN_STEP_COMMUNICATION,
     TXN_STEP_NFC,
+    TXN_STEP_MAG,
     TXN_STEP_SETTLEMENT
 } TxnMgrStep;
 
@@ -123,6 +124,8 @@ OOP_CLASS(TxnMgr) {
 
     bool active;
     bool stepStarted;
+
+    void* userData;
 
     bool (*run)(TxnMgrCfg* cfg, InfoDone done);
 

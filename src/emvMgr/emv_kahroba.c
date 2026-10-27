@@ -36,7 +36,7 @@ static bool kahrobaAppendCardTags(KahrobaField55Writer*    writer,
     if (card->track2Len == 0u || card->track2Len > sizeof(card->track2) ||
         card->panLen == 0u || card->panLen > sizeof(card->pan)) {
 
-        LOG_TRACE("Kahroba: invalid PAN or Track2 length");
+        EMV_LOG("Kahroba: invalid PAN or Track2 length");
         return false;
     }
 
@@ -51,7 +51,7 @@ static bool kahrobaAppendCardTags(KahrobaField55Writer*    writer,
     if (writer->length > writer->capacity ||
         required > writer->capacity - writer->length) {
 
-        LOG_TRACE("Kahroba: insufficient Field55 capacity");
+        EMV_LOG("Kahroba: insufficient Field55 capacity");
         return false;
     }
 
@@ -63,9 +63,9 @@ static bool kahrobaAppendCardTags(KahrobaField55Writer*    writer,
     if (!kahrobaField55Append(writer, 0x5A, card->pan, card->panLen))
         return false;
 
-    LOG_TRACE("Kahroba: card tags appended "
-              "57 len=%lu 5A len=%lu",
-              (unsigned long)card->track2Len, (unsigned long)card->panLen);
+    EMV_LOG("Kahroba: card tags appended "
+            "57 len=%lu 5A len=%lu",
+            (unsigned long)card->track2Len, (unsigned long)card->panLen);
 
     return true;
 }
@@ -83,7 +83,7 @@ static bool kahrobaAppendVerificationTags(KahrobaField55Writer*    writer,
 
     /* 9F6E must have been extracted from READ RECORD. */
     if (!context->card.hasFormFactor) {
-        LOG_TRACE("Kahroba: 9F6E unavailable");
+        EMV_LOG("Kahroba: 9F6E unavailable");
         return false;
     }
 
@@ -92,13 +92,19 @@ static bool kahrobaAppendVerificationTags(KahrobaField55Writer*    writer,
                               sizeof(context->cvmResult)))
         return false;
 
+    // /* 9F6E - Form Factor Indicator */
+    // if (!kahrobaField55Append(writer, 0x9F6E, context->card.formFactor,
+    //                           sizeof(context->card.formFactor)))
+    //     return false;
+
     /* 9F6E - Form Factor Indicator */
-    if (!kahrobaField55Append(writer, 0x9F6E, context->card.formFactor,
+    uint8_t pos_entry[] = {0x10, 0x30, 0x00, 0x00};
+    if (!kahrobaField55Append(writer, 0x9F6E, pos_entry,
                               sizeof(context->card.formFactor)))
         return false;
 
-    LOG_TRACE("Kahroba: verification tags appended "
-              "9F34 len=3 9F6E len=4");
+    EMV_LOG("Kahroba: verification tags appended "
+            "9F34 len=3 9F6E len=4");
 
     return true;
 }
@@ -122,7 +128,7 @@ static bool kahrobaAppendApplicationTags(KahrobaField55Writer*    writer,
 
     /* DF70 must have been extracted during READ RECORD. */
     if (!context->card.hasDf70) {
-        LOG_TRACE("Kahroba: DF70 unavailable");
+        EMV_LOG("Kahroba: DF70 unavailable");
         return false;
     }
 
@@ -139,19 +145,24 @@ static bool kahrobaAppendApplicationTags(KahrobaField55Writer*    writer,
                               sizeof(context->unpredictableNumber)))
         return false;
 
+    // /* DF70 - Value extracted from the card. */
+    // if (!kahrobaField55Append(writer, 0xDF70, &context->card.df70,
+    //                           sizeof(context->card.df70)))
+    //     return false;
+
     /* DF70 - Value extracted from the card. */
-    if (!kahrobaField55Append(writer, 0xDF70, &context->card.df70,
-                              sizeof(context->card.df70)))
+    uint8_t df70_data = 0x00;
+    if (!kahrobaField55Append(writer, 0xDF70, &df70_data, 1))
         return false;
 
     /* 84 - Application AID. */
     if (!kahrobaField55Append(writer, 0x84, KAHROBA_AID, sizeof(KAHROBA_AID)))
         return false;
 
-    LOG_TRACE("Kahroba: application tags appended "
-              "9F37 len=4 DF70=%02X AID len=%lu",
-              (unsigned int)context->card.df70,
-              (unsigned long)sizeof(KAHROBA_AID));
+    EMV_LOG("Kahroba: application tags appended "
+            "9F37 len=4 DF70=%02X AID len=%lu",
+            (unsigned int)context->card.df70,
+            (unsigned long)sizeof(KAHROBA_AID));
 
     return true;
 }
@@ -348,11 +359,11 @@ static bool kahrobaPopulateTxnPan(const KahrobaCardData* card,
     if (!kahrobaDecodePan(card->pan, card->panLen, txnData->core.pan,
                           sizeof(txnData->core.pan))) {
 
-        LOG_TRACE("Kahroba: invalid Application PAN");
+        EMV_LOG("Kahroba: invalid Application PAN");
         return false;
     }
 
-    LOG_TRACE("Kahroba: transaction PAN populated");
+    EMV_LOG("Kahroba: transaction PAN populated");
 
     return true;
 }
@@ -374,8 +385,8 @@ bool kahrobaAppendCryptogramTags(KahrobaField55Writer*    writer,
 
     /* Only build an online authorization message for ARQC. */
     if ((context->acResult.cid & 0xC0u) != 0x80u) {
-        LOG_TRACE("Kahroba: expected ARQC, CID=%02X",
-                  (unsigned int)context->acResult.cid);
+        EMV_LOG("Kahroba: expected ARQC, CID=%02X",
+                (unsigned int)context->acResult.cid);
         return false;
     }
 
@@ -394,10 +405,10 @@ bool kahrobaAppendCryptogramTags(KahrobaField55Writer*    writer,
                               sizeof(context->acResult.atc)))
         return false;
 
-    LOG_TRACE("Kahroba: cryptogram tags appended CID=%02X ATC=%02X%02X",
-              (unsigned int)context->acResult.cid,
-              (unsigned int)context->acResult.atc[0],
-              (unsigned int)context->acResult.atc[1]);
+    EMV_LOG("Kahroba: cryptogram tags appended CID=%02X ATC=%02X%02X",
+            (unsigned int)context->acResult.cid,
+            (unsigned int)context->acResult.atc[0],
+            (unsigned int)context->acResult.atc[1]);
 
     return true;
 }
@@ -477,8 +488,10 @@ bool kahrobaBuildField55(const TxnData* txn, const KahrobaEmvContext* context,
 
     *outputLength = writer.length;
 
-    LOG_TRACE("Kahroba: Field55 built successfully length=%lu",
-              (unsigned long)*outputLength);
+    kahrobaTraceField55(&writer);
+
+    EMV_LOG("Kahroba: Field55 built successfully length=%lu",
+            (unsigned long)*outputLength);
 
     return true;
 
@@ -491,7 +504,7 @@ failed:
 
     *outputLength = 0u;
 
-    LOG_TRACE("Kahroba: Field55 construction failed");
+    EMV_LOG("Kahroba: Field55 construction failed");
 
     return false;
 }
@@ -594,8 +607,8 @@ static bool kahrobaDolValue(void* context, uint32_t tag, uint8_t* output,
         return true;
 
     default:
-        LOG_TRACE("Kahroba: unsupported PDOL tag=%lX len=%lu",
-                  (unsigned long)tag, (unsigned long)requiredLength);
+        EMV_LOG("Kahroba: unsupported PDOL tag=%lX len=%lu", (unsigned long)tag,
+                (unsigned long)requiredLength);
         return false;
     }
 }
@@ -610,15 +623,15 @@ static bool kahrobaRecordHandler(void* context, uint8_t sfi,
     if (!card || (!data && length != 0u))
         return false;
 
-    LOG_TRACE("Kahroba: processing SFI=%u record=%u len=%lu", (unsigned int)sfi,
-              (unsigned int)recordNumber, (unsigned long)length);
+    EMV_LOG("Kahroba: processing SFI=%u record=%u len=%lu", (unsigned int)sfi,
+            (unsigned int)recordNumber, (unsigned long)length);
 
     while (offset < length) {
 
         if (!emvTlvNext(data, length, &offset, &item))
             return false;
 
-        // LOG_TRACE("Kahroba: tag=%lX length=%lu", (unsigned long)item.tag,
+        // EMV_LOG("Kahroba: tag=%lX length=%lu", (unsigned long)item.tag,
         //           (unsigned long)item.length);
 
         switch (item.tag) {
@@ -653,13 +666,13 @@ static bool kahrobaRecordHandler(void* context, uint8_t sfi,
         case 0x9F6E: {
             /* Form Factor Indicator - 4 bytes. */
             if (item.length != sizeof(card->formFactor)) {
-                LOG_TRACE("Kahroba: invalid 9F6E length=%lu",
-                          (unsigned long)item.length);
+                EMV_LOG("Kahroba: invalid 9F6E length=%lu",
+                        (unsigned long)item.length);
                 return false;
             }
 
             if (card->hasFormFactor) {
-                LOG_TRACE("Kahroba: duplicate 9F6E");
+                EMV_LOG("Kahroba: duplicate 9F6E");
                 return false;
             }
 
@@ -667,27 +680,27 @@ static bool kahrobaRecordHandler(void* context, uint8_t sfi,
 
             card->hasFormFactor = true;
 
-            LOG_TRACE("Kahroba: 9F6E stored");
+            EMV_LOG("Kahroba: 9F6E stored");
             break;
         }
 
         case 0xDF70: {
             /* Kahroba proprietary data - 1 byte. */
             if (item.length != 1u) {
-                LOG_TRACE("Kahroba: invalid DF70 length=%lu",
-                          (unsigned long)item.length);
+                EMV_LOG("Kahroba: invalid DF70 length=%lu",
+                        (unsigned long)item.length);
                 return false;
             }
 
             if (card->hasDf70) {
-                LOG_TRACE("Kahroba: duplicate DF70");
+                EMV_LOG("Kahroba: duplicate DF70");
                 return false;
             }
 
             card->df70    = item.value[0];
             card->hasDf70 = true;
 
-            LOG_TRACE("Kahroba: DF70 stored=%02X", (unsigned int)card->df70);
+            EMV_LOG("Kahroba: DF70 stored=%02X", (unsigned int)card->df70);
             break;
         }
         default:
@@ -804,7 +817,7 @@ static bool kahrobaCdolValue(void* context, uint32_t tag, uint8_t* output,
     }
 
     default:
-        LOG_TRACE("Kahroba: unsupported CDOL1 tag=%lX", (unsigned long)tag);
+        EMV_LOG("Kahroba: unsupported CDOL1 tag=%lX", (unsigned long)tag);
         return false;
     }
 }
@@ -839,7 +852,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
      */
     if (txn->core.amount == 0u || txn->core.amount > UINT64_C(999999999999)) {
 
-        LOG_TRACE("Kahroba: invalid EMV transaction amount");
+        EMV_LOG("Kahroba: invalid EMV transaction amount");
         return EMV_MGR_ERR_ARGUMENT;
     }
 
@@ -854,7 +867,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     /* Reuse the existing project conversion utility. */
     U64_TO_STRING(&amount, amountDigits);
 
-    LOG_TRACE("Kahroba: starting EMV transaction");
+    EMV_LOG("Kahroba: starting EMV transaction");
 
     /* ================= Initialize EMV ================= */
 
@@ -874,7 +887,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     piccErr = (int)OOP_CALL(reader, activate);
 
     if (piccErr != (int)PICC_ERR_OK) {
-        LOG_TRACE("Kahroba: PICC activation failed error=%d", piccErr);
+        EMV_LOG("Kahroba: PICC activation failed error=%d", piccErr);
 
         return EMV_MGR_ERR_PROTOCOL;
     }
@@ -884,7 +897,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     err = emvMgr()->selectPpse(KAHROBA_AID, sizeof(KAHROBA_AID));
 
     if (err != EMV_MGR_OK) {
-        LOG_TRACE("Kahroba: SELECT PPSE failed error=%d", (int)err);
+        EMV_LOG("Kahroba: SELECT PPSE failed error=%d", (int)err);
         return err;
     }
 
@@ -893,7 +906,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     err = emvMgr()->selectAid(KAHROBA_AID, sizeof(KAHROBA_AID));
 
     if (err != EMV_MGR_OK) {
-        LOG_TRACE("Kahroba: SELECT AID failed error=%d", (int)err);
+        EMV_LOG("Kahroba: SELECT AID failed error=%d", (int)err);
         return err;
     }
 
@@ -922,7 +935,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     err = emvMgr()->getProcessingOptions(kahrobaDolValue, &gpoData);
 
     if (err != EMV_MGR_OK) {
-        LOG_TRACE("Kahroba: GPO failed error=%d", (int)err);
+        EMV_LOG("Kahroba: GPO failed error=%d", (int)err);
         return err;
     }
 
@@ -930,38 +943,38 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     err = emvMgr()->getAip(context->aip);
 
     if (err != EMV_MGR_OK) {
-        LOG_TRACE("Kahroba: failed to retrieve AIP error=%d", (int)err);
+        EMV_LOG("Kahroba: failed to retrieve AIP error=%d", (int)err);
 
         return err;
     }
 
     context->hasAip = true;
 
-    LOG_TRACE("Kahroba: AIP stored=%02X%02X", (unsigned int)context->aip[0],
-              (unsigned int)context->aip[1]);
+    EMV_LOG("Kahroba: AIP stored=%02X%02X", (unsigned int)context->aip[0],
+            (unsigned int)context->aip[1]);
 
     /* ================= READ RECORD ================= */
 
     err = emvMgr()->readRecords(kahrobaRecordHandler, &context->card);
 
     if (err != EMV_MGR_OK) {
-        LOG_TRACE("Kahroba: READ RECORD failed error=%d", (int)err);
+        EMV_LOG("Kahroba: READ RECORD failed error=%d", (int)err);
         return err;
     }
 
     if (context->card.cdol1Len == 0u ||
         context->card.cdol1Len > sizeof(context->card.cdol1)) {
 
-        LOG_TRACE("Kahroba: missing or invalid CDOL1");
+        EMV_LOG("Kahroba: missing or invalid CDOL1");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
     if (!context->card.hasFormFactor || !context->card.hasDf70) {
 
-        LOG_TRACE("Kahroba: required card data missing "
-                  "9F6E=%u DF70=%u",
-                  (unsigned int)context->card.hasFormFactor,
-                  (unsigned int)context->card.hasDf70);
+        EMV_LOG("Kahroba: required card data missing "
+                "9F6E=%u DF70=%u",
+                (unsigned int)context->card.hasFormFactor,
+                (unsigned int)context->card.hasDf70);
 
         return EMV_MGR_ERR_PROTOCOL;
     }
@@ -969,16 +982,16 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     context->authorizedAmount = txn->core.amount;
 
     /* Verify data retained by READ RECORD. */
-    // LOG_TRACE("Kahroba: DF70 verification hasDf70=%d value=%02X",
+    // EMV_LOG("Kahroba: DF70 verification hasDf70=%d value=%02X",
     //           (int)context->card.hasDf70, (unsigned int)context->card.df70);
 
-    // LOG_TRACE("Kahroba: card data stored "
+    // EMV_LOG("Kahroba: card data stored "
     //           "9F6E=%02X%02X%02X%02X DF70=%02X",
     //           context->card.formFactor[0], context->card.formFactor[1],
     //           context->card.formFactor[2], context->card.formFactor[3],
     //           context->card.df70);
 
-    // LOG_TRACE("Kahroba: card records read successfully, CDOL1 len=%lu",
+    // EMV_LOG("Kahroba: card records read successfully, CDOL1 len=%lu",
     //           (unsigned long)context->card.cdol1Len);
 
     /* ================= Prepare GENERATE AC ================= */
@@ -994,14 +1007,14 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
 
     /* Transaction date and time. */
     if (!getDateTimeBcd(acData.date, acData.time)) {
-        LOG_TRACE("Kahroba: invalid terminal date/time");
+        EMV_LOG("Kahroba: invalid terminal date/time");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
     /* Merchant name; local storage remains valid during call. */
     if (!emvGetMerchantName(merchantName, sizeof(merchantName))) {
 
-        LOG_TRACE("Kahroba: merchant name unavailable");
+        EMV_LOG("Kahroba: merchant name unavailable");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
@@ -1018,7 +1031,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
      */
     if (!txnEmvGetVerifiedChecks(txn, acData.tvr, acData.cvmResult)) {
 
-        LOG_TRACE("Kahroba: terminal checks unavailable");
+        EMV_LOG("Kahroba: terminal checks unavailable");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
@@ -1028,7 +1041,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
      */
     if (!txnEmvGetUnpredictableNumber(acData.unpredictableNumber)) {
 
-        LOG_TRACE("Kahroba: unpredictable number unavailable");
+        EMV_LOG("Kahroba: unpredictable number unavailable");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
@@ -1059,7 +1072,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
                                kahrobaCdolValue, &acData, &context->acResult);
 
     if (err != EMV_MGR_OK) {
-        LOG_TRACE("Kahroba: GENERATE AC failed error=%d", (int)err);
+        EMV_LOG("Kahroba: GENERATE AC failed error=%d", (int)err);
         return err;
     }
 
@@ -1068,11 +1081,11 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     switch (context->acResult.cid & 0xC0u) {
 
     case 0x80u:
-        LOG_TRACE("Kahroba: ARQC received - online authorization required");
+        EMV_LOG("Kahroba: ARQC received - online authorization required");
         break;
 
     case 0x00u:
-        LOG_TRACE("Kahroba: AAC received - card declined");
+        EMV_LOG("Kahroba: AAC received - card declined");
 
         txn->status = TXN_STATUS_DECLINED;
 
@@ -1080,13 +1093,13 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
         return EMV_MGR_ERR_PROTOCOL;
 
     case 0x40u:
-        LOG_TRACE("Kahroba: TC received - unexpected online flow");
+        EMV_LOG("Kahroba: TC received - unexpected online flow");
 
         /* TODO: Handle according to confirmed Kahroba rules. */
         return EMV_MGR_ERR_PROTOCOL;
 
     default:
-        LOG_TRACE("Kahroba: unexpected CID=%02X", context->acResult.cid);
+        EMV_LOG("Kahroba: unexpected CID=%02X", context->acResult.cid);
         return EMV_MGR_ERR_PROTOCOL;
     }
 
@@ -1094,11 +1107,11 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
 
     if (!kahrobaPopulateTxnPan(&context->card, txn)) {
 
-        LOG_TRACE("Kahroba: failed to populate transaction PAN");
+        EMV_LOG("Kahroba: failed to populate transaction PAN");
         return EMV_MGR_ERR_PROTOCOL;
     }
 
-    LOG_TRACE("Kahroba: EMV complete; ready for online authorization");
+    EMV_LOG("Kahroba: EMV complete; ready for online authorization");
 
     return EMV_MGR_OK;
 }

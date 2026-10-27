@@ -90,6 +90,8 @@ typedef struct {
     size_t  field55Len;
 
     bool emvReady;
+
+    bool usePin;
 } KahrobaTxnSession;
 
 EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,

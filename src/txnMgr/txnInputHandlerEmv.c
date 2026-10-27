@@ -17,7 +17,6 @@
 #include "emvMgr/emv_kahroba.h"
 #include "emvMgr/emv_picc_transport.h"
 #include "emvMgr/kahroba_field55.h"
-#include "emvMgr/txn_emv_sync_port.h"
 #include "logger.h"
 #include <string.h>
 #include "emvMgr/emv_kahroba.h"
@@ -189,14 +188,60 @@ void nfcInfoDone(InfoResult res, void* arg) {
 // /* Proceed to NFC only after validation succeeds. */
 // /* nfcMgr()->run(...); */
 
+static void handleABcardType(const NfcStatus* status, void* userData) {
+    TxnMgr* txnMgr = userData;
+    // TODO: validate kahroba amount
+    EmvMgrError err =
+        startKahrobaEmv(picc(), &txnMgr->data, &kahrobaSession.emv);
+    // No need to nfc anymore
+    OOP_CALL(picc(), close);
+
+    if (err != EMV_MGR_OK) {
+        kahrobaSession.emvReady = false;
+
+        LOG_TRACE("Kahroba: EMV processing failed error=%d", (int)err);
+
+        infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
+                       phraseGetDef(PHRASE_NFC_CARD_TYPE_ERROR), "");
+
+        /* Abort this path and release the reader via its owner. */
+        return;
+    }
+
+    /* Field 55 has not yet been prepared. */
+    kahrobaSession.emvReady   = false;
+    kahrobaSession.field55Len = 0u;
+
+    if (!kahrobaBuildField55(
+            &txnMgr->data, &kahrobaSession.emv, kahrobaSession.field55,
+            sizeof(kahrobaSession.field55), &kahrobaSession.field55Len)) {
+
+        LOG_TRACE("Kahroba: Field55 build failed");
+
+        /* Use the existing failure path and reader cleanup. */
+        return;
+    }
+
+    /* All data needed for online authorization is prepared. */
+    kahrobaSession.emvReady = true;
+
+    txnMgr->userData = &kahrobaSession;
+
+    LOG_TRACE("Kahroba: authorization data ready "
+              "Field55 length=%lu",
+              (unsigned long)kahrobaSession.field55Len);
+
+    txnMgr->next();
+}
+
 static void onNfcComplete(const NfcStatus* status, void* userData) {
     RETURN_IF_NULL(status, ;);
-    TxnMgr* txnMgr = userData;
 
     if (status->result != NFC_RES_DETECTED) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
                        phraseGetDef(PHRASE_NFC_DETECT_ERROR), "");
         LOG_TRACE("NFC detection error. result = %d", status->result);
+        OOP_CALL(picc(), close);
         return;
     }
 
@@ -204,6 +249,7 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
                        phraseGetDef(PHRASE_NFC_ERROR), "");
         LOG_TRACE("Kahroba: NFC reader was not retained");
+        OOP_CALL(picc(), close);
         return;
     }
 
@@ -211,53 +257,7 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
     case PICC_CARD_A:
     case PICC_CARD_B:
         LOG_TRACE("Kahroba: compatible card candidate detected");
-        {
-            // TODO: validate kahroba amount
-            EmvMgrError err =
-                startKahrobaEmv(picc(), &txnMgr->data, &kahrobaSession.emv);
-
-            if (err != EMV_MGR_OK) {
-                kahrobaSession.emvReady = false;
-
-                LOG_TRACE("Kahroba: EMV processing failed error=%d", (int)err);
-
-                (void)OOP_CALL(picc(), close);
-
-                infoMgr()->run(INFO_ERROR,
-                               &(InfoFinishCtx){.done = nfcInfoDone},
-                               phraseGetDef(PHRASE_NFC_CARD_TYPE_ERROR), "");
-
-                /* Abort this path and release the reader via its owner. */
-                return;
-            }
-
-            /* Field 55 has not yet been prepared. */
-            kahrobaSession.emvReady   = false;
-            kahrobaSession.field55Len = 0u;
-
-            if (!kahrobaBuildField55(&txnMgr->data, &kahrobaSession.emv,
-                                     kahrobaSession.field55,
-                                     sizeof(kahrobaSession.field55),
-                                     &kahrobaSession.field55Len)) {
-
-                LOG_TRACE("Kahroba: Field55 build failed");
-
-                /* Use the existing failure path and reader cleanup. */
-                return;
-            }
-
-            /* All data needed for online authorization is prepared. */
-            kahrobaSession.emvReady = true;
-
-            LOG_TRACE("Kahroba: authorization data ready "
-                      "Field55 length=%lu",
-                      (unsigned long)kahrobaSession.field55Len);
-
-            /*
-             * Next step:
-             * Pass txnData and session->emv to the ISO 8583 builder.
-             */
-        }
+        handleABcardType(status, userData);
         break;
 
     default:
@@ -268,7 +268,7 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
         (void)OOP_CALL(picc(), close);
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
                        phraseGetDef(PHRASE_NFC_CARD_TYPE_ERROR), "");
-        return;
+        break;
     }
 }
 
@@ -277,9 +277,7 @@ void getNfcData(void) {
     nfcCfg = (NfcCfg){.technologies      = PICC_TECH_A | PICC_TECH_B,
                       .keepOpenOnSuccess = true};
     if (!nfcmgr()->run(&nfcCfg, onNfcComplete, txnMgr())) {
-        TxnMgr* txn = txnMgr();
-        if (txn != NULL && txn->active) {
-            // txnEmvFailTransaction(txn, EMV_OUTCOME_FAILED, EMV_ERR_STATE);
-        }
+        infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
+                       phraseGetDef(PHRASE_NFC_ERROR), "");
     }
 }

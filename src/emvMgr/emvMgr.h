@@ -7,6 +7,14 @@
 
 #include "emv_transport.h"
 
+// #define EMV_LOG_ENABLE 1
+
+#ifdef EMV_LOG_ENABLE
+#define EMV_LOG(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define EMV_LOG(...) ;
+#endif
+
 typedef enum {
     EMV_MGR_OK = 0,
     EMV_MGR_ERR_ARGUMENT,

@@ -6,6 +6,8 @@
 #include "utility/utility.h"
 #include "utility/arith.h"
 #include "magReader/magReader.h"
+#include "emvMgr/emv_kahroba.h"
+#include "txnMgr/magCardTxnCtx.h"
 #include "version.h"
 
 enum {
@@ -17,6 +19,86 @@ enum {
     TAG_FORCE_TMS          = 94,
     TAG_MERCHANT_UNIQUE_ID = 98,
 };
+
+/**
+ * @brief Convert EMV Track 2 (tag 57) from packed BCD to
+ *        legacy-compatible ASCII representation.
+ *
+ * D -> '='
+ * F -> 'F' (only permitted as final padding nibble)
+ *
+ * Example:
+ *   12 34 56 D2 61 22 01 23 4F
+ *   -> "123456=2612201234F"
+ *
+ * @note Never log the returned Track 2 contents.
+ */
+static bool emvTrack2ToString(const uint8_t* input, size_t inputLen,
+                              char* output, size_t outputSize) {
+    if (!input || !output || inputLen == 0u || outputSize == 0u ||
+        inputLen > SIZE_MAX / 2u)
+        return false;
+
+    output[0] = '\0';
+
+    size_t length       = 0u;
+    size_t separatorPos = SIZE_MAX;
+    size_t nibbleCount  = inputLen * 2u;
+    bool   paddingFound = false;
+
+    for (size_t i = 0u; i < nibbleCount; ++i) {
+        uint8_t byte = input[i / 2u];
+
+        uint8_t nibble =
+            (i & 1u) ? (uint8_t)(byte & 0x0Fu) : (uint8_t)(byte >> 4u);
+
+        char ch;
+
+        if (nibble <= 9u) {
+            ch = (char)('0' + nibble);
+
+        } else if (nibble == 0x0Du) {
+
+            if (separatorPos != SIZE_MAX)
+                return false;
+
+            separatorPos = length;
+            ch           = '=';
+
+        } else if (nibble == 0x0Fu) {
+
+            /* Padding is valid only in the final low nibble. */
+            if (i != nibbleCount - 1u)
+                return false;
+
+            ch           = 'F';
+            paddingFound = true;
+
+        } else {
+            return false;
+        }
+
+        /* LEN_MAX_TRACK2 is the maximum logical Track 2 length.
+         * Allow one extra character for the padding nibble.
+         */
+        if (length >= LEN_MAX_TRACK2 + (paddingFound ? 1u : 0u) ||
+            length + 1u >= outputSize)
+            return false;
+
+        output[length++] = ch;
+    }
+
+    /* Validate Track 2 structure, excluding optional F padding. */
+    size_t logicalLength = length - (paddingFound ? 1u : 0u);
+
+    if (separatorPos == SIZE_MAX || separatorPos == 0u || separatorPos > 19u ||
+        logicalLength < separatorPos + 1u + 4u + 3u)
+        return false;
+
+    output[length] = '\0';
+
+    return true;
+}
 
 static int parse2Digits(const unsigned char* p) {
     char buf[3] = {(char)p[0], (char)p[1], '\0'};
@@ -191,14 +273,14 @@ Error_t setMti(uint16_t mti) {
     return ERR_OK;
 }
 
-static int8_t setBit2(TxnData* data) {
+static int8_t setBit2(TxnData* data, void* userData) {
     (void)data;
     LOG_TRACE("| Bit 2 - (Pan) | -> %s", data->core.pan);
     iso8583()->setStr(ELEMENT_PAN, data->core.pan);
     return ERR_OK;
 }
 
-static int8_t setBit3(TxnData* data) {
+static int8_t setBit3(TxnData* data, void* userData) {
     uint32_t code = data->core.processCode;
     DEFINE_STRING(prcode, (LEN_MAX_PRCODE + 1));
     prependZerosInt(code, LEN_MAX_PRCODE, prcode, sizeof(prcode));
@@ -208,7 +290,7 @@ static int8_t setBit3(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit4(TxnData* data) {
+static int8_t setBit4(TxnData* data, void* userData) {
     DEFINE_STRING(amount, (LEN_MAX_AMOUNT + 1));
     prependZerosInt(data->core.amount, LEN_MAX_AMOUNT, amount, sizeof(amount));
     LOG_TRACE("| Bit 4 - (Txn Amount) | -> %s", amount);
@@ -216,7 +298,7 @@ static int8_t setBit4(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit11(TxnData* data) {
+static int8_t setBit11(TxnData* data, void* userData) {
     (void)data;
     uint16_t istan = data->core.stan;
     DEFINE_STRING(stan, (LEN_MAX_STAN + 1));
@@ -226,7 +308,7 @@ static int8_t setBit11(TxnData* data) {
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
     return ERR_OK;
 }
-static int8_t setBit12(TxnData* data) {
+static int8_t setBit12(TxnData* data, void* userData) {
     (void)data;
     DEFINE_STRING(timeStr, 6 + 1);
     if (data->dateTime == 0) {
@@ -246,7 +328,7 @@ static int8_t setBit12(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit13(TxnData* data) {
+static int8_t setBit13(TxnData* data, void* userData) {
     (void)data;
     DEFINE_STRING(dateStr, 4 + 1);
     if (data->dateTime == 0) {
@@ -268,13 +350,27 @@ static int8_t setBit13(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit22(TxnData* data) {
+static int8_t setBit22(TxnData* data, void* userData) {
     (void)data;
-    iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, "021");
-    LOG_TRACE("| Bit 22 - (Pos Entry Mode) | -> %s", "021");
+    char* pem;
+    if (data->core.txnType == TXN_KAHROBA_PURCHASE) {
+        pem = "070";
+    } else {
+        pem = "021";
+    }
+    iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, pem);
+    LOG_TRACE("| Bit 22 - (Pos Entry Mode) | -> %s", pem);
     return ERR_OK;
 }
-static int8_t setBit24(TxnData* data) {
+
+static int8_t setBit23(TxnData* data, void* userData) {
+    (void)data;
+    iso8583()->setStr(ELEMENT_CARD_SEQUENCE_NUMBER, "000");
+    LOG_TRACE("| Bit 23 - Card Sequence NUmber) | -> %s", "000");
+    return ERR_OK;
+}
+
+static int8_t setBit24(TxnData* data, void* userData) {
     (void)data;
     DEFINE_STRING(nii, 8);
     prependZerosInt(settings()->server.mainServerNii, 4, nii, sizeof(nii));
@@ -282,14 +378,21 @@ static int8_t setBit24(TxnData* data) {
     LOG_TRACE("| Bit 24 - (NII) | -> %s", nii);
     return ERR_OK;
 }
-static int8_t setBit25(TxnData* data) {
+
+static int8_t setBit25(TxnData* data, void* userData) {
     (void)data;
-    iso8583()->setStr(ELEMENT_POS_CONDITION_CODE, "14");
-    LOG_TRACE("| Bit 25 - (PCC) | -> %s", "14");
+    char* pcc;
+    if (data->core.txnType == TXN_KAHROBA_PURCHASE) {
+        pcc = "00";
+    } else {
+        pcc = "14";
+    }
+    iso8583()->setStr(ELEMENT_POS_CONDITION_CODE, pcc);
+    LOG_TRACE("| Bit 25 - (PCC) | -> %s", pcc);
     return ERR_OK;
 }
 
-static int8_t setBit32(TxnData* data) {
+static int8_t setBit32(TxnData* data, void* userData) {
     (void)data;
     char* IIN = strlen(settings()->terminal.acquirerIIN) != 0
                     ? settings()->terminal.acquirerIIN
@@ -299,20 +402,89 @@ static int8_t setBit32(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit35(TxnData* data) {
-    (void)data;
-    TrackData_t track2 = OOP_CALL(magreader(), getTrack2);
-    DEFINE_STRING(t2, (LEN_MAX_TRACK2 + 10));
+static int8_t setBit35(TxnData* data, void* userData) {
+    if (!data || !userData) {
+        LOG_TRACE("ISO Bit35: missing transaction/card context");
+        return ERR_NOK;
+    }
 
-    LOG_TRACE("track2 len = %d", track2.len);
-    padRight(track2.data, track2.len, LEN_MAX_TRACK2, t2, '0');
-    strcat(t2, "F");
-    iso8583()->setStr(ELEMENT_TRACK2, t2);
-    LOG_TRACE("| Bit 35 - (Track2) | -> %s", t2);
+    /* NFC / Kahroba */
+    if (data->core.txnType == TXN_KAHROBA_PURCHASE) {
+        const KahrobaTxnSession* session = (const KahrobaTxnSession*)userData;
+
+        if (!session || !session->emvReady) {
+            LOG_TRACE("ISO Bit35: EMV context unavailable");
+            return ERR_NOK;
+        }
+
+        const KahrobaCardData* card = &session->emv.card;
+
+        if (card->track2Len == 0u || card->track2Len > sizeof(card->track2)) {
+            LOG_TRACE("ISO Bit35: invalid EMV Track2 length");
+            return ERR_NOK;
+        }
+
+        char track2[LEN_MAX_TRACK2 + 2u] = {0};
+
+        if (!emvTrack2ToString(session->emv.card.track2,
+                               session->emv.card.track2Len, track2,
+                               sizeof(track2))) {
+
+            LOG_TRACE("ISO Bit35: EMV Track2 conversion failed");
+            return ERR_NOK;
+        }
+
+        iso8583()->setStr(ELEMENT_TRACK2, (const DL_UINT8*)track2);
+
+        LOG_TRACE("| Bit 35 - (Track2:NFC) | -> %s", track2);
+
+        /* Clear the temporary sensitive string. */
+        volatile char* p = (volatile char*)track2;
+
+        for (size_t i = 0u; i < sizeof(track2); ++i)
+            p[i] = 0;
+
+        return ERR_OK;
+    }
+
+    /* Magnetic card: use data captured during card input. */
+    const MagCardTxnContext* mag = (const MagCardTxnContext*)userData;
+
+    if (!mag->ready || mag->track2Len == 0u ||
+        mag->track2Len > LEN_MAX_TRACK2) {
+
+        LOG_TRACE("ISO Bit35: invalid magnetic context");
+        return ERR_NOK;
+    }
+
+    /*
+     * Preserve the current legacy magnetic encoding:
+     * pad to LEN_MAX_TRACK2 characters, then append 'F'.
+     *
+     * Confirm this format against your host specification
+     * before changing it.
+     */
+    char track2[LEN_MAX_TRACK2 + 2u] = {0};
+
+    memset(track2, '0', LEN_MAX_TRACK2);
+    memcpy(track2, mag->track2, mag->track2Len);
+
+    track2[LEN_MAX_TRACK2]      = 'F';
+    track2[LEN_MAX_TRACK2 + 1u] = '\0';
+
+    iso8583()->setStr(ELEMENT_TRACK2, track2);
+
+    LOG_TRACE("ISO Bit35: magnetic Track2 set, source length=%lu",
+              (unsigned long)mag->track2Len);
+
+    volatile char* p = (volatile char*)track2;
+    for (size_t i = 0u; i < sizeof(track2); ++i)
+        p[i] = 0;
+
     return ERR_OK;
 }
 
-static int8_t setBit37(TxnData* data) {
+static int8_t setBit37(TxnData* data, void* userData) {
     (void)data;
     DEFINE_STRING(rrn, LEN_MAX_UINT_64);
     LOG_DEBUG("rrn before converting  = %llu", data->core.rrn);
@@ -322,14 +494,14 @@ static int8_t setBit37(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit41(TxnData* data) {
+static int8_t setBit41(TxnData* data, void* userData) {
     (void)data;
     iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
     LOG_TRACE("| Bit 41 - (Terminal ID) | -> %s",
               settings()->terminal.terminalId);
     return ERR_OK;
 }
-static int8_t setBit42(TxnData* data) {
+static int8_t setBit42(TxnData* data, void* userData) {
     (void)data;
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
                       settings()->terminal.merchantId);
@@ -369,7 +541,7 @@ static int8_t buildBillF48(TxnData* data, const char* sn, char* privateData) {
                data->extention.bill.paymentId, privateData);
 }
 
-static int8_t setBit48(TxnData* data) {
+static int8_t setBit48(TxnData* data, void* userData) {
     (void)data;
     DEFINE_STRING(sn, 32);
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
@@ -388,7 +560,7 @@ static int8_t setBit48(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit49(TxnData* data) {
+static int8_t setBit49(TxnData* data, void* userData) {
     (void)data;
     char* currency = "364";
     iso8583()->setStr(ELEMENT_CURRENCY_CODE_TRANSACTION,
@@ -397,8 +569,22 @@ static int8_t setBit49(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit52(TxnData* data) {
+static int8_t setBit52(TxnData* data, void* userData) {
     (void)data;
+    /* NFC / Kahroba */
+    if (data->core.txnType == TXN_KAHROBA_PURCHASE) {
+        const KahrobaTxnSession* session = (const KahrobaTxnSession*)userData;
+
+        if (!session || !session->emvReady) {
+            LOG_TRACE("ISO Bit35: EMV context unavailable");
+            return ERR_NOK;
+        }
+
+        if (!session->usePin) {
+            return ERR_OK;
+        }
+    }
+
     DEFINE_STRING(pan, 24);
     DEFINE_STRING(pinblock, 24);
     magreader()->getPan(pan, sizeof(pan));
@@ -409,15 +595,77 @@ static int8_t setBit52(TxnData* data) {
     LOG_TRACE("Bit 52 | (Pin Block): %s", pinblock);
     return ERR_OK;
 }
-static int8_t setBit53(TxnData* data) {
+
+static int8_t setBit53(TxnData* data, void* userData) {
     (void)data;
     iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO,
-                      (const DL_UINT8*)SecRelControlInfo);
-    LOG_TRACE("Bit 53 | (Security Control Info): %s", SecRelControlInfo);
+                      (const DL_UINT8*)"0800030202031500");
+    LOG_TRACE("Bit 53 | (Security Control Info): %s", "0800030202031500");
     return ERR_OK;
 }
 
-static int8_t getBit48(TxnData* data) {
+/**
+ * @brief Set ISO8583 DE55 - Integrated Circuit Card (ICC) Data.
+ *
+ * For Kahroba transactions, userData points to the active
+ * KahrobaEmvContext containing the binary EMV TLV payload.
+ *
+ * The field must be passed as binary data with an explicit length.
+ * Never log its contents.
+ *
+ * @return ERR_OK on success, ERR_NOK on failure.
+ */
+static int8_t setBit55(TxnData* data, void* userData) {
+    if (!data || !userData) {
+        LOG_TRACE("ISO Bit55: invalid arguments");
+        return ERR_NOK;
+    }
+
+    if (data->core.txnType != TXN_KAHROBA_PURCHASE) {
+        LOG_TRACE("ISO Bit55: unsupported transaction type=%d",
+                  (int)data->core.txnType);
+        return ERR_NOK;
+    }
+
+    const KahrobaTxnSession* session = (const KahrobaTxnSession*)userData;
+
+    if (!session->emvReady || session->field55Len == 0u ||
+        session->field55Len > sizeof(session->field55) ||
+        session->field55Len > UINT16_MAX) {
+
+        LOG_TRACE("ISO Bit55: invalid EMV data");
+        return ERR_NOK;
+    }
+
+    /* Amount must match the amount used to generate ARQC. */
+    if (data->core.amount != session->emv.authorizedAmount) {
+        LOG_TRACE("ISO Bit55: transaction amount mismatch");
+        return ERR_NOK;
+    }
+
+    /* An online authorization request requires ARQC. */
+    if ((session->emv.acResult.cid & 0xC0u) != 0x80u) {
+        LOG_TRACE("ISO Bit55: expected ARQC, CID=%02X",
+                  (unsigned)session->emv.acResult.cid);
+        return ERR_NOK;
+    }
+
+    /*
+     * Pass the original binary TLV payload to DE55.
+     *
+     * iso8583()->setBin() must accept the complete binary
+     * payload, with no ASCII-hex conversion.
+     */
+    iso8583()->setBin(ELEMENT_ICC_DATA, (const DL_UINT8*)session->field55,
+                      (uint16_t)session->field55Len);
+
+    LOG_TRACE("ISO Bit55: set successfully, length=%lu",
+              (unsigned long)session->field55Len);
+
+    return ERR_OK;
+}
+
+static int8_t getBit48(TxnData* data, void* userData) {
     DEFINE_STRING(feild, 1028);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
     decodeMerchantDesc(feild, data);
@@ -444,7 +692,9 @@ static int8_t setMac(TxnData* data, uint8_t feild) {
     return ERR_OK;
 }
 
-static int8_t setBit64(TxnData* data) { return setMac(data, ELEMENT_MAC); }
+static int8_t setBit64(TxnData* data, void* userData) {
+    return setMac(data, ELEMENT_MAC);
+}
 
 // static int8_t setBit90(TxnData* data) {
 //     DEFINE_STRING(mtistr, (LEN_MAX_MTI + 1));
@@ -534,7 +784,7 @@ static bool formatBit90Id(const char* source, char out[12]) {
  * acquirerIin:  original field 32.
  * forwardingId: original field 33.
  */
-static int8_t setBit90(TxnData* data) {
+static int8_t setBit90(TxnData* data, void* userData) {
     if (!data) {
         LOG_TRACE("Bit90: original transaction is NULL");
         return ERR_NOK;
@@ -619,7 +869,17 @@ static int8_t setBit90(TxnData* data) {
     return ERR_OK;
 }
 
-static int8_t setBit128(TxnData* data) { return setMac(data, ELEMENT_MAC_2); }
+static int8_t setBit116(TxnData* data, void* userData) {
+    (void)data;
+    char* rn = "73000d02116";
+    iso8583()->setStr(ELEMENT_RESERVED_NATIONAL_116, (const DL_UINT8*)rn);
+    LOG_TRACE("Bit 116 | (Reserved National): %s", rn);
+    return ERR_OK;
+}
+
+static int8_t setBit128(TxnData* data, void* userData) {
+    return setMac(data, ELEMENT_MAC_2);
+}
 
 const IsoFeildsFunc isoHelper[ISO_MAX_FIELDS] = {
     /******************************************************************/
@@ -650,6 +910,10 @@ const IsoFeildsFunc isoHelper[ISO_MAX_FIELDS] = {
     /*BIT 22: ELEMENT_POS_ENTRY_MODE */
     /******************************************************************/
     {.feild = 22, .set = setBit22, .get = NULL},
+    /******************************************************************/
+    /*BIT 23: ELEMENT_CARD_SEQUENCE_NUMBER */
+    /******************************************************************/
+    {.feild = 23, .set = setBit23, .get = NULL},
     /******************************************************************/
     /*BIT 24: ELEMENT_NETWORK_INTL_ID */
     /******************************************************************/
@@ -695,6 +959,10 @@ const IsoFeildsFunc isoHelper[ISO_MAX_FIELDS] = {
     /******************************************************************/
     {.feild = 53, .set = setBit53, .get = NULL},
     /******************************************************************/
+    /* BIT 55: ELEMENT_ICC_DATA */
+    /******************************************************************/
+    {.feild = ELEMENT_ICC_DATA, .set = setBit55, .get = NULL},
+    /******************************************************************/
     /*BIT 64: ELEMENT_MAC */
     /******************************************************************/
     {.feild = 64, .set = setBit64, .get = NULL},
@@ -702,6 +970,10 @@ const IsoFeildsFunc isoHelper[ISO_MAX_FIELDS] = {
     /*BIT 90: ELEMENT_ORIGINAL_DATA_ELEMENTS */
     /******************************************************************/
     {.feild = 90, .set = setBit90, .get = NULL},
+    /******************************************************************/
+    /*BIT 116: ELEMENT_RESERVED_NATIONAL_116 */
+    /******************************************************************/
+    {.feild = 116, .set = setBit116, .get = NULL},
     /******************************************************************/
     /*BIT 64: ELEMENT_MAC_2 */
     /******************************************************************/

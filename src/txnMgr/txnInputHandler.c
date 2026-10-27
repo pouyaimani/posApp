@@ -13,6 +13,7 @@
 #include "display/display.h"
 #include "menuMgr/menuMgr.h"
 #include "nfcMgr/nfcMgr.h"
+#include "magCardTxnCtx.h"
 
 /*
  * Persistent input configuration and output storage.
@@ -26,7 +27,51 @@ static InputCfg inputCfg;
 
 static NfcCfg nfcCfg;
 
+static MagCardTxnContext magContext;
+
 void onSimCharge();
+
+/**
+ * @brief Handle a completed magnetic-card swipe.
+ *
+ * Called by the magnetic-card input provider after the SDK
+ * reports that new swipe data is available.
+ *
+ * @return true if the swipe was accepted.
+ */
+void captureMagData() {
+    TxnMgr* mgr = txnMgr();
+
+    if (!mgr->active || !mgr->stepStarted || mgr->step != TXN_STEP_MAG) {
+        LOG_TRACE("TxnMgr MAG: ignoring stale swipe event");
+    }
+
+    /*
+     * Read PAN and Track 2 from the magnetic reader
+     * into transaction-owned memory.
+     */
+    if (!magCardTxnCapture(&magContext, &mgr->data)) {
+
+        LOG_TRACE("TxnMgr MAG: invalid magnetic-card data");
+
+        /* Remain on MAG step so the input provider may retry. */
+        magCardTxnClear(&magContext);
+        mgr->userData = NULL;
+    }
+
+    mgr->userData = &magContext;
+
+    LOG_TRACE("TxnMgr MAG: card captured successfully "
+              "Track2 length=%lu",
+              (unsigned long)magContext.track2Len);
+
+    /*
+     * Important:
+     * The input provider must finish/disarm its swipe
+     * operation before this function advances the step.
+     */
+    mgr->next();
+}
 
 /******************************************************************
  *                      Input result handling
@@ -384,123 +429,3 @@ void enterPin(void) {
 
     inmgr()->run(&inputCfg, onInputComplete, txnMgr());
 }
-
-/**
- * @brief Handles the result of an NFC acquisition request.
- *
- * @param status    NFC acquisition result and reader status.
- * @param userData  Optional application context passed to nfcmgr()->run().
- */
-// static void onNfcComplete(const NfcStatus* status, void* userData) {
-//     TxnMgr* mgr = userData;
-//     LOG_TRACE("NFC callback: entered status=%p userData=%p",
-//               (const void*)status, userData);
-
-//     if (status == NULL) {
-//         LOG_TRACE("NFC callback: invalid status pointer");
-//         return;
-//     }
-
-//     LOG_TRACE("NFC callback: result=%d error=%d cardType=%d "
-//               "cleanupError=%d readerOpen=%d retained=%d",
-//               (int)status->result, (int)status->error,
-//               (int)status->card.cardType, (int)status->cleanupError,
-//               (int)status->readerOpen, (int)status->readerRetained);
-
-//     switch (status->result) {
-//     case NFC_RES_DETECTED:
-//         LOG_TRACE("NFC callback: card detected");
-
-//         switch (status->card.cardType) {
-//         case PICC_CARD_A:
-//             LOG_TRACE("NFC callback: ISO14443-A card");
-//             break;
-
-//         case PICC_CARD_B:
-//             LOG_TRACE("NFC callback: ISO14443-B card");
-//             break;
-
-//         case PICC_CARD_A_MEMORY:
-//             LOG_TRACE("NFC callback: Type-A memory card");
-//             break;
-
-//         case PICC_CARD_B_MEMORY:
-//             LOG_TRACE("NFC callback: Type-B memory card");
-//             break;
-
-//         case PICC_CARD_FELICA:
-//             LOG_TRACE("NFC callback: FeliCa card");
-//             break;
-
-//         default:
-//             LOG_TRACE("NFC callback: unexpected card type=%d",
-//                       (int)status->card.cardType);
-//             break;
-//         }
-
-//         /*
-//          * TODO: Continue the application flow.
-//          * For example, start card-specific processing.
-//          */
-//         break;
-
-//     case NFC_RES_CANCELED:
-//         LOG_TRACE("NFC callback: acquisition canceled");
-//         /* TODO: Restore the previous screen or return to the caller. */
-//         break;
-
-//     case NFC_RES_TIMEOUT:
-//         LOG_TRACE("NFC callback: acquisition timed out");
-//         /* TODO: Show a retry prompt or restart acquisition. */
-//         break;
-
-//     case NFC_RES_ERROR:
-//         LOG_TRACE("NFC callback: acquisition failed error=%d",
-//                   (int)status->error);
-//         /* TODO: Report or recover from the reader error. */
-//         break;
-
-//     default:
-//         LOG_TRACE("NFC callback: unexpected result=%d", (int)status->result);
-//         break;
-//     }
-
-//     if (status->cleanupError != PICC_ERR_OK) {
-//         LOG_TRACE("NFC callback: reader cleanup failed error=%d",
-//                   (int)status->cleanupError);
-
-//         /*
-//          * TODO: Schedule cleanup recovery if required.
-//          * Do not assume the reader has closed successfully.
-//          */
-//     }
-
-//     if (status->readerRetained) {
-//         LOG_TRACE("NFC callback: reader ownership was transferred to
-//         caller");
-
-//         /*
-//          * The caller is now responsible for the retained reader.
-//          * Close it through the appropriate HAL lifecycle when finished.
-//          */
-//     }
-
-//     LOG_TRACE("NFC callback: completed");
-//     LOG_TRACE("TxnMgr: input canceled; step=%d", (int)mgr->step);
-//     mgr->fail(TXN_MGR_ERR_CANCELED);
-// }
-
-// static void nfcStartFailed(InfoResult res, void* arg) {
-//     txnMgr()->fail(TXN_MGR_ERR_CANCELED);
-// }
-
-// void getNfcData(void) {
-
-//     nfcCfg = (NfcCfg){.technologies      = PICC_TECH_A | PICC_TECH_B,
-//                       .keepOpenOnSuccess = true};
-
-//     if (!nfcmgr()->run(&nfcCfg, onNfcComplete, txnMgr())) {
-//         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcStartFailed},
-//                        phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
-//     }
-// }

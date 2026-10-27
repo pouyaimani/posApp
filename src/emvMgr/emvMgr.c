@@ -195,8 +195,8 @@ static bool parseGpoResponse(const uint8_t* response, size_t responseLength) {
 
     ctx.aflLen = aflLen;
 
-    LOG_TRACE("EMV: GPO parsed AIP=%02X%02X AFL entries=%lu", ctx.aip[0],
-              ctx.aip[1], (unsigned long)(ctx.aflLen / 4u));
+    EMV_LOG("EMV: GPO parsed AIP=%02X%02X AFL entries=%lu", ctx.aip[0],
+            ctx.aip[1], (unsigned long)(ctx.aflLen / 4u));
 
     return true;
 }
@@ -225,7 +225,7 @@ static bool findAid(const uint8_t* data, size_t length, const uint8_t* aid,
     size_t pos = 0u;
 
     if (data == NULL || aid == NULL || found == NULL || depth > 8u) {
-        LOG_TRACE("EMV TLV: invalid arguments or depth=%u", depth);
+        EMV_LOG("EMV TLV: invalid arguments or depth=%u", depth);
         return false;
     }
 
@@ -249,7 +249,7 @@ static bool findAid(const uint8_t* data, size_t length, const uint8_t* aid,
 
             do {
                 if (pos >= length || ++tagBytes > 3u) {
-                    LOG_TRACE("EMV TLV: invalid extended tag");
+                    EMV_LOG("EMV TLV: invalid extended tag");
                     return false;
                 }
 
@@ -261,7 +261,7 @@ static bool findAid(const uint8_t* data, size_t length, const uint8_t* aid,
 
         /* Read value length. */
         if (pos >= length) {
-            LOG_TRACE("EMV TLV: missing length");
+            EMV_LOG("EMV TLV: missing length");
             return false;
         }
 
@@ -274,7 +274,7 @@ static bool findAid(const uint8_t* data, size_t length, const uint8_t* aid,
 
             /* Only definite lengths up to two length bytes. */
             if (count == 0u || count > 2u || count > length - pos) {
-                LOG_TRACE("EMV TLV: invalid length encoding");
+                EMV_LOG("EMV TLV: invalid length encoding");
                 return false;
             }
 
@@ -286,14 +286,14 @@ static bool findAid(const uint8_t* data, size_t length, const uint8_t* aid,
 
             /* Reject nonminimal BER length encoding. */
             if (valueLen < 128u || (count == 2u && valueLen <= 255u)) {
-                LOG_TRACE("EMV TLV: nonminimal length encoding");
+                EMV_LOG("EMV TLV: nonminimal length encoding");
                 return false;
             }
         }
 
         /* Prevent reading beyond the response buffer. */
         if (valueLen > length - pos) {
-            LOG_TRACE("EMV TLV: value exceeds buffer");
+            EMV_LOG("EMV TLV: value exceeds buffer");
             return false;
         }
 
@@ -303,7 +303,7 @@ static bool findAid(const uint8_t* data, size_t length, const uint8_t* aid,
 
             *found = true;
 
-            LOG_TRACE("EMV TLV: matching AID found");
+            EMV_LOG("EMV TLV: matching AID found");
         }
 
         /* Recursively inspect constructed TLV values. */
@@ -346,7 +346,7 @@ static void reset(void) {
 static EmvMgrError init(EmvTransport transport) {
 
     if (transport.exchange == NULL) {
-        LOG_TRACE("EMV: init rejected invalid transport");
+        EMV_LOG("EMV: init rejected invalid transport");
         return EMV_MGR_ERR_ARGUMENT;
     }
 
@@ -357,7 +357,7 @@ static EmvMgrError init(EmvTransport transport) {
     if (ctx.initialized && ctx.state != EMV_MGR_IDLE &&
         ctx.state != EMV_MGR_FAILED && ctx.state != EMV_MGR_GPO_COMPLETED) {
 
-        LOG_TRACE("EMV: init rejected active state=%d", (int)ctx.state);
+        EMV_LOG("EMV: init rejected active state=%d", (int)ctx.state);
 
         return EMV_MGR_ERR_STATE;
     }
@@ -370,7 +370,7 @@ static EmvMgrError init(EmvTransport transport) {
     ctx.initialized = true;
     ctx.state       = EMV_MGR_IDLE;
 
-    LOG_TRACE("EMV: manager initialized");
+    EMV_LOG("EMV: manager initialized");
 
     return EMV_MGR_OK;
 }
@@ -411,7 +411,7 @@ static EmvMgrError selectPpse(const uint8_t* aid, size_t aidLen) {
     resp.data     = ctx.response;
     resp.capacity = sizeof(ctx.response);
 
-    LOG_TRACE("EMV: SELECT PPSE begin");
+    EMV_LOG("EMV: SELECT PPSE begin");
 
     rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
 
@@ -434,9 +434,8 @@ static EmvMgrError selectPpse(const uint8_t* aid, size_t aidLen) {
     ctx.sw1         = resp.sw1;
     ctx.sw2         = resp.sw2;
 
-    LOG_TRACE("EMV: PPSE response len=%lu SW=%02X%02X",
-              (unsigned long)resp.length, (unsigned)resp.sw1,
-              (unsigned)resp.sw2);
+    EMV_LOG("EMV: PPSE response len=%lu SW=%02X%02X",
+            (unsigned long)resp.length, (unsigned)resp.sw1, (unsigned)resp.sw2);
 
     if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
         result = EMV_MGR_ERR_CARD_STATUS;
@@ -460,12 +459,12 @@ static EmvMgrError selectPpse(const uint8_t* aid, size_t aidLen) {
 
     ctx.state = EMV_MGR_PPSE_SELECTED;
 
-    LOG_TRACE("EMV: Kahroba AID found in PPSE");
+    EMV_LOG("EMV: Kahroba AID found in PPSE");
 
     return EMV_MGR_OK;
 
 failed:
-    LOG_TRACE("EMV: SELECT PPSE failed error=%d", (int)result);
+    EMV_LOG("EMV: SELECT PPSE failed error=%d", (int)result);
 
     secureWipe(ctx.response, sizeof(ctx.response));
     ctx.responseLen = 0u;
@@ -607,7 +606,7 @@ static EmvMgrError selectAid(const uint8_t* aid, size_t aidLen) {
         return EMV_MGR_ERR_ARGUMENT;
 
     if (ctx.state != EMV_MGR_PPSE_SELECTED) {
-        LOG_TRACE("EMV: SELECT AID rejected state=%d", (int)ctx.state);
+        EMV_LOG("EMV: SELECT AID rejected state=%d", (int)ctx.state);
         return EMV_MGR_ERR_STATE;
     }
 
@@ -644,7 +643,7 @@ static EmvMgrError selectAid(const uint8_t* aid, size_t aidLen) {
     resp.data     = ctx.response;
     resp.capacity = sizeof(ctx.response);
 
-    LOG_TRACE("EMV: SELECT AID begin aidLen=%lu", (unsigned long)aidLen);
+    EMV_LOG("EMV: SELECT AID begin aidLen=%lu", (unsigned long)aidLen);
 
     rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
 
@@ -667,9 +666,9 @@ static EmvMgrError selectAid(const uint8_t* aid, size_t aidLen) {
     ctx.sw1         = resp.sw1;
     ctx.sw2         = resp.sw2;
 
-    LOG_TRACE("EMV: SELECT AID response len=%lu SW=%02X%02X",
-              (unsigned long)resp.length, (unsigned int)resp.sw1,
-              (unsigned int)resp.sw2);
+    EMV_LOG("EMV: SELECT AID response len=%lu SW=%02X%02X",
+            (unsigned long)resp.length, (unsigned int)resp.sw1,
+            (unsigned int)resp.sw2);
 
     if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
         result = EMV_MGR_ERR_CARD_STATUS;
@@ -681,7 +680,7 @@ static EmvMgrError selectAid(const uint8_t* aid, size_t aidLen) {
      * Further validation follows below.
      */
     if (resp.length < 2u || resp.data[0] != 0x6Fu) {
-        LOG_TRACE("EMV: SELECT AID invalid FCI template");
+        EMV_LOG("EMV: SELECT AID invalid FCI template");
         result = EMV_MGR_ERR_PROTOCOL;
         goto failed;
     }
@@ -691,16 +690,16 @@ static EmvMgrError selectAid(const uint8_t* aid, size_t aidLen) {
      * matching the selected AID.
      */
     if (!findDfName(resp.data, resp.length, aid, aidLen)) {
-        LOG_TRACE("EMV: SELECT AID missing/mismatched DF name");
+        EMV_LOG("EMV: SELECT AID missing/mismatched DF name");
         result = EMV_MGR_ERR_PROTOCOL;
         goto failed;
     }
 
     ctx.state = EMV_MGR_AID_SELECTED;
 
-    LOG_TRACE("EMV: SELECT AID completed successfully");
+    EMV_LOG("EMV: SELECT AID completed successfully");
 
-    LOG_TRACE("EMV: SELECT AID FCI length=%lu", (unsigned long)ctx.responseLen);
+    EMV_LOG("EMV: SELECT AID FCI length=%lu", (unsigned long)ctx.responseLen);
 
     for (size_t i = 0; i < ctx.responseLen; i += 16u) {
         char   line[16 * 3 + 1];
@@ -717,13 +716,13 @@ static EmvMgrError selectAid(const uint8_t* aid, size_t aidLen) {
         }
 
         line[pos] = '\0';
-        LOG_TRACE("EMV FCI: %s", line);
+        EMV_LOG("EMV FCI: %s", line);
     }
 
     return EMV_MGR_OK;
 
 failed:
-    LOG_TRACE("EMV: SELECT AID failed error=%d", (int)result);
+    EMV_LOG("EMV: SELECT AID failed error=%d", (int)result);
 
     secureWipe(ctx.response, sizeof(ctx.response));
     ctx.responseLen = 0u;
@@ -754,24 +753,24 @@ static EmvMgrError getProcessingOptions(EmvDolValueFn provider,
     if (!provider)
         return EMV_MGR_ERR_ARGUMENT;
 
-    LOG_TRACE("EMV: GPO begin");
+    EMV_LOG("EMV: GPO begin");
 
     /*
      * SELECT AID FCI is still stored in ctx.response.
      */
     if (!extractPdol(ctx.response, ctx.responseLen, &pdol, &pdolLength)) {
 
-        LOG_TRACE("EMV: GPO failed parsing FCI");
+        EMV_LOG("EMV: GPO failed parsing FCI");
         result = EMV_MGR_ERR_PROTOCOL;
         goto failed;
     }
 
-    LOG_TRACE("EMV: GPO PDOL definition length=%lu", (unsigned long)pdolLength);
+    EMV_LOG("EMV: GPO PDOL definition length=%lu", (unsigned long)pdolLength);
 
     if (!emvDolBuild(pdol, pdolLength, provider, providerContext, dolValues,
                      sizeof(dolValues), &valuesLength)) {
 
-        LOG_TRACE("EMV: GPO failed building PDOL");
+        EMV_LOG("EMV: GPO failed building PDOL");
         result = EMV_MGR_ERR_ARGUMENT;
         goto failed;
     }
@@ -814,8 +813,8 @@ static EmvMgrError getProcessingOptions(EmvDolValueFn provider,
     resp.data     = ctx.response;
     resp.capacity = sizeof(ctx.response);
 
-    LOG_TRACE("EMV: GPO exchange Lc=%lu PDOL bytes=%lu",
-              (unsigned long)cmd.data_len, (unsigned long)valuesLength);
+    EMV_LOG("EMV: GPO exchange Lc=%lu PDOL bytes=%lu",
+            (unsigned long)cmd.data_len, (unsigned long)valuesLength);
 
     rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
 
@@ -836,8 +835,8 @@ static EmvMgrError getProcessingOptions(EmvDolValueFn provider,
 
     ctx.responseLen = resp.length;
 
-    LOG_TRACE("EMV: GPO response len=%lu SW=%02X%02X",
-              (unsigned long)resp.length, resp.sw1, resp.sw2);
+    EMV_LOG("EMV: GPO response len=%lu SW=%02X%02X", (unsigned long)resp.length,
+            resp.sw1, resp.sw2);
 
     if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
         result = EMV_MGR_ERR_CARD_STATUS;
@@ -846,7 +845,7 @@ static EmvMgrError getProcessingOptions(EmvDolValueFn provider,
 
     if (!parseGpoResponse(ctx.response, ctx.responseLen)) {
 
-        LOG_TRACE("EMV: GPO invalid AIP/AFL");
+        EMV_LOG("EMV: GPO invalid AIP/AFL");
         result = EMV_MGR_ERR_PROTOCOL;
         goto failed;
     }
@@ -857,15 +856,14 @@ static EmvMgrError getProcessingOptions(EmvDolValueFn provider,
         uint8_t last      = ctx.afl[i + 2u];
         uint8_t authCount = ctx.afl[i + 3u];
 
-        LOG_TRACE("EMV AFL[%lu]: SFI=%u first=%u last=%u authCount=%u",
-                  (unsigned long)(i / 4u), (unsigned int)sfi,
-                  (unsigned int)first, (unsigned int)last,
-                  (unsigned int)authCount);
+        EMV_LOG("EMV AFL[%lu]: SFI=%u first=%u last=%u authCount=%u",
+                (unsigned long)(i / 4u), (unsigned int)sfi, (unsigned int)first,
+                (unsigned int)last, (unsigned int)authCount);
     }
 
     ctx.state = EMV_MGR_GPO_COMPLETED;
 
-    LOG_TRACE("EMV: GPO completed successfully");
+    EMV_LOG("EMV: GPO completed successfully");
 
     secureWipe(dolValues, sizeof(dolValues));
     secureWipe(commandData, sizeof(commandData));
@@ -873,7 +871,7 @@ static EmvMgrError getProcessingOptions(EmvDolValueFn provider,
     return EMV_MGR_OK;
 
 failed:
-    LOG_TRACE("EMV: GPO failed error=%d", (int)result);
+    EMV_LOG("EMV: GPO failed error=%d", (int)result);
 
     secureWipe(dolValues, sizeof(dolValues));
     secureWipe(commandData, sizeof(commandData));
@@ -921,7 +919,7 @@ static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
     if (!ctx.initialized || ctx.transport.exchange == NULL ||
         ctx.state != EMV_MGR_GPO_COMPLETED) {
 
-        LOG_TRACE("EMV: READ RECORD rejected state=%d", (int)ctx.state);
+        EMV_LOG("EMV: READ RECORD rejected state=%d", (int)ctx.state);
 
         return EMV_MGR_ERR_STATE;
     }
@@ -956,14 +954,14 @@ static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
         totalRecords += (size_t)last - first + 1u;
 
         if (totalRecords > EMV_MAX_RECORD_EXCHANGES) {
-            LOG_TRACE("EMV: AFL exceeds record limit");
+            EMV_LOG("EMV: AFL exceeds record limit");
             result = EMV_MGR_ERR_PROTOCOL;
             goto failed;
         }
     }
 
-    LOG_TRACE("EMV: READ RECORD begin entries=%lu records=%lu",
-              (unsigned long)(ctx.aflLen / 4u), (unsigned long)totalRecords);
+    EMV_LOG("EMV: READ RECORD begin entries=%lu records=%lu",
+            (unsigned long)(ctx.aflLen / 4u), (unsigned long)totalRecords);
 
     for (size_t i = 0u; i < ctx.aflLen; i += 4u) {
 
@@ -1001,8 +999,8 @@ static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
             resp.data     = ctx.response;
             resp.capacity = sizeof(ctx.response);
 
-            LOG_TRACE("EMV: READ RECORD SFI=%u record=%u P2=%02X",
-                      (unsigned int)sfi, number, (unsigned int)cmd.p2);
+            EMV_LOG("EMV: READ RECORD SFI=%u record=%u P2=%02X",
+                    (unsigned int)sfi, number, (unsigned int)cmd.p2);
 
             rc = ctx.transport.exchange(ctx.transport.context, &cmd, &resp);
 
@@ -1023,10 +1021,10 @@ static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
 
             ctx.responseLen = resp.length;
 
-            LOG_TRACE("EMV: READ RECORD response SFI=%u "
-                      "record=%u len=%lu SW=%02X%02X",
-                      (unsigned int)sfi, number, (unsigned long)resp.length,
-                      (unsigned int)resp.sw1, (unsigned int)resp.sw2);
+            EMV_LOG("EMV: READ RECORD response SFI=%u "
+                    "record=%u len=%lu SW=%02X%02X",
+                    (unsigned int)sfi, number, (unsigned long)resp.length,
+                    (unsigned int)resp.sw1, (unsigned int)resp.sw2);
 
             if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
 
@@ -1049,7 +1047,7 @@ static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
 
             if (record.tag != 0x70u || offset != resp.length) {
 
-                LOG_TRACE("EMV: READ RECORD invalid template");
+                EMV_LOG("EMV: READ RECORD invalid template");
 
                 result = EMV_MGR_ERR_PROTOCOL;
                 goto failed;
@@ -1061,7 +1059,7 @@ static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
             if (!callback(userData, sfi, (uint8_t)number, record.value,
                           record.length)) {
 
-                LOG_TRACE("EMV: READ RECORD handler rejected record");
+                EMV_LOG("EMV: READ RECORD handler rejected record");
 
                 result = EMV_MGR_ERR_PROTOCOL;
                 goto failed;
@@ -1071,12 +1069,12 @@ static EmvMgrError readRecords(EmvRecordFn callback, void* userData) {
 
     ctx.state = EMV_MGR_RECORDS_READ;
 
-    LOG_TRACE("EMV: READ RECORD completed successfully");
+    EMV_LOG("EMV: READ RECORD completed successfully");
 
     return EMV_MGR_OK;
 
 failed:
-    LOG_TRACE("EMV: READ RECORD failed error=%d", (int)result);
+    EMV_LOG("EMV: READ RECORD failed error=%d", (int)result);
 
     secureWipe(ctx.response, sizeof(ctx.response));
 
@@ -1206,12 +1204,12 @@ static EmvMgrError generateAc(const uint8_t* cdol1, size_t cdol1Len,
 
     memset(result, 0, sizeof(*result));
 
-    LOG_TRACE("EMV: GENERATE AC begin");
+    EMV_LOG("EMV: GENERATE AC begin");
 
     if (!emvDolBuild(cdol1, cdol1Len, provider, providerContext, commandData,
                      sizeof(commandData), &commandLength)) {
 
-        LOG_TRACE("EMV: GENERATE AC CDOL1 build failed");
+        EMV_LOG("EMV: GENERATE AC CDOL1 build failed");
 
         error = EMV_MGR_ERR_ARGUMENT;
         goto failed;
@@ -1222,11 +1220,10 @@ static EmvMgrError generateAc(const uint8_t* cdol1, size_t cdol1Len,
         goto failed;
     }
 
-    LOG_TRACE("EMV: GENERATE AC CDOL1 data length=%lu",
-              (unsigned long)commandLength);
+    EMV_LOG("EMV: GENERATE AC CDOL1 data length=%lu",
+            (unsigned long)commandLength);
 
-    LOG_TRACE("EMV: GENERATE AC CDOL1 length=%lu",
-              (unsigned long)commandLength);
+    EMV_LOG("EMV: GENERATE AC CDOL1 length=%lu", (unsigned long)commandLength);
 
     /*
      * Debug only: inspect terminal-supplied CDOL values.
@@ -1248,7 +1245,7 @@ static EmvMgrError generateAc(const uint8_t* cdol1, size_t cdol1Len,
             pos += (size_t)n;
         }
 
-        LOG_TRACE("EMV: CDOL1 offset=%lu data=%s", (unsigned long)i, line);
+        EMV_LOG("EMV: CDOL1 offset=%lu data=%s", (unsigned long)i, line);
     }
 
     cmd.cla = 0x80u;
@@ -1288,9 +1285,9 @@ static EmvMgrError generateAc(const uint8_t* cdol1, size_t cdol1Len,
 
     ctx.responseLen = resp.length;
 
-    LOG_TRACE("EMV: GENERATE AC response len=%lu SW=%02X%02X",
-              (unsigned long)resp.length, (unsigned int)resp.sw1,
-              (unsigned int)resp.sw2);
+    EMV_LOG("EMV: GENERATE AC response len=%lu SW=%02X%02X",
+            (unsigned long)resp.length, (unsigned int)resp.sw1,
+            (unsigned int)resp.sw2);
 
     if (resp.sw1 != 0x90u || resp.sw2 != 0x00u) {
         error = EMV_MGR_ERR_CARD_STATUS;
@@ -1299,15 +1296,15 @@ static EmvMgrError generateAc(const uint8_t* cdol1, size_t cdol1Len,
 
     if (!parseGenerateAcResponse(resp.data, resp.length, result)) {
 
-        LOG_TRACE("EMV: GENERATE AC invalid response");
+        EMV_LOG("EMV: GENERATE AC invalid response");
 
         error = EMV_MGR_ERR_PROTOCOL;
         goto failed;
     }
 
-    LOG_TRACE("EMV: GENERATE AC parsed CID=%02X ATC=%02X%02X IAD len=%lu",
-              (unsigned int)result->cid, (unsigned int)result->atc[0],
-              (unsigned int)result->atc[1], (unsigned long)result->iadLen);
+    EMV_LOG("EMV: GENERATE AC parsed CID=%02X ATC=%02X%02X IAD len=%lu",
+            (unsigned int)result->cid, (unsigned int)result->atc[0],
+            (unsigned int)result->atc[1], (unsigned long)result->iadLen);
 
     ctx.state = EMV_MGR_AC_GENERATED;
 
@@ -1318,7 +1315,7 @@ static EmvMgrError generateAc(const uint8_t* cdol1, size_t cdol1Len,
     return EMV_MGR_OK;
 
 failed:
-    LOG_TRACE("EMV: GENERATE AC failed error=%d", (int)error);
+    EMV_LOG("EMV: GENERATE AC failed error=%d", (int)error);
 
     memset(result, 0, sizeof(*result));
     secureWipe(commandData, sizeof(commandData));
@@ -1339,12 +1336,12 @@ failed:
 static EmvMgrError getAip(uint8_t aip[2]) {
 
     if (aip == NULL) {
-        LOG_TRACE("EMV: getAip invalid argument");
+        EMV_LOG("EMV: getAip invalid argument");
         return EMV_MGR_ERR_ARGUMENT;
     }
 
     if (!ctx.initialized) {
-        LOG_TRACE("EMV: getAip manager not initialized");
+        EMV_LOG("EMV: getAip manager not initialized");
         return EMV_MGR_ERR_STATE;
     }
 
@@ -1356,14 +1353,14 @@ static EmvMgrError getAip(uint8_t aip[2]) {
         break;
 
     default:
-        LOG_TRACE("EMV: getAip invalid state=%d", (int)ctx.state);
+        EMV_LOG("EMV: getAip invalid state=%d", (int)ctx.state);
         return EMV_MGR_ERR_STATE;
     }
 
     memcpy(aip, ctx.aip, 2u);
 
-    LOG_TRACE("EMV: getAip success AIP=%02X%02X", (unsigned int)aip[0],
-              (unsigned int)aip[1]);
+    EMV_LOG("EMV: getAip success AIP=%02X%02X", (unsigned int)aip[0],
+            (unsigned int)aip[1]);
 
     return EMV_MGR_OK;
 }

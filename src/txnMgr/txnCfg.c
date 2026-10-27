@@ -18,9 +18,8 @@
  *
  **********************************************************************/
 
-int composeCommon(TxnData* data) {
-    magreader()->getPan(data->core.pan, sizeof(data->core.pan));
-    LOG_TRACE("data->core.pan = %s", data->core.pan);
+int composeCommon(TxnFlow* flow) {
+    TxnData* data  = flow->data;
     data->dateTime = OOP_CALL(sys(), getPackedDateTime);
     return ERR_OK;
 }
@@ -29,7 +28,7 @@ int buildCommon(TxnFlow* flow, ByteArray* ba) {
     flow->data->core.processCode = flow->cfg->prcode;
     flow->data->core.stan        = txnTraceInfo()->stan;
     return isoBuild(flow->cfg->mti, flow->cfg->prcode, flow->cfg->feilds,
-                    flow->cfg->feildsCnt, flow->data, ba);
+                    flow->cfg->feildsCnt, flow->data, ba, flow->userData);
 }
 
 int parseCommon(TxnFlow* flow, ByteArray* ba) {
@@ -453,6 +452,7 @@ const TxnMgrCfg voucherTxnCfg = {
  *                     Kahroba Purchase Transaction config
  *
  **********************************************************************/
+
 static const uint8_t isoFeildsKahrobaPurchase[] = {
     ELEMENT_PAN,
     ELEMENT_PROCESSING_CODE,
@@ -476,6 +476,58 @@ static const uint8_t isoFeildsKahrobaPurchase[] = {
     ELEMENT_RESERVED_NATIONAL_116,
     ELEMENT_MAC_2,
 };
+
+/**
+ * @brief Prepare Kahroba transaction for online authorization.
+ *
+ * Called after NFC processing and before ISO 8583 building.
+ *
+ * PAN, amount, and EMV Field 55 must already be available.
+ */
+static int composeKahroba(TxnFlow* flow) {
+    if (!flow || !flow->data || !flow->userData) {
+        LOG_TRACE("Kahroba: compose invalid flow or session");
+        return ERR_NOK;
+    }
+
+    TxnData* txn = flow->data;
+
+    KahrobaTxnSession* session = (KahrobaTxnSession*)flow->userData;
+
+    if (txn->core.txnType != TXN_KAHROBA_PURCHASE) {
+        LOG_TRACE("Kahroba: compose invalid transaction type");
+        return ERR_NOK;
+    }
+
+    /* PAN was populated by EMV, not the magnetic reader. */
+    if (!memchr(txn->core.pan, '\0', sizeof(txn->core.pan)) ||
+        txn->core.pan[0] == '\0') {
+        LOG_TRACE("Kahroba: compose PAN unavailable or unterminated");
+        return ERR_NOK;
+    }
+
+    if (txn->core.amount == 0u ||
+        txn->core.amount != session->emv.authorizedAmount) {
+        LOG_TRACE("Kahroba: compose invalid authorization amount");
+        return ERR_NOK;
+    }
+
+    if (!session->emvReady || session->field55Len == 0u ||
+        session->field55Len > sizeof(session->field55)) {
+
+        LOG_TRACE("Kahroba: compose invalid Field55");
+        return ERR_NOK;
+    }
+
+    /* Prepare transaction metadata without changing EMV values. */
+    txn->dateTime = OOP_CALL(sys(), getPackedDateTime);
+
+    LOG_TRACE("Kahroba: compose successful, Field55 length=%lu",
+              (unsigned long)session->field55Len);
+
+    return ERR_OK;
+}
+
 const TxnFlowConfig kahrobaPurchaseTxnFlowCfg = {
 
     TXN_FLOW_COMMON,
@@ -490,7 +542,7 @@ const TxnFlowConfig kahrobaPurchaseTxnFlowCfg = {
 
     .feildsCnt = sizeof(isoFeildsKahrobaPurchase),
 
-    .compose = composeCommon,
+    .compose = composeKahroba,
 };
 
 const TxnMgrCfg kahrobaPurchaseTxnCfg = {.txnFlowCfg =

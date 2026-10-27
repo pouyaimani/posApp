@@ -94,6 +94,7 @@ void enterPin(void);
 void checkPending(void);
 void communication(void);
 void getNfcData(void);
+void captureMagData();
 
 void onInputComplete(InputResult result, void* userData);
 void onInputTimeout(InputResult result, void* userData);
@@ -162,22 +163,24 @@ Error_t pendingCheck(bool* hasPending);
  * fail(code). Internal steps do not require separate State objects.
  */
 static const TxnMgrStep purchaseSteps[] = {
-    TXN_STEP_AMOUNT, TXN_STEP_PIN, TXN_STEP_PENDING, TXN_STEP_COMMUNICATION,
-    TXN_STEP_SETTLEMENT};
+    TXN_STEP_MAG,     TXN_STEP_AMOUNT,        TXN_STEP_PIN,
+    TXN_STEP_PENDING, TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep balanceSteps[] = {TXN_STEP_PIN, TXN_STEP_COMMUNICATION};
 
 static const TxnMgrStep billSteps[] = {
-    TXN_STEP_BILL_ID, TXN_STEP_PAYMENT_ID,    TXN_STEP_PIN,
+    TXN_STEP_MAG,     TXN_STEP_BILL_ID,       TXN_STEP_PAYMENT_ID, TXN_STEP_PIN,
     TXN_STEP_PENDING, TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep voucherSteps[] = {
-    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PIN,
-    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
+    TXN_STEP_MAG,       TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT,
+    TXN_STEP_PIN,       TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION,
+    TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep topupSteps[] = {
-    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PHONE,     TXN_STEP_PIN,
-    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
+    TXN_STEP_MAG,           TXN_STEP_OPERATOR,  TXN_STEP_CHARGE_AMOUNT,
+    TXN_STEP_PHONE,         TXN_STEP_PIN,       TXN_STEP_PENDING,
+    TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep configSteps[] = {TXN_STEP_COMMUNICATION};
 static const TxnMgrStep logonSteps[]  = {TXN_STEP_COMMUNICATION};
@@ -595,6 +598,8 @@ void communication(void) {
     mgr->data.core.mti     = communicationCfg.mti;
     mgr->data.core.txnType = communicationCfg.type;
 
+    mgr->flow->userData = mgr->userData;
+
     normalizeIp(settings()->server.mainServerIp, communicationIp,
                 sizeof(communicationIp));
 
@@ -640,6 +645,7 @@ static const ManagerStepEntry stepMap[] = {
     {TXN_STEP_COMMUNICATION, communication, true},
     {TXN_STEP_SETTLEMENT, settleCurrentTransaction, true},
     {TXN_STEP_NFC, getNfcData, true},
+    {TXN_STEP_MAG, captureMagData, true},
 };
 
 /* Find and execute the handler for the requested logical step. */
@@ -781,6 +787,8 @@ static bool reset(void) {
     currentPendingSaved   = false;
     communicationNotified = false;
     recoveryNotified      = false;
+
+    mgr->userData = NULL;
 
     LOG_TRACE("TxnMgr: reset complete; no transaction started");
     return true;

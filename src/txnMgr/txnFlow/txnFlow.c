@@ -162,7 +162,7 @@ static int8_t onConnect(NthTransaction* tx, void* ctx) {
      * the final transaction identifiers and request data.
      */
     if (flow->cfg->compose) {
-        int rc = flow->cfg->compose(flow->data);
+        int rc = flow->cfg->compose(flow);
 
         if (rc != ERR_OK) {
             complete(flow, TXN_FLOW_FAILED, rc);
