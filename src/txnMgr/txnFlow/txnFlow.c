@@ -41,6 +41,8 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
 
     LOG_TRACE("Txn flow: respcode = %d", flow->data->core.respCode);
 
+    HIDE_INFO();
+
     if (done) {
         done(flow, &status);
     }

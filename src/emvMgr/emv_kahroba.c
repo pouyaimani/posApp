@@ -488,7 +488,7 @@ bool kahrobaBuildField55(const TxnData* txn, const KahrobaEmvContext* context,
 
     *outputLength = writer.length;
 
-    kahrobaTraceField55(&writer);
+    // kahrobaTraceField55(&writer);
 
     EMV_LOG("Kahroba: Field55 built successfully length=%lu",
             (unsigned long)*outputLength);
@@ -821,10 +821,6 @@ static bool kahrobaCdolValue(void* context, uint32_t tag, uint8_t* output,
         return false;
     }
 }
-
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
 
 EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
                             KahrobaEmvContext* context) {

@@ -76,7 +76,7 @@ static void readIo(void) {
 
     PiccEvent* ev = (PiccEvent*)createEvent(SM_EVENT_PICC);
     if (!ev) {
-        LOG_TRACE("PICC: event allocation failed");
+        PICC_LOG("PICC: event allocation failed");
         return;
     }
     ev->snapshot        = self->data;

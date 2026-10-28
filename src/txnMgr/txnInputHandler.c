@@ -92,9 +92,9 @@ bool isInputStep(const TxnMgr* mgr) {
         return false;
     }
     return mgr->step == TXN_STEP_AMOUNT || mgr->step == TXN_STEP_PIN ||
-           mgr->step == TXN_STEP_BILL_ID || mgr->step == TXN_STEP_PAYMENT_ID ||
-           mgr->step == TXN_STEP_OPERATOR || mgr->step == TXN_STEP_PHONE ||
-           mgr->step == TXN_STEP_CHARGE_AMOUNT;
+           mgr->step == TXN_STEP_HOST_PIN || mgr->step == TXN_STEP_BILL_ID ||
+           mgr->step == TXN_STEP_PAYMENT_ID || mgr->step == TXN_STEP_OPERATOR ||
+           mgr->step == TXN_STEP_PHONE || mgr->step == TXN_STEP_CHARGE_AMOUNT;
 }
 
 void amountErrInfoDone(InfoResult res, void* arg) {
@@ -237,14 +237,7 @@ void onInputComplete(InputResult result, void* userData) {
             break;
 
         case TXN_STEP_PIN:
-            /*
-             * PIN processing belongs to the PED provider.
-             * Do not copy plaintext PIN input into transaction data.
-             *
-             * TODO:
-             * Confirm that INPUT_RES_FINISHED means the required
-             * PED result is ready for transaction composition.
-             */
+        case TXN_STEP_HOST_PIN:
             break;
 
         default:

@@ -580,7 +580,7 @@ static int8_t setBit52(TxnData* data, void* userData) {
             return ERR_NOK;
         }
 
-        if (!session->usePin) {
+        if (!*session->hostPinRequired) {
             return ERR_OK;
         }
     }

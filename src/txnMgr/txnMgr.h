@@ -12,21 +12,7 @@
 
 typedef enum {
     TXN_STEP_IDLE = 0,
-    TXN_MGR_ERR_NULL_CONFIG,
-    TXN_MGR_ERR_NULL_FLOW_CONFIG,
-    TXN_MGR_ERR_BUSY,
-    TXN_MGR_ERR_RECOVERY_BUSY,
-    TXN_MGR_ERR_NO_DISPATCHER,
-    TXN_MGR_ERR_NO_BUILD_CALLBACK,
-    TXN_MGR_ERR_NO_PARSE_CALLBACK,
-    TXN_MGR_ERR_NULL_FLOW,
-    TXN_MGR_ERR_FLOW_BUSY,
-    TXN_MGR_ERR_RECOVERY_FLOW_BUSY,
-    TXN_MGR_ERR_OPERATION_ID_EXHAUSTED,
-    TXN_MGR_ERR_UNSUPPORTED_TRANSACTION,
-    TXN_MGR_ERR_EMPTY_SEQUENCE,
-    TXN_MGR_ERR_BEFORE_SEND_CONFLICT,
-    TXN_MGR_ERR_PENDING_STEP_REQUIRED,
+
     TXN_STEP_AMOUNT,
     TXN_STEP_BILL_ID,
     TXN_STEP_PAYMENT_ID,
@@ -38,7 +24,9 @@ typedef enum {
     TXN_STEP_COMMUNICATION,
     TXN_STEP_NFC,
     TXN_STEP_MAG,
-    TXN_STEP_SETTLEMENT
+    TXN_STEP_SETTLEMENT,
+    TXN_STEP_HOST_PIN,
+    TXN_STEP_COMMUNICATION_PIN,
 } TxnMgrStep;
 
 typedef void (*TxnStepHandler)(void);
@@ -59,22 +47,50 @@ typedef enum {
 /* Manager-level errors; step handlers may also pass their own codes. */
 typedef enum {
     TXN_MGR_ERR_NONE = 0,
+
+    /* Transaction results */
     TXN_MGR_ERR_RESP_CODE,
+
+    /* Input errors */
     TXN_MGR_ERR_INPUT,
     TXN_MGR_ERR_CANCELED,
     TXN_MGR_ERR_TIMEOUT,
-    TXN_MGR_ERR_UNSUPPORTED_STEP,
     TXN_MGR_ERR_INVALID_INPUT,
+
+    /* Existing step and persistence errors */
+    TXN_MGR_ERR_UNSUPPORTED_STEP,
     TXN_MGR_ERR_PENDING_LOAD,
     TXN_MGR_ERR_PENDING_SAVE,
     TXN_MGR_ERR_PENDING_PREPARE,
     TXN_MGR_ERR_PENDING_FLOW,
+
+    /* Communication errors */
     TXN_MGR_ERR_COMMUNICATION,
+
+    /* Settlement errors */
     TXN_MGR_ERR_SETTLEMENT_CONTEXT,
     TXN_MGR_ERR_SETTLEMENT_BUSY,
     TXN_MGR_ERR_SETTLEMENT_PREPARE,
     TXN_MGR_ERR_SETTLEMENT_START,
     TXN_MGR_ERR_SETTLEMENT_FLOW,
+
+    /* Configuration and initialization errors */
+    TXN_MGR_ERR_NULL_CONFIG,
+    TXN_MGR_ERR_NULL_FLOW_CONFIG,
+    TXN_MGR_ERR_BUSY,
+    TXN_MGR_ERR_RECOVERY_BUSY,
+    TXN_MGR_ERR_NO_DISPATCHER,
+    TXN_MGR_ERR_NO_BUILD_CALLBACK,
+    TXN_MGR_ERR_NO_PARSE_CALLBACK,
+    TXN_MGR_ERR_NULL_FLOW,
+    TXN_MGR_ERR_FLOW_BUSY,
+    TXN_MGR_ERR_RECOVERY_FLOW_BUSY,
+    TXN_MGR_ERR_OPERATION_ID_EXHAUSTED,
+    TXN_MGR_ERR_UNSUPPORTED_TRANSACTION,
+    TXN_MGR_ERR_EMPTY_SEQUENCE,
+    TXN_MGR_ERR_BEFORE_SEND_CONFLICT,
+    TXN_MGR_ERR_PENDING_STEP_REQUIRED
+
 } TxnMgrError;
 
 typedef struct {
@@ -95,10 +111,27 @@ typedef void (*TxnMgrFailureCb)(TxnMgrStep step, int code);
 
 typedef void (*TxnMgrDoneCb)(TxnResultHandle handle);
 
+typedef enum {
+    TXN_HOST_APPROVE = 0,
+    TXN_HOST_DECLINE,
+    TXN_HOST_REQUIRE_PIN
+} TxnHostAction;
+
+/**
+ * Interpret a host response for a specific transaction.
+ *
+ * attempt:
+ *   0 = first authorization
+ *   1 = second authorization
+ */
+typedef TxnHostAction (*TxnResponsePolicy)(TxnMgrStep step, int responseCode,
+                                           uint8_t attempt);
+
 typedef struct {
-    TxnFlowConfig*  txnFlowCfg;
-    TxnMgrSuccessCb onSuccess;
-    TxnMgrFailureCb onFailure;
+    TxnFlowConfig*    txnFlowCfg;
+    TxnMgrSuccessCb   onSuccess;
+    TxnMgrFailureCb   onFailure;
+    TxnResponsePolicy responsePolicy;
 } TxnMgrCfg;
 
 OOP_CLASS(TxnMgr) {
@@ -127,6 +160,12 @@ OOP_CLASS(TxnMgr) {
 
     void* userData;
 
+    /* Current authorization attempt: 0 = initial request. */
+    uint8_t authorizationAttempt;
+
+    /* True when host requests online PIN authentication. */
+    bool hostPinRequired;
+
     bool (*run)(TxnMgrCfg* cfg, InfoDone done);
 
     /*
@@ -141,8 +180,8 @@ OOP_CLASS(TxnMgr) {
 
     bool (*reset)(void);
 
-    /* Report failure of any step and stop sequencing. */
-    void (*fail)(int code);
+    /** Report a manager error and terminate the operation. */
+    void (*fail)(TxnMgrError err);
 
     /*
      * Shared dispatcher for input, menus, and communication.

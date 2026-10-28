@@ -93,8 +93,8 @@ static bool showTransactionResult(const TxnFlowStatus* st, const TxnData* data,
 
         return false;
     }
-
-    resultData   = *data;
+    LOG_TRACE("Digital receipt: amount = %llu", data->core.amount);
+    memcpy(&resultData, data, sizeof(TxnData));
     resultStatus = *st;
     resultCfg    = *mgr->config.txnFlowCfg;
 

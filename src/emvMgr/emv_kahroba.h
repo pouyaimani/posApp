@@ -91,7 +91,7 @@ typedef struct {
 
     bool emvReady;
 
-    bool usePin;
+    bool* hostPinRequired;
 } KahrobaTxnSession;
 
 EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,

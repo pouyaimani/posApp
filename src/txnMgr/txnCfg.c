@@ -545,10 +545,38 @@ const TxnFlowConfig kahrobaPurchaseTxnFlowCfg = {
     .compose = composeKahroba,
 };
 
-const TxnMgrCfg kahrobaPurchaseTxnCfg = {.txnFlowCfg =
-                                             &kahrobaPurchaseTxnFlowCfg,
-                                         .onSuccess = NULL,
-                                         .onFailure = NULL};
+/**
+ * @brief Resolve host responses for Kahroba purchase transactions.
+ *
+ * Rules:
+ * - Approved response: continue the transaction.
+ * - Response 76 on first authorization: request online PIN.
+ * - Response 76 on subsequent authorization: decline.
+ * - Other responses: decline.
+ *
+ * This callback only selects an action.
+ * It must not change transaction state or perform I/O.
+ */
+TxnHostAction kahrobaResponsePolicy(TxnMgrStep step, int responseCode,
+                                    uint8_t attempt) {
+    if (responseCode == RESP_CODE_SUCESS) {
+        return TXN_HOST_APPROVE;
+    }
+
+    if (responseCode == KAHROBA_RESP_PIN_REQUIRED &&
+        step == TXN_STEP_COMMUNICATION && attempt == 0u) {
+
+        return TXN_HOST_REQUIRE_PIN;
+    }
+
+    return TXN_HOST_DECLINE;
+}
+
+const TxnMgrCfg kahrobaPurchaseTxnCfg = {
+    .txnFlowCfg     = &kahrobaPurchaseTxnFlowCfg,
+    .onSuccess      = NULL,
+    .onFailure      = NULL,
+    .responsePolicy = kahrobaResponsePolicy};
 
 /**********************************************************************
  *

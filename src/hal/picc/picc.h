@@ -9,6 +9,14 @@
 #include "event.h"
 #include "piccEvent.h"
 
+// #define EMV_LOG_ENABLE 1
+
+#ifdef PICC_LOG_ENABLE
+#define PICC_LOG(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define PICC_LOG(...) ;
+#endif
+
 typedef uint32_t PiccTechMask_t;
 enum {
     PICC_TECH_A      = (1u << 0),

@@ -152,6 +152,30 @@ Error_t pendingReset(void);
  */
 Error_t pendingCheck(bool* hasPending);
 
+/**
+ * @brief Resolve host responses for Kahroba purchase transactions.
+ *
+ * Rules:
+ * - Approved response: continue the transaction.
+ * - Response 76 on first authorization: request online PIN.
+ * - Response 76 on subsequent authorization: decline.
+ * - Other responses: decline.
+ *
+ * This callback only selects an action.
+ * It must not change transaction state or perform I/O.
+ */
+TxnHostAction kahrobaResponsePolicy(TxnMgrStep step, int responseCode,
+                                    uint8_t attempt);
+
+/**
+ * @brief Request PIN only if required by the host.
+ */
+static void enterHostPin(void);
+/**
+ * @brief Execute PIN authorization only when requested.
+ */
+static void communicationWithPin(void);
+
 /******************************************************************
  *                      Transaction definitions
  ******************************************************************/
@@ -186,7 +210,8 @@ static const TxnMgrStep configSteps[] = {TXN_STEP_COMMUNICATION};
 static const TxnMgrStep logonSteps[]  = {TXN_STEP_COMMUNICATION};
 
 static const TxnMgrStep kahrobaPurchaseSteps[] = {
-    TXN_STEP_AMOUNT, TXN_STEP_NFC, TXN_STEP_PENDING, TXN_STEP_COMMUNICATION,
+    TXN_STEP_AMOUNT,        TXN_STEP_NFC,      TXN_STEP_PENDING,
+    TXN_STEP_COMMUNICATION, TXN_STEP_HOST_PIN, TXN_STEP_COMMUNICATION_PIN,
     TXN_STEP_SETTLEMENT};
 
 static const TxnMgrStep kahrobaBalanceSteps[] = {
@@ -227,6 +252,16 @@ static const TxnDefinition* findDefinition(TxnType type) {
     return NULL;
 }
 
+/**
+ * @brief Determine whether the current step is an authorization
+ *        communication step.
+ */
+static bool isCommunicationStep(const TxnMgr* mgr) {
+    return mgr && mgr->active && mgr->stepStarted &&
+           (mgr->step == TXN_STEP_COMMUNICATION ||
+            mgr->step == TXN_STEP_COMMUNICATION_PIN);
+}
+
 /******************************************************************
  *                         Pending step
  ******************************************************************/
@@ -247,7 +282,7 @@ static int beforeCommunicationSend(TxnFlow* flow) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!flow || flow != mgr->flow || !flow->cfg || !mgr->active ||
-        mgr->step != TXN_STEP_COMMUNICATION || !mgr->stepStarted) {
+        !isCommunicationStep(mgr) || !mgr->stepStarted) {
         LOG_TRACE("TxnMgr: before-send rejected: invalid or inactive flow");
         return ERR_NOK;
     }
@@ -272,6 +307,122 @@ static int beforeCommunicationSend(TxnFlow* flow) {
     return ERR_OK;
 }
 
+/**
+ * @brief Finish a transaction after a valid host decline.
+ *
+ * The pending reversal record may be removed only when
+ * the host response is known to be a definitive non-approval.
+ */
+static void handleHostDecline(TxnMgr* mgr, const TxnFlowStatus* status) {
+    if (!mgr || !status)
+        return;
+
+    LOG_TRACE("TxnMgr: host declined response=%d", status->code);
+
+    if (currentPendingSaved) {
+        Error_t err = mgr->pendingReset();
+
+        if (err != ERR_OK) {
+            LOG_TRACE("TxnMgr: pending reset failed error=%d", (int)err);
+
+            mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
+            return;
+        }
+
+        currentPendingSaved = false;
+    }
+
+    complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_RESP_CODE,
+             (TxnFlowStatus*)status);
+}
+
+/**
+ * @brief Handle a host request for online PIN verification.
+ *
+ * Only the first authorization may request a PIN challenge.
+ *
+ * PIN entry and repeat authorization are handled by subsequent
+ * transaction steps, not by this function.
+ *
+ * @note The current step sequence must contain TXN_STEP_PIN
+ *       immediately after TXN_STEP_COMMUNICATION.
+ */
+static void handleHostPinRequired(TxnMgr* mgr, const TxnFlowStatus* status) {
+    if (!mgr || !status)
+        return;
+
+    LOG_TRACE("TxnMgr: host PIN required operation=%llu attempt=%u",
+              (unsigned long long)operationId,
+              (unsigned)mgr->authorizationAttempt);
+
+    /*
+     * Do not proceed until the PIN step is installed.
+     * For now preserve the previous decline behavior.
+     */
+    if (!mgr->steps || mgr->stepIndex + 1u >= mgr->stepCount ||
+        mgr->steps[mgr->stepIndex + 1u] != TXN_STEP_HOST_PIN) {
+
+        LOG_TRACE("TxnMgr: host PIN step not configured");
+
+        handleHostDecline(mgr, status);
+        return;
+    }
+
+    /*
+     * The first authorization may already have a pending
+     * reversal record.
+     *
+     * Code 76 must be confirmed as a definitive non-approval
+     * before it is safe to clear that record.
+     *
+     * Do not enable the transition below for live transactions
+     * until this host rule is confirmed.
+     */
+    if (currentPendingSaved) {
+        Error_t err = mgr->pendingReset();
+
+        if (err != ERR_OK) {
+            LOG_TRACE("TxnMgr: cannot continue PIN challenge; "
+                      "pending reset failed=%d",
+                      (int)err);
+
+            mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
+            return;
+        }
+
+        currentPendingSaved = false;
+    }
+
+    mgr->hostPinRequired = true;
+
+    LOG_TRACE("TxnMgr: advancing to host PIN step");
+
+    if (!mgr->next()) {
+        mgr->fail(TXN_MGR_ERR_COMMUNICATION);
+    }
+}
+
+/**
+ * @brief Resolve a successful transport exchange's host response.
+ *
+ * If the transaction provides a custom policy, use it.
+ * Otherwise, preserve the existing approval/decline behavior.
+ *
+ * @note This function performs no transaction side effects.
+ */
+static TxnHostAction resolveHostResponse(const TxnMgr* mgr, int responseCode) {
+    if (!mgr)
+        return TXN_HOST_DECLINE;
+
+    if (mgr->config.responsePolicy) {
+        return mgr->config.responsePolicy(mgr->step, responseCode,
+                                          mgr->authorizationAttempt);
+    }
+
+    return responseCode == RESP_CODE_SUCESS ? TXN_HOST_APPROVE
+                                            : TXN_HOST_DECLINE;
+}
+
 /*
  * Complete the current transaction after TxnFlow releases its
  * communication resources.
@@ -282,7 +433,7 @@ static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!flow || flow != mgr->flow || !mgr->active || !mgr->stepStarted ||
-        mgr->step != TXN_STEP_COMMUNICATION) {
+        !isCommunicationStep(mgr)) {
         LOG_TRACE(
             "TxnMgr: ignoring communication completion outside active step");
         return;
@@ -293,7 +444,7 @@ static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
     communicationNotified = true;
     if (!status) {
         LOG_TRACE("TxnMgr: communication completion has no status");
-        mgr->fail(ERR_NOK);
+        mgr->fail(TXN_MGR_ERR_COMMUNICATION);
         return;
     }
     LOG_TRACE("TxnMgr: communication result=%d, stage=%d, code=%d",
@@ -309,14 +460,24 @@ static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
         return;
     }
 
-    if (status->code != RESP_CODE_SUCESS) {
-        LOG_TRACE("TxnMgr: host declined; response=%d", status->code);
-        /*
-         * A valid host decline is not a local manager error.
-         * Preserve the existing recovery-record policy here.
-         */
-        mgr->pendingReset();
-        complete(TXN_MGR_RESULT_FAILURE, TXN_MGR_ERR_RESP_CODE, status);
+    TxnHostAction action = resolveHostResponse(mgr, status->code);
+
+    LOG_TRACE("TxnMgr: response=%d action=%d attempt=%u", status->code,
+              (int)action, (unsigned)mgr->authorizationAttempt);
+
+    switch (action) {
+
+    case TXN_HOST_APPROVE:
+        /* Continue to the existing approval logic below. */
+        break;
+
+    case TXN_HOST_REQUIRE_PIN:
+        handleHostPinRequired(mgr, status);
+        return;
+
+    case TXN_HOST_DECLINE:
+    default:
+        handleHostDecline(mgr, status);
         return;
     }
 
@@ -614,11 +775,52 @@ void communication(void) {
         (int)started, (unsigned long long)startedId);
 
     if (!started && operationId == startedId && !communicationNotified &&
-        mgr->active && mgr->step == TXN_STEP_COMMUNICATION) {
+        mgr->active && isCommunicationStep(mgr)) {
         LOG_TRACE(
             "TxnMgr: communication start failed without completion callback");
         mgr->fail(TXN_MGR_ERR_COMMUNICATION);
     }
+}
+
+/**
+ * @brief Request PIN only if required by the host.
+ */
+static void enterHostPin(void) {
+    TxnMgr* mgr = &__txnMgr;
+
+    if (!mgr->hostPinRequired) {
+        LOG_TRACE("TxnMgr: host PIN not required, skipping");
+        mgr->next();
+        return;
+    }
+
+    LOG_TRACE("TxnMgr: host PIN required");
+
+    /*
+     * Reuse the existing secure PIN input implementation.
+     *
+     * Its completion callback must recognize TXN_STEP_HOST_PIN
+     * and advance this step after successful PIN entry.
+     */
+    enterPin();
+}
+
+/**
+ * @brief Execute PIN authorization only when requested.
+ */
+static void communicationWithPin(void) {
+    TxnMgr* mgr = &__txnMgr;
+
+    if (!mgr->hostPinRequired) {
+        LOG_TRACE("TxnMgr: PIN communication not required, skipping");
+        mgr->next();
+        return;
+    }
+    mgr->authorizationAttempt++;
+    communication();
+
+    // LOG_TRACE("TxnMgr: PIN authorization integration pending");
+    // mgr->fail(TXN_MGR_ERR_UNSUPPORTED_STEP);
 }
 
 /******************************************************************
@@ -646,6 +848,8 @@ static const ManagerStepEntry stepMap[] = {
     {TXN_STEP_SETTLEMENT, settleCurrentTransaction, true},
     {TXN_STEP_NFC, getNfcData, true},
     {TXN_STEP_MAG, captureMagData, true},
+    {TXN_STEP_HOST_PIN, enterHostPin, true},
+    {TXN_STEP_COMMUNICATION_PIN, communicationWithPin, true},
 };
 
 /* Find and execute the handler for the requested logical step. */
@@ -787,6 +991,9 @@ static bool reset(void) {
     currentPendingSaved   = false;
     communicationNotified = false;
     recoveryNotified      = false;
+
+    mgr->authorizationAttempt = 0u;
+    mgr->hostPinRequired      = false;
 
     mgr->userData = NULL;
 
@@ -943,6 +1150,9 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
     communicationNotified = false;
     recoveryNotified      = false;
 
+    mgr->authorizationAttempt = 0u;
+    mgr->hostPinRequired      = false;
+
     memset(&mgr->data, 0, sizeof(mgr->data));
 
     mgr->data.status = TXN_STATUS_DECLINED;
@@ -1001,8 +1211,6 @@ void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
 
     status = &mgr->flowStatus;
 
-    HIDE_INFO();
-
     TxnMgrStep completedStep = mgr->step;
     LOG_TRACE("TxnMgr: complete operation=%llu, result=%d, step=%d, error=%d, "
               "response=%d",
@@ -1032,6 +1240,8 @@ void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
     mgr->stepCount = 0;
     mgr->stepIndex = 0;
     mgr->done      = NULL;
+
+    LOG_TRACE("amount = %llu", mgr->data.core.amount);
 
     /*
      * Keep transaction data available to the callback.
@@ -1247,6 +1457,9 @@ OOP_CTOR(TxnMgr) {
     self->pendingMark   = pendingMark;
     self->pendingReset  = pendingReset;
     self->pendingCheck  = pendingCheck;
+
+    self->authorizationAttempt = 0u;
+    self->hostPinRequired      = false;
 
     recoveryActive = false;
 

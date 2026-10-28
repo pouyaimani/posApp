@@ -225,7 +225,8 @@ static void handleABcardType(const NfcStatus* status, void* userData) {
     /* All data needed for online authorization is prepared. */
     kahrobaSession.emvReady = true;
 
-    txnMgr->userData = &kahrobaSession;
+    txnMgr->userData               = &kahrobaSession;
+    kahrobaSession.hostPinRequired = &txnMgr->hostPinRequired;
 
     LOG_TRACE("Kahroba: authorization data ready "
               "Field55 length=%lu",

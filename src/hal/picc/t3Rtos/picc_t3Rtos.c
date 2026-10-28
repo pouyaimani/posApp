@@ -231,8 +231,8 @@ static PiccCardType_t detect(Picc* self) {
         if (self->error == PICC_ERR_OK)
             self->error = PICC_ERR_OTHER;
 
-        LOG_TRACE("PICC: unexpected detect result=%ld error=%d", (long)ret,
-                  (int)self->error);
+        PICC_LOG("PICC: unexpected detect result=%ld error=%d", (long)ret,
+                 (int)self->error);
         break;
     }
 
@@ -314,19 +314,19 @@ static PiccErr_t exchangeApdu(Picc* self, const ApduReq_t* request,
     PiccErr_t error = PICC_ERR_BAD_PARAMETER;
 
     if (self == NULL) {
-        LOG_TRACE("PICC APDU rejected: NULL reader");
+        PICC_LOG("PICC APDU rejected: NULL reader");
         return PICC_ERR_BAD_PARAMETER;
     }
 
     if (request == NULL || response == NULL) {
-        LOG_TRACE("PICC APDU rejected: requestPresent=%d responsePresent=%d",
-                  (int)(request != NULL), (int)(response != NULL));
+        PICC_LOG("PICC APDU rejected: requestPresent=%d responsePresent=%d",
+                 (int)(request != NULL), (int)(response != NULL));
         goto cleanup;
     }
 
     if (response->lenOut == NULL || response->swa == NULL ||
         response->swb == NULL) {
-        LOG_TRACE("PICC APDU rejected: missing response length/status pointer");
+        PICC_LOG("PICC APDU rejected: missing response length/status pointer");
         goto cleanup;
     }
 
@@ -338,45 +338,44 @@ static PiccErr_t exchangeApdu(Picc* self, const ApduReq_t* request,
 
     if (request->command == NULL || request->lc == NULL ||
         request->le == NULL) {
-        LOG_TRACE("PICC APDU rejected: missing command/length pointer");
+        PICC_LOG("PICC APDU rejected: missing command/length pointer");
         goto cleanup;
     }
 
     lc = *request->lc;
     le = *request->le;
 
-    LOG_TRACE(
-        "PICC APDU: begin lc=%lu le=%lu capacity=%lu opened=%d powered=%d",
-        (unsigned long)lc, (unsigned long)le, (unsigned long)capacity,
-        (int)self->opened, (int)self->powered);
+    PICC_LOG("PICC APDU: begin lc=%lu le=%lu capacity=%lu opened=%d powered=%d",
+             (unsigned long)lc, (unsigned long)le, (unsigned long)capacity,
+             (int)self->opened, (int)self->powered);
 
     if (!self->opened || !self->powered) {
-        LOG_TRACE("PICC APDU rejected: reader is not opened and powered");
+        PICC_LOG("PICC APDU rejected: reader is not opened and powered");
         error = PICC_ERR_NOT_INITIALIZED;
         goto cleanup;
     }
 
     if (lc > sizeof(sdkRequest.mDataIn)) {
-        LOG_TRACE("PICC APDU rejected: lc=%lu exceeds SDK capacity=%lu",
-                  (unsigned long)lc, (unsigned long)sizeof(sdkRequest.mDataIn));
+        PICC_LOG("PICC APDU rejected: lc=%lu exceeds SDK capacity=%lu",
+                 (unsigned long)lc, (unsigned long)sizeof(sdkRequest.mDataIn));
         goto cleanup;
     }
 
     /* This adapter supports response data up to the SDK's fixed buffer size. */
     if (le > sizeof(sdkResponse.mDataOut)) {
-        LOG_TRACE("PICC APDU rejected: le=%lu exceeds SDK capacity=%lu",
-                  (unsigned long)le,
-                  (unsigned long)sizeof(sdkResponse.mDataOut));
+        PICC_LOG("PICC APDU rejected: le=%lu exceeds SDK capacity=%lu",
+                 (unsigned long)le,
+                 (unsigned long)sizeof(sdkResponse.mDataOut));
         goto cleanup;
     }
 
     if (lc != 0u && request->dataIn == NULL) {
-        LOG_TRACE("PICC APDU rejected: NULL command data with nonzero lc");
+        PICC_LOG("PICC APDU rejected: NULL command data with nonzero lc");
         goto cleanup;
     }
 
     if (capacity != 0u && response->dataOut == NULL) {
-        LOG_TRACE(
+        PICC_LOG(
             "PICC APDU rejected: NULL response buffer with nonzero capacity");
         goto cleanup;
     }
@@ -386,7 +385,7 @@ static PiccErr_t exchangeApdu(Picc* self, const ApduReq_t* request,
      * that could change card state.
      */
     if (le > capacity) {
-        LOG_TRACE(
+        PICC_LOG(
             "PICC APDU rejected: response capacity=%lu smaller than le=%lu",
             (unsigned long)capacity, (unsigned long)le);
         goto cleanup;
@@ -401,24 +400,24 @@ static PiccErr_t exchangeApdu(Picc* self, const ApduReq_t* request,
         memcpy(sdkRequest.mDataIn, request->dataIn, (size_t)lc);
     }
 
-    LOG_TRACE("PICC APDU: calling SDK");
+    PICC_LOG("PICC APDU: calling SDK");
 
-    LOG_TRACE("PICC APDU: opened=%d powered=%d "
-              "polling=%d cardType=%d scanId=%lu",
-              (int)self->opened, (int)self->powered, (int)self->pollingEnabled,
-              (int)self->data.cardType, (unsigned long)self->scanId);
+    PICC_LOG("PICC APDU: opened=%d powered=%d "
+             "polling=%d cardType=%d scanId=%lu",
+             (int)self->opened, (int)self->powered, (int)self->pollingEnabled,
+             (int)self->data.cardType, (unsigned long)self->scanId);
 
-    LOG_TRACE("PICC APDU: CLA=%02X INS=%02X P1=%02X P2=%02X "
-              "Lc=%lu Le=%lu",
-              sdkRequest.mCommand[0], sdkRequest.mCommand[1],
-              sdkRequest.mCommand[2], sdkRequest.mCommand[3],
-              (unsigned long)sdkRequest.mLc, (unsigned long)sdkRequest.mLe);
+    PICC_LOG("PICC APDU: CLA=%02X INS=%02X P1=%02X P2=%02X "
+             "Lc=%lu Le=%lu",
+             sdkRequest.mCommand[0], sdkRequest.mCommand[1],
+             sdkRequest.mCommand[2], sdkRequest.mCommand[3],
+             (unsigned long)sdkRequest.mLc, (unsigned long)sdkRequest.mLe);
 
     sdkResult = sdkPiccExchangeApdu(&sdkRequest, &sdkResponse);
     error     = translateSdkErr(sdkResult);
 
-    LOG_TRACE("PICC APDU: SDK returned result=%ld error=%d", (long)sdkResult,
-              (int)error);
+    PICC_LOG("PICC APDU: SDK returned result=%ld error=%d", (long)sdkResult,
+             (int)error);
 
     if (error != PICC_ERR_OK) {
         goto cleanup;
@@ -426,23 +425,23 @@ static PiccErr_t exchangeApdu(Picc* self, const ApduReq_t* request,
 
     /* Validate SDK metadata before accessing/copying response bytes. */
     if (sdkResponse.mLenOut > sizeof(sdkResponse.mDataOut)) {
-        LOG_TRACE("PICC APDU failed: invalid SDK response length=%lu max=%lu",
-                  (unsigned long)sdkResponse.mLenOut,
-                  (unsigned long)sizeof(sdkResponse.mDataOut));
+        PICC_LOG("PICC APDU failed: invalid SDK response length=%lu max=%lu",
+                 (unsigned long)sdkResponse.mLenOut,
+                 (unsigned long)sizeof(sdkResponse.mDataOut));
         error = PICC_ERR_IO;
         goto cleanup;
     }
 
     if (sdkResponse.mSWA > 0xFFu || sdkResponse.mSWB > 0xFFu) {
-        LOG_TRACE("PICC APDU failed: SDK status value exceeds one byte");
+        PICC_LOG("PICC APDU failed: SDK status value exceeds one byte");
         error = PICC_ERR_IO;
         goto cleanup;
     }
 
     if (sdkResponse.mLenOut > capacity) {
-        LOG_TRACE("PICC APDU failed: response length=%lu exceeds capacity=%lu; "
-                  "command already exchanged",
-                  (unsigned long)sdkResponse.mLenOut, (unsigned long)capacity);
+        PICC_LOG("PICC APDU failed: response length=%lu exceeds capacity=%lu; "
+                 "command already exchanged",
+                 (unsigned long)sdkResponse.mLenOut, (unsigned long)capacity);
 
         /* Existing PiccErr_t has no dedicated capacity error. */
         error = PICC_ERR_BAD_PARAMETER;
@@ -458,9 +457,9 @@ static PiccErr_t exchangeApdu(Picc* self, const ApduReq_t* request,
     *response->swa    = sdkResponse.mSWA;
     *response->swb    = sdkResponse.mSWB;
 
-    LOG_TRACE("PICC APDU: completed length=%lu SW1=%02X SW2=%02X",
-              (unsigned long)sdkResponse.mLenOut,
-              (unsigned int)sdkResponse.mSWA, (unsigned int)sdkResponse.mSWB);
+    PICC_LOG("PICC APDU: completed length=%lu SW1=%02X SW2=%02X",
+             (unsigned long)sdkResponse.mLenOut, (unsigned int)sdkResponse.mSWA,
+             (unsigned int)sdkResponse.mSWB);
 
 cleanup:
     wipeApduBuffer(&sdkRequest, sizeof(sdkRequest));
@@ -468,7 +467,7 @@ cleanup:
 
     self->error = error;
 
-    LOG_TRACE("PICC APDU: finished error=%d", (int)error);
+    PICC_LOG("PICC APDU: finished error=%d", (int)error);
     return error;
 }
 

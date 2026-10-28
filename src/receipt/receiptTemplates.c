@@ -127,6 +127,7 @@ static int8_t receiptSectionAmount(Receipt* rec, const uint64_t* amount) {
     DEFINE_STRING(amountStr, 36);
     DEFINE_STRING(amountSep, 24);
     DEFINE_STRING(txt, 128);
+    LOG_TRACE("Digital receipt: amount = %llu", *amount);
     snprintf(amountStr, sizeof(amountStr), "%llu", *amount);
     amountSeparator(amountStr, amountSep, sizeof(amountSep));
     memset(amountStr, 0, sizeof(amountStr));
@@ -217,6 +218,7 @@ static int8_t buildPurchaseReceipt(Receipt* rec, ReceiptData* data) {
     if (data->txn.core.respCode != RESP_CODE_SUCESS) {
         receiptSectionFailure(rec, data->txn.core.respCode);
     } else {
+        LOG_TRACE("Digital receipt: amount = %llu", txn->core.amount);
         RETURN_VALUE_IF_NOT(
             receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;, ERR_NOK);
     }
@@ -707,6 +709,7 @@ ReceiptBuilder getReceiptBuilder(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(rec, ;, NULL);
     RETURN_VALUE_IF_NULL(data, ;, NULL);
     RETURN_VALUE_IF_NOT(createReceipt(rec), ERR_OK, ;, NULL);
+    LOG_TRACE("Digital receipt: amount = %llu", data->txn.core.amount);
     if (data->type == DOC_TXN) {
         switch (data->txn.core.txnType) {
         case TXN_LOGON:
@@ -955,6 +958,8 @@ Result_t showDigitalRec(TxnData* data) {
 
     LOG_TRACE("DigitalRec: after initialization; data=%p, pan buffer=%p",
               (void*)data, (void*)data->core.pan);
+
+    LOG_TRACE("amount = %llu", data->core.amount);
     DigRecfillCommon(data);
     DigitalReceiptBuilder builder = NULL;
     switch (data->core.txnType) {
