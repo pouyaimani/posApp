@@ -576,7 +576,7 @@ static int8_t setBit52(TxnData* data, void* userData) {
         const KahrobaTxnSession* session = (const KahrobaTxnSession*)userData;
 
         if (!session || !session->emvReady) {
-            LOG_TRACE("ISO Bit35: EMV context unavailable");
+            LOG_TRACE("ISO Bit52: EMV context unavailable");
             return ERR_NOK;
         }
 
@@ -585,22 +585,28 @@ static int8_t setBit52(TxnData* data, void* userData) {
         }
     }
 
-    DEFINE_STRING(pan, 24);
     DEFINE_STRING(pinblock, 24);
-    magreader()->getPan(pan, sizeof(pan));
-    PedErr_t pederr =
-        OOP_CALL(ped(), getPinBlock, pan, pinblock, sizeof(pinblock));
+    LOG_TRACE("ISO Bit52: get pinblock for pan = %s", data->core.pan);
+    PedErr_t pederr = OOP_CALL(ped(), getPinBlock, data->core.pan, pinblock,
+                               sizeof(pinblock));
     RETURN_VALUE_IF_NOT(pederr, PED_ERR_OK, ;, ERR_NOK);
     iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, LEN_MAX_PIN_BLOCK);
-    LOG_TRACE("Bit 52 | (Pin Block): %s", pinblock);
+    DEFINE_STRING(pbh, 24);
+    bytesToHex(pinblock, 8, pbh, sizeof(pbh));
+    LOG_TRACE("Bit 52 | (Pin Block): %s", pbh);
     return ERR_OK;
 }
 
 static int8_t setBit53(TxnData* data, void* userData) {
     (void)data;
-    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO,
-                      (const DL_UINT8*)"0800030202031500");
-    LOG_TRACE("Bit 53 | (Security Control Info): %s", "0800030202031500");
+    char* sci;
+    if (data->core.txnType == TXN_KAHROBA_PURCHASE) {
+        sci = "0800030202031500";
+    } else {
+        sci = SecRelControlInfo;
+    }
+    iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO, (const DL_UINT8*)sci);
+    LOG_TRACE("Bit 53 | (Security Control Info): %s", sci);
     return ERR_OK;
 }
 

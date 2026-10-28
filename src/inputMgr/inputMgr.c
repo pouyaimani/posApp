@@ -147,6 +147,8 @@ static void finish(InputResult result, bool timedOut) {
                  sizeof(manager.ctrl->finput));
     }
 
+    active  = false;
+    entered = false;
     detachRequest();
     stopSession();
     LOG_TRACE("inputMgr: completed result=%d timeout=%d", (int)result,
@@ -198,10 +200,10 @@ STATE_DEF_ENTER(Input) {
 /** An external state transition also releases the provider, without
  * notification. */
 STATE_DEF_EXIT(Input) {
-    active  = false;
-    entered = false;
-    detachRequest();
-    stopSession();
+    // active  = false;
+    // entered = false;
+    // detachRequest();
+    // stopSession();
 }
 
 /** Forward keypad events only to an active keypad request. */
