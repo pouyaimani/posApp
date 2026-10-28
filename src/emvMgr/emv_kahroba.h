@@ -6,6 +6,22 @@
 #include "txn.h"
 #include "kahroba_field55.h"
 
+typedef enum {
+    KAHROBA_EMV_PURCHASE = 0,
+    KAHROBA_EMV_BALANCE
+} KahrobaEmvOperation;
+
+typedef struct {
+    KahrobaEmvOperation operation;
+
+    /* EMV 9F02: 12 decimal digits encoded in 6 BCD bytes. */
+    uint8_t amountBcd[6];
+
+    /* EMV 9C: 00 = Purchase, 31 = Balance Inquiry. */
+    uint8_t transactionType;
+
+} KahrobaEmvProfile;
+
 typedef struct {
     uint8_t cdol1[128];
     size_t  cdol1Len;

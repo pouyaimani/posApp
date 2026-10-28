@@ -214,9 +214,23 @@ static const TxnMgrStep kahrobaPurchaseSteps[] = {
     TXN_STEP_COMMUNICATION, TXN_STEP_HOST_PIN, TXN_STEP_COMMUNICATION_PIN,
     TXN_STEP_SETTLEMENT};
 
-static const TxnMgrStep kahrobaBalanceSteps[] = {
-    TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT, TXN_STEP_PHONE,     TXN_STEP_PIN,
-    TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
+/**
+ * @brief Kahroba balance inquiry transaction sequence.
+ *
+ * NFC:
+ *   Read card data and generate ARQC with zero amount
+ *   and EMV transaction type 0x31.
+ *
+ * PIN:
+ *   Obtain the encrypted online PIN block.
+ *
+ * COMMUNICATION:
+ *   Send the balance inquiry request to the host.
+ *
+ * Balance inquiry does not require settlement.
+ */
+static const TxnMgrStep kahrobaBalanceSteps[] = {TXN_STEP_NFC, TXN_STEP_PIN,
+                                                 TXN_STEP_COMMUNICATION};
 
 typedef struct {
     TxnType           type;

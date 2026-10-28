@@ -494,7 +494,8 @@ static int composeKahroba(TxnFlow* flow) {
 
     KahrobaTxnSession* session = (KahrobaTxnSession*)flow->userData;
 
-    if (txn->core.txnType != TXN_KAHROBA_PURCHASE) {
+    if (txn->core.txnType != TXN_KAHROBA_PURCHASE &&
+        txn->core.txnType != TXN_KAHROBA_BALANCE) {
         LOG_TRACE("Kahroba: compose invalid transaction type");
         return ERR_NOK;
     }
@@ -506,8 +507,7 @@ static int composeKahroba(TxnFlow* flow) {
         return ERR_NOK;
     }
 
-    if (txn->core.amount == 0u ||
-        txn->core.amount != session->emv.authorizedAmount) {
+    if (txn->core.amount != session->emv.authorizedAmount) {
         LOG_TRACE("Kahroba: compose invalid authorization amount");
         return ERR_NOK;
     }
@@ -591,6 +591,7 @@ static const uint8_t isoFeildsKahrobaBalance[] = {
     ELEMENT_TIME_LOCAL_TRANSACTION,
     ELEMENT_DATE_LOCAL_TRANSACTION,
     ELEMENT_POS_ENTRY_MODE,
+    ELEMENT_CARD_SEQUENCE_NUMBER,
     ELEMENT_NETWORK_INTL_ID,
     ELEMENT_POS_CONDITION_CODE,
     ELEMENT_ACQUIRING_INSTITUTION_ID,
@@ -598,15 +599,18 @@ static const uint8_t isoFeildsKahrobaBalance[] = {
     ELEMENT_TERMINAL_ID,
     ELEMENT_CARD_ACCEPTOR_ID,
     ELEMENT_ADDITIONAL_DATA_PRIVATE,
+    ELEMENT_CURRENCY_CODE_TRANSACTION,
     ELEMENT_PIN_DATA,
     ELEMENT_SECURITY_CONTROL_INFO,
-    ELEMENT_MAC};
+    ELEMENT_ICC_DATA,
+    ELEMENT_RESERVED_NATIONAL_116,
+    ELEMENT_MAC_2};
 
 const TxnFlowConfig kahrobaBalanceTxnFlowCfg = {
 
     TXN_FLOW_COMMON,
 
-    .type = TXN_BILL,
+    .type = TXN_KAHROBA_BALANCE,
 
     .mti = MTI_AUTH_REQ,
 
@@ -616,7 +620,7 @@ const TxnFlowConfig kahrobaBalanceTxnFlowCfg = {
 
     .feildsCnt = sizeof(isoFeildsKahrobaBalance),
 
-    .compose = composeCommon,
+    .compose = composeKahroba,
 };
 
 const TxnMgrCfg kahrobaBalanceTxnCfg = {.txnFlowCfg = &kahrobaBalanceTxnFlowCfg,

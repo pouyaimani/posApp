@@ -10,6 +10,30 @@ static const uint8_t KAHROBA_AID[] = {0xA0, 0x00, 0x00, 0x08, 0x03, 0x00, 0x01};
 static EmvPiccAdapter adapter;
 
 /**
+ * @brief Initialize the EMV parameters for a Kahroba operation.
+ *
+ * @param profile         Output transaction profile.
+ * @param operation       Purchase or Balance Inquiry.
+ * @param purchaseAmount  Six-byte BCD purchase amount.
+ *                        Required only for Purchase.
+ *
+ * @return true on success.
+ */
+static uint8_t kahrobaGetTxnType(TxnType type) {
+
+    switch (type) {
+    case TXN_KAHROBA_PURCHASE:
+        return 0x00u;
+
+    case TXN_KAHROBA_BALANCE:
+        return 0x31u;
+    default:
+        break;
+    }
+    return 0x00u;
+}
+
+/**
  * @brief Append Track 2 and PAN to the Kahroba Field 55.
  *
  * 57 - Track 2 Equivalent Data
@@ -203,7 +227,7 @@ static bool kahrobaAppendIssuerTags(KahrobaField55Writer*    writer,
  *   100000 -> 00 00 00 10 00 00
  */
 static bool kahrobaEncodeAmount(uint64_t amount, uint8_t output[6]) {
-    if (!output || amount == 0u || amount > UINT64_C(999999999999))
+    if (!output || amount > UINT64_C(999999999999))
         return false;
 
     for (size_t i = 6u; i > 0u; --i) {
@@ -439,12 +463,16 @@ bool kahrobaBuildField55(const TxnData* txn, const KahrobaEmvContext* context,
     if (outputLength != NULL)
         *outputLength = 0u;
 
-    if (!txn || !context || !output || !outputLength || capacity == 0u)
+    if (!txn || !context || !output || !outputLength || capacity == 0u) {
+        EMV_LOG("kahrobaBuildField55: bad argument. capacity = %d", capacity);
         return false;
+    }
 
     /* Field 55 for online authorization requires ARQC. */
-    if ((context->acResult.cid & 0xC0u) != 0x80u)
+    if ((context->acResult.cid & 0xC0u) != 0x80u) {
+        EMV_LOG("kahrobaBuildField55: ----");
         return false;
+    }
 
     /*
      * The amount sent to the host must match the amount
@@ -452,11 +480,16 @@ bool kahrobaBuildField55(const TxnData* txn, const KahrobaEmvContext* context,
      *
      * authorizedAmount is captured before GENERATE AC.
      */
-    if (txn->core.amount != context->authorizedAmount)
+    if (txn->core.amount != context->authorizedAmount) {
+        EMV_LOG("kahrobaBuildField55: The amount sent to the host must match "
+                "the amount supplied during GPO and GENERATE AC.");
         return false;
+    }
 
-    if (!kahrobaField55Init(&writer, output, capacity))
+    if (!kahrobaField55Init(&writer, output, capacity)) {
+        EMV_LOG("kahrobaBuildField55: init failed.");
         return false;
+    }
 
     /* 1. 5F2A, 82, 95, 9A, 9C */
     if (!kahrobaAppendBaseTags(&writer, context))
@@ -846,11 +879,12 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
      * The scheme-specific amount policy must already have
      * been validated by the transaction handler before NFC.
      */
-    if (txn->core.amount == 0u || txn->core.amount > UINT64_C(999999999999)) {
+    // if (txn->core.amount == 0u || txn->core.amount > UINT64_C(999999999999))
+    // {
 
-        EMV_LOG("Kahroba: invalid EMV transaction amount");
-        return EMV_MGR_ERR_ARGUMENT;
-    }
+    //     EMV_LOG("Kahroba: invalid EMV transaction amount");
+    //     return EMV_MGR_ERR_ARGUMENT;
+    // }
 
     /*
      * context must be owned by the caller and must remain
@@ -926,7 +960,7 @@ EmvMgrError startKahrobaEmv(Picc* reader, TxnData* txn,
     gpoData.country[1] = 0x64;
 
     gpoData.terminalType    = 0x21;
-    gpoData.transactionType = 0x00;
+    gpoData.transactionType = kahrobaGetTxnType(txn->core.txnType);
 
     err = emvMgr()->getProcessingOptions(kahrobaDolValue, &gpoData);
 

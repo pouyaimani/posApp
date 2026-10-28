@@ -409,7 +409,8 @@ static int8_t setBit35(TxnData* data, void* userData) {
     }
 
     /* NFC / Kahroba */
-    if (data->core.txnType == TXN_KAHROBA_PURCHASE) {
+    if (data->core.txnType == TXN_KAHROBA_PURCHASE ||
+        data->core.txnType == TXN_KAHROBA_BALANCE) {
         const KahrobaTxnSession* session = (const KahrobaTxnSession*)userData;
 
         if (!session || !session->emvReady) {
@@ -600,7 +601,8 @@ static int8_t setBit52(TxnData* data, void* userData) {
 static int8_t setBit53(TxnData* data, void* userData) {
     (void)data;
     char* sci;
-    if (data->core.txnType == TXN_KAHROBA_PURCHASE) {
+    if (data->core.txnType == TXN_KAHROBA_PURCHASE ||
+        data->core.txnType == TXN_KAHROBA_BALANCE) {
         sci = "0800030202031500";
     } else {
         sci = SecRelControlInfo;
@@ -627,7 +629,8 @@ static int8_t setBit55(TxnData* data, void* userData) {
         return ERR_NOK;
     }
 
-    if (data->core.txnType != TXN_KAHROBA_PURCHASE) {
+    if (data->core.txnType != TXN_KAHROBA_PURCHASE &&
+        data->core.txnType != TXN_KAHROBA_BALANCE) {
         LOG_TRACE("ISO Bit55: unsupported transaction type=%d",
                   (int)data->core.txnType);
         return ERR_NOK;
