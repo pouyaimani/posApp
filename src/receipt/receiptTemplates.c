@@ -964,6 +964,7 @@ Result_t showDigitalRec(TxnData* data) {
     DigitalReceiptBuilder builder = NULL;
     switch (data->core.txnType) {
     case TXN_PURCHASE:
+    case TXN_KAHROBA_PURCHASE:
         builder = digRecBuildPurchase;
         break;
     case TXN_BILL:
@@ -973,6 +974,7 @@ Result_t showDigitalRec(TxnData* data) {
         builder = digRecBuildTopUp;
         break;
     case TXN_BALANCE:
+    case TXN_KAHROBA_BALANCE:
         builder = digRecBuildBalance;
         break;
     case TXN_PAY:

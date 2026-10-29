@@ -7,7 +7,7 @@
 
 #include "emv_transport.h"
 
-#define EMV_LOG_ENABLE 1
+// #define EMV_LOG_ENABLE 1
 
 #ifdef EMV_LOG_ENABLE
 #define EMV_LOG(...) LOG_TRACE(__VA_ARGS__)

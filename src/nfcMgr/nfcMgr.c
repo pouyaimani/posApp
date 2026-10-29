@@ -479,61 +479,72 @@ STATE_DEF_HANDLE(Nfc, TimeOutEvent) {
  * Public manager operations
  * -------------------------------------------------------------------------- */
 
-/** Start one exclusive acquisition request; invalid/busy calls are rejected. */
-static bool run(const NfcCfg* cfg, NfcComplete cb, void* userData) {
-    LOG_TRACE("nfcMgr: run requested cfg=%p callbackPresent=%d userData=%p",
-              (const void*)cfg, cb != NULL, userData);
-
+/**
+ * @brief Start an exclusive NFC card acquisition.
+ *
+ * Validates the request and reader availability before modifying
+ * manager state.
+ *
+ * @return NFC_MGR_OK when the request is accepted.
+ *         Otherwise returns a specific NFC manager error.
+ */
+static NfcMgrError run(const NfcCfg* cfg, NfcComplete cb, void* userData) {
     const PiccTechMask_t supported =
         PICC_TECH_A | PICC_TECH_B | PICC_TECH_FELICA;
 
-    if (!cfg) {
-        LOG_TRACE("nfcMgr: run rejected; configuration is NULL");
-        return false;
+    LOG_TRACE("nfcMgr: run requested cfg=%p callback=%d userData=%p",
+              (const void*)cfg, cb != NULL, userData);
+
+    /* Validate request arguments. */
+    if (!cfg || !cb) {
+        LOG_TRACE("nfcMgr: invalid configuration or callback");
+        return NFC_MGR_ERR_ARGUMENT;
     }
 
-    if (!cb) {
-        LOG_TRACE("nfcMgr: run rejected; completion callback is NULL");
-        return false;
-    }
-
-    LOG_TRACE("nfcMgr: request technologies=%lu timeout=%lu keepOpen=%d",
+    LOG_TRACE("nfcMgr: technologies=%lu timeout=%lu keepOpen=%d",
               (unsigned long)cfg->technologies, (unsigned long)cfg->timeout,
               (int)cfg->keepOpenOnSuccess);
 
-    if (!cfg->technologies) {
-        LOG_TRACE("nfcMgr: run rejected; no technologies requested");
-        return false;
+    if (cfg->technologies == 0) {
+        LOG_TRACE("nfcMgr: no technologies requested");
+        return NFC_MGR_ERR_ARGUMENT;
     }
 
-    if (cfg->technologies & ~supported) {
-        LOG_TRACE("nfcMgr: run rejected; unsupported technology mask=%lu",
-                  (unsigned long)(cfg->technologies & ~supported));
-        return false;
+    /* Check requested technology support. */
+    const PiccTechMask_t unsupported = cfg->technologies & ~supported;
+
+    if (unsupported != 0) {
+        LOG_TRACE("nfcMgr: unsupported technologies mask=%lu",
+                  (unsigned long)unsupported);
+        return NFC_MGR_ERR_UNSUPPORTED;
     }
 
+    /* Ensure no other acquisition is active. */
     if (active || entered || ownsReader) {
-        LOG_TRACE("nfcMgr: run rejected; manager busy "
-                  "active=%d entered=%d ownsReader=%d",
+        LOG_TRACE("nfcMgr: busy active=%d entered=%d ownsReader=%d",
                   (int)active, (int)entered, (int)ownsReader);
-        return false;
+        return NFC_MGR_ERR_BUSY;
     }
 
-    reader = picc();
+    /* Obtain the PICC device. */
+    Picc* device = picc();
 
-    LOG_TRACE("nfcMgr: HAL reader lookup result=%p", (void*)reader);
-
-    if (!reader) {
-        LOG_TRACE("nfcMgr: run rejected; PICC reader is NULL");
-        return false;
+    if (!device) {
+        LOG_TRACE("nfcMgr: PICC device unavailable");
+        return NFC_MGR_ERR_READER_UNAVAILABLE;
     }
 
-    if (reader->opened) {
-        LOG_TRACE("nfcMgr: run rejected; reader already open");
-        return false;
+    /* Reject readers already opened or retained elsewhere. */
+    if (device->opened) {
+        LOG_TRACE("nfcMgr: PICC reader already open");
+        return NFC_MGR_ERR_READER_BUSY;
     }
 
-    /* Copy the configuration and borrow the callback context. */
+    /*
+     * All validation passed.
+     * Commit the request before entering the NFC state.
+     */
+    reader       = device;
     request      = *cfg;
     callback     = cb;
     callbackData = userData;
@@ -545,17 +556,15 @@ static bool run(const NfcCfg* cfg, NfcComplete cb, void* userData) {
               (unsigned long)request.technologies,
               (unsigned long)request.timeout);
 
-    LOG_TRACE("nfcMgr: setting NFC state timeout");
-
     OOP_CALL(manager.state, setTimeOut, request.timeout);
 
     LOG_TRACE("nfcMgr: requesting NFC state transition");
 
     SM_GOTO(manager.state);
 
-    LOG_TRACE("nfcMgr: state transition requested successfully");
+    LOG_TRACE("nfcMgr: state transition requested");
 
-    return true;
+    return NFC_MGR_OK;
 }
 
 /** Public cancellation shares the terminal cleanup path. */

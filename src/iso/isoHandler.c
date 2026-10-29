@@ -102,6 +102,44 @@ static Error_t checkIinData() {
     return ERR_OK;
 }
 
+#define KAHROBA_F116_HEADER_LEN 12u
+
+/**
+ * @brief Extract the masked PAN from ISO8583 Field 116.
+ *
+ * Format:
+ *   [12-character header][variable-length masked PAN]
+ *
+ * @return true on successful extraction.
+ */
+static bool extractKahrobaPan(const char* field116, size_t fieldLen, char* pan,
+                              size_t panSize) {
+    if (!field116 || !pan)
+        return false;
+
+    if (fieldLen < KAHROBA_F116_HEADER_LEN)
+        return false;
+
+    size_t panLen = fieldLen - KAHROBA_F116_HEADER_LEN;
+
+    if (panLen < LEN_MIN_PAN || panLen > LEN_MAX_PAN || panSize <= panLen)
+        return false;
+
+    const char* source = field116 + KAHROBA_F116_HEADER_LEN;
+
+    for (size_t i = 0; i < panLen; ++i) {
+        char c = source[i];
+
+        if ((c < '0' || c > '9') && c != '*')
+            return false;
+    }
+
+    memcpy(pan, source, panLen);
+    pan[panLen] = '\0';
+
+    return true;
+}
+
 /*********************************************************************************************
  *                                                                                           *
  *                                   Builder/Parsers
@@ -163,6 +201,20 @@ static Error_t isoParseCfgResponse(TxnData* txn, ByteArray* buf) {
 
 static Error_t isoParseDefault(TxnData* txn, ByteArray* buf) { return ERR_OK; }
 
+static Error_t isoParsePurchase(TxnData* txn, ByteArray* buf) {
+    if (txn->core.txnType == TXN_KAHROBA_PURCHASE) {
+        DEFINE_STRING(feild, 128);
+        if (iso8583()->getStr(ELEMENT_RESERVED_NATIONAL_116, feild) == ISO_OK) {
+            extractKahrobaPan(feild, strlen(feild), txn->core.pan,
+                              sizeof(txn->core.pan));
+            LOG_TRACE("Parser: Kahroba extracted pan = %s", txn->core.pan);
+            return ERR_OK;
+        }
+        LOG_TRACE("Parser: failed to extracted pan for kahroba purchase");
+    }
+    return ERR_OK;
+}
+
 static Error_t isoParseBillResponse(TxnData* txn, ByteArray* buf) {}
 
 static Error_t isoParseBalanceResponse(TxnData* txn, ByteArray* buf) {
@@ -183,6 +235,16 @@ static Error_t isoParseBalanceResponse(TxnData* txn, ByteArray* buf) {
         LOG_TRACE("Parser: balance txn amount is in Bit 4. available = %s",
                   available);
     }
+    if (txn->core.txnType == TXN_KAHROBA_BALANCE) {
+        DEFINE_STRING(feild, 128);
+        if (iso8583()->getStr(ELEMENT_PAN, feild) == ISO_OK) {
+            memset(txn->core.pan, 0, sizeof(txn->core.pan));
+            memcpy(txn->core.pan, feild, sizeof(txn->core.pan));
+            LOG_TRACE("Parser: Kahroba extracted pan = %s", txn->core.pan);
+        }
+        LOG_TRACE("Parser: failed to extracted pan for kahroba purchase");
+    }
+
     str2u64(available, &txn->extention.balance.available);
     str2u64(ledger, &txn->extention.balance.ledger);
     return ERR_OK;
@@ -270,7 +332,7 @@ static const IsoTransaction templates[] = {
     {.mti     = MTI_FIN_REQ,
      .prcode  = PRC_PURCHASE,
      .builder = NULL,
-     .parser  = isoParseDefault},
+     .parser  = isoParsePurchase},
     /******************************************************************/
     /*Bill Payment*/
     /******************************************************************/

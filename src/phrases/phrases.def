@@ -242,20 +242,40 @@ X(PHRASE_TXN_CANCELLED              ,   "تراکنش لغو شد"              
 )
 X(PHRASE_UPDATING              ,   "در حال به روز رسانی"                                    ,   "wage"
 )
+X(PHRASE_TRY_AGAIN              ,   "لطفا دوباره تلاش کنید "                                    ,   "wage"
+)
 
 /**********************************************************************
  *
  *                              NFC
  * 
  **********************************************************************/
-X(PHRASE_NFC_DETECT_ERROR              ,   "خطا در شناسایی nfc"                                    ,   "wage"
+X(PHRASE_NFC_DETECT_ERROR                   ,   "خطا در شناسایی کارت"                   ,   "wage"
 )
-X(PHRASE_NFC_ERROR              ,   "خطا در ارتباط با nfc"                                    ,   "wage"
+X(PHRASE_NFC_CARD_ERROR                     ,   "خطا در ارتباط با کارت"                 ,   "wage"
 )
-X(PHRASE_NFC_CARD_TYPE_ERROR              ,   "عدم پشتیبانی از نوع کارت"                                   ,   "wage"
+X(PHRASE_NFC_CARD_TYPE_ERROR                ,   "عدم پشتیبانی از نوع کارت"              ,   "wage"
 )
-
-
+X(PHRASE_NFC_CARD_PROCESS_ERR               ,   "خطا در پردازش کارت"                     ,   "wage"
+)
+X(PHRASE_NFC_UNABLE_TO_PROCESS_TXN          ,   "امکان پردازش تراکنش وجود ندارد"        ,   "wage"
+)
+X(PHRASE_NFC_TIMEOUT                        ,   "زمان پاسخ‌گویی کارت به پایان رسید"      ,   "wage"
+)
+X(PHRASE_NFC_READ_ERR                       ,   "خطا در خواندن اطلاعات کارت"              ,   "wage"
+)
+X(PHRASE_NFC_CARD_UNSUPPORTED               ,   "کارت پشتیبانی نمی‌شود"                   ,   "wage"
+)
+X(PHRASE_NFC_MGR_ERR_ARGUMENT               ,   "خطا در شروع عملیات"                   ,   "wage"
+)
+X(PHRASE_NFC_MGR_ERR_UNSUPPORTED            ,   "این نوع ارتباط با کارت پشتیبانی نمی‌شود"                   ,   "wage"
+)
+X(PHRASE_NFC_MGR_ERR_BUSY                   ,   "عملیات در حال انجام است"                  ,   "wage"
+)
+X(PHRASE_NFC_MGR_ERR_READER_UNAVAILABLE     ,   "کارت‌خوان در دسترس نیست"                   ,   "wage"
+)
+X(PHRASE_NFC_MGR_ERR_READER_BUSY            ,   "کارت‌خوان مشغول است"                   ,   "wage"
+)
 /**********************************************************************
  *
  *                              Shift

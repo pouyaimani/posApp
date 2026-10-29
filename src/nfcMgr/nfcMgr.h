@@ -13,6 +13,23 @@ typedef enum {
     NFC_RES_ERROR
 } NfcResult;
 
+/**
+ * @brief Result of starting an NFC acquisition request.
+ *
+ * This describes request acceptance, not card detection.
+ * Card acquisition results are reported through NfcComplete.
+ */
+typedef enum {
+    NFC_MGR_OK = 0,
+
+    NFC_MGR_ERR_ARGUMENT,
+    NFC_MGR_ERR_UNSUPPORTED,
+    NFC_MGR_ERR_BUSY,
+    NFC_MGR_ERR_READER_UNAVAILABLE,
+    NFC_MGR_ERR_READER_BUSY
+
+} NfcMgrError;
+
 /** Callback snapshot. Copy it if needed after the callback returns. */
 typedef struct {
     NfcResult  result; /**< Acquisition outcome. */
@@ -52,7 +69,7 @@ typedef struct {
      * fails. cfg strings/context must remain alive until completion or external
      * exit.
      */
-    bool (*run)(const NfcCfg* cfg, NfcComplete cb, void* userData);
+    NfcMgrError (*run)(const NfcCfg* cfg, NfcComplete cb, void* userData);
 
     /** Cancel an accepted request. No effect after completion. */
     void (*cancel)(void);

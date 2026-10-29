@@ -40,3 +40,5 @@
 #define LEN_MAX_MTI              4
 #define LEN_MAX_PHONE_NUMBER     11
 #define LEN_SOCKET_REC_BUFF      1024
+#define LEN_MIN_PAN              12u
+#define LEN_MAX_PAN_             19u

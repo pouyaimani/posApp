@@ -188,6 +188,40 @@ void nfcInfoDone(InfoResult res, void* arg) {
 // /* Proceed to NFC only after validation succeeds. */
 // /* nfcMgr()->run(...); */
 
+static void emvErrMessage(EmvMgrError err) {
+    LOG_TRACE("Kahroba: EMV processing failed error=%d", (int)err);
+    Phrases_t phrase = PHRASE_NFC_CARD_ERROR;
+
+    switch (err) {
+    case EMV_MGR_ERR_ARGUMENT:
+        phrase = PHRASE_NFC_UNABLE_TO_PROCESS_TXN;
+        break;
+    case EMV_MGR_ERR_STATE:
+        phrase = PHRASE_NFC_CARD_PROCESS_ERR;
+        break;
+    case EMV_MGR_ERR_TRANSPORT:
+        phrase = PHRASE_NFC_CARD_ERROR;
+        break;
+    case EMV_MGR_ERR_TIMEOUT:
+        break;
+    case EMV_MGR_ERR_CARD_STATUS:
+        phrase = PHRASE_NFC_UNABLE_TO_PROCESS_TXN;
+        break;
+    case EMV_MGR_ERR_PROTOCOL:
+        phrase = PHRASE_NFC_READ_ERR;
+        break;
+    case EMV_MGR_ERR_UNSUPPORTED:
+        phrase = PHRASE_NFC_CARD_UNSUPPORTED;
+        break;
+
+    default:
+        break;
+    }
+
+    infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
+                   phraseGetDef(phrase), phraseGetDef(PHRASE_TRY_AGAIN));
+}
+
 static void handleABcardType(const NfcStatus* status, void* userData) {
     TxnMgr* txnMgr = userData;
     // TODO: validate kahroba amount
@@ -198,12 +232,7 @@ static void handleABcardType(const NfcStatus* status, void* userData) {
 
     if (err != EMV_MGR_OK) {
         kahrobaSession.emvReady = false;
-
-        LOG_TRACE("Kahroba: EMV processing failed error=%d", (int)err);
-
-        infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
-                       phraseGetDef(PHRASE_NFC_CARD_TYPE_ERROR), "");
-
+        emvErrMessage(err);
         /* Abort this path and release the reader via its owner. */
         return;
     }
@@ -248,7 +277,7 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
 
     if (!status->readerRetained) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
-                       phraseGetDef(PHRASE_NFC_ERROR), "");
+                       phraseGetDef(PHRASE_NFC_CARD_ERROR), "");
         LOG_TRACE("Kahroba: NFC reader was not retained");
         OOP_CALL(picc(), close);
         return;
@@ -273,12 +302,38 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
     }
 }
 
+static void nfcMgrErr(NfcMgrError err) {
+    Phrases_t phrase = PHRASE_NFC_MGR_ERR_ARGUMENT;
+    switch (err) {
+    case NFC_MGR_ERR_ARGUMENT:
+        phrase = PHRASE_NFC_MGR_ERR_ARGUMENT;
+        break;
+    case NFC_MGR_ERR_UNSUPPORTED:
+        phrase = PHRASE_NFC_MGR_ERR_UNSUPPORTED;
+        break;
+    case NFC_MGR_ERR_BUSY:
+        phrase = PHRASE_NFC_MGR_ERR_BUSY;
+        break;
+    case NFC_MGR_ERR_READER_UNAVAILABLE:
+        phrase = PHRASE_NFC_MGR_ERR_READER_UNAVAILABLE;
+        break;
+    case NFC_MGR_ERR_READER_BUSY:
+        phrase = PHRASE_NFC_MGR_ERR_READER_BUSY;
+        break;
+
+    default:
+        break;
+    }
+    infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
+                   phraseGetDef(phrase), phraseGetDef(PHRASE_TRY_AGAIN));
+}
+
 /** Begins the existing nfcMgr detection; reader retained for EMV APDUs. */
 void getNfcData(void) {
-    nfcCfg = (NfcCfg){.technologies      = PICC_TECH_A | PICC_TECH_B,
-                      .keepOpenOnSuccess = true};
-    if (!nfcmgr()->run(&nfcCfg, onNfcComplete, txnMgr())) {
-        infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
-                       phraseGetDef(PHRASE_NFC_ERROR), "");
+    nfcCfg          = (NfcCfg){.technologies      = PICC_TECH_A | PICC_TECH_B,
+                               .keepOpenOnSuccess = true};
+    NfcMgrError err = nfcmgr()->run(&nfcCfg, onNfcComplete, txnMgr());
+    if (err != NFC_MGR_OK) {
+        nfcMgrErr(err);
     }
 }

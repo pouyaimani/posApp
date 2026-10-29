@@ -97,6 +97,8 @@ static void runDigitalReceipt(InfoFinishCtx* ctx, TxnData* txnData) {
     __infomgr.finishCtx = *ctx;
     __infomgr.mode      = INFO_MODE_DIGITAL_REC;
 
+    LOG_TRACE("TXN amount = %llu", txnData->core.amount);
+
     showDigitalRec(txnData);
 
     SM_GOTO(__infomgr.state);
