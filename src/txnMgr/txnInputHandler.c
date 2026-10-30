@@ -280,7 +280,9 @@ void onInputTimeout(InputResult result, void* userData) {
  *                         Input steps
  ******************************************************************/
 
-void enterAmount(void) {
+void enterAmount(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
     LOG_TRACE("TxnMgr: starting amount input");
     inputCfg = (InputCfg){.mode    = INMD_ENTER_AMOUNT,
                           .title   = phraseGetDef(PHRASE_AMOUNT),
@@ -317,8 +319,8 @@ void enterPaymentId(void) {
     inmgr()->run(&inputCfg, onInputComplete, txnMgr());
 }
 
-void setOperator(void* arg) {
-    int idx = *(((int*)arg));
+void setOperator(int idx, void* userData) {
+    VAR_UNUSED(userData);
     LOG_TRACE("setOperator(): idx = %d", idx);
     SimCardOp_t selectedOp;
     switch (idx) {
@@ -364,8 +366,9 @@ static const uint64_t amnt[] = {
     1000000 // 2
 };
 
-static void setAmnt(void* arg) {
-    txnMgr()->data.core.amount = *((uint64_t*)arg);
+static void setAmnt(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    txnMgr()->data.core.amount = *((uint64_t*)userData);
     onInputComplete(INPUT_RES_FINISHED, txnMgr());
 }
 

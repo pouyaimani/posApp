@@ -283,9 +283,9 @@ STATE_DEF_ENTER(EnterServerId) {
     inmgr()->set(INPUT_TYPE_KEYPAD, nii);
 }
 
-static void changeSSLstatuse(void* arg) {
-    int* idx                 = (int*)arg;
-    settings()->server.sslEn = !(*idx);
+static void changeSSLstatuse(int idx, void* userData) {
+    VAR_UNUSED(userData);
+    settings()->server.sslEn = !(idx);
 }
 
 STATE_DEF_ENTER(EnableSsl) {
@@ -321,10 +321,17 @@ STATE_DEF_ENTER(Success) {
     infoMgr()->run(INFO_SUCCESS, &infoFinishCtx, phraseGetDef(PHRASE_SUC_DONME),
                    "");
 }
+static void setItemToMainServer(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    serverItem = SERV_SET_MAIN;
+}
 
-static void setItemToMainServer() { serverItem = SERV_SET_MAIN; }
-
-static void setItemToTms() { serverItem = SERV_SET_TMS; }
+static void setItemToTms(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    serverItem = SERV_SET_TMS;
+}
 
 STATE_DEF_ENTER(NetworkSettings) {
     serverSetMenu = MEM_ALLOC(sizeof(*serverSetMenu));

@@ -5,6 +5,7 @@
 #include "phrases/phrases.h"
 #include "states/states.h"
 #include "ui/infoPage.h"
+#include "receipt/receiptTemplates.h"
 
 /******************************************************************
  *                      Communication messages
@@ -58,7 +59,7 @@ static Phrases_t communicationMessage(const TxnFlowStatus* st) {
  */
 static TxnFlowConfig resultCfg;
 static TxnFlowStatus resultStatus;
-static TxnData       resultData;
+static ReceiptData   receiptData;
 
 static void showFailure(const char* body, InfoDone cb) {
     memset(&infoFinishCtx, 0, sizeof(InfoFinishCtx));
@@ -69,9 +70,23 @@ static void showFailure(const char* body, InfoDone cb) {
                    body ? body : "");
 }
 
+static int8_t printResult() {
+    receiptData.type          = DOC_TXN;
+    receiptData.headerApplied = true;
+    Receipt  rec;
+    Result_t res = buildReceipt(&rec, &receiptData);
+    RETURN_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;, false);
+    res = OOP_CALL(&rec, flush);
+    LOG_VALUE_IF_NOT(res.err, ERR_DSC_OK, ;);
+    OOP_CALL(&rec, destroy);
+    return true;
+}
+
 static void digitalRecDone(InfoResult res, void* arg) {
     InfoDone done = (InfoDone)arg;
-    LOG_TRACE("--------------digitalRecDone-----------------");
+    if (res == INFO_RES_FINISH) {
+        printResult();
+    }
     if (done) {
         done(res, NULL);
     }
@@ -94,7 +109,7 @@ static bool showTransactionResult(const TxnFlowStatus* st, const TxnData* data,
         return false;
     }
     LOG_TRACE("Digital receipt: amount = %llu", data->core.amount);
-    memcpy(&resultData, data, sizeof(TxnData));
+    memcpy(&receiptData.txn, data, sizeof(TxnData));
     resultStatus = *st;
     resultCfg    = *mgr->config.txnFlowCfg;
 

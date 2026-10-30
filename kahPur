@@ -409,3 +409,8 @@ SW: 9000
 (3099610,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][dtMiladyToShamsi](845):11 out[3] is [949]
 (3099611,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][dtMiladyToShamsi](861):******************
 (3099612,+0001)[DEBUG][pubDebugPrint 58]: [26-10-25 10:47:38][crossCutting.c][getWd](933):weekDay is (0) [يکشنبه]
+
+
+        int idx, void* userData
+        VAR_UNUSED(idx);
+    VAR_UNUSED(userData);

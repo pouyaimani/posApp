@@ -19,7 +19,9 @@ static Supervisor* supervisor;
 
 #define ITEM_CNT_MAX 4
 
-static void onCustomer() {
+static void onCustomer(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
     CardHolder* ch  = (CardHolder*)getState(STATE_ID_CARD_HOLDER);
     ch->isMagSwiped = false;
     SM_GOTO(getState(STATE_ID_CARD_HOLDER));
@@ -31,7 +33,9 @@ static poweroff(void* arg) {
     OOP_CALL(sys(), powerOff);
 }
 
-static void onExit() {
+static void onExit(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
     GOTO_DIAL(STATE_SUPPORTER, STATE_SUPPORTER, phraseGetDef(PHRASE_WANNA_EXIT),
               "", poweroff, NULL);
 }

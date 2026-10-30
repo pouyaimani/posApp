@@ -128,16 +128,14 @@ static void activateItem(Menu* menu, uint16_t idx) {
      * The callback is allowed to trigger a state transition, which may destroy
      * the currently active menu.
      */
-    CallBack_t callback  = menu->cb[idx];
-    void*      userData  = menu->userData[idx];
-    State*     nextState = menu->state[idx];
+    MenuItemCallback_t callback  = menu->cb[idx];
+    void*              userData  = menu->userData[idx];
+    State*             nextState = menu->state[idx];
 
     bool activeMenu = (__menuMgr.menu == menu);
 
-    deleteMenu();
-
     if (callback != NULL) {
-        callback(userData);
+        callback(idx, userData);
     }
 
     /*
@@ -145,6 +143,7 @@ static void activateItem(Menu* menu, uint16_t idx) {
      * __menuMgr.menu. Do not override that transition.
      */
     if (activeMenu && (nextState != NULL)) {
+        deleteMenu();
         SM_GOTO(nextState);
     }
 }

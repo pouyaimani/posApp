@@ -36,15 +36,27 @@ static Menu*     fixedAmntMenu;
 static SubState* enterAmount;
 static int       listCnt = 0;
 
-static disableFixedAmnt() { termStorage->fixedAmountItem = FIXED_AMNT_DIS; }
+static disableFixedAmnt(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    termStorage->fixedAmountItem = FIXED_AMNT_DIS;
+}
 
-static setFixedItemToList() { termStorage->fixedAmountItem = FIXED_AMNT_LISTS; }
+static setFixedItemToList(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    termStorage->fixedAmountItem = FIXED_AMNT_LISTS;
+}
 
-static setFixedItemToSingle() {
+static setFixedItemToSingle(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
     termStorage->fixedAmountItem = FIXED_AMNT_SINGLE;
 }
 
-static setFixedItemToVariant() {
+static setFixedItemToVariant(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
     termStorage->fixedAmountItem = FIXED_AMNT_VARIANT;
 }
 
@@ -238,7 +250,11 @@ static Menu*     maxAmntMenu;
 static SubState* enterMaxAmnt;
 static SubState* getMaxAmnt;
 
-static void disMaxAmnt() { termStorage->maxAmntEnable = false; }
+static void disMaxAmnt(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    termStorage->maxAmntEnable = false;
+}
 
 STATE_DEF_ENTER(GetMaxAmnt) {
     infoMgrsetCommon(state->parent, state->parent);
@@ -288,9 +304,17 @@ STATE_DEF_ENTER(MaxAmount) {
 /******************** direct sale sub state **********************/
 static Menu* dirSaleMenu;
 
-static void enDirectSale() { termStorage->maxAmntEnable = false; }
+static void enDirectSale(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    termStorage->maxAmntEnable = false;
+}
 
-static void disDirectSale() { settings()->terminal.maxAmntEnable = false; }
+static void disDirectSale(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    settings()->terminal.maxAmntEnable = false;
+}
 
 STATE_DEF_ENTER(DirectSale) {
     dirSaleMenu = MEM_ALLOC(sizeof(*dirSaleMenu));

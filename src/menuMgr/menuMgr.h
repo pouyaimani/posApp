@@ -27,6 +27,14 @@
  */
 
 /**
+ * @brief Callback invoked when a menu item is selected.
+ *
+ * @param idx      Zero-based index of the selected menu item.
+ * @param userData Optional user-defined context.
+ */
+typedef void (*MenuItemCallback_t)(uint16_t idx, void* userData);
+
+/**
  * @brief Runtime configuration for MenuMgr.
  *
  * Ownership rule:

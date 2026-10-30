@@ -268,9 +268,11 @@ STATE_DEF_ENTER(PrnMerchRec) {
 
 static Menu* prnModel;
 
-static void setPrintModel(void* arg) {
-    ui_menu_set_checked(prnModel, prnModel->idx);
-    settings()->terminal.printModel = prnModel->idx;
+static void setPrintModel(int idx, void* userData) {
+    VAR_UNUSED(userData);
+
+    ui_menu_set_checked(prnModel, idx);
+    settings()->terminal.printModel = idx;
     settings()->save();
 }
 

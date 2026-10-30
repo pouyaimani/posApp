@@ -30,9 +30,17 @@ static void transactionDone(InfoResult res, void* arg) {
     SM_GOTO(nextState);
 }
 
-static void onLogon() { txnMgr()->run(&logonTxnCfg, transactionDone); }
+static void onLogon(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    txnMgr()->run(&logonTxnCfg, transactionDone);
+}
 
-static void onConfig() { txnMgr()->run(&cfgTxnCfg, transactionDone); }
+static void onConfig(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    txnMgr()->run(&cfgTxnCfg, transactionDone);
+}
 
 STATE_DEF_ENTER(Configuration) {
     cfgMenu = (Menu*)MEM_ALLOC(sizeof(Menu));

@@ -36,15 +36,27 @@ static void onBalance() { txnMgr()->run(&balanceTxnCfg, transactionDone); }
 
 static void onBill() { txnMgr()->run(&billTxnCfg, transactionDone); }
 
-static void onTopup() { txnMgr()->run(&topupTxnCfg, transactionDone); }
+static void onTopup(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    txnMgr()->run(&topupTxnCfg, transactionDone);
+}
 
-static void onVoucher() { txnMgr()->run(&voucherTxnCfg, transactionDone); }
+static void onVoucher(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
+    txnMgr()->run(&voucherTxnCfg, transactionDone);
+}
 
-static void onKahrobaPurchase() {
+static void onKahrobaPurchase(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
     txnMgr()->run(&kahrobaPurchaseTxnCfg, transactionDone);
 }
 
-static void onKahrobaBalance() {
+static void onKahrobaBalance(int idx, void* userData) {
+    VAR_UNUSED(idx);
+    VAR_UNUSED(userData);
     txnMgr()->run(&kahrobaBalanceTxnCfg, transactionDone);
 }
 

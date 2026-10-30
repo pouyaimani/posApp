@@ -103,8 +103,9 @@ typedef enum {
 
 static PrintItem_t pItem;
 
-void setReprintItem(void* arg) {
-    pItem = (PrintItem_t)(*((uint16_t*)arg));
+void setReprintItem(int idx, void* userData) {
+    VAR_UNUSED(userData);
+    pItem = (PrintItem_t)idx;
     LOG_TRACE("Print Item = %d", pItem);
     switch (pItem) {
     case REPRINT_TRACE:
@@ -564,8 +565,9 @@ static void ExtractData(State* parent) {
  ********************************************************************************************/
 static Menu* reportsMenu;
 
-static void setReportItem(void* arg) {
-    rItem = (PrintItem_t)(uintptr_t)arg;
+static void setReportItem(int idx, void* userData) {
+    VAR_UNUSED(userData);
+    rItem = (PrintItem_t)idx;
     prev  = subReports[rItem];
 }
 

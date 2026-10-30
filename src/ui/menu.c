@@ -8,7 +8,7 @@
 #include "common.h"
 
 void ui_menu_addItem(Menu* menu, const char* text, lv_text_align_t txtAlign,
-                     State* state, CallBack_t cb, void* user_data) {
+                     State* state, MenuItemCallback_t cb, void* user_data) {
     RETURN_IF_NULL(menu, ;);
     if (menu->cnt >= MENU_ITEM_MAX) {
         LOG_ERROR("Menu full");
@@ -58,7 +58,8 @@ void ui_menu_addItem(Menu* menu, const char* text, lv_text_align_t txtAlign,
 }
 
 void ui_menu_add_on_off_item(Menu* menu, const char* text, bool toggle,
-                             State* state, CallBack_t cb, void* user_data) {
+                             State* state, MenuItemCallback_t cb,
+                             void* user_data) {
     RETURN_IF_NULL(menu, ;);
     if (menu->cnt >= MENU_ITEM_MAX) {
         LOG_ERROR("Menu full");
@@ -228,7 +229,7 @@ void ui_menu_destroy(Menu* menu) {
     }
 }
 
-void ui_menu_on_off(Menu* menu, lv_obj_t* parent, CallBack_t cb,
+void ui_menu_on_off(Menu* menu, lv_obj_t* parent, MenuItemCallback_t cb,
                     void* userData) {
     RETURN_IF_NULL(menu, ;);
     ui_menu_create(menu, parent);
