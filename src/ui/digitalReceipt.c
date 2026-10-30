@@ -211,7 +211,12 @@ determine_detail_row_layout(lv_obj_t* row, lv_obj_t* title, lv_obj_t* icon) {
 static lv_obj_t* create_detail_row(lv_obj_t* parent, lv_obj_t** title,
                                    lv_obj_t** value, lv_obj_t** icon,
                                    const ReceiptDetail* detail) {
+    if (!parent || !title || !value || !icon || !detail)
+        return NULL;
+
     lv_obj_t* row = lv_obj_create(parent);
+    if (!row)
+        return NULL;
 
     lv_obj_remove_style_all(row);
 
@@ -229,20 +234,28 @@ static lv_obj_t* create_detail_row(lv_obj_t* parent, lv_obj_t** title,
 
     lv_obj_align(*icon, LV_ALIGN_RIGHT_MID, 0, 0);
 
+    /* Ensure image dimensions are calculated. */
+    lv_obj_update_layout(row);
+
     /*
      * Title
      */
     *title = lv_label_create(row);
 
-    lv_label_set_text(*title, detail->title);
-
     lv_obj_set_style_text_font(*title, &FONT_16, 0);
 
+    /* Set width and long mode BEFORE alignment. */
+    lv_obj_set_width(*title, DETAIL_ROW_TITLE_MAX_SIZE);
+    lv_label_set_long_mode(*title, LV_LABEL_LONG_SCROLL);
+
+    lv_label_set_text(*title, detail->title);
+    lv_obj_set_style_text_align(*title, LV_TEXT_ALIGN_RIGHT, 0);
+
+    /* Align only after final size is established. */
     lv_obj_align_to(*title, *icon, LV_ALIGN_OUT_LEFT_MID, -8, 0);
 
-    lv_obj_set_width(*title, DETAIL_ROW_TITLE_MAX_SIZE);
-
-    lv_label_set_long_mode(*title, LV_LABEL_LONG_SCROLL);
+    /* Update geometry before calculating value width. */
+    lv_obj_update_layout(row);
 
     /*
      * Determine sizes.
@@ -254,17 +267,16 @@ static lv_obj_t* create_detail_row(lv_obj_t* parent, lv_obj_t** title,
      */
     *value = lv_label_create(row);
 
-    lv_obj_set_width(*value, layout.leftWidth);
+    lv_obj_set_style_text_font(*value, &FONT_16, 0);
+    lv_obj_set_style_text_color(*value, detail->valueColor, 0);
 
+    lv_obj_set_width(*value, layout.leftWidth);
     lv_label_set_long_mode(*value, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
     lv_label_set_text(*value, detail->value);
 
-    lv_obj_set_style_text_font(*value, &FONT_16, 0);
-
-    lv_obj_set_style_text_color(*value, detail->valueColor, 0);
-
     lv_obj_align(*value, LV_ALIGN_LEFT_MID, 0, 0);
+
     return row;
 }
 
