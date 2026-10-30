@@ -168,13 +168,17 @@ typedef union {
     } charge;
 
     struct {
-        char companyName[64];
-        char phoneNumber[11 + 1];
-    } kahroba;
+        /* This feild is used to determine whether kahroba transactions need pin
+         * or not*/
+        bool pinRequired;
+    } purchase;
 
     struct {
         uint64_t available;
         uint64_t ledger;
+        /* This feild is used to determine whether kahroba transactions need pin
+         * or not*/
+        bool pinRequired;
     } balance;
 
 } TxnExtention;

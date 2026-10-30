@@ -614,6 +614,16 @@ static int composeKahroba(TxnFlow* flow) {
     return ERR_OK;
 }
 
+static int composeKahrobaPurchase(TxnFlow* flow) {
+    RETURN_VALUE_IF_NOT(composeKahroba(flow), ERR_OK, ;, ERR_NOK);
+    TxnData* txn = flow->data;
+
+    KahrobaTxnSession* session = (KahrobaTxnSession*)flow->userData;
+
+    txn->extention.purchase.pinRequired = *session->hostPinRequired;
+    return ERR_OK;
+}
+
 const TxnFlowConfig kahrobaPurchaseTxnFlowCfg = {
 
     TXN_FLOW_COMMON,
@@ -628,7 +638,7 @@ const TxnFlowConfig kahrobaPurchaseTxnFlowCfg = {
 
     .feildsCnt = sizeof(isoFeildsKahrobaPurchase),
 
-    .compose = composeKahroba,
+    .compose = composeKahrobaPurchase,
 };
 
 /**
@@ -692,6 +702,16 @@ static const uint8_t isoFeildsKahrobaBalance[] = {
     ELEMENT_RESERVED_NATIONAL_116,
     ELEMENT_MAC_2};
 
+static int composeKahrobaBalance(TxnFlow* flow) {
+    RETURN_VALUE_IF_NOT(composeKahroba(flow), ERR_OK, ;, ERR_NOK);
+    TxnData* txn = flow->data;
+
+    KahrobaTxnSession* session = (KahrobaTxnSession*)flow->userData;
+
+    txn->extention.balance.pinRequired = true;
+    return ERR_OK;
+}
+
 const TxnFlowConfig kahrobaBalanceTxnFlowCfg = {
 
     TXN_FLOW_COMMON,
@@ -706,7 +726,7 @@ const TxnFlowConfig kahrobaBalanceTxnFlowCfg = {
 
     .feildsCnt = sizeof(isoFeildsKahrobaBalance),
 
-    .compose = composeKahroba,
+    .compose = composeKahrobaBalance,
 };
 
 const TxnMgrCfg kahrobaBalanceTxnCfg = {.txnFlowCfg = &kahrobaBalanceTxnFlowCfg,

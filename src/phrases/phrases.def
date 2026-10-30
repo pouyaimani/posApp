@@ -276,6 +276,8 @@ X(PHRASE_NFC_MGR_ERR_READER_UNAVAILABLE     ,   "کارت‌خوان در دست
 )
 X(PHRASE_NFC_MGR_ERR_READER_BUSY            ,   "کارت‌خوان مشغول است"                   ,   "wage"
 )
+X(PHRASE_NFC_APP_NAME                       ,   "نام برنامه"                        ,   "wage"
+)
 /**********************************************************************
  *
  *                              Shift

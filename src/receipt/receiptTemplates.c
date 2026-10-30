@@ -195,6 +195,28 @@ static int8_t receiptSectionChargeCode(Receipt* rec, const char* serial,
     return ERR_OK;
 }
 
+static int8_t receiptSectionNfc(Receipt* rec, ReceiptData* data,
+                                bool pinRequired) {
+    DEFINE_STRING(rstr, 64);
+    DEFINE_STRING(lstr, 64);
+    snprintf(rstr, sizeof(rstr), "%s:%s", phraseGetDef(PHRASE_NFC_APP_NAME),
+             "ِDebit Card");
+    snprintf(lstr, sizeof(lstr), "%s:%s", "نوع ابزار", "موبایل");
+    RecColumn_t row[] = {{lstr, LV_TEXT_ALIGN_LEFT, 1},
+                         {rstr, LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row), ERR_OK, ;, ERR_NOK);
+
+    snprintf(rstr, sizeof(rstr), "%s:%s", "نحوه ارتباط", "ِNFC");
+    char* authMode = pinRequired ? "رمز برخط" : "بدون رمز";
+    snprintf(lstr, sizeof(lstr), "%s:%s", "احراز هویت", authMode);
+    RecColumn_t row1[] = {{lstr, LV_TEXT_ALIGN_LEFT, 1},
+                          {rstr, LV_TEXT_ALIGN_RIGHT, 1}};
+    RETURN_VALUE_IF_NOT(
+        OOP_CALL(rec, addText, REC_FONT_REGULAR, 2, row1), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
+}
+
 static int8_t financialTxnCommonRwos(Receipt* rec, ReceiptData* data) {
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(receiptSectionPsp(rec), ERR_OK, ;, ERR_NOK);
@@ -215,6 +237,26 @@ static int8_t buildPurchaseReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
+    if (data->txn.core.respCode != RESP_CODE_SUCESS) {
+        receiptSectionFailure(rec, data->txn.core.respCode);
+    } else {
+        LOG_TRACE("Digital receipt: amount = %llu", txn->core.amount);
+        RETURN_VALUE_IF_NOT(
+            receiptSectionAmount(rec, &txn->core.amount), ERR_OK, ;, ERR_NOK);
+    }
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildKahrobaPurchaseReceipt(Receipt* rec, ReceiptData* data) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
+    TxnData* txn = &data->txn;
+    RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        receiptSectionNfc(rec, data, data->txn.extention.purchase.pinRequired),
+        ERR_OK,
+        ;, ERR_NOK);
     if (data->txn.core.respCode != RESP_CODE_SUCESS) {
         receiptSectionFailure(rec, data->txn.core.respCode);
     } else {
@@ -287,6 +329,28 @@ static int8_t buildBalanceReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
+    if (data->txn.core.respCode != RESP_CODE_SUCESS) {
+        receiptSectionFailure(rec, data->txn.core.respCode);
+    } else {
+        RETURN_VALUE_IF_NOT(
+            receiptSectionBalance(rec, &txn->extention.balance.available,
+                                  &txn->extention.balance.ledger),
+            ERR_OK,
+            ;, ERR_NOK);
+    }
+    RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
+    return ERR_OK;
+}
+
+static int8_t buildKahrobaBalanceReceipt(Receipt* rec, ReceiptData* data) {
+    RETURN_VALUE_IF_NULL(rec, ;, ERR_BAD_PARAMETER);
+    RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
+    TxnData* txn = &data->txn;
+    RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
+    RETURN_VALUE_IF_NOT(
+        receiptSectionNfc(rec, data, data->txn.extention.balance.pinRequired),
+        ERR_OK,
+        ;, ERR_NOK);
     if (data->txn.core.respCode != RESP_CODE_SUCESS) {
         receiptSectionFailure(rec, data->txn.core.respCode);
     } else {
@@ -722,12 +786,16 @@ ReceiptBuilder getReceiptBuilder(Receipt* rec, ReceiptData* data) {
             return buildCfgReceipt;
         case TXN_PURCHASE:
             return buildPurchaseReceipt;
+        case TXN_KAHROBA_PURCHASE:
+            return buildKahrobaPurchaseReceipt;
         case TXN_BILL:
             return buildBillReceipt;
         case TXN_TOPUP:
             return buildTopupReceipt;
         case TXN_BALANCE:
             return buildBalanceReceipt;
+        case TXN_KAHROBA_BALANCE:
+            return buildKahrobaBalanceReceipt;
         case TXN_PAY:
             return buildPaymentReceipt;
         default:
