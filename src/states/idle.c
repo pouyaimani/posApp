@@ -225,9 +225,10 @@ STATE_DEF_HANDLE(Idle, TimeOutEvent) {}
 STATE_DEF_HANDLE(Idle, KeypadEvent) {
     KeyHandler* handler =
         findKeyHandler(keyHandler, ARRAY_COUNT(keyHandler), ev->key);
-    if (handler->handle)
-        handler->handle(state);
-    else if (ev->key == KEY_1) {
+    if (handler) {
+        if (handler->handle)
+            handler->handle(state);
+    } else if (ev->key == KEY_1) {
     } else if (ev->key == KEY_2) {
     } else if (ev->key == KEY_3) {
         OOP_CALL(file(), remove, "/mtd0/txn_t_info");

@@ -25,11 +25,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "common.h"
 #include "inputMgr/inputMgr.h"
 #include "ui/infoPage.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
 #include "infoMgr/infoMgr.h"
+#include "txnDef.h"
 
 /* True only while the manager is waiting for recovery completion. */
 extern bool recoveryActive;
@@ -175,96 +177,6 @@ static void enterHostPin(void);
  * @brief Execute PIN authorization only when requested.
  */
 static void communicationWithPin(void);
-
-/******************************************************************
- *                      Transaction definitions
- ******************************************************************/
-
-/*
- * Each array defines the logical execution order for one transaction.
- *
- * A step reports success through next() or terminal failure through
- * fail(code). Internal steps do not require separate State objects.
- */
-static const TxnMgrStep purchaseSteps[] = {
-    TXN_STEP_MAG,     TXN_STEP_AMOUNT,        TXN_STEP_PIN,
-    TXN_STEP_PENDING, TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
-
-static const TxnMgrStep balanceSteps[] = {TXN_STEP_PIN, TXN_STEP_COMMUNICATION};
-
-static const TxnMgrStep billSteps[] = {
-    TXN_STEP_MAG,     TXN_STEP_BILL_ID,       TXN_STEP_PAYMENT_ID, TXN_STEP_PIN,
-    TXN_STEP_PENDING, TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
-
-static const TxnMgrStep voucherSteps[] = {
-    TXN_STEP_MAG,       TXN_STEP_OPERATOR, TXN_STEP_CHARGE_AMOUNT,
-    TXN_STEP_PIN,       TXN_STEP_PENDING,  TXN_STEP_COMMUNICATION,
-    TXN_STEP_SETTLEMENT};
-
-static const TxnMgrStep topupSteps[] = {
-    TXN_STEP_MAG,           TXN_STEP_OPERATOR,  TXN_STEP_CHARGE_AMOUNT,
-    TXN_STEP_PHONE,         TXN_STEP_PIN,       TXN_STEP_PENDING,
-    TXN_STEP_COMMUNICATION, TXN_STEP_SETTLEMENT};
-
-static const TxnMgrStep configSteps[] = {TXN_STEP_COMMUNICATION};
-static const TxnMgrStep logonSteps[]  = {TXN_STEP_COMMUNICATION};
-
-static const TxnMgrStep kahrobaPurchaseSteps[] = {
-    TXN_STEP_AMOUNT,        TXN_STEP_NFC,      TXN_STEP_PENDING,
-    TXN_STEP_COMMUNICATION, TXN_STEP_HOST_PIN, TXN_STEP_COMMUNICATION_PIN,
-    TXN_STEP_SETTLEMENT};
-
-/**
- * @brief Kahroba balance inquiry transaction sequence.
- *
- * NFC:
- *   Read card data and generate ARQC with zero amount
- *   and EMV transaction type 0x31.
- *
- * PIN:
- *   Obtain the encrypted online PIN block.
- *
- * COMMUNICATION:
- *   Send the balance inquiry request to the host.
- *
- * Balance inquiry does not require settlement.
- */
-static const TxnMgrStep kahrobaBalanceSteps[] = {TXN_STEP_NFC, TXN_STEP_PIN,
-                                                 TXN_STEP_COMMUNICATION};
-
-typedef struct {
-    TxnType           type;
-    const TxnMgrStep* steps;
-    size_t            stepCount;
-} TxnDefinition;
-
-#define TXN_DEFINITION(type_, steps_) {(type_), (steps_), ARRAY_COUNT(steps_)}
-
-static const TxnDefinition definitions[] = {
-    TXN_DEFINITION(TXN_PURCHASE, purchaseSteps),
-    TXN_DEFINITION(TXN_BALANCE, balanceSteps),
-    TXN_DEFINITION(TXN_BILL, billSteps),
-    TXN_DEFINITION(TXN_VOUCHER, voucherSteps),
-    TXN_DEFINITION(TXN_TOPUP, topupSteps),
-    TXN_DEFINITION(TXN_CFG, configSteps),
-    TXN_DEFINITION(TXN_LOGON, logonSteps),
-    TXN_DEFINITION(TXN_KAHROBA_PURCHASE, kahrobaPurchaseSteps),
-    TXN_DEFINITION(TXN_KAHROBA_BALANCE, kahrobaBalanceSteps),
-};
-
-/*
- * Return the definition for a supported transaction.
- * The returned definition and its step array have static lifetime.
- */
-static const TxnDefinition* findDefinition(TxnType type) {
-    for (size_t i = 0; i < ARRAY_COUNT(definitions); ++i) {
-        if (definitions[i].type == type) {
-            return &definitions[i];
-        }
-    }
-
-    return NULL;
-}
 
 /**
  * @brief Determine whether the current step is an authorization

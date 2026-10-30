@@ -287,11 +287,15 @@ static int8_t buildBalanceReceipt(Receipt* rec, ReceiptData* data) {
     RETURN_VALUE_IF_NULL(data, ;, ERR_BAD_PARAMETER);
     TxnData* txn = &data->txn;
     RETURN_VALUE_IF_NOT(financialTxnCommonRwos(rec, data), ERR_OK, ;, ERR_NOK);
-    RETURN_VALUE_IF_NOT(receiptSectionBalance(rec,
-                                              &txn->extention.balance.available,
-                                              &txn->extention.balance.ledger),
-                        ERR_OK,
-                        ;, ERR_NOK);
+    if (data->txn.core.respCode != RESP_CODE_SUCESS) {
+        receiptSectionFailure(rec, data->txn.core.respCode);
+    } else {
+        RETURN_VALUE_IF_NOT(
+            receiptSectionBalance(rec, &txn->extention.balance.available,
+                                  &txn->extention.balance.ledger),
+            ERR_OK,
+            ;, ERR_NOK);
+    }
     RETURN_VALUE_IF_NOT(OOP_CALL(rec, addFooter), ERR_OK, ;, ERR_NOK);
     return ERR_OK;
 }
@@ -943,8 +947,10 @@ static int8_t digRecBuildBalance(const TxnData* data) {
                           header.currency);
     lv_label_set_text(digitalReceipt.statusTitle,
                       phraseGetDef(PHRASE_AVAILABLE));
-    lv_label_set_text(digitalReceipt.detailTitle[3],
-                      phraseGetDef(PHRASE_LEDGER));
+    DEFINE_STRING(str, 128);
+    snprintf(str, sizeof(str), "%s(%s)", phraseGetDef(PHRASE_LEDGER),
+             phraseGetDef(PHRASE_RIAL));
+    lv_label_set_text(digitalReceipt.detailTitle[3], str);
     lv_label_set_text(digitalReceipt.detailValue[3], ledgerSep);
     return ERR_OK;
 }

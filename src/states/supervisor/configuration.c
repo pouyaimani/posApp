@@ -12,7 +12,7 @@
 #include "txnFlow/txnFLow.h"
 #include "menuMgr/menuMgr.h"
 #include "txnMgr/txnMgr.h"
-#include "txnMgr/txnCfg.h"
+#include "txnMgr/txnDef.h"
 #include "infoMgr/infoMgr.h"
 #include "supporter.h"
 

@@ -134,6 +134,12 @@ typedef struct {
     TxnResponsePolicy responsePolicy;
 } TxnMgrCfg;
 
+typedef struct {
+    TxnType           type;
+    const TxnMgrStep* steps;
+    size_t            stepCount;
+} TxnDefinition;
+
 OOP_CLASS(TxnMgr) {
     TxnMgrCfg config;
 

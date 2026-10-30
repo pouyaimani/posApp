@@ -18,7 +18,7 @@
 #include "settings/settings.h"
 #include "menuMgr/menuMgr.h"
 #include "txnMgr/txnMgr.h"
-#include "txnMgr/txnCfg.h"
+#include "txnMgr/txnDef.h"
 #include "infoMgr/infoMgr.h"
 
 size_t                  LEN_CARDHOLDER_ITEMS;

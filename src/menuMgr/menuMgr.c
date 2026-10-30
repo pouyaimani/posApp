@@ -67,8 +67,22 @@ static bool keyToMenuIndex(int key, uint16_t* outIndex) {
     }
 }
 
-static void deleteMenu() {
+static void hideMenu() {
     Menu* menu = __menuMgr.menu;
+
+    if (menu == NULL) {
+        return;
+    }
+
+    ui_menu_hide(menu);
+    ui_menu_destroy(menu);
+}
+
+static void deleteMenu() {
+
+    Menu* menu = __menuMgr.menu;
+
+    hideMenu();
 
     /*
      * Invalidate the singleton's active-menu pointer before invoking any UI
@@ -79,9 +93,6 @@ static void deleteMenu() {
     if (menu == NULL) {
         return;
     }
-
-    ui_menu_hide(menu);
-    ui_menu_destroy(menu);
 
     if (__menuMgr.cfg.ownsMenu) {
         MEM_FREE(menu);
@@ -202,7 +213,7 @@ STATE_DEF_ENTER(MenuMgr) {
  * leaving a dangling singleton pointer and makes callback-driven state changes
  * detectable by activateItem().
  */
-STATE_DEF_EXIT(MenuMgr) {}
+STATE_DEF_EXIT(MenuMgr) { deleteMenu(); }
 
 /**
  * @brief Handle an inactivity timeout.

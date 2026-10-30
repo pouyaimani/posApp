@@ -1,5 +1,5 @@
-#ifndef TXN_CONFIG_H_
-#define TXN_CONFIG_H_
+#ifndef TXN_DEF_H_
+#define TXN_DEF_H_
 
 #include "txnMgr.h"
 
@@ -14,5 +14,7 @@ extern const TxnMgrCfg topupTxnCfg;
 extern const TxnMgrCfg voucherTxnCfg;
 extern const TxnMgrCfg kahrobaPurchaseTxnCfg;
 extern const TxnMgrCfg kahrobaBalanceTxnCfg;
+
+const TxnDefinition* findDefinition(TxnType type);
 
 #endif
