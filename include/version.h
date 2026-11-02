@@ -18,4 +18,8 @@
 
 #define API_RESULT_REPORT "/device/api/firmware/exec_result_report"
 
+#define POS_COMPANY_NAME "Trendit"
+
+#define POS_MODEL_NAME "T32G"
+
 #endif

@@ -14,11 +14,10 @@
 #include "ui/progressBar.h"
 #include "display/display.h"
 #include "infoMgr/infoMgr.h"
-
-#define BRAND_CODE "PNAP_3300"
-
-#define TMS_HOST "sabztms.ir"
-#define TMS_PORT 18094U
+#include "tms1/vendor/pnaTms.h"
+#include "tms1/tms.h"
+#include "tms1/vendor/tmsBringUp.h"
+#include "version.h"
 
 /* Confirm this value with the TMS backend contract. */
 #define TMS_RESOURCE_APPLICATION 1
@@ -27,8 +26,6 @@
 static Timer* timer;
 
 static ProgressBar progressBar;
-
-static uint32_t last_percent = 0;
 
 static void createDownloadBar() {
     ui_progress_bar_create(&progressBar, disp()->screen);
@@ -51,94 +48,83 @@ static bool isBatteryOk() {
 }
 
 void tmsDownloadProgress(uint32_t written, uint32_t total, void* user) {
-    unsigned percent = (unsigned)((uint64_t)written * 100 / total);
-    (void)user;
-    if (percent >= last_percent + 1 || percent == 100) {
-        LOG_TRACE("TMS download: %u%% (%lu/%lu)", percent,
-                  (unsigned long)written, (unsigned long)total);
-        last_percent = percent;
+    // unsigned percent = (unsigned)((uint64_t)written * 100 / total);
+    // (void)user;
+    // if (percent >= last_percent + 1 || percent == 100) {
+    //     LOG_TRACE("TMS download: %u%% (%lu/%lu)", percent,
+    //               (unsigned long)written, (unsigned long)total);
+    //     last_percent = percent;
 
-        ui_progress_bar_set_value(&progressBar, percent);
-    }
+    //     ui_progress_bar_set_value(&progressBar, percent);
+    // }
 }
 
-void updateTick(void) { tmsDownloadProbeTick(tmsDownloadProgress); }
-
-static void upgCheckDone(const TmsCheckResult* r, void* user) {
-    State* state = user;
-    LOG_TRACE("TMS check: result=%d HTTP=%u transport=%d parser=%d",
-              (int)r->result, r->http.http_status, (int)r->http.result,
-              (int)r->http.http_result);
-    if (r->has_server_code)
-        LOG_TRACE("TMS server: code=%ld message=%s", (long)r->server_code,
-                  r->upgrade.message);
-    if (r->result != TMS_API_OK) {
-        infoMgrsetCommon(state->parent, state->parent);
-        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-                       phraseGetDef(PHRASE_UPDATE_FAILED), "");
-        return;
-    }
-    if (!r->upgrade.has_update) {
-        infoMgrsetCommon(state->parent, state->parent);
-        infoMgr()->run(INFO_WARNING, &infoFinishCtx,
-                       phraseGetDef(PHRASE_NO_UPDATE), "");
-        return;
-    }
-    LOG_TRACE("TMS: update available version=%s size=%lu", r->upgrade.version,
-              (unsigned long)r->upgrade.file_size);
-    /* Metadata is available in r->upgrade. No download/install is started. */
-    if (tmsDownloadProbeInit() != TMS_DL_OK) {
-        infoMgrsetCommon(state->parent, state->parent);
-        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-                       phraseGetDef(PHRASE_UPDATE_FAILED), "");
-        return;
-    }
-    LOG_TRACE("TMS URL: length=%lu prefix=%.8s",
-              (unsigned long)strlen(r->upgrade.url), r->upgrade.url);
-
-    TmsDownloadResult rc =
-        tmsDownloadProbeQueue(r->upgrade.url, r->upgrade.file_size);
-    if (rc != TMS_DL_OK) {
-        infoMgrsetCommon(state->parent, state->parent);
-        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-                       phraseGetDef(PHRASE_UPDATE_FAILED), "");
-        return;
-    }
-    HIDE_INFO();
-
-    createDownloadBar();
-
-    last_percent = 0;
-
-    timer = TIMER_CREATE(updateTick, SECS(1), false);
-    TIMER_START(timer);
-
-    LOG_TRACE("TMS download queued: result=%d", (int)rc);
-}
+void updateTick(void) { tmsBringupProcess(); }
 
 STATE_DEF_ENTER(Upgrade) {
-    DEFINE_STRING(appVersion, 128);
-    DEFINE_STRING(sn, 128);
-    sprintf(appVersion, "V%s", PNA_TMS_VERSION);
+    char communicationIp[32];
+    normalizeIp(settings()->server.tmsIp, communicationIp,
+                sizeof(communicationIp));
+    //                 typedef struct {
+    //     uint8_t model[16];
+    //     uint8_t serial[30];
+    //     uint8_t terminal[8];
+    //     uint8_t appVersion[16];
+    //     uint8_t biosVersion[16];
+    //     uint8_t hwInfo[100];
+    // } PnaTmsIdentity;
+
+    PnaTmsIdentity identity;
+    pnaTmsIdentityClear(&identity);
+
+    DEFINE_STRING(sn, 32);
+    memset(sn, 0, sizeof(sn));
+
+    /* Read serial number from device HAL. */
     OOP_CALL(sys(), getSN, sn, sizeof(sn));
 
-    if (tmsUpgradeCheckStart(TMS_HOST, /* Same host as your successful probe */
-                             TMS_PORT, sn, BRAND_CODE,
-                             appVersion, /* Same version format as legacy TMS */
-                             upgCheckDone, state) != TMS_API_OK) {
+    bool valid = true;
+
+    valid &= pnaTmsCopyField(identity.model, sizeof(identity.model),
+                             POS_MODEL_NAME, strlen(POS_MODEL_NAME) + 1);
+
+    valid &= pnaTmsCopyField(identity.serial, sizeof(identity.serial), sn,
+                             sizeof(sn));
+
+    valid &= pnaTmsCopyField(identity.terminal, sizeof(identity.terminal),
+                             settings()->terminal.terminalId,
+                             sizeof(settings()->terminal.terminalId));
+
+    valid &= pnaTmsCopyField(identity.appVersion, sizeof(identity.appVersion),
+                             PNA_APP_VERSION, strlen(PNA_APP_VERSION) + 1);
+
+    if (!valid) {
+        LOG_TRACE("TMS: invalid device identity");
+        return;
+    }
+
+    /* BIOS and HW information remain space-filled. */
+
+    if (!tmsBringupStartManifestOnly(
+            communicationIp, settings()->server.tmsPort, 0, &identity)) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                        phraseGetDef(PHRASE_UPDATE_FAILED), "");
         return;
     }
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_CHECK_UPG), "");
+    // createDownloadBar();
+
+    // last_percent = 0;
+
+    updateTick();
+
+    timer = TIMER_CREATE(updateTick, SECS(1), false);
+    TIMER_START(timer);
 }
 
 STATE_DEF_HANDLE(Upgrade, KeypadEvent) {
     if (ev->key == KEY_ESC) {
-        tmsUpgradeCheckCancel();
-        tmsDownloadProbeCancel();
-        destroyDownloaadBar();
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                        phraseGetDef(PHRASE_UPDATE_FAILED), "");

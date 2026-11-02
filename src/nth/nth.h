@@ -23,6 +23,8 @@ typedef enum { NTH_RX_MORE = 0, NTH_RX_COMPLETE, NTH_RX_ERROR } NthRxDecision;
 typedef void (*NthReceiveChunkCallback)(struct NthTransaction* tx,
                                         ByteArray* chunk, void* userData);
 
+typedef size_t (*NthReceiveLimitCallback)(struct NthTransaction*, void*);
+
 typedef NthRxDecision (*NthCompletionCallback)(struct NthTransaction* tx,
                                                void*                  userData);
 
@@ -62,6 +64,10 @@ typedef struct NthTransaction {
 
     bool peerClosed;
 
+    /* Optional flags default false for existing transaction flows. */
+    bool keepAlive;
+    bool rxTimeoutInactivity;
+
     uint32_t timeoutMs;
     uint32_t startTick;
 
@@ -76,6 +82,7 @@ typedef struct NthTransaction {
     NthCallback             onSent;
     NthCompletionCallback   isComplete;
     NthReceiveChunkCallback onChunk;
+    NthReceiveLimitCallback receiveLimit;
 
     NthResult lastError;
 
@@ -96,6 +103,7 @@ OOP_CLASS(Nth) {
     OOP_METHOD(NthResult, send, NthTransaction * tx, ByteArray * ba);
     OOP_METHOD(NthResult, sendProvidedTx, NthTransaction * tx);
     OOP_METHOD(NthResult, setTx, NthTransaction * tx, ByteArray * ba);
+    OOP_METHOD(NthResult, receiveNext, NthTransaction * tx);
     OOP_METHOD(void, release, NthTransaction* tx);
     OOP_METHOD(void, disconnect, NthTransaction* tx);
     OOP_METHOD(void, tick);

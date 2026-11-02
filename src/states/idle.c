@@ -56,6 +56,8 @@ static void go2Supporter(void* arg) {
 
 void showKahrobaMenu(void* arg);
 
+int tmsDeviceStep2Test(void);
+
 static const KeyHandler keyHandler[] = {
     {KEY_0, showKahrobaMenu},
     {KEY_1, NULL},
@@ -228,21 +230,6 @@ STATE_DEF_HANDLE(Idle, KeypadEvent) {
     if (handler) {
         if (handler->handle)
             handler->handle(state);
-    } else if (ev->key == KEY_1) {
-    } else if (ev->key == KEY_2) {
-    } else if (ev->key == KEY_3) {
-        OOP_CALL(file(), remove, "/mtd0/txn_t_info");
-    } else if (ev->key == KEY_4) {
-
-    } else if (ev->key == KEY_5) {
-        txnMgr()->pendingReset();
-    } else if (ev->key == KEY_6) {
-    } else if (ev->key == KEY_7) {
-    } else if (ev->key == KEY_8) {
-        txnrecord()->reset();
-    } else if (ev->key == KEY_9) {
-        txnrecord()->init();
-    } else if (ev->key == KEY_0) {
     }
 }
 

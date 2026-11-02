@@ -1,0 +1,120 @@
+#ifndef PNA_TMS_H_
+#define PNA_TMS_H_
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "../tmsBackend.h"
+#include "pnaTmsProtocol.h"
+#include "nth/nth.h"
+#include "file/file.h"
+
+/* Enable only in diagnostic firmware builds. Production default is disabled. */
+#ifndef PNA_TMS_ENABLE_DIAGNOSTICS
+#define PNA_TMS_ENABLE_DIAGNOSTICS 1
+#endif
+
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+typedef enum {
+    PNA_TMS_CHECKPOINT_NONE      = 0,
+    PNA_TMS_CHECKPOINT_CONNECTED = 1,
+    /* Transmit command 10, validate/inspect command 11, then STOP. */
+    PNA_TMS_CHECKPOINT_MANIFEST = 2
+} PnaTmsCheckpoint;
+#endif
+
+/* No duplicate NTH/File transport interface: PNA calls those services directly.
+ */
+#define PNA_TMS_STAGE_PATH_SIZE 128u
+
+/*
+ * These hooks describe PACKAGE VERIFICATION / INSTALLATION, not file I/O.
+ * Verification must authenticate application/firmware packages using an
+ * approved trust policy. The 16-byte manifest 'MD5' field by itself cannot
+ * authenticate executable updates; its real encoding is unconfirmed.
+ *
+ * Installation hooks must return promptly. For a blocking device updater,
+ * start a worker/task and marshal completion to the same execution context.
+ * beginInstall/pollInstall: >0 completed, 0 in progress, <0 failed.
+ * A successful install means the installer no longer needs temporary files,
+ * or it has safely taken responsibility for their durability and ownership.
+ */
+typedef struct {
+    void* context;
+    bool (*verify)(void* context, const PnaTmsFile* file,
+                   const char* stagingPath);
+    int (*beginInstall)(void* context, const PnaTmsFile* files,
+                        const char paths[][PNA_TMS_STAGE_PATH_SIZE],
+                        size_t     count);
+    int (*pollInstall)(void* context);
+} PnaTmsPackageHooks;
+
+typedef struct {
+    char     host[64];
+    uint16_t port;
+    bool     tls; /* Refused until the existing NTH supports TLS explicitly. */
+    PnaTmsIdentity identity;
+    char stagingPrefix[96]; /* e.g. "tms/stage"; paths become PREFIX_00.bin */
+    PnaTmsPackageHooks package;
+    uint32_t ioTimeoutMs;       /* 0: NTH default. NTH owns socket timeouts. */
+    uint8_t  maxSectorAttempts; /* 0: 3, including original attempt. */
+    bool requireEndPacket; /* Wait for server command 22, if deployment uses it.
+                            */
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    /* Test-only checkpoint. MANIFEST sends command 10 but never downloads. */
+    PnaTmsCheckpoint checkpoint;
+#endif
+} PnaTmsConfig;
+
+typedef enum {
+    PNA_TMS_IDLE = 0,
+    PNA_TMS_CONNECTING,
+    PNA_TMS_WAIT_RESPONSE,
+    PNA_TMS_VERIFY_FILE,
+    PNA_TMS_WAIT_END,
+    PNA_TMS_INSTALL_START,
+    PNA_TMS_INSTALL_WAIT
+} PnaTmsStage;
+
+/* Caller-owned, static/persistent object. Never copy while active. */
+typedef struct {
+    PnaTmsConfig     cfg;
+    TmsBackendNotify notify;
+    void*            notifyContext;
+    uint64_t         operationId;
+    bool             active;
+    PnaTmsStage      stage;
+
+    NthTransaction* tx;
+    bool            frameReady;
+    bool            frameBad;
+    bool            netFailed;
+    NthResult       netError;
+    uint8_t         rx[PNA_TMS_MAX_FRAME_SIZE];
+    size_t          rxLength; /* Expected full frame size, initially 2. */
+    size_t          rxOffset;
+    uint8_t         request[PNA_TMS_RESUME_SIZE];
+
+    PnaTmsFile files[PNA_TMS_MAX_FILES];
+    size_t     fileCount;
+    size_t     fileIndex;
+    uint16_t   sectorIndex;
+    uint8_t    sectorAttempt;
+    bool       manifestReceived;
+    uint64_t   totalBytes;
+    uint64_t   downloadedBytes;
+
+    FileHandle* opened;
+    char        stagedPaths[PNA_TMS_MAX_FILES][PNA_TMS_STAGE_PATH_SIZE];
+    size_t      stagedCount;
+    bool        installationStarted;
+} PnaTms;
+
+bool pnaTmsInit(PnaTms* context, const PnaTmsConfig* config);
+
+TmsBackend pnaTmsBackend(PnaTms* context);
+
+bool pnaTmsCopyField(void* dst, size_t dstSize, const char* src,
+                     size_t srcCapacity);
+#endif

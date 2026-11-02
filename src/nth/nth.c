@@ -291,7 +291,9 @@ static void nth_complete(NthTransaction* tx) {
      * Transaction is complete. We don't need the
      * connection anymore.
      */
-    nth_closeSocketOnly(tx);
+    /* Keep a completed response's socket for the next TMS request. */
+    if (!tx->keepAlive || tx->peerClosed)
+        nth_closeSocketOnly(tx);
 
     if (tx->onReceive != NULL) {
         tx->onReceive(tx, tx->userData);
@@ -395,6 +397,18 @@ NthResult nth_sendProvidedTx(NthTransaction* tx) {
     }
     tx->txOffset  = 0;
     tx->state     = NTH_TX_SENDING;
+    tx->startTick = nth_getTick();
+    return NTH_OK;
+}
+
+/* Re-arm receive on a persistent connection without transmitting first.
+ * Used when the server sends an unsolicited END frame after final data. */
+NthResult nth_receiveNext(NthTransaction* tx) {
+    if (!tx || !tx->active || !tx->keepAlive || tx->socketFd < 0 ||
+        (tx->state != NTH_TX_COMPLETED && tx->state != NTH_TX_READY))
+        return NTH_ERR_INVALID_STATE;
+    nth_resetRx(tx);
+    tx->state     = NTH_TX_RECEIVING;
     tx->startTick = nth_getTick();
     return NTH_OK;
 }
@@ -536,6 +550,18 @@ static void nth_handleReceiving(NthTransaction* tx) {
         return;
     }
 
+    /* Optional frame-boundary read limit (for persistent binary protocols).
+     * Prevents the transport from consuming bytes of the next frame. */
+    if (tx->receiveLimit) {
+        size_t limit = tx->receiveLimit(tx, tx->userData);
+        if (limit == 0U) {
+            nth_fail(tx, NTH_ERR_PROTOCOL);
+            return;
+        }
+        if (remain > limit)
+            remain = limit;
+    }
+
     chunkOffset = tx->rxOffset;
 
     ioStatus = g_transport->recv(tx->socketFd, tx->rxBuffer.data + tx->rxOffset,
@@ -610,6 +636,9 @@ static void nth_handleReceiving(NthTransaction* tx) {
 
     tx->rxOffset += received;
     tx->rxBuffer.len = tx->rxOffset;
+    /* Opt-in: long streaming transfers use an inactivity timeout. */
+    if (tx->rxTimeoutInactivity)
+        tx->startTick = nth_getTick();
     /*
      * Notify observers about only the newly received bytes.
      */
@@ -761,11 +790,11 @@ void nth_tick(void) {
             break;
 
         case NTH_TX_READY:
-            NTH_LOG("nth: state ready.");
+            // NTH_LOG("nth: state ready.");
             break;
 
         case NTH_TX_COMPLETED:
-            NTH_LOG("nth: state completed.");
+            // NTH_LOG("nth: state completed.");
             break;
 
         case NTH_TX_CONNECTING:
@@ -798,6 +827,7 @@ OOP_CTOR(Nth) {
     self->tick           = nth_tick;
     self->setTx          = nth_setTx;
     self->sendProvidedTx = nth_sendProvidedTx;
+    self->receiveNext    = nth_receiveNext;
     self->disconnect     = nth_disconnect;
 }
 
