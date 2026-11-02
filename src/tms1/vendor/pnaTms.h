@@ -20,7 +20,10 @@ typedef enum {
     PNA_TMS_CHECKPOINT_NONE      = 0,
     PNA_TMS_CHECKPOINT_CONNECTED = 1,
     /* Transmit command 10, validate/inspect command 11, then STOP. */
-    PNA_TMS_CHECKPOINT_MANIFEST = 2
+    PNA_TMS_CHECKPOINT_MANIFEST = 2,
+    /* Send command 12 for file 0 sector 0, validate response 21; never write.
+     */
+    PNA_TMS_CHECKPOINT_FIRST_SECTOR = 3
 } PnaTmsCheckpoint;
 #endif
 
@@ -111,10 +114,7 @@ typedef struct {
     bool        installationStarted;
 } PnaTms;
 
-bool pnaTmsInit(PnaTms* context, const PnaTmsConfig* config);
-
+bool       pnaTmsInit(PnaTms* context, const PnaTmsConfig* config);
 TmsBackend pnaTmsBackend(PnaTms* context);
 
-bool pnaTmsCopyField(void* dst, size_t dstSize, const char* src,
-                     size_t srcCapacity);
 #endif

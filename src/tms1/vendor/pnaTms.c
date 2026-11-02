@@ -387,6 +387,20 @@ static bool sendPacket(PnaTms* p, const uint8_t* bytes, size_t len) {
     return true;
 }
 
+/* The legacy client sends sector-request filenames padded with spaces,
+ * even when the manifest contains a shorter NUL-terminated filename.
+ * Preserve this compatibility behavior without treating the 16-byte
+ * manifest field as an unbounded C string. */
+static void makeLegacyRequestName(const uint8_t manifestName[16],
+                                  uint8_t       requestName[16]) {
+    memset(requestName, (uint8_t)' ', PNA_TMS_FILE_NAME_SIZE);
+    for (size_t i = 0; i < PNA_TMS_FILE_NAME_SIZE; ++i) {
+        if (manifestName[i] == 0u)
+            break;
+        requestName[i] = manifestName[i];
+    }
+}
+
 static bool sendRequest(PnaTms* p) {
     size_t         len = 0;
     PnaProtoResult proto;
@@ -405,8 +419,9 @@ static bool sendRequest(PnaTms* p) {
         if (p->fileIndex >= p->fileCount ||
             !reportProgress(p, TMS_STATE_DOWNLOADING))
             return false;
-        proto = pnaTmsBuildSectorRequest(p->files[p->fileIndex].name,
-                                         p->sectorIndex, p->request,
+        uint8_t wireName[PNA_TMS_FILE_NAME_SIZE];
+        makeLegacyRequestName(p->files[p->fileIndex].name, wireName);
+        proto = pnaTmsBuildSectorRequest(wireName, p->sectorIndex, p->request,
                                          sizeof(p->request), &len);
     }
     if (!p->active)
@@ -424,6 +439,11 @@ static bool sendRequest(PnaTms* p) {
         !p->manifestReceived) {
         LOG_TRACE("PnaTms: command 10 queued op=%llu bytes=%lu",
                   (unsigned long long)p->operationId, (unsigned long)len);
+    } else if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR &&
+               p->manifestReceived) {
+        LOG_TRACE("PnaTms: command 12 queued op=%llu sector=%u bytes=%lu",
+                  (unsigned long long)p->operationId, (unsigned)p->sectorIndex,
+                  (unsigned long)len);
     }
 #endif
     return true;
@@ -608,6 +628,20 @@ static void handleManifest(PnaTms* p) {
         finish(p, TMS_RESULT_NO_UPDATE, TMS_ERR_NONE, 0);
         return;
     }
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR) {
+        /* Stay on the existing NTH connection. Do not call beginFile(),
+         * which would create a staging file before requesting sector 0. */
+        p->sectorIndex   = 0u;
+        p->sectorAttempt = 0u;
+        LOG_TRACE("PnaTms: FIRST SECTOR request op=%llu file=1/%lu index=0 "
+                  "fileSize=%lu",
+                  (unsigned long long)p->operationId,
+                  (unsigned long)p->fileCount, (unsigned long)p->files[0].size);
+        (void)sendRequest(p);
+        return;
+    }
+#endif
     (void)beginFile(p);
 }
 
@@ -615,8 +649,13 @@ static void handleSector(PnaTms* p) {
     PnaTmsSector      sector;
     const PnaTmsFile* metadata = &p->files[p->fileIndex];
     uint32_t          offset   = (uint32_t)p->sectorIndex * PNA_TMS_SECTOR_SIZE;
-    if (pnaTmsParseSector(p->rx, p->rxLength, &sector) != PNA_PROTO_OK ||
-        offset >= metadata->size) {
+    PnaProtoResult    parsed   = pnaTmsParseSector(p->rx, p->rxLength, &sector);
+    if (parsed != PNA_PROTO_OK || offset >= metadata->size) {
+        LOG_TRACE("PnaTms: sector invalid op=%llu proto=%d offset=%lu "
+                  "fileSize=%lu frameBytes=%lu",
+                  (unsigned long long)p->operationId, (int)parsed,
+                  (unsigned long)offset, (unsigned long)metadata->size,
+                  (unsigned long)p->rxLength);
         sectorRetry(p, TMS_ERR_PROTOCOL, PNA_DIAG_SECTOR);
         return;
     }
@@ -624,9 +663,28 @@ static void handleSector(PnaTms* p) {
     uint16_t expected  = remaining > PNA_TMS_SECTOR_SIZE ? PNA_TMS_SECTOR_SIZE
                                                          : (uint16_t)remaining;
     if (sector.index != p->sectorIndex || sector.length != expected) {
+        LOG_TRACE("PnaTms: sector mismatch requested=%u received=%u "
+                  "expectedBytes=%u receivedBytes=%u",
+                  (unsigned)p->sectorIndex, (unsigned)sector.index,
+                  (unsigned)expected, (unsigned)sector.length);
         sectorRetry(p, TMS_ERR_PROTOCOL, PNA_DIAG_SECTOR);
         return;
     }
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR) {
+        /* At this point framing, LRC, sector number and byte count match
+         * the manifest. The sector bytes are still only in the RX buffer.
+         * DO NOT call File HAL or verification/installation hooks. */
+        LOG_TRACE("PnaTms: FIRST SECTOR validated op=%llu index=%u "
+                  "dataBytes=%u frameBytes=%lu expectedBytes=%u",
+                  (unsigned long long)p->operationId, (unsigned)sector.index,
+                  (unsigned)sector.length, (unsigned long)p->rxLength,
+                  (unsigned)expected);
+        finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+               (int)PNA_TMS_CHECKPOINT_FIRST_SECTOR);
+        return;
+    }
+#endif
 #if LONG_MAX < UINT32_MAX
     if (offset > (uint32_t)LONG_MAX) {
         fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
@@ -874,7 +932,8 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     if (cfg->checkpoint != PNA_TMS_CHECKPOINT_NONE &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_CONNECTED &&
-        cfg->checkpoint != PNA_TMS_CHECKPOINT_MANIFEST)
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_MANIFEST &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_FIRST_SECTOR)
         return false;
     diagnostic = cfg->checkpoint != PNA_TMS_CHECKPOINT_NONE;
 #endif

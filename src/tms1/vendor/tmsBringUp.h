@@ -22,6 +22,13 @@ bool tmsBringupStartConnectOnly(const char* host, uint16_t port, bool useTls);
 bool tmsBringupStartManifestOnly(const char* host, uint16_t port, bool useTls,
                                  const PnaTmsIdentity* identity);
 
+/* Stage 3: real command 10 / 11, then request sector zero of the first
+ * file with command 12, validate response 21 and stop. Does not open, write,
+ * verify or install any files. May reconnect/retry on network errors.
+ */
+bool tmsBringupStartFirstSector(const char* host, uint16_t port, bool useTls,
+                                const PnaTmsIdentity* identity);
+
 /* Invoke repeatedly from the application event loop AFTER the existing NTH
  * tick. */
 void tmsBringupProcess(void);

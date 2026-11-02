@@ -105,8 +105,8 @@ STATE_DEF_ENTER(Upgrade) {
 
     /* BIOS and HW information remain space-filled. */
 
-    if (!tmsBringupStartManifestOnly(
-            communicationIp, settings()->server.tmsPort, 0, &identity)) {
+    if (!tmsBringupStartFirstSector(communicationIp, settings()->server.tmsPort,
+                                    0, &identity)) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                        phraseGetDef(PHRASE_UPDATE_FAILED), "");

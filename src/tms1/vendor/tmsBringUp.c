@@ -41,6 +41,9 @@ static void onDone(const TmsStatus* status, void* user) {
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_MANIFEST)
             LOG_TRACE(
                 "TMS BRINGUP: MANIFEST ONLY PASS (no download/files/install)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR)
+            LOG_TRACE("TMS BRINGUP: FIRST SECTOR PASS "
+                      "(validated response 21; no file writes/install)");
     } else {
         LOG_TRACE(
             "TMS BRINGUP: CHECKPOINT NOT PASSED result=%d error=%d code=%ld",
@@ -56,7 +59,9 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         return false;
     }
     if (!host || !host[0] || !port || tmsMgr()->isBusy() ||
-        (checkpoint == PNA_TMS_CHECKPOINT_MANIFEST && !identity)) {
+        ((checkpoint == PNA_TMS_CHECKPOINT_MANIFEST ||
+          checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR) &&
+         !identity)) {
         LOG_TRACE("TMS BRINGUP: invalid inputs or busy");
         return false;
     }
@@ -100,6 +105,12 @@ bool tmsBringupStartManifestOnly(const char* host, uint16_t port, bool useTls,
                                  const PnaTmsIdentity* identity) {
     return startDiagnostic(host, port, useTls, identity,
                            PNA_TMS_CHECKPOINT_MANIFEST);
+}
+
+bool tmsBringupStartFirstSector(const char* host, uint16_t port, bool useTls,
+                                const PnaTmsIdentity* identity) {
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_FIRST_SECTOR);
 }
 
 void tmsBringupProcess(void) {
