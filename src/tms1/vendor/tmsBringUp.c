@@ -60,6 +60,10 @@ static void onDone(const TmsStatus* status, void* user) {
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5)
             LOG_TRACE("TMS BRINGUP: ALL FILES MD5 PASS "
                       "(every file verified and retained; no install)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_MANAGED_READY)
+            LOG_TRACE("TMS BRINGUP: STAGE8 READY_TO_INSTALL "
+                      "(journal saved; manifest MD5 verified; no install; "
+                      "publisher authentication still required)");
     } else {
         LOG_TRACE(
             "TMS BRINGUP: CHECKPOINT NOT PASSED result=%d error=%d code=%ld",
@@ -91,7 +95,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
           checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
           checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
-          checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5) &&
+          checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5 ||
+          checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY) &&
          !identity)) {
         LOG_TRACE("TMS BRINGUP: invalid inputs or busy");
         return false;
@@ -111,7 +116,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
     if (checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
         checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
         checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
-        checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5) {
+        checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5 ||
+        checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY) {
         if (!scratchPrefix || !scratchPrefix[0]) {
             LOG_TRACE("TMS BRINGUP: scratchPrefix required");
             return false;
@@ -202,7 +208,6 @@ bool tmsBringupStartIncrementalMd5(const char* host, uint16_t port, bool useTls,
 bool tmsBringupStartAllFilesMd5(const char* host, uint16_t port, bool useTls,
                                 const PnaTmsIdentity* identity,
                                 const char*           scratchPrefix) {
-    LOG_TRACE("TMS BRINGUP: sizeof(PnaTms)=%lu", (unsigned long)sizeof(PnaTms));
     return startDiagnostic(host, port, useTls, identity,
                            PNA_TMS_CHECKPOINT_ALL_FILES_MD5, scratchPrefix,
                            NULL, NULL);
@@ -219,6 +224,40 @@ bool tmsBringupStartAllFilesMd5Checked(const char* host, uint16_t port,
     return startDiagnostic(host, port, useTls, identity,
                            PNA_TMS_CHECKPOINT_ALL_FILES_MD5, scratchPrefix,
                            checkSpace, checkContext);
+}
+
+bool tmsBringupStartManagedReady(const char* host, uint16_t port, bool useTls,
+                                 const PnaTmsIdentity* identity,
+                                 const char*           stagingPrefix) {
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_MANAGED_READY, stagingPrefix,
+                           NULL, NULL);
+}
+
+bool tmsBringupStartManagedReadyChecked(const char* host, uint16_t port,
+                                        bool                    useTls,
+                                        const PnaTmsIdentity*   identity,
+                                        const char*             stagingPrefix,
+                                        PnaTmsStorageSpaceCheck checkSpace,
+                                        void*                   checkContext) {
+    if (!checkSpace)
+        return false;
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_MANAGED_READY, stagingPrefix,
+                           checkSpace, checkContext);
+}
+
+PnaTmsStageStatus tmsBringupStage8Inspect(const char*      stagingPrefix,
+                                          PnaTmsStageInfo* info) {
+    if (tmsMgr()->isBusy())
+        return PNA_TMS_STAGE_IO_ERROR;
+    return pnaTmsStageInspect(stagingPrefix, info);
+}
+
+bool tmsBringupStage8Discard(const char* stagingPrefix) {
+    if (tmsMgr()->isBusy())
+        return false;
+    return pnaTmsStageDiscard(stagingPrefix, true);
 }
 
 void tmsBringupProcess(void) {

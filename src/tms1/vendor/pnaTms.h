@@ -17,6 +17,7 @@
 
 #if PNA_TMS_ENABLE_DIAGNOSTICS
 #include "pnaTmsMd5.h"
+#include "pnaTmsStage.h"
 /* Optional device-specific available-storage query for Stage 7. */
 typedef bool (*PnaTmsStorageSpaceCheck)(void*       context,
                                         const char* stagingPrefix,
@@ -37,7 +38,9 @@ typedef enum {
     /* Download first file, then cooperatively verify CRC32 + manifest MD5. */
     PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 = 6,
     /* Download and verify every manifest file; retain only on full success. */
-    PNA_TMS_CHECKPOINT_ALL_FILES_MD5 = 7
+    PNA_TMS_CHECKPOINT_ALL_FILES_MD5 = 7,
+    /* Managed journal and all-file MD5; ready only, NEVER install. */
+    PNA_TMS_CHECKPOINT_MANAGED_READY = 8
 } PnaTmsCheckpoint;
 #endif
 
@@ -144,6 +147,8 @@ typedef struct {
     PnaTmsMd5 verifyMd5;
     uint64_t
         verifiedBytes; /* Total bytes belonging to previously verified files. */
+    PnaTmsStageInfo stage8Journal; /* Persistent managed-staging metadata. */
+    bool stage8JournalStarted;     /* Current run owns an INCOMPLETE journal. */
 #endif
 } PnaTms;
 

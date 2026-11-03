@@ -81,6 +81,36 @@ bool tmsBringupStartAllFilesMd5Checked(const char* host, uint16_t port,
                                        PnaTmsStorageSpaceCheck checkSpace,
                                        void* checkContext);
 
+/* Stage 8: managed staging + restart-recoverable journal. An interrupted run
+ * is cleaned automatically only when an intact INCOMPLETE journal proves
+ * ownership. An existing READY package is NEVER overwritten automatically.
+ * On success files and metadata are retained and reported READY, without
+ * invoking installer or asserting publisher authenticity.
+ * stagingPrefix: dedicated owned path, for example /mtd0/tms_managed_update
+ * (do not reuse Stage 5/6/7 scratch prefixes).
+ */
+bool tmsBringupStartManagedReady(const char* host, uint16_t port,
+                                 bool useTls, const PnaTmsIdentity* identity,
+                                 const char* stagingPrefix);
+
+/* Same as Stage 8 with an application-supplied free-space preflight.
+ * The callback decides its own flash headroom and filesystem overhead. */
+bool tmsBringupStartManagedReadyChecked(const char* host, uint16_t port,
+                                        bool useTls,
+                                        const PnaTmsIdentity* identity,
+                                        const char* stagingPrefix,
+                                        PnaTmsStorageSpaceCheck checkSpace,
+                                        void* checkContext);
+
+/* Inspect staged state after reboot. READY_UNTRUSTED needs a fresh hash and
+ * publisher trust check before any later installer can consume it. */
+PnaTmsStageStatus tmsBringupStage8Inspect(const char* stagingPrefix,
+                                          PnaTmsStageInfo* info);
+
+/* Explicit cleanup of a known managed prefix, including a READY package.
+ * Only call when no TMS operation is active. */
+bool tmsBringupStage8Discard(const char* stagingPrefix);
+
 /* Invoke repeatedly from the application event loop AFTER the existing NTH tick. */
 void tmsBringupProcess(void);
 

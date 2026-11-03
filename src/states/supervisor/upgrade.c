@@ -103,12 +103,11 @@ STATE_DEF_ENTER(Upgrade) {
         return;
     }
 
-    /* BIOS and HW information remain space-filled. */
     bool accepted =
-        tmsBringupStartAllFilesMd5(communicationIp, settings()->server.tmsPort,
-                                   0, &identity, "/mtd0/tms_stage10_probe");
+        tmsBringupStartManagedReady(communicationIp, settings()->server.tmsPort,
+                                    0, &identity, "/mtd0/tms_managed_update");
 
-    LOG_TRACE("TMS STAGE7: accepted=%d", accepted);
+    LOG_TRACE("TMS STAGE8: accepted=%d", accepted);
 
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);
