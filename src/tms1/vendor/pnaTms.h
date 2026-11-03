@@ -23,7 +23,12 @@ typedef enum {
     PNA_TMS_CHECKPOINT_MANIFEST = 2,
     /* Send command 12 for file 0 sector 0, validate response 21; never write.
      */
-    PNA_TMS_CHECKPOINT_FIRST_SECTOR = 3
+    PNA_TMS_CHECKPOINT_FIRST_SECTOR = 3,
+    /* Write sector 0 to an unused scratch file, verify readback, delete. */
+    PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE = 4,
+    /* Download file 0 fully to a new scratch file; verify readback; no install.
+     */
+    PNA_TMS_CHECKPOINT_FULL_FILE = 5
 } PnaTmsCheckpoint;
 #endif
 
@@ -59,6 +64,8 @@ typedef struct {
     bool     tls; /* Refused until the existing NTH supports TLS explicitly. */
     PnaTmsIdentity identity;
     char stagingPrefix[96]; /* e.g. "tms/stage"; paths become PREFIX_00.bin */
+    /* Stage-4 diagnostics require a dedicated, unused scratch prefix.
+     * The backend refuses to overwrite an existing scratch file. */
     PnaTmsPackageHooks package;
     uint32_t ioTimeoutMs;       /* 0: NTH default. NTH owns socket timeouts. */
     uint8_t  maxSectorAttempts; /* 0: 3, including original attempt. */
@@ -112,7 +119,16 @@ typedef struct {
     char        stagedPaths[PNA_TMS_MAX_FILES][PNA_TMS_STAGE_PATH_SIZE];
     size_t      stagedCount;
     bool        installationStarted;
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    uint32_t diagnosticCrc; /* Rolling CRC32 for Stage-5 local readback test. */
+#endif
 } PnaTms;
+
+/* Copy a bounded NUL-terminated source into a fixed-width, space-padded
+ * wire field. Reject truncation rather than silently losing protocol bytes.
+ * Kept in pnaTms.c, matching the device application's current helper. */
+bool pnaTmsCopyField(void* dst, size_t dstSize, const char* src,
+                     size_t srcCapacity);
 
 bool       pnaTmsInit(PnaTms* context, const PnaTmsConfig* config);
 TmsBackend pnaTmsBackend(PnaTms* context);

@@ -6,12 +6,16 @@
 #include "../tms.h"
 #include "pnaTms.h"
 #include "logger.h"
+#include "common.h" /* Project MEM_ALLOC / MEM_FREE implementation. */
 
 #if !PNA_TMS_ENABLE_DIAGNOSTICS
 #error "tmsBringup.c must be compiled ONLY with -DPNA_TMS_ENABLE_DIAGNOSTICS=1"
 #endif
 
-static PnaTms*          bringupBackend; /* Alive across all NTH callbacks. */
+/* Keep the backend alive through NTH callbacks and manager completion.
+ * Never free it from onDone: processPna() may still be returning from the
+ * callback and access its context. Free only outside the backend stack. */
+static PnaTms*          bringupBackend;
 static bool             pumpLogged;
 static PnaTmsCheckpoint currentCheckpoint;
 
@@ -44,6 +48,12 @@ static void onDone(const TmsStatus* status, void* user) {
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR)
             LOG_TRACE("TMS BRINGUP: FIRST SECTOR PASS "
                       "(validated response 21; no file writes/install)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE)
+            LOG_TRACE("TMS BRINGUP: FIRST SECTOR FILE PASS "
+                      "(4096 bytes read back; scratch deleted; no install)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_FULL_FILE)
+            LOG_TRACE("TMS BRINGUP: FULL FILE PASS "
+                      "(scratch retained for inspection; no install)");
     } else {
         LOG_TRACE(
             "TMS BRINGUP: CHECKPOINT NOT PASSED result=%d error=%d code=%ld",
@@ -51,16 +61,27 @@ static void onDone(const TmsStatus* status, void* user) {
     }
 }
 
+/* Safe only when no manager process()/backend callback is on the stack. */
+static void freeIdleBackend(void) {
+    if (bringupBackend && !tmsMgr()->isBusy()) {
+        MEM_FREE(bringupBackend);
+        bringupBackend = NULL;
+    }
+}
+
 static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
                             const PnaTmsIdentity* identity,
-                            PnaTmsCheckpoint      checkpoint) {
+                            PnaTmsCheckpoint      checkpoint,
+                            const char*           scratchPrefix) {
     if (useTls) {
         LOG_TRACE("TMS BRINGUP: TLS requested; unsupported by current NTH");
         return false;
     }
     if (!host || !host[0] || !port || tmsMgr()->isBusy() ||
         ((checkpoint == PNA_TMS_CHECKPOINT_MANIFEST ||
-          checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR) &&
+          checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR ||
+          checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
+          checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE) &&
          !identity)) {
         LOG_TRACE("TMS BRINGUP: invalid inputs or busy");
         return false;
@@ -75,13 +96,35 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
     cfg.port       = port;
     cfg.tls        = useTls;
     cfg.checkpoint = checkpoint;
+    if (checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
+        checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE) {
+        if (!scratchPrefix || !scratchPrefix[0]) {
+            LOG_TRACE("TMS BRINGUP: scratchPrefix required");
+            return false;
+        }
+        n = snprintf(cfg.stagingPrefix, sizeof(cfg.stagingPrefix), "%s",
+                     scratchPrefix);
+        if (n <= 0 || (size_t)n >= sizeof(cfg.stagingPrefix)) {
+            LOG_TRACE("TMS BRINGUP: scratchPrefix too long");
+            return false;
+        }
+    }
     if (identity)
         cfg.identity = *identity;
 
-    bringupBackend = MEM_ALLOC(sizeof(*bringupBackend));
-
+    freeIdleBackend();
+    bringupBackend = (PnaTms*)MEM_ALLOC(sizeof(*bringupBackend));
+    if (!bringupBackend) {
+        LOG_TRACE("TMS BRINGUP: MEM_ALLOC failed size=%lu",
+                  (unsigned long)sizeof(PnaTms));
+        return false;
+    }
+    /* pnaTmsInit checks p->active before initializing its fields. */
+    memset(bringupBackend, 0, sizeof(*bringupBackend));
     if (!pnaTmsInit(bringupBackend, &cfg)) {
         LOG_TRACE("TMS BRINGUP: PNA initialization failed");
+        MEM_FREE(bringupBackend);
+        bringupBackend = NULL;
         return false;
     }
     TmsCfg runCfg = {
@@ -93,24 +136,44 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
     pumpLogged        = false;
     LOG_TRACE("TMS BRINGUP: start checkpoint=%d real PNA %s:%u",
               (int)checkpoint, cfg.host, (unsigned)cfg.port);
-    return tmsMgr()->run(&runCfg, TMS_TRIGGER_MANUAL);
+    bool accepted = tmsMgr()->run(&runCfg, TMS_TRIGGER_MANUAL);
+    /* The backend may complete synchronously while run() is executing. */
+    if (!tmsMgr()->isBusy())
+        freeIdleBackend();
+    return accepted;
 }
 
 bool tmsBringupStartConnectOnly(const char* host, uint16_t port, bool useTls) {
     return startDiagnostic(host, port, useTls, NULL,
-                           PNA_TMS_CHECKPOINT_CONNECTED);
+                           PNA_TMS_CHECKPOINT_CONNECTED, NULL);
 }
 
 bool tmsBringupStartManifestOnly(const char* host, uint16_t port, bool useTls,
                                  const PnaTmsIdentity* identity) {
     return startDiagnostic(host, port, useTls, identity,
-                           PNA_TMS_CHECKPOINT_MANIFEST);
+                           PNA_TMS_CHECKPOINT_MANIFEST, NULL);
 }
 
 bool tmsBringupStartFirstSector(const char* host, uint16_t port, bool useTls,
                                 const PnaTmsIdentity* identity) {
     return startDiagnostic(host, port, useTls, identity,
-                           PNA_TMS_CHECKPOINT_FIRST_SECTOR);
+                           PNA_TMS_CHECKPOINT_FIRST_SECTOR, NULL);
+}
+
+bool tmsBringupStartFirstSectorWrite(const char* host, uint16_t port,
+                                     bool                  useTls,
+                                     const PnaTmsIdentity* identity,
+                                     const char*           scratchPrefix) {
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE,
+                           scratchPrefix);
+}
+
+bool tmsBringupStartFullFile(const char* host, uint16_t port, bool useTls,
+                             const PnaTmsIdentity* identity,
+                             const char*           scratchPrefix) {
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_FULL_FILE, scratchPrefix);
 }
 
 void tmsBringupProcess(void) {
@@ -121,4 +184,10 @@ void tmsBringupProcess(void) {
         LOG_TRACE("TMS BRINGUP: process loop is running");
     }
     mgr->process();
+    /* Completion notifications can occur inside process(). Delay heap free
+     * until that stack has fully returned. */
+    if (!mgr->isBusy()) {
+        freeIdleBackend();
+        pumpLogged = false;
+    }
 }

@@ -29,6 +29,25 @@ bool tmsBringupStartManifestOnly(const char* host, uint16_t port, bool useTls,
 bool tmsBringupStartFirstSector(const char* host, uint16_t port, bool useTls,
                                 const PnaTmsIdentity* identity);
 
+/* Stage 4: request one validated sector, write it to a NEW scratch file,
+ * flush, close/reopen, verify all bytes, and remove it. No installation.
+ * scratchPrefix is required; the path PREFIX_00.bin must NOT exist.
+ * Choose an existing writable location that contains no valuable data.
+ */
+bool tmsBringupStartFirstSectorWrite(const char* host, uint16_t port,
+                                     bool                  useTls,
+                                     const PnaTmsIdentity* identity,
+                                     const char*           scratchPrefix);
+
+/* Stage 5: download ONLY the first manifest file completely; flush/sync,
+ * reopen and CRC32-compare the whole file against received sector bytes.
+ * Retains PREFIX_00.bin on PASS for inspection, never installs anything.
+ * Refuses an existing path. Caller owns subsequent cleanup of the retained
+ * test file, and must ensure sufficient free space before invoking. */
+bool tmsBringupStartFullFile(const char* host, uint16_t port, bool useTls,
+                             const PnaTmsIdentity* identity,
+                             const char*           scratchPrefix);
+
 /* Invoke repeatedly from the application event loop AFTER the existing NTH
  * tick. */
 void tmsBringupProcess(void);
