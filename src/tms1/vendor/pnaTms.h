@@ -40,7 +40,10 @@ typedef enum {
     /* Download and verify every manifest file; retain only on full success. */
     PNA_TMS_CHECKPOINT_ALL_FILES_MD5 = 7,
     /* Managed journal and all-file MD5; ready only, NEVER install. */
-    PNA_TMS_CHECKPOINT_MANAGED_READY = 8
+    PNA_TMS_CHECKPOINT_MANAGED_READY = 8,
+    /* Offline restart test: re-hash the existing Stage 8 journal/files.
+     * No network connection, download, deletion, or installation. */
+    PNA_TMS_CHECKPOINT_REVERIFY_STAGED = 9
 } PnaTmsCheckpoint;
 #endif
 

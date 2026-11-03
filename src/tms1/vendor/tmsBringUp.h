@@ -102,6 +102,16 @@ bool tmsBringupStartManagedReadyChecked(const char* host, uint16_t port,
                                         PnaTmsStorageSpaceCheck checkSpace,
                                         void* checkContext);
 
+/* Stage 9: AFTER REBOOT, re-hash the existing Stage 8 managed files without
+ * contacting TMS or writing/deleting any staged data or journal. Each file
+ * is checked against its manifest MD5 with bounded 1024-byte File HAL reads.
+ * Success is an in-memory diagnostic result (code=9); it is NOT publisher
+ * authentication or installation authorization. On mismatch, neither the
+ * files nor journal are automatically deleted. Requires an existing READY
+ * Stage 8 journal at this exact prefix.
+ */
+bool tmsBringupStartRestartReverify(const char* stagingPrefix);
+
 /* Inspect staged state after reboot. READY_UNTRUSTED needs a fresh hash and
  * publisher trust check before any later installer can consume it. */
 PnaTmsStageStatus tmsBringupStage8Inspect(const char* stagingPrefix,

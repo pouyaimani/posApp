@@ -103,11 +103,9 @@ STATE_DEF_ENTER(Upgrade) {
         return;
     }
 
-    bool accepted =
-        tmsBringupStartManagedReady(communicationIp, settings()->server.tmsPort,
-                                    0, &identity, "/mtd0/tms_managed_update");
+    bool accepted = tmsBringupStartRestartReverify("/mtd0/tms_managed_update");
 
-    LOG_TRACE("TMS STAGE8: accepted=%d", accepted);
+    LOG_TRACE("TMS STAGE9: accepted=%d", accepted);
 
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);

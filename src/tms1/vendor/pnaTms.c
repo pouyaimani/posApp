@@ -158,7 +158,8 @@ static bool reportProgress(PnaTms* p, TmsState state) {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     /* Do not show 100% merely because the last sector was received. */
     if ((p->cfg.checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5 ||
-         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY) &&
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED) &&
         state == TMS_STATE_VERIFYING && p->fileCount != 0u &&
         p->fileIndex + 1u == p->fileCount &&
         p->verifiedBytes == p->totalBytes)
@@ -1311,6 +1312,162 @@ static void checkpointIncrementalMd5(PnaTms* p) {
 }
 #endif
 
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+/* Stage 9 is deliberately OFFLINE. Never register a network transaction,
+ * change journal slots, delete staging, or use package/installer hooks.
+ * Successful rehashing is valid for this invocation only: a later reboot
+ * must rehash again, and MD5 alone is not publisher authentication.
+ */
+static void beginRestartReverification(PnaTms* p) {
+    PnaTmsStageStatus status = pnaTmsStageInspect(p->cfg.stagingPrefix,
+                                                  &p->stage8Journal);
+    LOG_TRACE("PnaTms: STAGE9 journal inspection status=%d prefix='%s'",
+              (int)status, p->cfg.stagingPrefix);
+    if (status != PNA_TMS_STAGE_READY_UNTRUSTED) {
+        /* Do not alter files/journal on missing, incomplete or corrupt data. */
+        fail(p, status == PNA_TMS_STAGE_IO_ERROR ? TMS_ERR_STORAGE :
+                TMS_ERR_INTEGRITY,
+             status == PNA_TMS_STAGE_IO_ERROR ? PNA_DIAG_STORAGE :
+                PNA_DIAG_VERIFY);
+        return;
+    }
+    p->fileCount = p->stage8Journal.fileCount;
+    p->totalBytes = p->stage8Journal.totalBytes;
+    memcpy(p->files, p->stage8Journal.files,
+           p->fileCount * sizeof(p->files[0]));
+    p->fileIndex = 0u;
+    p->verifiedBytes = 0u;
+    p->downloadedBytes = 0u;
+    p->verifyStarted = false;
+    p->stage = PNA_TMS_VERIFY_FILE;
+    LOG_TRACE("PnaTms: STAGE9 offline reverify start op=%llu files=%lu "
+              "bytes=%llu network=0 install=0",
+              (unsigned long long)p->operationId,
+              (unsigned long)p->fileCount,
+              (unsigned long long)p->totalBytes);
+    (void)reportProgress(p, TMS_STATE_VERIFYING);
+}
+
+static void checkpointRestartReverify(PnaTms* p) {
+    if (!p || p->fileIndex >= p->fileCount ||
+        p->fileCount != p->stage8Journal.fileCount) {
+        fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_VERIFY);
+        return;
+    }
+    const size_t index = p->fileIndex;
+    const uint32_t expected = p->files[index].size;
+    if (!p->verifyStarted) {
+        char path[PNA_TMS_STAGE_PATH_SIZE];
+        if (!pnaTmsStageFilePath(p->cfg.stagingPrefix, index,
+                                 path, sizeof(path))) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        /* No path from the untrusted server manifest is used as a filename. */
+        p->opened = OOP_CALL(file(), open, path, "rb");
+        if (!p->opened) {
+            LOG_TRACE("PnaTms: STAGE9 missing/unreadable file=%lu path='%s'",
+                      (unsigned long)(index + 1u), path);
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        const long actual = OOP_CALL(file(), size, p->opened);
+        if (actual < 0 || (uint64_t)actual != expected) {
+            LOG_TRACE("PnaTms: STAGE9 size mismatch file=%lu expected=%lu "
+                      "actual=%ld", (unsigned long)(index + 1u),
+                      (unsigned long)expected, actual);
+            fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_VERIFY);
+            return;
+        }
+        p->verifyOffset = 0u;
+        p->verifyCrc = UINT32_C(0xffffffff);
+        pnaTmsMd5Init(&p->verifyMd5);
+        p->verifyStarted = true;
+        LOG_TRACE("PnaTms: STAGE9 file open file=%lu/%lu bytes=%lu",
+                  (unsigned long)(index + 1u),
+                  (unsigned long)p->fileCount, (unsigned long)expected);
+        return; /* Avoid synchronous full-file hashing on the first call. */
+    }
+    const uint32_t tickStart = NTH_GET_TICK();
+    for (unsigned reads = 0u;
+         reads < PNA_STAGE6_READS_PER_TICK && p->verifyOffset < expected;
+         ++reads) {
+        size_t count = (size_t)(expected - p->verifyOffset);
+        if (count > PNA_STAGE6_READ_CHUNK) count = PNA_STAGE6_READ_CHUNK;
+        if (OOP_CALL(file(), read, p->rx, 1u, count, p->opened) != count) {
+            LOG_TRACE("PnaTms: STAGE9 read failed file=%lu offset=%lu",
+                      (unsigned long)(index + 1u),
+                      (unsigned long)p->verifyOffset);
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        pnaTmsMd5Update(&p->verifyMd5, p->rx, count);
+        p->verifyCrc = stage5Crc32(p->verifyCrc, p->rx, count);
+        p->verifyOffset += (uint32_t)count;
+        /* A single File HAL read can still block; only the batch is bounded. */
+        if ((uint32_t)(NTH_GET_TICK() - tickStart) >=
+            PNA_STAGE6_TICK_BUDGET_MS) break;
+    }
+    p->downloadedBytes = p->verifiedBytes + p->verifyOffset;
+    if (p->verifyOffset < expected) {
+        if ((p->verifyOffset % (64u * 1024u)) == 0u) {
+            LOG_TRACE("PnaTms: STAGE9 readback file=%lu/%lu bytes=%lu/%lu",
+                      (unsigned long)(index + 1u),
+                      (unsigned long)p->fileCount,
+                      (unsigned long)p->verifyOffset,
+                      (unsigned long)expected);
+            (void)reportProgress(p, TMS_STATE_VERIFYING);
+        }
+        return;
+    }
+    uint8_t computed[PNA_TMS_MD5_SIZE];
+    pnaTmsMd5Final(&p->verifyMd5, computed);
+    /* Detect a resize during readback. No journal or file is ever modified. */
+    const long finalSize = OOP_CALL(file(), size, p->opened);
+    const bool sizeOk = finalSize >= 0 && (uint64_t)finalSize == expected;
+    const bool digestOk = memcmp(computed, p->files[index].md5,
+                                 PNA_TMS_MD5_SIZE) == 0;
+    const bool closeOk = closeFile(p, false);
+    LOG_TRACE("PnaTms: STAGE9 rehash file=%lu/%lu bytes=%lu CRC32=%08lX "
+              "sizeMatch=%u manifestMD5Match=%u",
+              (unsigned long)(index + 1u),
+              (unsigned long)p->fileCount,
+              (unsigned long)expected,
+              (unsigned long)(p->verifyCrc ^ UINT32_C(0xffffffff)),
+              (unsigned)sizeOk, (unsigned)digestOk);
+    if (!closeOk) {
+        fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+        return;
+    }
+    if (!sizeOk || !digestOk) {
+        fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_VERIFY);
+        return;
+    }
+    p->verifiedBytes += expected;
+    p->downloadedBytes = p->verifiedBytes;
+    p->fileIndex++;
+    p->verifyStarted = false;
+    p->verifyOffset = 0u;
+    if (p->fileIndex < p->fileCount) {
+        (void)reportProgress(p, TMS_STATE_VERIFYING);
+        return;
+    }
+    if (p->verifiedBytes != p->totalBytes) {
+        fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_VERIFY);
+        return;
+    }
+    /* reportProgress needs the last valid (zero-based) file index. */
+    p->fileIndex = p->fileCount - 1u;
+    if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+    LOG_TRACE("PnaTms: STAGE9 ALL FILES REVERIFIED files=%lu bytes=%llu "
+              "journalUnchanged=1 network=0 install=0 publisherAuth=0",
+              (unsigned long)p->fileCount,
+              (unsigned long long)p->verifiedBytes);
+    finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+           (int)PNA_TMS_CHECKPOINT_REVERIFY_STAGED);
+}
+#endif
+
 static void handleFrame(PnaTms* p) {
     PnaTmsCommand command;
     PnaProtoResult validation = pnaTmsValidate(p->rx, p->rxLength, &command);
@@ -1411,6 +1568,10 @@ static void processPna(void* context) {
             break;
         case PNA_TMS_VERIFY_FILE: {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
+            if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED) {
+                checkpointRestartReverify(p);
+                return;
+            }
             if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5 ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY) {
@@ -1505,6 +1666,13 @@ static bool startPna(void* context, TmsTrigger trigger, uint64_t operationId,
     p->stage8JournalStarted = false;
 #endif
     p->netError = NTH_OK;
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED) {
+        /* Stage 9 does not allocate an NTH transaction or contact the server. */
+        beginRestartReverification(p);
+        return true;
+    }
+#endif
     if (!reportProgress(p, TMS_STATE_CONNECTING)) return true;
     (void)connectNth(p); /* Error completion can be synchronous. */
     return true;
@@ -1520,9 +1688,14 @@ static bool cancelPna(void* context, uint64_t id) {
 }
 
 bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
-    if (!p || !cfg || p->active ||
-        !memchr(cfg->host, '\0', sizeof(cfg->host)) || !cfg->host[0] ||
-        cfg->port == 0)
+    if (!p || !cfg || p->active) return false;
+    /* Offline Stage 9 needs only the existing staging prefix. */
+    bool offline = false;
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    offline = cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED;
+#endif
+    if (!offline && (!memchr(cfg->host, '\0', sizeof(cfg->host)) ||
+                     !cfg->host[0] || cfg->port == 0))
         return false;
 
     /* Diagnostic checkpoints do not install. Stage 4 uses only temporary File HAL
@@ -1537,7 +1710,8 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint != PNA_TMS_CHECKPOINT_FULL_FILE &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_ALL_FILES_MD5 &&
-        cfg->checkpoint != PNA_TMS_CHECKPOINT_MANAGED_READY)
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_MANAGED_READY &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_REVERIFY_STAGED)
         return false;
     diagnostic = cfg->checkpoint != PNA_TMS_CHECKPOINT_NONE;
 #endif
@@ -1547,7 +1721,8 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5 ||
-        cfg->checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY)
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY ||
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED)
         needsStaging = true;
 #endif
     if (needsStaging) {

@@ -64,6 +64,10 @@ static void onDone(const TmsStatus* status, void* user) {
             LOG_TRACE("TMS BRINGUP: STAGE8 READY_TO_INSTALL "
                       "(journal saved; manifest MD5 verified; no install; "
                       "publisher authentication still required)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED)
+            LOG_TRACE("TMS BRINGUP: STAGE9 OFFLINE REVERIFY PASS "
+                      "(files unchanged; journal unchanged; "
+                      "publisher authentication still required; no install)");
     } else {
         LOG_TRACE(
             "TMS BRINGUP: CHECKPOINT NOT PASSED result=%d error=%d code=%ld",
@@ -89,7 +93,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         LOG_TRACE("TMS BRINGUP: TLS requested; unsupported by current NTH");
         return false;
     }
-    if (!host || !host[0] || !port || tmsMgr()->isBusy() ||
+    const bool offline = checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED;
+    if ((!offline && (!host || !host[0] || !port)) || tmsMgr()->isBusy() ||
         ((checkpoint == PNA_TMS_CHECKPOINT_MANIFEST ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
@@ -103,10 +108,13 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
     }
 
     PnaTmsConfig cfg = {0};
-    int          n   = snprintf(cfg.host, sizeof(cfg.host), "%s", host);
-    if (n <= 0 || (size_t)n >= sizeof(cfg.host)) {
-        LOG_TRACE("TMS BRINGUP: invalid host length");
-        return false;
+    int          n   = 0;
+    if (!offline) {
+        n = snprintf(cfg.host, sizeof(cfg.host), "%s", host);
+        if (n <= 0 || (size_t)n >= sizeof(cfg.host)) {
+            LOG_TRACE("TMS BRINGUP: invalid host length");
+            return false;
+        }
     }
     cfg.port                = port;
     cfg.tls                 = useTls;
@@ -117,7 +125,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
         checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
         checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5 ||
-        checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY) {
+        checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY ||
+        checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED) {
         if (!scratchPrefix || !scratchPrefix[0]) {
             LOG_TRACE("TMS BRINGUP: scratchPrefix required");
             return false;
@@ -154,8 +163,12 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
     };
     currentCheckpoint = checkpoint;
     pumpLogged        = false;
-    LOG_TRACE("TMS BRINGUP: start checkpoint=%d real PNA %s:%u",
-              (int)checkpoint, cfg.host, (unsigned)cfg.port);
+    if (offline)
+        LOG_TRACE("TMS BRINGUP: start checkpoint=%d OFFLINE prefix='%s'",
+                  (int)checkpoint, cfg.stagingPrefix);
+    else
+        LOG_TRACE("TMS BRINGUP: start checkpoint=%d real PNA %s:%u",
+                  (int)checkpoint, cfg.host, (unsigned)cfg.port);
     bool accepted = tmsMgr()->run(&runCfg, TMS_TRIGGER_MANUAL);
     /* The backend may complete synchronously while run() is executing. */
     if (!tmsMgr()->isBusy())
@@ -245,6 +258,13 @@ bool tmsBringupStartManagedReadyChecked(const char* host, uint16_t port,
     return startDiagnostic(host, port, useTls, identity,
                            PNA_TMS_CHECKPOINT_MANAGED_READY, stagingPrefix,
                            checkSpace, checkContext);
+}
+
+bool tmsBringupStartRestartReverify(const char* stagingPrefix) {
+    /* Uses the exact Stage 8 managed prefix; never re-downloads or installs. */
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_REVERIFY_STAGED, stagingPrefix,
+                           NULL, NULL);
 }
 
 PnaTmsStageStatus tmsBringupStage8Inspect(const char*      stagingPrefix,
