@@ -112,6 +112,31 @@ bool tmsBringupStartManagedReadyChecked(const char* host, uint16_t port,
  */
 bool tmsBringupStartRestartReverify(const char* stagingPrefix);
 
+/* Stage 10: rehash Stage 8 READY files offline, then pass a file-by-file
+ * plan to a read-only MOCK installer preflight. Never downloads, modifies,
+ * authenticates publisher, installs, activates, or deletes any package.
+ * Requires the EXACT Stage 8 prefix, no new scratch path.
+ */
+bool tmsBringupStartInstallerDryRun(const char* stagingPrefix);
+
+/* Stage 11: rehash Stage 8 files, then check a package-authentication
+ * provider and perform READ-ONLY installer preflight. Never installs.
+ * A missing provider FAILS CLOSED (expected negative device test).
+ */
+bool tmsBringupStartAuthGate(const char* stagingPrefix);
+
+/* Explicit SIMULATION for exercising successful gate wiring on hardware.
+ * Reports diagnostic success but NEVER real publisher authentication or
+ * installation authorization; NOT a production verifier. */
+bool tmsBringupStartAuthGateSimulation(const char* stagingPrefix);
+
+/* Integrator supplies a REAL platform signature/chain/compatibility verifier.
+ * A true TRUSTED result depends on implementation of the provider. No real
+ * verifier is bundled. This checkpoint still NEVER installs or persists auth.
+ * The pointed-to provider is copied into backend config before return. */
+bool tmsBringupStartAuthGateWithProvider(
+    const char* stagingPrefix, const TmsPackageAuthenticator* provider);
+
 /* Inspect staged state after reboot. READY_UNTRUSTED needs a fresh hash and
  * publisher trust check before any later installer can consume it. */
 PnaTmsStageStatus tmsBringupStage8Inspect(const char* stagingPrefix,

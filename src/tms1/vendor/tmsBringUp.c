@@ -68,6 +68,14 @@ static void onDone(const TmsStatus* status, void* user) {
             LOG_TRACE("TMS BRINGUP: STAGE9 OFFLINE REVERIFY PASS "
                       "(files unchanged; journal unchanged; "
                       "publisher authentication still required; no install)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN)
+            LOG_TRACE("TMS BRINGUP: STAGE11 AUTH GATE DRY RUN PASS "
+                      "(simulation OR platform trust; auth never persisted; "
+                      "authorized=0 install=0)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN)
+            LOG_TRACE("TMS BRINGUP: STAGE10 INSTALLER DRY RUN PASS "
+                      "(offline, files rehashed, preflight accepted; "
+                      "publisherAuth=0 install=0)");
     } else {
         LOG_TRACE(
             "TMS BRINGUP: CHECKPOINT NOT PASSED result=%d error=%d code=%ld",
@@ -83,6 +91,58 @@ static void freeIdleBackend(void) {
     }
 }
 
+/* Read-only reference adapter. This does not call any installation API.
+ * A future platform installer must be designed separately and must enforce
+ * trusted publisher verification before activation. */
+static bool stage10MockPreflight(void* context, const TmsInstallerPlan* plan,
+                                 size_t index, const TmsInstallerFile* entry) {
+    (void)context;
+    if (!plan || !entry || !plan->contentsReverified ||
+        plan->publisherAuthenticated || plan->installationAuthorized ||
+        !plan->dryRunOnly || !entry->path[0])
+        return false;
+    LOG_TRACE("TMS BRINGUP: STAGE10 preflight file=%lu/%lu bytes=%llu "
+              "path='%s' install=0",
+              (unsigned long)(index + 1u), (unsigned long)plan->fileCount,
+              (unsigned long long)entry->size, entry->path);
+    return true;
+}
+
+/* Stage 11 mock result is deliberately NOT TRUSTED. It checks only that
+ * the handoff is well-formed; never claim it verifies a publisher signature. */
+static TmsPackageAuthResult
+stage11SimulateAuth(void* context, const TmsInstallerPlan* plan,
+                    TmsInstallerDescribeFile describe, void* fileContext) {
+    (void)context;
+    if (!plan || !describe || !plan->contentsReverified ||
+        plan->installationAuthorized || !plan->dryRunOnly)
+        return TMS_PACKAGE_AUTH_REJECTED;
+    for (size_t i = 0u; i < plan->fileCount; ++i) {
+        TmsInstallerFile entry;
+        if (!describe(fileContext, i, &entry) || !entry.path[0])
+            return TMS_PACKAGE_AUTH_REJECTED;
+    }
+    LOG_TRACE("TMS BRINGUP: STAGE11 SIMULATION only; "
+              "no signature or publisher validated");
+    return TMS_PACKAGE_AUTH_SIMULATED;
+}
+
+static bool stage11Preflight(void* context, const TmsInstallerPlan* plan,
+                             size_t index, const TmsInstallerFile* entry) {
+    (void)context;
+    if (!plan || !entry || !plan->contentsReverified ||
+        plan->installationAuthorized || !plan->dryRunOnly || !entry->path[0])
+        return false;
+    LOG_TRACE("TMS BRINGUP: STAGE11 read-only preflight file=%lu/%lu "
+              "bytes=%llu install=0",
+              (unsigned long)(index + 1u), (unsigned long)plan->fileCount,
+              (unsigned long long)entry->size);
+    return true;
+}
+
+/* Passed only on Stage 11 and COPIED into the backend config. */
+static TmsPackageAuthenticator requestedAuthProvider;
+
 static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
                             const PnaTmsIdentity*   identity,
                             PnaTmsCheckpoint        checkpoint,
@@ -93,7 +153,9 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         LOG_TRACE("TMS BRINGUP: TLS requested; unsupported by current NTH");
         return false;
     }
-    const bool offline = checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED;
+    const bool offline = checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
+                         checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
+                         checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN;
     if ((!offline && (!host || !host[0] || !port)) || tmsMgr()->isBusy() ||
         ((checkpoint == PNA_TMS_CHECKPOINT_MANIFEST ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR ||
@@ -116,9 +178,15 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
             return false;
         }
     }
-    cfg.port                = port;
-    cfg.tls                 = useTls;
-    cfg.checkpoint          = checkpoint;
+    cfg.port       = port;
+    cfg.tls        = useTls;
+    cfg.checkpoint = checkpoint;
+    if (checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN)
+        cfg.dryRunInstaller.preflight = stage10MockPreflight;
+    if (checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN) {
+        cfg.dryRunInstaller.preflight = stage11Preflight;
+        cfg.packageAuthenticator      = requestedAuthProvider;
+    }
     cfg.checkStorageSpace   = spaceCheck;
     cfg.storageSpaceContext = spaceCheckContext;
     if (checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
@@ -126,7 +194,9 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
         checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5 ||
         checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY ||
-        checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED) {
+        checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
+        checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
+        checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN) {
         if (!scratchPrefix || !scratchPrefix[0]) {
             LOG_TRACE("TMS BRINGUP: scratchPrefix required");
             return false;
@@ -265,6 +335,33 @@ bool tmsBringupStartRestartReverify(const char* stagingPrefix) {
     return startDiagnostic(NULL, 0u, false, NULL,
                            PNA_TMS_CHECKPOINT_REVERIFY_STAGED, stagingPrefix,
                            NULL, NULL);
+}
+
+bool tmsBringupStartInstallerDryRun(const char* stagingPrefix) {
+    /* Reuse the same Stage 8 READY files and journal. No network or writes. */
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN, stagingPrefix,
+                           NULL, NULL);
+}
+
+bool tmsBringupStartAuthGateWithProvider(
+    const char* stagingPrefix, const TmsPackageAuthenticator* provider) {
+    /* Caller/firmware must supply a real trusted verifier for TRUSTED.
+     * An absent verifier intentionally fails after the offline rehash. */
+    requestedAuthProvider = provider ? *provider : (TmsPackageAuthenticator){0};
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN, stagingPrefix,
+                           NULL, NULL);
+}
+
+bool tmsBringupStartAuthGate(const char* stagingPrefix) {
+    return tmsBringupStartAuthGateWithProvider(stagingPrefix, NULL);
+}
+
+bool tmsBringupStartAuthGateSimulation(const char* stagingPrefix) {
+    TmsPackageAuthenticator mock = {.context = NULL,
+                                    .verify  = stage11SimulateAuth};
+    return tmsBringupStartAuthGateWithProvider(stagingPrefix, &mock);
 }
 
 PnaTmsStageStatus tmsBringupStage8Inspect(const char*      stagingPrefix,

@@ -9,6 +9,8 @@
 #include "pnaTmsProtocol.h"
 #include "nth/nth.h"
 #include "file/file.h"
+#include "../tmsInstaller.h"
+#include "../tmsPackageAuth.h"
 
 /* Enable only in diagnostic firmware builds. Production default is disabled. */
 #ifndef PNA_TMS_ENABLE_DIAGNOSTICS
@@ -43,7 +45,14 @@ typedef enum {
     PNA_TMS_CHECKPOINT_MANAGED_READY = 8,
     /* Offline restart test: re-hash the existing Stage 8 journal/files.
      * No network connection, download, deletion, or installation. */
-    PNA_TMS_CHECKPOINT_REVERIFY_STAGED = 9
+    PNA_TMS_CHECKPOINT_REVERIFY_STAGED = 9,
+    /* Offline, re-hash Stage 8 files then call read-only installer preflight.
+     * Publisher unauthenticated; NO install or activation entry points. */
+    PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN = 10,
+    /* Offline rehash, then authentication gate and read-only preflight.
+     * Unavailable/rejected provider FAILS; simulated trust is NOT trusted.
+     * No install and no persisted authorization, regardless of result. */
+    PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN = 11
 } PnaTmsCheckpoint;
 #endif
 
@@ -96,6 +105,11 @@ typedef struct {
      * errors, but cannot claim a free-space preflight was performed. */
     PnaTmsStorageSpaceCheck checkStorageSpace;
     void*                   storageSpaceContext;
+    /* Stage 10 ONLY: a read-only installer preflight/mock. No install hook. */
+    TmsInstaller dryRunInstaller;
+    /* Stage 11 ONLY: genuine platform verifier or explicit test simulation.
+     * NULL means FAIL CLOSED after rehash, not implicit authorization. */
+    TmsPackageAuthenticator packageAuthenticator;
 #endif
 } PnaTmsConfig;
 
