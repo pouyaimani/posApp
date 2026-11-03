@@ -104,9 +104,13 @@ STATE_DEF_ENTER(Upgrade) {
     }
 
     /* BIOS and HW information remain space-filled. */
+    bool accepted = tmsBringupStartIncrementalMd5(
+        communicationIp, settings()->server.tmsPort, 0, &identity,
+        "/mtd0/tms_stage9_probe");
 
-    if (!tmsBringupStartFullFile(communicationIp, settings()->server.tmsPort, 0,
-                                 &identity, "/mtd0/tms_stage5_probe")) {
+    LOG_TRACE("TMS STAGE6: accepted=%d", accepted);
+
+    if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                        phraseGetDef(PHRASE_UPDATE_FAILED), "");
@@ -119,7 +123,7 @@ STATE_DEF_ENTER(Upgrade) {
 
     updateTick();
 
-    timer = TIMER_CREATE(updateTick, SECS(1), false);
+    timer = TIMER_CREATE(updateTick, 1, false);
     TIMER_START(timer);
 }
 

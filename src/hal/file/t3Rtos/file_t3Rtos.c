@@ -163,7 +163,13 @@ static size_t write(File* self, const void* buffer, size_t size, size_t count,
 }
 
 static int removeFile(File* self, const char* path) {
+    LOG_TRACE("Deleteing file : %s", path);
+    if (!exists(self, path)) {
+        LOG_TRACE("file (%s) is not existed", path);
+        return 0;
+    }
     int ret = sdkFileDel(path);
+    LOG_TRACE("deleting file (%s) result = %d", path, ret);
     return ret == SDK_FILE_OK ? 0 : -1;
 }
 

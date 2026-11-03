@@ -54,6 +54,9 @@ static void onDone(const TmsStatus* status, void* user) {
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_FULL_FILE)
             LOG_TRACE("TMS BRINGUP: FULL FILE PASS "
                       "(scratch retained for inspection; no install)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5)
+            LOG_TRACE("TMS BRINGUP: INCREMENTAL MD5 PASS "
+                      "(readback CRC32 + manifest MD5 match; no install)");
     } else {
         LOG_TRACE(
             "TMS BRINGUP: CHECKPOINT NOT PASSED result=%d error=%d code=%ld",
@@ -81,7 +84,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         ((checkpoint == PNA_TMS_CHECKPOINT_MANIFEST ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
-          checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE) &&
+          checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
+          checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5) &&
          !identity)) {
         LOG_TRACE("TMS BRINGUP: invalid inputs or busy");
         return false;
@@ -97,7 +101,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
     cfg.tls        = useTls;
     cfg.checkpoint = checkpoint;
     if (checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
-        checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE) {
+        checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
+        checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5) {
         if (!scratchPrefix || !scratchPrefix[0]) {
             LOG_TRACE("TMS BRINGUP: scratchPrefix required");
             return false;
@@ -174,6 +179,13 @@ bool tmsBringupStartFullFile(const char* host, uint16_t port, bool useTls,
                              const char*           scratchPrefix) {
     return startDiagnostic(host, port, useTls, identity,
                            PNA_TMS_CHECKPOINT_FULL_FILE, scratchPrefix);
+}
+
+bool tmsBringupStartIncrementalMd5(const char* host, uint16_t port, bool useTls,
+                                   const PnaTmsIdentity* identity,
+                                   const char*           scratchPrefix) {
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_INCREMENTAL_MD5, scratchPrefix);
 }
 
 void tmsBringupProcess(void) {

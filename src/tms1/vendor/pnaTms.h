@@ -16,6 +16,7 @@
 #endif
 
 #if PNA_TMS_ENABLE_DIAGNOSTICS
+#include "pnaTmsMd5.h"
 typedef enum {
     PNA_TMS_CHECKPOINT_NONE      = 0,
     PNA_TMS_CHECKPOINT_CONNECTED = 1,
@@ -28,7 +29,9 @@ typedef enum {
     PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE = 4,
     /* Download file 0 fully to a new scratch file; verify readback; no install.
      */
-    PNA_TMS_CHECKPOINT_FULL_FILE = 5
+    PNA_TMS_CHECKPOINT_FULL_FILE = 5,
+    /* Download first file, then cooperatively verify CRC32 + manifest MD5. */
+    PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 = 6
 } PnaTmsCheckpoint;
 #endif
 
@@ -120,7 +123,11 @@ typedef struct {
     size_t      stagedCount;
     bool        installationStarted;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
-    uint32_t diagnosticCrc; /* Rolling CRC32 for Stage-5 local readback test. */
+    uint32_t  diagnosticCrc; /* Rolling CRC32 of downloaded data. */
+    bool      verifyStarted;
+    uint32_t  verifyOffset;
+    uint32_t  verifyCrc;
+    PnaTmsMd5 verifyMd5;
 #endif
 } PnaTms;
 

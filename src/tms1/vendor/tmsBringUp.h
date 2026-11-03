@@ -35,9 +35,9 @@ bool tmsBringupStartFirstSector(const char* host, uint16_t port, bool useTls,
  * Choose an existing writable location that contains no valuable data.
  */
 bool tmsBringupStartFirstSectorWrite(const char* host, uint16_t port,
-                                     bool                  useTls,
+                                     bool useTls,
                                      const PnaTmsIdentity* identity,
-                                     const char*           scratchPrefix);
+                                     const char* scratchPrefix);
 
 /* Stage 5: download ONLY the first manifest file completely; flush/sync,
  * reopen and CRC32-compare the whole file against received sector bytes.
@@ -46,10 +46,20 @@ bool tmsBringupStartFirstSectorWrite(const char* host, uint16_t port,
  * test file, and must ensure sufficient free space before invoking. */
 bool tmsBringupStartFullFile(const char* host, uint16_t port, bool useTls,
                              const PnaTmsIdentity* identity,
-                             const char*           scratchPrefix);
+                             const char* scratchPrefix);
 
-/* Invoke repeatedly from the application event loop AFTER the existing NTH
- * tick. */
+/* Stage 6: first file only; same download procedure, 1KB of readback
+ * work per tmsBringupProcess() call. Compare stored CRC32 to received
+ * CRC32 and stored MD5 to the raw 16-byte server manifest MD5.
+ * Retains the verified scratch on PASS; removes it on verification failure.
+ * NEVER installs or activates a package. Use a NEW scratch prefix.
+ */
+bool tmsBringupStartIncrementalMd5(const char* host, uint16_t port,
+                                   bool useTls,
+                                   const PnaTmsIdentity* identity,
+                                   const char* scratchPrefix);
+
+/* Invoke repeatedly from the application event loop AFTER the existing NTH tick. */
 void tmsBringupProcess(void);
 
 #endif

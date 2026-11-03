@@ -11,6 +11,18 @@
 #define PNA_PUMP_BUDGET       6u
 #define PNA_STAGE4_READ_CHUNK 128u
 #define PNA_STAGE5_READ_CHUNK 256u
+/* Stage 6: keep each File HAL read below the device's 1028-byte limit,
+ * while performing several bounded reads per process() call. No additional
+ * buffer is allocated: rx is reused after the last sector has been received.
+ * Maximum per call is 16 x 1024 = 16384 bytes (subject to the time budget).
+ */
+#define PNA_STAGE6_READ_CHUNK     1024u
+#define PNA_STAGE6_READS_PER_TICK 16u
+#define PNA_STAGE6_TICK_BUDGET_MS 75u
+
+#if PNA_STAGE6_READ_CHUNK > 1028u
+#error "Stage 6 File HAL read exceeds device limit"
+#endif
 
 /* The following function is also used to prepare the fixed-width identity.
  * It was already copied into the user's pnaTms.c; keep exactly one definition.
@@ -192,11 +204,45 @@ static bool closeFile(PnaTms* p, bool durable) {
     FileHandle* opened = p->opened;
     p->opened          = NULL;
     bool ok            = true;
-    if (durable && OOP_CALL(file(), flush, opened) != 0)
-        ok = false;
-    if (durable && OOP_CALL(file(), sync, opened) != 0)
-        ok = false;
-    if (OOP_CALL(file(), close, opened) != 0)
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    const bool traceVerify =
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE &&
+        p->stage == PNA_TMS_VERIFY_FILE;
+#endif
+    if (durable) {
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+        if (traceVerify)
+            LOG_TRACE("PnaTms: STAGE5 flush begin");
+#endif
+        int ret = OOP_CALL(file(), flush, opened);
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+        if (traceVerify)
+            LOG_TRACE("PnaTms: STAGE5 flush end ret=%d", ret);
+#endif
+        if (ret != 0)
+            ok = false;
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+        if (traceVerify)
+            LOG_TRACE("PnaTms: STAGE5 sync begin");
+#endif
+        ret = OOP_CALL(file(), sync, opened);
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+        if (traceVerify)
+            LOG_TRACE("PnaTms: STAGE5 sync end ret=%d", ret);
+#endif
+        if (ret != 0)
+            ok = false;
+    }
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (traceVerify)
+        LOG_TRACE("PnaTms: STAGE5 close begin");
+#endif
+    int ret = OOP_CALL(file(), close, opened);
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (traceVerify)
+        LOG_TRACE("PnaTms: STAGE5 close end ret=%d", ret);
+#endif
+    if (ret != 0)
         ok = false;
     return ok;
 }
@@ -473,7 +519,8 @@ static bool beginFile(PnaTms* p) {
     /* File names from the network are NEVER used as filesystem paths. */
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
-        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE) {
+        (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5)) {
         /* A diagnostic must NEVER truncate a preexisting file. A caller must
          * supply a distinct scratch prefix, and the File HAL must implement
          * exists() reliably. The same check applies after deletion. */
@@ -495,8 +542,12 @@ static bool beginFile(PnaTms* p) {
     p->sectorIndex   = 0;
     p->sectorAttempt = 0;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
-    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE)
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5) {
         p->diagnosticCrc = UINT32_C(0xffffffff);
+        p->verifyStarted = false;
+        p->verifyOffset  = 0u;
+    }
 #endif
     if (p->files[i].size == 0) {
         p->stage = PNA_TMS_VERIFY_FILE;
@@ -664,6 +715,11 @@ static void handleManifest(PnaTms* p) {
                   "(no package verification or installation)",
                   (unsigned long)p->fileCount, (unsigned long)p->files[0].size);
     }
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5) {
+        LOG_TRACE("PnaTms: STAGE6 download file 1/%lu size=%lu "
+                  "(incremental CRC32 + manifest MD5; no installation)",
+                  (unsigned long)p->fileCount, (unsigned long)p->files[0].size);
+    }
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE) {
         if (p->files[0].size < PNA_TMS_SECTOR_SIZE) {
             LOG_TRACE("PnaTms: STAGE4 requires a full first sector");
@@ -819,7 +875,8 @@ static void handleSector(PnaTms* p) {
     }
 #endif
 #if PNA_TMS_ENABLE_DIAGNOSTICS
-    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE)
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5)
         p->diagnosticCrc =
             stage5Crc32(p->diagnosticCrc, sector.bytes, sector.length);
 #endif
@@ -847,17 +904,24 @@ static void checkpointFullFile(PnaTms* p) {
     const size_t   index    = p->fileIndex;
     const uint32_t expected = p->files[index].size;
     const char*    path     = p->stagedPaths[index];
+    LOG_TRACE("PnaTms: STAGE5 verify begin expected=%lu downloaded=%llu",
+              (unsigned long)expected, (unsigned long long)p->downloadedBytes);
     if (!closeFile(p, true)) {
         LOG_TRACE("PnaTms: STAGE5 flush/sync/close failed");
         fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
         return;
     }
+    LOG_TRACE("PnaTms: STAGE5 reopen read begin");
     p->opened = OOP_CALL(file(), open, path, "rb");
+    LOG_TRACE("PnaTms: STAGE5 reopen read end ok=%d", p->opened != NULL);
     if (!p->opened) {
         fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
         return;
     }
+    LOG_TRACE("PnaTms: STAGE5 size query begin");
     long actual = OOP_CALL(file(), size, p->opened);
+    LOG_TRACE("PnaTms: STAGE5 size query end actual=%ld expected=%lu", actual,
+              (unsigned long)expected);
     if (actual < 0 || (uint64_t)actual != (uint64_t)expected) {
         LOG_TRACE("PnaTms: STAGE5 size mismatch actual=%ld expected=%lu",
                   actual, (unsigned long)expected);
@@ -867,6 +931,8 @@ static void checkpointFullFile(PnaTms* p) {
     uint8_t  bytes[PNA_STAGE5_READ_CHUNK];
     uint32_t crc      = UINT32_C(0xffffffff);
     uint32_t verified = 0u;
+    LOG_TRACE("PnaTms: STAGE5 readback begin chunk=%u",
+              (unsigned)sizeof(bytes));
     while (verified < expected) {
         size_t n = (size_t)(expected - verified);
         if (n > sizeof(bytes))
@@ -879,7 +945,14 @@ static void checkpointFullFile(PnaTms* p) {
         }
         crc = stage5Crc32(crc, bytes, n);
         verified += (uint32_t)n;
+        /* One log per 64 KiB, plus final partial block. */
+        if ((verified % (64u * 1024u)) == 0u || verified == expected) {
+            LOG_TRACE("PnaTms: STAGE5 readback progress=%lu/%lu",
+                      (unsigned long)verified, (unsigned long)expected);
+        }
     }
+    LOG_TRACE("PnaTms: STAGE5 readback end verified=%lu",
+              (unsigned long)verified);
     if (!closeFile(p, false)) {
         fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
         return;
@@ -903,6 +976,130 @@ static void checkpointFullFile(PnaTms* p) {
     p->stagedCount           = 0u;
     finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
            (int)PNA_TMS_CHECKPOINT_FULL_FILE);
+}
+
+/*
+ * Stage 6 checkpoint: execute a bounded amount of readback work per process()
+ * call. Flash flush/sync/open/close calls can still block individually;
+ * cooperative verification only guarantees a bound on read operations.
+ *
+ * The server's MD5 is an untrusted integrity signal, NOT proof of origin.
+ * Signature/authenticity verification is required before installation.
+ */
+static void checkpointIncrementalMd5(PnaTms* p) {
+    if (!p || p->fileIndex >= p->stagedCount || p->fileIndex >= p->fileCount) {
+        fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+        return;
+    }
+    const size_t   index    = p->fileIndex;
+    const uint32_t expected = p->files[index].size;
+    const char*    path     = p->stagedPaths[index];
+    if (!p->verifyStarted) {
+        if (!p->opened || p->downloadedBytes != expected) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        LOG_TRACE("PnaTms: STAGE6 verify start bytes=%lu",
+                  (unsigned long)expected);
+        if (!closeFile(p, true)) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        p->opened = OOP_CALL(file(), open, path, "rb");
+        if (!p->opened) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        long actual = OOP_CALL(file(), size, p->opened);
+        if (actual < 0 || (uint64_t)actual != (uint64_t)expected) {
+            LOG_TRACE("PnaTms: STAGE6 size mismatch expected=%lu actual=%ld",
+                      (unsigned long)expected, actual);
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        p->verifyOffset = 0u;
+        p->verifyCrc    = UINT32_C(0xffffffff);
+        pnaTmsMd5Init(&p->verifyMd5);
+        p->verifyStarted = true;
+        /* Do not read back the entire file on this first tick. */
+        return;
+    }
+    /* Reuse the backend's existing frame storage: no new stack/heap buffer.
+     * NTH has completed the last sector response before VERIFY_FILE starts.
+     */
+    uint8_t*       bytes         = p->rx;
+    const size_t   chunkCapacity = sizeof(p->rx) < PNA_STAGE6_READ_CHUNK
+                                       ? sizeof(p->rx)
+                                       : PNA_STAGE6_READ_CHUNK;
+    const uint32_t tickStart     = NTH_GET_TICK();
+    for (unsigned reads = 0u;
+         reads < PNA_STAGE6_READS_PER_TICK && p->verifyOffset < expected;
+         ++reads) {
+        size_t count = (size_t)(expected - p->verifyOffset);
+        if (count > chunkCapacity)
+            count = chunkCapacity;
+        if (OOP_CALL(file(), read, bytes, 1u, count, p->opened) != count) {
+            LOG_TRACE("PnaTms: STAGE6 read failure offset=%lu",
+                      (unsigned long)p->verifyOffset);
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        p->verifyCrc = stage5Crc32(p->verifyCrc, bytes, count);
+        pnaTmsMd5Update(&p->verifyMd5, bytes, count);
+        p->verifyOffset += (uint32_t)count;
+        /* The File HAL call itself may block; this prevents long batches,
+         * not blocking inside an individual driver call.
+         */
+        if ((uint32_t)(NTH_GET_TICK() - tickStart) >= PNA_STAGE6_TICK_BUDGET_MS)
+            break;
+    }
+    if (p->verifyOffset < expected) {
+        if ((p->verifyOffset % (64u * 1024u)) == 0u)
+            LOG_TRACE("PnaTms: STAGE6 readback=%lu/%lu",
+                      (unsigned long)p->verifyOffset, (unsigned long)expected);
+        return;
+    }
+    uint8_t calculatedMd5[PNA_TMS_MD5_SIZE];
+    pnaTmsMd5Final(&p->verifyMd5, calculatedMd5);
+    bool crcOk = p->verifyCrc == p->diagnosticCrc;
+    bool md5Ok =
+        memcmp(calculatedMd5, p->files[index].md5, sizeof(calculatedMd5)) == 0;
+    if (!closeFile(p, false)) {
+        fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+        return;
+    }
+    LOG_TRACE("PnaTms: STAGE6 readback=%lu CRC32=%08lX match=%u "
+              "manifestMD5Match=%u",
+              (unsigned long)p->verifyOffset,
+              (unsigned long)(p->verifyCrc ^ UINT32_C(0xffffffff)),
+              (unsigned)crcOk, (unsigned)md5Ok);
+    if (!md5Ok) {
+        char              actualHex[33], manifestHex[33];
+        static const char digits[] = "0123456789ABCDEF";
+        for (size_t i = 0u; i < PNA_TMS_MD5_SIZE; ++i) {
+            actualHex[2u * i]        = digits[calculatedMd5[i] >> 4u];
+            actualHex[2u * i + 1u]   = digits[calculatedMd5[i] & 0x0fu];
+            manifestHex[2u * i]      = digits[p->files[index].md5[i] >> 4u];
+            manifestHex[2u * i + 1u] = digits[p->files[index].md5[i] & 0x0fu];
+        }
+        actualHex[32]   = '\0';
+        manifestHex[32] = '\0';
+        LOG_TRACE("PnaTms: STAGE6 MD5 mismatch computed=%s manifestRaw=%s",
+                  actualHex, manifestHex);
+    }
+    if (!crcOk || !md5Ok) {
+        fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_VERIFY);
+        return;
+    }
+    LOG_TRACE("PnaTms: STAGE6 FILE VERIFIED op=%llu path='%s' "
+              "bytes=%lu retained=1 install=0",
+              (unsigned long long)p->operationId, path,
+              (unsigned long)expected);
+    /* Retain successfully verified scratch for manual inspection. */
+    p->stagedPaths[index][0] = '\0';
+    p->stagedCount           = 0u;
+    finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+           (int)PNA_TMS_CHECKPOINT_INCREMENTAL_MD5);
 }
 #endif
 
@@ -1017,6 +1214,15 @@ static void processPna(void* context) {
             handleFrame(p);
             break;
         case PNA_TMS_VERIFY_FILE: {
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+            if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5) {
+                if (!p->verifyStarted &&
+                    !reportProgress(p, TMS_STATE_VERIFYING))
+                    return;
+                checkpointIncrementalMd5(p);
+                return;
+            }
+#endif
             if (!reportProgress(p, TMS_STATE_VERIFYING))
                 return;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
@@ -1106,7 +1312,11 @@ static bool startPna(void* context, TmsTrigger trigger, uint64_t operationId,
     p->totalBytes          = 0;
     p->downloadedBytes     = 0;
     p->installationStarted = false;
-    p->netError            = NTH_OK;
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    p->verifyStarted = false;
+    p->verifyOffset  = 0u;
+#endif
+    p->netError = NTH_OK;
     if (!reportProgress(p, TMS_STATE_CONNECTING))
         return true;
     (void)connectNth(p); /* Error completion can be synchronous. */
@@ -1138,14 +1348,16 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint != PNA_TMS_CHECKPOINT_MANIFEST &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_FIRST_SECTOR &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE &&
-        cfg->checkpoint != PNA_TMS_CHECKPOINT_FULL_FILE)
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_FULL_FILE &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_INCREMENTAL_MD5)
         return false;
     diagnostic = cfg->checkpoint != PNA_TMS_CHECKPOINT_NONE;
 #endif
     bool needsStaging = !diagnostic;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     if (cfg->checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
-        cfg->checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE)
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5)
         needsStaging = true;
 #endif
     if (needsStaging) {
