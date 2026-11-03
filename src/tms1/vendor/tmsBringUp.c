@@ -57,6 +57,9 @@ static void onDone(const TmsStatus* status, void* user) {
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5)
             LOG_TRACE("TMS BRINGUP: INCREMENTAL MD5 PASS "
                       "(readback CRC32 + manifest MD5 match; no install)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5)
+            LOG_TRACE("TMS BRINGUP: ALL FILES MD5 PASS "
+                      "(every file verified and retained; no install)");
     } else {
         LOG_TRACE(
             "TMS BRINGUP: CHECKPOINT NOT PASSED result=%d error=%d code=%ld",
@@ -73,9 +76,11 @@ static void freeIdleBackend(void) {
 }
 
 static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
-                            const PnaTmsIdentity* identity,
-                            PnaTmsCheckpoint      checkpoint,
-                            const char*           scratchPrefix) {
+                            const PnaTmsIdentity*   identity,
+                            PnaTmsCheckpoint        checkpoint,
+                            const char*             scratchPrefix,
+                            PnaTmsStorageSpaceCheck spaceCheck,
+                            void*                   spaceCheckContext) {
     if (useTls) {
         LOG_TRACE("TMS BRINGUP: TLS requested; unsupported by current NTH");
         return false;
@@ -85,7 +90,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
           checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
-          checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5) &&
+          checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
+          checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5) &&
          !identity)) {
         LOG_TRACE("TMS BRINGUP: invalid inputs or busy");
         return false;
@@ -97,12 +103,15 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         LOG_TRACE("TMS BRINGUP: invalid host length");
         return false;
     }
-    cfg.port       = port;
-    cfg.tls        = useTls;
-    cfg.checkpoint = checkpoint;
+    cfg.port                = port;
+    cfg.tls                 = useTls;
+    cfg.checkpoint          = checkpoint;
+    cfg.checkStorageSpace   = spaceCheck;
+    cfg.storageSpaceContext = spaceCheckContext;
     if (checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
         checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
-        checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5) {
+        checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
+        checkpoint == PNA_TMS_CHECKPOINT_ALL_FILES_MD5) {
         if (!scratchPrefix || !scratchPrefix[0]) {
             LOG_TRACE("TMS BRINGUP: scratchPrefix required");
             return false;
@@ -150,19 +159,19 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
 
 bool tmsBringupStartConnectOnly(const char* host, uint16_t port, bool useTls) {
     return startDiagnostic(host, port, useTls, NULL,
-                           PNA_TMS_CHECKPOINT_CONNECTED, NULL);
+                           PNA_TMS_CHECKPOINT_CONNECTED, NULL, NULL, NULL);
 }
 
 bool tmsBringupStartManifestOnly(const char* host, uint16_t port, bool useTls,
                                  const PnaTmsIdentity* identity) {
     return startDiagnostic(host, port, useTls, identity,
-                           PNA_TMS_CHECKPOINT_MANIFEST, NULL);
+                           PNA_TMS_CHECKPOINT_MANIFEST, NULL, NULL, NULL);
 }
 
 bool tmsBringupStartFirstSector(const char* host, uint16_t port, bool useTls,
                                 const PnaTmsIdentity* identity) {
     return startDiagnostic(host, port, useTls, identity,
-                           PNA_TMS_CHECKPOINT_FIRST_SECTOR, NULL);
+                           PNA_TMS_CHECKPOINT_FIRST_SECTOR, NULL, NULL, NULL);
 }
 
 bool tmsBringupStartFirstSectorWrite(const char* host, uint16_t port,
@@ -170,22 +179,46 @@ bool tmsBringupStartFirstSectorWrite(const char* host, uint16_t port,
                                      const PnaTmsIdentity* identity,
                                      const char*           scratchPrefix) {
     return startDiagnostic(host, port, useTls, identity,
-                           PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE,
-                           scratchPrefix);
+                           PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE, scratchPrefix,
+                           NULL, NULL);
 }
 
 bool tmsBringupStartFullFile(const char* host, uint16_t port, bool useTls,
                              const PnaTmsIdentity* identity,
                              const char*           scratchPrefix) {
     return startDiagnostic(host, port, useTls, identity,
-                           PNA_TMS_CHECKPOINT_FULL_FILE, scratchPrefix);
+                           PNA_TMS_CHECKPOINT_FULL_FILE, scratchPrefix, NULL,
+                           NULL);
 }
 
 bool tmsBringupStartIncrementalMd5(const char* host, uint16_t port, bool useTls,
                                    const PnaTmsIdentity* identity,
                                    const char*           scratchPrefix) {
     return startDiagnostic(host, port, useTls, identity,
-                           PNA_TMS_CHECKPOINT_INCREMENTAL_MD5, scratchPrefix);
+                           PNA_TMS_CHECKPOINT_INCREMENTAL_MD5, scratchPrefix,
+                           NULL, NULL);
+}
+
+bool tmsBringupStartAllFilesMd5(const char* host, uint16_t port, bool useTls,
+                                const PnaTmsIdentity* identity,
+                                const char*           scratchPrefix) {
+    LOG_TRACE("TMS BRINGUP: sizeof(PnaTms)=%lu", (unsigned long)sizeof(PnaTms));
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_ALL_FILES_MD5, scratchPrefix,
+                           NULL, NULL);
+}
+
+bool tmsBringupStartAllFilesMd5Checked(const char* host, uint16_t port,
+                                       bool                    useTls,
+                                       const PnaTmsIdentity*   identity,
+                                       const char*             scratchPrefix,
+                                       PnaTmsStorageSpaceCheck checkSpace,
+                                       void*                   checkContext) {
+    if (!checkSpace)
+        return false;
+    return startDiagnostic(host, port, useTls, identity,
+                           PNA_TMS_CHECKPOINT_ALL_FILES_MD5, scratchPrefix,
+                           checkSpace, checkContext);
 }
 
 void tmsBringupProcess(void) {

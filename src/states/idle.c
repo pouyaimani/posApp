@@ -57,13 +57,7 @@ static void go2Supporter(void* arg) {
 void showKahrobaMenu(void* arg);
 
 int removeFiles(void) {
-    OOP_CALL(file(), remove, "/mtd0/tms_stage2_probe_00.bin");
-    OOP_CALL(file(), remove, "/mtd0/tms_stage3_probe_00.bin");
-    OOP_CALL(file(), remove, "/mtd0/tms_stage4_probe_00.bin");
-    OOP_CALL(file(), remove, "/mtd0/tms_stage5_probe_00.bin");
-    OOP_CALL(file(), remove, "/mtd0/tms_stage6_probe_00.bin");
-    OOP_CALL(file(), remove, "/mtd0/tms_stage7_probe_00.bin");
-    OOP_CALL(file(), remove, "/mtd0/tms_stage9_probe_00.bin");
+    OOP_CALL(file(), remove, "/mtd0/tms_stage10_probe_00.bin");
 }
 
 static const KeyHandler keyHandler[] = {

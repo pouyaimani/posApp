@@ -17,6 +17,10 @@
 
 #if PNA_TMS_ENABLE_DIAGNOSTICS
 #include "pnaTmsMd5.h"
+/* Optional device-specific available-storage query for Stage 7. */
+typedef bool (*PnaTmsStorageSpaceCheck)(void*       context,
+                                        const char* stagingPrefix,
+                                        uint64_t    requiredBytes);
 typedef enum {
     PNA_TMS_CHECKPOINT_NONE      = 0,
     PNA_TMS_CHECKPOINT_CONNECTED = 1,
@@ -31,7 +35,9 @@ typedef enum {
      */
     PNA_TMS_CHECKPOINT_FULL_FILE = 5,
     /* Download first file, then cooperatively verify CRC32 + manifest MD5. */
-    PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 = 6
+    PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 = 6,
+    /* Download and verify every manifest file; retain only on full success. */
+    PNA_TMS_CHECKPOINT_ALL_FILES_MD5 = 7
 } PnaTmsCheckpoint;
 #endif
 
@@ -77,6 +83,13 @@ typedef struct {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     /* Test-only checkpoint. MANIFEST sends command 10 but never downloads. */
     PnaTmsCheckpoint checkpoint;
+    /* Optional platform capacity check. Return true only when at least
+     * requiredBytes of writable space exists for stagingPrefix. Stage 7
+     * checks this BEFORE opening any staging file. If NULL, the backend
+     * still enforces path collision protection and fails safely on write
+     * errors, but cannot claim a free-space preflight was performed. */
+    PnaTmsStorageSpaceCheck checkStorageSpace;
+    void*                   storageSpaceContext;
 #endif
 } PnaTmsConfig;
 
@@ -90,7 +103,8 @@ typedef enum {
     PNA_TMS_INSTALL_WAIT
 } PnaTmsStage;
 
-/* Caller-owned, static/persistent object. Never copy while active. */
+/* Caller-owned stable object (heap allocation is supported). Never copy while
+ * active. */
 typedef struct {
     PnaTmsConfig     cfg;
     TmsBackendNotify notify;
@@ -128,6 +142,8 @@ typedef struct {
     uint32_t  verifyOffset;
     uint32_t  verifyCrc;
     PnaTmsMd5 verifyMd5;
+    uint64_t
+        verifiedBytes; /* Total bytes belonging to previously verified files. */
 #endif
 } PnaTms;
 

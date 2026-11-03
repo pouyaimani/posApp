@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "pnaTmsProtocol.h"
+#include "pnaTms.h"
 
 /* Diagnostic firmware only. Real TmsMgr -> PNA backend -> NTH.
  * Caller must ensure financial and recovery flows are idle.
@@ -48,8 +48,9 @@ bool tmsBringupStartFullFile(const char* host, uint16_t port, bool useTls,
                              const PnaTmsIdentity* identity,
                              const char* scratchPrefix);
 
-/* Stage 6: first file only; same download procedure, 1KB of readback
- * work per tmsBringupProcess() call. Compare stored CRC32 to received
+/* Stage 6: first file only; same download procedure, max 1024 bytes per
+ * File HAL read and up to 16 reads per processing call, subject to a time
+ * budget. Compare stored CRC32 to received
  * CRC32 and stored MD5 to the raw 16-byte server manifest MD5.
  * Retains the verified scratch on PASS; removes it on verification failure.
  * NEVER installs or activates a package. Use a NEW scratch prefix.
@@ -58,6 +59,27 @@ bool tmsBringupStartIncrementalMd5(const char* host, uint16_t port,
                                    bool useTls,
                                    const PnaTmsIdentity* identity,
                                    const char* scratchPrefix);
+
+/* Stage 7: download and incrementally verify EVERY file in the manifest.
+ * Uses one PREFIX_XX.bin per file; refuses any existing destination.
+ * Retains ALL files only if ALL CRC32/MD5 checks pass; on failure/cancel,
+ * attempts to remove all staging files created by this run.
+ * No installation. The File HAL supplied to this project has no free-space
+ * query; provide a platform check through PnaTmsConfig.checkStorageSpace
+ * when integrating a full capacity preflight. Use a NEW scratch prefix. */
+bool tmsBringupStartAllFilesMd5(const char* host, uint16_t port,
+                                bool useTls, const PnaTmsIdentity* identity,
+                                const char* scratchPrefix);
+
+/* Checked variant: device app provides a real free-space query.
+ * The callback runs after the manifest is parsed, before any file is opened.
+ * It must account for overhead/headroom in its own available-space policy. */
+bool tmsBringupStartAllFilesMd5Checked(const char* host, uint16_t port,
+                                       bool useTls,
+                                       const PnaTmsIdentity* identity,
+                                       const char* scratchPrefix,
+                                       PnaTmsStorageSpaceCheck checkSpace,
+                                       void* checkContext);
 
 /* Invoke repeatedly from the application event loop AFTER the existing NTH tick. */
 void tmsBringupProcess(void);
