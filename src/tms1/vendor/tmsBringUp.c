@@ -72,6 +72,10 @@ static void onDone(const TmsStatus* status, void* user) {
             LOG_TRACE("TMS BRINGUP: STAGE11 AUTH GATE DRY RUN PASS "
                       "(simulation OR platform trust; auth never persisted; "
                       "authorized=0 install=0)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY)
+            LOG_TRACE("TMS BRINGUP: STAGE12 APUPDATE COMPAT PASS "
+                      "(rehashed, header and embedded CRC valid; "
+                      "no writes/update flag/reboot/install)");
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN)
             LOG_TRACE("TMS BRINGUP: STAGE10 INSTALLER DRY RUN PASS "
                       "(offline, files rehashed, preflight accepted; "
@@ -155,7 +159,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
     }
     const bool offline = checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
                          checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
-                         checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN;
+                         checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
+                         checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY;
     if ((!offline && (!host || !host[0] || !port)) || tmsMgr()->isBusy() ||
         ((checkpoint == PNA_TMS_CHECKPOINT_MANIFEST ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR ||
@@ -196,7 +201,8 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY ||
         checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
         checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
-        checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN) {
+        checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
+        checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
         if (!scratchPrefix || !scratchPrefix[0]) {
             LOG_TRACE("TMS BRINGUP: scratchPrefix required");
             return false;
@@ -362,6 +368,12 @@ bool tmsBringupStartAuthGateSimulation(const char* stagingPrefix) {
     TmsPackageAuthenticator mock = {.context = NULL,
                                     .verify  = stage11SimulateAuth};
     return tmsBringupStartAuthGateWithProvider(stagingPrefix, &mock);
+}
+
+bool tmsBringupStartApupdateInspect(const char* stagingPrefix) {
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY, stagingPrefix,
+                           NULL, NULL);
 }
 
 PnaTmsStageStatus tmsBringupStage8Inspect(const char*      stagingPrefix,

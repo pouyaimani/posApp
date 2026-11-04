@@ -103,10 +103,9 @@ STATE_DEF_ENTER(Upgrade) {
         return;
     }
 
-    bool accepted =
-        tmsBringupStartAuthGateSimulation("/mtd0/tms_managed_update");
+    bool accepted = tmsBringupStartApupdateInspect("/mtd0/tms_managed_update");
 
-    LOG_TRACE("TMS STAGE11 SIMULATION: accepted=%d", accepted);
+    LOG_TRACE("TMS STAGE12: accepted=%d", accepted);
 
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);

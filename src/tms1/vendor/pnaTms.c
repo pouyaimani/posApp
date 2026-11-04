@@ -73,7 +73,8 @@ enum {
     PNA_DIAG_TLS = -111,
     PNA_DIAG_NTH_BUSY = -112,
     PNA_DIAG_PREFLIGHT = -113,
-    PNA_DIAG_AUTH = -114
+    PNA_DIAG_AUTH = -114,
+    PNA_DIAG_APUPDATE = -115
 };
 
 #if PNA_TMS_ENABLE_DIAGNOSTICS
@@ -1485,6 +1486,25 @@ static void checkpointRestartReverify(PnaTms* p) {
      * the read-only preflight interface. The journal and files stay intact.
      */
     p->fileIndex = p->fileCount - 1u;
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
+        if (p->fileCount != 1u || p->files[0].size < PNA_APUPDATE_HEADER_LEN) {
+            LOG_TRACE("PnaTms: STAGE12 expected one apupdate container file; "
+                      "files=%lu bytes=%lu",
+                      (unsigned long)p->fileCount,
+                      (unsigned long)p->files[0].size);
+            fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
+            return;
+        }
+        p->stage = PNA_TMS_INSPECT_PACKAGE;
+        p->apupdatePhase = 0u;
+        p->apupdateOffset = 0u;
+        /* Do not show 100% until the inner container is checked. */
+        if (p->totalBytes) p->downloadedBytes = p->totalBytes - 1u;
+        LOG_TRACE("PnaTms: STAGE12 outer package MD5 verified, "
+                  "begin legacy apupdate inspection network=0 install=0");
+        (void)reportProgress(p, TMS_STATE_VERIFYING);
+        return;
+    }
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN) {
         /* This checkpoint is read-only even if a genuine verifier succeeds.
          * The plan's authorization flag MUST remain false: no installer is
@@ -1566,6 +1586,158 @@ static void checkpointRestartReverify(PnaTms* p) {
               (unsigned long long)p->verifiedBytes);
     finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
            (int)PNA_TMS_CHECKPOINT_REVERIFY_STAGED);
+}
+#endif
+
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+/* Read-only, incremental legacy apupdate container inspection. Entire
+ * 4096-byte header stays in p->rx, which is larger than the header. File HAL
+ * read requests remain <=1024 bytes, and <=16 reads per process call.
+ * This is compatibility/integrity checking, NOT publisher authentication. */
+static void checkpointApupdateInspect(PnaTms* p) {
+    if (!p) return;
+    if (p->apupdatePhase == 0u) {
+        char path[PNA_TMS_STAGE_PATH_SIZE];
+        if (!pnaTmsStageFilePath(p->cfg.stagingPrefix, 0u,
+                                  path, sizeof(path))) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        p->opened = OOP_CALL(file(), open, path, "rb");
+        if (!p->opened) {
+            LOG_TRACE("PnaTms: STAGE12 cannot open staged package");
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        long actual = OOP_CALL(file(), size, p->opened);
+        if (actual < 0 || (uint64_t)actual != p->files[0].size) {
+            LOG_TRACE("PnaTms: STAGE12 outer size changed expected=%lu actual=%ld",
+                      (unsigned long)p->files[0].size, actual);
+            fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
+            return;
+        }
+        p->apupdateOffset = 0u;
+        p->apupdatePhase = 1u;
+        return;
+    }
+    const uint32_t start = NTH_GET_TICK();
+    if (p->apupdatePhase == 1u) {
+        /* Read header in at most four 1024-byte operations. The header buffer
+         * must not be overwritten before parsing succeeds. */
+        for (unsigned reads = 0u; reads < PNA_STAGE6_READS_PER_TICK &&
+             p->apupdateOffset < PNA_APUPDATE_HEADER_LEN; ++reads) {
+            size_t count = PNA_APUPDATE_HEADER_LEN - p->apupdateOffset;
+            if (count > PNA_STAGE6_READ_CHUNK) count = PNA_STAGE6_READ_CHUNK;
+            if (OOP_CALL(file(), read, p->rx + p->apupdateOffset,
+                         1u, count, p->opened) != count) {
+                LOG_TRACE("PnaTms: STAGE12 header read error off=%lu",
+                          (unsigned long)p->apupdateOffset);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+                return;
+            }
+            p->apupdateOffset += (uint32_t)count;
+            if ((uint32_t)(NTH_GET_TICK() - start) >=
+                PNA_STAGE6_TICK_BUDGET_MS) break;
+        }
+        if (p->apupdateOffset < PNA_APUPDATE_HEADER_LEN) return;
+        PnaApupdateResult parsed = pnaApupdateParse(
+            p->rx, PNA_APUPDATE_HEADER_LEN, p->files[0].size, &p->apupdate);
+        if (parsed != PNA_APUPDATE_OK) {
+            uint32_t claimedCrc = (uint32_t)p->rx[0] |
+                ((uint32_t)p->rx[1] << 8u) |
+                ((uint32_t)p->rx[2] << 16u) |
+                ((uint32_t)p->rx[3] << 24u);
+            uint32_t computedCrc = pnaApupdateCrc32(
+                UINT32_MAX, p->rx + 4u, PNA_APUPDATE_HEADER_LEN - 4u);
+            LOG_TRACE("PnaTms: STAGE12 legacy header rejected reason=%d "
+                      "claimedCrc=%08lX computedCrc=%08lX "
+                      "(possibly raw app, not apupdate container)",
+                      (int)parsed, (unsigned long)claimedCrc,
+                      (unsigned long)computedCrc);
+            fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
+            return;
+        }
+        LOG_TRACE("PnaTms: STAGE12 legacy header valid files=%u "
+                  "headerCrc=%08lX packageBytes=%llu",
+                  (unsigned)p->apupdate.fileCount,
+                  (unsigned long)p->apupdate.headerCrc,
+                  (unsigned long long)p->apupdate.packageSize);
+        p->apupdateIndex = 0u;
+        p->apupdateOffset = 0u;
+        p->apupdateCrc = UINT32_MAX;
+        if (OOP_CALL(file(), seek, p->opened,
+                     (long)p->apupdate.entries[0].offset,
+                     FILE_SEEK_ORG_SET) != 0) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        p->apupdatePhase = 2u;
+        return;
+    }
+    if (p->apupdatePhase == 2u) {
+        unsigned reads = 0u;
+        while (reads < PNA_STAGE6_READS_PER_TICK &&
+               p->apupdateIndex < p->apupdate.fileCount) {
+            const PnaApupdateEntry* e = &p->apupdate.entries[p->apupdateIndex];
+            size_t count = e->size - p->apupdateOffset;
+            if (count > PNA_STAGE6_READ_CHUNK) count = PNA_STAGE6_READ_CHUNK;
+            if (count && OOP_CALL(file(), read, p->rx, 1u,
+                                  count, p->opened) != count) {
+                LOG_TRACE("PnaTms: STAGE12 payload read failed inner=%u off=%lu",
+                          (unsigned)p->apupdateIndex,
+                          (unsigned long)p->apupdateOffset);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+                return;
+            }
+            p->apupdateCrc = pnaApupdateCrc32(p->apupdateCrc, p->rx, count);
+            p->apupdateOffset += (uint32_t)count;
+            ++reads;
+            if (p->apupdateOffset == e->size) {
+                const bool crcOk = p->apupdateCrc == e->rawCrc;
+                LOG_TRACE("PnaTms: STAGE12 embedded file=%u/%u name='%s' "
+                          "offset=%lu size=%lu crcRaw=%08lX match=%u",
+                          (unsigned)(p->apupdateIndex + 1u),
+                          (unsigned)p->apupdate.fileCount, e->name,
+                          (unsigned long)e->offset, (unsigned long)e->size,
+                          (unsigned long)p->apupdateCrc, (unsigned)crcOk);
+                if (!crcOk) {
+                    fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
+                    return;
+                }
+                ++p->apupdateIndex;
+                p->apupdateOffset = 0u;
+                p->apupdateCrc = UINT32_MAX;
+            }
+            if ((uint32_t)(NTH_GET_TICK() - start) >=
+                PNA_STAGE6_TICK_BUDGET_MS) break;
+        }
+        if (p->apupdateIndex < p->apupdate.fileCount) return;
+        if (!closeFile(p, false)) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_STORAGE);
+            return;
+        }
+        p->apupdatePhase = 3u;
+        return;
+    }
+    if (p->apupdatePhase == 3u) {
+        size_t textLen = 0u;
+        PnaApupdateResult r = pnaApupdateBuildPreview(
+            &p->apupdate, p->rx, sizeof(p->rx), &textLen);
+        if (r != PNA_APUPDATE_OK) {
+            fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
+            return;
+        }
+        LOG_TRACE("PnaTms: STAGE12 update header preview generated in memory "
+                  "bytes=%lu destination='/mtd2/apupdate' write=0 flag=0 reboot=0",
+                  (unsigned long)textLen);
+        p->downloadedBytes = p->totalBytes;
+        if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+        LOG_TRACE("PnaTms: STAGE12 APUPDATE COMPAT PASS innerFiles=%u "
+                  "journalUnchanged=1 network=0 publisherAuth=0 install=0",
+                  (unsigned)p->apupdate.fileCount);
+        finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+               (int)PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY);
+    }
 }
 #endif
 
@@ -1667,11 +1839,17 @@ static void processPna(void* context) {
             p->frameReady = false;
             handleFrame(p);
             break;
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+        case PNA_TMS_INSPECT_PACKAGE:
+            checkpointApupdateInspect(p);
+            return;
+#endif
         case PNA_TMS_VERIFY_FILE: {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
             if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
-                p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN) {
+                p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
+                p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
                 checkpointRestartReverify(p);
                 return;
             }
@@ -1772,7 +1950,8 @@ static bool startPna(void* context, TmsTrigger trigger, uint64_t operationId,
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
-        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN) {
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
         /* Stage 9/10/11 do not allocate an NTH transaction or contact the server. */
         beginRestartReverification(p);
         return true;
@@ -1799,7 +1978,8 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     offline = cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
-              cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN;
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY;
 #endif
     if (!offline && (!memchr(cfg->host, '\0', sizeof(cfg->host)) ||
                      !cfg->host[0] || cfg->port == 0))
@@ -1820,7 +2000,8 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint != PNA_TMS_CHECKPOINT_MANAGED_READY &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_REVERIFY_STAGED &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN &&
-        cfg->checkpoint != PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN)
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY)
         return false;
     diagnostic = cfg->checkpoint != PNA_TMS_CHECKPOINT_NONE;
 #endif
@@ -1833,7 +2014,8 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint == PNA_TMS_CHECKPOINT_MANAGED_READY ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
-        cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN)
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY)
         needsStaging = true;
 #endif
     if (needsStaging) {

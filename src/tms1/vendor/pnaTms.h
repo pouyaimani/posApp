@@ -20,6 +20,7 @@
 #if PNA_TMS_ENABLE_DIAGNOSTICS
 #include "pnaTmsMd5.h"
 #include "pnaTmsStage.h"
+#include "pnaApupdate.h"
 /* Optional device-specific available-storage query for Stage 7. */
 typedef bool (*PnaTmsStorageSpaceCheck)(void*       context,
                                         const char* stagingPrefix,
@@ -52,7 +53,11 @@ typedef enum {
     /* Offline rehash, then authentication gate and read-only preflight.
      * Unavailable/rejected provider FAILS; simulated trust is NOT trusted.
      * No install and no persisted authorization, regardless of result. */
-    PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN = 11
+    PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN = 11,
+    /* Offline Stage 12: rehash Stage 8 package, inspect legacy apupdate
+     * container/header and every embedded file CRC; generate header IN MEMORY.
+     * NO writes, installation, update flag, reboot, or network. */
+    PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY = 12
 } PnaTmsCheckpoint;
 #endif
 
@@ -120,7 +125,8 @@ typedef enum {
     PNA_TMS_VERIFY_FILE,
     PNA_TMS_WAIT_END,
     PNA_TMS_INSTALL_START,
-    PNA_TMS_INSTALL_WAIT
+    PNA_TMS_INSTALL_WAIT,
+    PNA_TMS_INSPECT_PACKAGE
 } PnaTmsStage;
 
 /* Caller-owned stable object (heap allocation is supported). Never copy while
@@ -166,6 +172,11 @@ typedef struct {
         verifiedBytes; /* Total bytes belonging to previously verified files. */
     PnaTmsStageInfo stage8Journal; /* Persistent managed-staging metadata. */
     bool stage8JournalStarted;     /* Current run owns an INCOMPLETE journal. */
+    PnaApupdateInfo apupdate;
+    uint32_t apupdateOffset; /* Bytes of the current header or payload. */
+    uint32_t apupdateCrc;    /* Legacy uncomplemented CRC32. */
+    uint8_t  apupdateIndex;  /* File in embedded apupdate container. */
+    uint8_t  apupdatePhase;  /* 0=open, 1=header, 2=files, 3=preview. */
 #endif
 } PnaTms;
 

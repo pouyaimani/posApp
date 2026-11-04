@@ -137,6 +137,14 @@ bool tmsBringupStartAuthGateSimulation(const char* stagingPrefix);
 bool tmsBringupStartAuthGateWithProvider(
     const char* stagingPrefix, const TmsPackageAuthenticator* provider);
 
+/* Stage 12: offline and READ-ONLY. Reverify the existing Stage 8 managed
+ * staging files, then inspect file 0 as a legacy 4096-byte apupdate container.
+ * Strictly validate packed header, file bounds, and every embedded-file CRC;
+ * construct (but NEVER write) the text updater header. Only one outer TMS
+ * file is currently supported for this checkpoint. No /mtd2/apupdate I/O,
+ * sdkSysSetUpdateFlag(), reboot, network, or installation. */
+bool tmsBringupStartApupdateInspect(const char* stagingPrefix);
+
 /* Inspect staged state after reboot. READY_UNTRUSTED needs a fresh hash and
  * publisher trust check before any later installer can consume it. */
 PnaTmsStageStatus tmsBringupStage8Inspect(const char* stagingPrefix,
