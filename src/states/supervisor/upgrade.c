@@ -61,14 +61,6 @@ STATE_DEF_ENTER(Upgrade) {
     char communicationIp[32];
     normalizeIp(settings()->server.tmsIp, communicationIp,
                 sizeof(communicationIp));
-    //                 typedef struct {
-    //     uint8_t model[16];
-    //     uint8_t serial[30];
-    //     uint8_t terminal[8];
-    //     uint8_t appVersion[16];
-    //     uint8_t biosVersion[16];
-    //     uint8_t hwInfo[100];
-    // } PnaTmsIdentity;
 
     PnaTmsIdentity identity;
     pnaTmsIdentityClear(&identity);
@@ -98,11 +90,30 @@ STATE_DEF_ENTER(Upgrade) {
         LOG_TRACE("TMS: invalid device identity");
         return;
     }
-    bool accepted =
-        tmsBringupStartSdkWriteOrderProbe("/mtd0/tms_15c_hal_01.bin");
 
-    LOG_TRACE("TMS STAGE15C: accepted=%d", accepted);
-    ;
+    bool accepted = false;
+
+    const char* prefix = "/mtd0/tms_compact_test";
+
+    PnaTmsStageStatus stage = tmsBringupStage8Inspect(prefix, NULL);
+
+    LOG_TRACE("TMS COMPACT: stage=%d", (int)stage);
+
+    if (stage == PNA_TMS_STAGE_READY_UNTRUSTED) {
+        LOG_TRACE("TMS: READY package exists; download skipped");
+
+    } else if (stage == PNA_TMS_STAGE_EMPTY ||
+               stage == PNA_TMS_STAGE_INCOMPLETE) {
+
+        accepted = tmsBringupStartManagedReady(communicationIp,
+                                               settings()->server.tmsPort,
+                                               false, &identity, prefix);
+
+        LOG_TRACE("TMS: download accepted=%d", accepted);
+
+    } else {
+        LOG_ERROR("TMS: staging unavailable status=%d", (int)stage);
+    }
 
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);

@@ -7,149 +7,28 @@
 
 #include "../tmsBackend.h"
 #include "pnaTmsProtocol.h"
-#include "nth/nth.h"
-#include "file/file.h"
-#include "../tmsInstaller.h"
-#include "../tmsPackageAuth.h"
-
-/* Enable only in diagnostic firmware builds. Production default is disabled. */
-#ifndef PNA_TMS_ENABLE_DIAGNOSTICS
-#define PNA_TMS_ENABLE_DIAGNOSTICS 1
-#endif
-
-#if PNA_TMS_ENABLE_DIAGNOSTICS
 #include "pnaTmsMd5.h"
 #include "pnaTmsStage.h"
-#include "pnaSdkScratchProbe.h"
-#include "pnaSdkWriteOrderProbe.h"
-#include "pnaApupdate.h"
-#include "pnaApupdateDestination.h"
-#include "pnaApupdateExisting.h"
-/* Optional device-specific available-storage query for Stage 7. */
-typedef bool (*PnaTmsStorageSpaceCheck)(void*       context,
-                                        const char* stagingPrefix,
-                                        uint64_t    requiredBytes);
-typedef enum {
-    PNA_TMS_CHECKPOINT_NONE      = 0,
-    PNA_TMS_CHECKPOINT_CONNECTED = 1,
-    /* Transmit command 10, validate/inspect command 11, then STOP. */
-    PNA_TMS_CHECKPOINT_MANIFEST = 2,
-    /* Send command 12 for file 0 sector 0, validate response 21; never write.
-     */
-    PNA_TMS_CHECKPOINT_FIRST_SECTOR = 3,
-    /* Write sector 0 to an unused scratch file, verify readback, delete. */
-    PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE = 4,
-    /* Download file 0 fully to a new scratch file; verify readback; no install.
-     */
-    PNA_TMS_CHECKPOINT_FULL_FILE = 5,
-    /* Download first file, then cooperatively verify CRC32 + manifest MD5. */
-    PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 = 6,
-    /* Download and verify every manifest file; retain only on full success. */
-    PNA_TMS_CHECKPOINT_ALL_FILES_MD5 = 7,
-    /* Managed journal and all-file MD5; ready only, NEVER install. */
-    PNA_TMS_CHECKPOINT_MANAGED_READY = 8,
-    /* Offline restart test: re-hash the existing Stage 8 journal/files.
-     * No network connection, download, deletion, or installation. */
-    PNA_TMS_CHECKPOINT_REVERIFY_STAGED = 9,
-    /* Offline, re-hash Stage 8 files then call read-only installer preflight.
-     * Publisher unauthenticated; NO install or activation entry points. */
-    PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN = 10,
-    /* Offline rehash, then authentication gate and read-only preflight.
-     * Unavailable/rejected provider FAILS; simulated trust is NOT trusted.
-     * No install and no persisted authorization, regardless of result. */
-    PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN = 11,
-    /* Offline Stage 12: rehash Stage 8 package, inspect legacy apupdate
-     * container/header and every embedded file CRC; generate header IN MEMORY.
-     * NO writes, installation, update flag, reboot, or network. */
-    PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY = 12,
-    /* Offline Stage 13: all Stage 12 checks, plus an exact dry-run plan to
-     * copy the protected package to /mtd2/apupdate and rewrite its header.
-     * Never access /mtd2, write files, set update flag, or reboot. */
-    PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN = 13,
-    /* Read-only destination inspection, optional platform capacity probe. */
-    PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT = 14,
-    /* Stage 14B: inspect the existing /mtd2/apupdate READ-ONLY, compare its
-     * header and payload with the verified staging package. Code 140 is
-     * intentionally separate from future Stage 15. No installation. */
-    PNA_TMS_CHECKPOINT_EXISTING_DESTINATION = 140,
-    /* Stage 14C: independently inspect existing binary header and actual
-     * embedded-file CRCs, then characterize any trailing padding. Read only. */
-    PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED = 141,
-    /* Stage 14D: inspect ONLY first 64 bytes of /mtd2/apupdate. No
-     * managed package is opened or verified, no network, no writes.
-     * This identifies a magic prefix only; ownership remains unknown. */
-    PNA_TMS_CHECKPOINT_DESTINATION_MAGIC = 142,
-    /* Stage 15A: offline package rehash/CRC and NON-EXECUTABLE SDK plan. */
-    PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN = 150,
-    /* Stage 15B: SDK storage semantics on a NEW /mtd0 scratch file only.
-     * NEVER touch /mtd2/apupdate; no system update/activation operations. */
-    PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE = 151,
-    /* Stage 15C: test two File HAL write orders on a disposable /mtd0 file.
-     * Independent fresh-file trials; no updater/flag/reboot access. */
-    PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE = 152
-} PnaTmsCheckpoint;
-#endif
+#include "nth/nth.h"
+#include "file/file.h"
 
-/* No duplicate NTH/File transport interface: PNA calls those services directly.
- */
+/* Production staging only: no checkpoints, installer, update flag or reboot. */
 #define PNA_TMS_STAGE_PATH_SIZE 128u
 
-/*
- * These hooks describe PACKAGE VERIFICATION / INSTALLATION, not file I/O.
- * Verification must authenticate application/firmware packages using an
- * approved trust policy. The 16-byte manifest 'MD5' field by itself cannot
- * authenticate executable updates; its real encoding is unconfirmed.
- *
- * Installation hooks must return promptly. For a blocking device updater,
- * start a worker/task and marshal completion to the same execution context.
- * beginInstall/pollInstall: >0 completed, 0 in progress, <0 failed.
- * A successful install means the installer no longer needs temporary files,
- * or it has safely taken responsibility for their durability and ownership.
- */
-typedef struct {
-    void* context;
-    bool (*verify)(void* context, const PnaTmsFile* file,
-                   const char* stagingPath);
-    int (*beginInstall)(void* context, const PnaTmsFile* files,
-                        const char paths[][PNA_TMS_STAGE_PATH_SIZE],
-                        size_t     count);
-    int (*pollInstall)(void* context);
-} PnaTmsPackageHooks;
+typedef bool (*PnaTmsStorageSpaceCheck)(void* context, const char* prefix,
+                                        uint64_t requiredBytes);
 
 typedef struct {
-    char     host[64];
-    uint16_t port;
-    bool     tls; /* Refused until the existing NTH supports TLS explicitly. */
+    char           host[64];
+    uint16_t       port;
+    bool           tls; /* Unsupported by the current NTH; fail closed. */
     PnaTmsIdentity identity;
-    char stagingPrefix[96]; /* e.g. "tms/stage"; paths become PREFIX_00.bin */
-    /* Stage-4 diagnostics require a dedicated, unused scratch prefix.
-     * The backend refuses to overwrite an existing scratch file. */
-    PnaTmsPackageHooks package;
-    uint32_t ioTimeoutMs;       /* 0: NTH default. NTH owns socket timeouts. */
-    uint8_t  maxSectorAttempts; /* 0: 3, including original attempt. */
-    bool requireEndPacket; /* Wait for server command 22, if deployment uses it.
-                            */
-#if PNA_TMS_ENABLE_DIAGNOSTICS
-    /* Test-only checkpoint. MANIFEST sends command 10 but never downloads. */
-    PnaTmsCheckpoint checkpoint;
-    /* Optional platform capacity check. Return true only when at least
-     * requiredBytes of writable space exists for stagingPrefix. Stage 7
-     * checks this BEFORE opening any staging file. If NULL, the backend
-     * still enforces path collision protection and fails safely on write
-     * errors, but cannot claim a free-space preflight was performed. */
-    PnaTmsStorageSpaceCheck checkStorageSpace;
+    char           stagingPrefix[96];
+    uint32_t       ioTimeoutMs;
+    uint8_t        maxSectorAttempts; /* Zero defaults to 3. */
+    bool           requireEndPacket;
+    PnaTmsStorageSpaceCheck checkStorageSpace; /* Optional preflight. */
     void*                   storageSpaceContext;
-    /* Stage 10 ONLY: a read-only installer preflight/mock. No install hook. */
-    TmsInstaller dryRunInstaller;
-    /* Stage 11 ONLY: genuine platform verifier or explicit test simulation.
-     * NULL means FAIL CLOSED after rehash, not implicit authorization. */
-    TmsPackageAuthenticator packageAuthenticator;
-    /* Stage 14 only: optional read-only platform filesystem/update-state probe.
-     */
-    PnaApupdateDestinationProbe destinationProbe;
-    void*                       destinationProbeContext;
-    bool requireDestinationEvidence; /* Checked variant fails closed. */
-#endif
 } PnaTmsConfig;
 
 typedef enum {
@@ -157,17 +36,9 @@ typedef enum {
     PNA_TMS_CONNECTING,
     PNA_TMS_WAIT_RESPONSE,
     PNA_TMS_VERIFY_FILE,
-    PNA_TMS_WAIT_END,
-    PNA_TMS_INSTALL_START,
-    PNA_TMS_INSTALL_WAIT,
-    PNA_TMS_INSPECT_PACKAGE,
-    PNA_TMS_INSPECT_DESTINATION,
-    PNA_TMS_SDK_SCRATCH_PROBE,
-    PNA_TMS_SDK_WRITE_ORDER_PROBE
+    PNA_TMS_WAIT_END
 } PnaTmsStage;
 
-/* Caller-owned stable object (heap allocation is supported). Never copy while
- * active. */
 typedef struct {
     PnaTmsConfig     cfg;
     TmsBackendNotify notify;
@@ -181,76 +52,36 @@ typedef struct {
     bool            frameBad;
     bool            netFailed;
     NthResult       netError;
-    uint8_t         rx[PNA_TMS_MAX_FRAME_SIZE];
-    size_t          rxLength; /* Expected full frame size, initially 2. */
-    size_t          rxOffset;
-    uint8_t         request[PNA_TMS_RESUME_SIZE];
+    uint8_t
+        rx[PNA_TMS_MAX_FRAME_SIZE]; /* Reused as 1024-byte MD5 read buffer. */
+    size_t  rxLength;
+    size_t  rxOffset;
+    uint8_t request[PNA_TMS_RESUME_SIZE];
 
-    PnaTmsFile files[PNA_TMS_MAX_FILES];
-    size_t     fileCount;
-    size_t     fileIndex;
-    uint16_t   sectorIndex;
-    uint8_t    sectorAttempt;
-    bool       manifestReceived;
-    uint64_t   totalBytes;
-    uint64_t   downloadedBytes;
-
-    FileHandle* opened;
-    char        stagedPaths[PNA_TMS_MAX_FILES][PNA_TMS_STAGE_PATH_SIZE];
-    size_t      stagedCount;
-    bool        installationStarted;
-#if PNA_TMS_ENABLE_DIAGNOSTICS
-    uint32_t  diagnosticCrc; /* Rolling CRC32 of downloaded data. */
-    bool      verifyStarted;
-    uint32_t  verifyOffset;
-    uint32_t  verifyCrc;
-    PnaTmsMd5 verifyMd5;
-    uint64_t
-        verifiedBytes; /* Total bytes belonging to previously verified files. */
-    PnaTmsStageInfo stage8Journal; /* Persistent managed-staging metadata. */
-    bool stage8JournalStarted;     /* Current run owns an INCOMPLETE journal. */
-    PnaApupdateInfo apupdate;
-    uint32_t apupdateOffset; /* Bytes of the current header or payload. */
-    uint32_t apupdateCrc;    /* Legacy uncomplemented CRC32. */
-    uint8_t  apupdateIndex;  /* File in embedded apupdate container. */
-    uint8_t  apupdatePhase;  /* 0=open, 1=header, 2=files, 3=preview. */
-    /* Stage 14B only. All File HAL handles are opened read-only. The scratch
-     * comparison buffer avoids 4 KB stack allocations and caps each read to
-     * 1024 bytes. No two File HAL reads overlap or execute concurrently. */
-    FileHandle*               existingSource;
-    uint8_t                   existingCompareBuffer[1024u];
-    uint64_t                  existingSize;
-    uint32_t                  existingOffset;
-    uint8_t                   existingPhase;
-    PnaApupdateExistingFormat existingFormat;
-    bool                      existingPresent;
-    bool                      existingSizeMatches;
-    bool                      existingHeaderMatchesPreview;
-    bool                      existingPayloadMatches;
-    bool                      existingWholeMatches;
-    /* Stage 14C state. Only diagnostic builds allocate these fields. */
-    PnaApupdateInfo             existingParsed;
-    PnaApupdateExistingAnalysis existingAnalysis;
-    uint8_t                     existingFileIndex;
-    uint32_t                    existingFileOffset;
-    uint32_t                    existingFileCrc;
-    bool                        existingInnerCrcsMatch;
-    uint64_t                    existingTailOffset;
-    uint64_t                    existingTailZero;
-    uint64_t                    existingTailFF;
-    uint64_t                    existingTailOther;
-    PnaSdkScratchProbe    sdkScratch; /* Stage 15B diagnostic-only state. */
-    PnaSdkWriteOrderProbe sdkOrder;   /* Stage 15C test-only state. */
-#endif
+    PnaTmsFile      files[PNA_TMS_MAX_FILES];
+    PnaTmsStageInfo journal;
+    FileHandle*     opened;
+    char            currentPath[PNA_TMS_STAGE_PATH_SIZE];
+    size_t          fileCount;
+    size_t          fileIndex;
+    uint16_t        sectorIndex;
+    uint8_t         sectorAttempt;
+    bool            manifestReceived;
+    bool            journalOwned;
+    bool            verifyStarted;
+    bool            endReceived;
+    uint64_t        totalBytes;
+    uint64_t        downloadedBytes;
+    uint64_t        verifiedBytes;
+    uint32_t        downloadedCrc;
+    uint32_t        verifyCrc;
+    uint32_t        verifyOffset;
+    PnaTmsMd5       verifyMd5;
 } PnaTms;
 
-/* Copy a bounded NUL-terminated source into a fixed-width, space-padded
- * wire field. Reject truncation rather than silently losing protocol bytes.
- * Kept in pnaTms.c, matching the device application's current helper. */
-bool pnaTmsCopyField(void* dst, size_t dstSize, const char* src,
-                     size_t srcCapacity);
-
+bool       pnaTmsCopyField(void* dest, size_t destSize, const char* source,
+                           size_t sourceCapacity);
 bool       pnaTmsInit(PnaTms* context, const PnaTmsConfig* config);
 TmsBackend pnaTmsBackend(PnaTms* context);
 
-#endif
+#endif /* PNA_TMS_H_ */
