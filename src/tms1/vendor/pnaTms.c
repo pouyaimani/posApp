@@ -1,4 +1,7 @@
 #include "pnaTms.h"
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+#include "pnaApupdatePlan.h"
+#endif
 
 #include <limits.h>
 #include <stdio.h>
@@ -74,7 +77,9 @@ enum {
     PNA_DIAG_NTH_BUSY = -112,
     PNA_DIAG_PREFLIGHT = -113,
     PNA_DIAG_AUTH = -114,
-    PNA_DIAG_APUPDATE = -115
+    PNA_DIAG_APUPDATE = -115,
+    PNA_DIAG_DESTINATION = -116,
+    PNA_DIAG_DESTINATION_INSPECT = -117
 };
 
 #if PNA_TMS_ENABLE_DIAGNOSTICS
@@ -175,6 +180,24 @@ static bool reportProgress(PnaTms* p, TmsState state) {
         p->fileIndex + 1u == p->fileCount &&
         p->verifiedBytes == p->totalBytes)
         percent = 100u;
+    /* Stages 12/13 must finish checking every inner CRC and construct the
+     * header/plan BEFORE reporting 100%, not after outer MD5 alone. */
+    if ((p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) &&
+        state == TMS_STATE_VERIFYING && p->apupdatePhase == 3u &&
+        p->apupdate.fileCount != 0u &&
+        p->apupdateIndex == p->apupdate.fileCount &&
+        p->verifiedBytes == p->totalBytes)
+        percent = 100u;
+#endif
+    /* A single small read constitutes the entire Stage 14D inspection. */
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC &&
+        state == TMS_STATE_VERIFYING && p->existingPhase == 4u)
+        percent = 100u;
 #endif
     TmsBackendEvent ev = {
         .type = TMS_BACKEND_EVENT_PROGRESS,
@@ -271,6 +294,13 @@ static void finish(PnaTms* p, TmsResult result, TmsError error, int code) {
     p->stage = PNA_TMS_IDLE;
     releaseNth(p);
     (void)closeFile(p, false);
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->existingSource) {
+        FileHandle* source = p->existingSource;
+        p->existingSource = NULL;
+        (void)OOP_CALL(file(), close, source);
+    }
+#endif
     if (result != TMS_RESULT_SUCCESS && result != TMS_RESULT_NO_UPDATE) {
         bool cleaned = discardStaging(p);
 #if !PNA_TMS_ENABLE_DIAGNOSTICS
@@ -1486,11 +1516,15 @@ static void checkpointRestartReverify(PnaTms* p) {
      * the read-only preflight interface. The journal and files stay intact.
      */
     p->fileIndex = p->fileCount - 1u;
-    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
         if (p->fileCount != 1u || p->files[0].size < PNA_APUPDATE_HEADER_LEN) {
-            LOG_TRACE("PnaTms: STAGE12 expected one apupdate container file; "
+            LOG_TRACE("PnaTms: STAGE%u expected one apupdate container file; "
                       "files=%lu bytes=%lu",
-                      (unsigned long)p->fileCount,
+                      (unsigned)p->cfg.checkpoint, (unsigned long)p->fileCount,
                       (unsigned long)p->files[0].size);
             fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
             return;
@@ -1500,8 +1534,9 @@ static void checkpointRestartReverify(PnaTms* p) {
         p->apupdateOffset = 0u;
         /* Do not show 100% until the inner container is checked. */
         if (p->totalBytes) p->downloadedBytes = p->totalBytes - 1u;
-        LOG_TRACE("PnaTms: STAGE12 outer package MD5 verified, "
-                  "begin legacy apupdate inspection network=0 install=0");
+        LOG_TRACE("PnaTms: STAGE%u outer package MD5 verified, "
+                  "begin legacy apupdate inspection network=0 install=0",
+                  (unsigned)p->cfg.checkpoint);
         (void)reportProgress(p, TMS_STATE_VERIFYING);
         return;
     }
@@ -1727,9 +1762,110 @@ static void checkpointApupdateInspect(PnaTms* p) {
             fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
             return;
         }
-        LOG_TRACE("PnaTms: STAGE12 update header preview generated in memory "
+        LOG_TRACE("PnaTms: STAGE%u update header preview generated in memory "
                   "bytes=%lu destination='/mtd2/apupdate' write=0 flag=0 reboot=0",
-                  (unsigned long)textLen);
+                  (unsigned)p->cfg.checkpoint, (unsigned long)textLen);
+        if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+            p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+            p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
+            char path[PNA_TMS_STAGE_PATH_SIZE];
+            PnaApupdatePreparePlan plan;
+            if (!pnaTmsStageFilePath(p->cfg.stagingPrefix, 0u,
+                                     path, sizeof(path)) ||
+                !pnaApupdatePlanBuild(&p->apupdate, path, p->rx, textLen,
+                                      p->verifiedBytes == p->totalBytes,
+                                      p->apupdateIndex == p->apupdate.fileCount,
+                                      &plan)) {
+                LOG_TRACE("PnaTms: STAGE%u prepare plan rejected",
+                          (unsigned)p->cfg.checkpoint);
+                fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
+                return;
+            }
+            LOG_TRACE("PnaTms: STAGE%u PREPARE PLAN source='%s' dest='%s' "
+                      "copyBytes=%llu headerRewriteBytes=%lu textBytes=%lu "
+                      "previewCRC32=%08lX innerFiles=%u",
+                      (unsigned)p->cfg.checkpoint, plan.source, plan.destination,
+                      (unsigned long long)plan.packageBytes,
+                      (unsigned long)plan.headerRewriteBytes,
+                      (unsigned long)plan.headerPreviewTextBytes,
+                      (unsigned long)plan.headerPreviewCrc32,
+                      (unsigned)plan.embeddedFileCount);
+            LOG_TRACE("PnaTms: STAGE%u GUARDS spaceChecked=%u "
+                      "destinationChecked=%u sourceReverified=%u "
+                      "embeddedCrcsVerified=%u publisherAuth=%u "
+                      "authorized=%u write=%u flag=%u reboot=%u",
+                      (unsigned)p->cfg.checkpoint,
+                      (unsigned)plan.destinationSpaceConfirmed,
+                      (unsigned)plan.destinationOwnershipConfirmed,
+                      (unsigned)plan.sourceReverified,
+                      (unsigned)plan.embeddedCrcsVerified,
+                      (unsigned)plan.publisherAuthenticated,
+                      (unsigned)plan.installationAuthorized,
+                      (unsigned)plan.writesEnabled, (unsigned)plan.flagEnabled,
+                      (unsigned)plan.rebootEnabled);
+            if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+                p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
+                p->existingPhase = 0u;
+                p->existingFormat = PNA_EXISTING_HEADER_UNKNOWN;
+                p->existingSource = NULL;
+                p->existingPresent = false;
+                p->existingSizeMatches = false;
+                p->existingHeaderMatchesPreview = false;
+                p->existingPayloadMatches = false;
+                p->existingWholeMatches = false;
+                p->stage = PNA_TMS_INSPECT_DESTINATION;
+                return;
+            }
+            if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT) {
+                /* File HAL exists() is read-only. False alone cannot prove
+                 * that the /mtd2 mount is accessible or destination absent. */
+                const bool alreadyExists = OOP_CALL(file(), exists,
+                                                    plan.destination);
+                PnaApupdateDestinationReport r;
+                const PnaApupdateDestinationStatus status =
+                    pnaApupdateDestinationInspect(
+                        &plan, alreadyExists, p->cfg.destinationProbe,
+                        p->cfg.destinationProbeContext, &r);
+                LOG_TRACE("PnaTms: STAGE14 DESTINATION status=%d exists=%u "
+                          "required=%llu available=%llu mount=%u "
+                          "absence=%u space=%u updateFlagClear=%u probe=%u",
+                          (int)status, (unsigned)r.existingDestinationObserved,
+                          (unsigned long long)r.requiredBytes,
+                          (unsigned long long)r.availableBytes,
+                          (unsigned)r.mountConfirmed,
+                          (unsigned)r.absenceConfirmed,
+                          (unsigned)r.spaceConfirmed,
+                          (unsigned)r.updateFlagClearConfirmed,
+                          (unsigned)r.probeCalled);
+                if (status == PNA_DEST_BLOCKED ||
+                    (p->cfg.requireDestinationEvidence &&
+                     status != PNA_DEST_CONFIRMED)) {
+                    LOG_TRACE("PnaTms: STAGE14 destination BLOCKED/UNVERIFIED; "
+                              "no writes attempted");
+                    fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION);
+                    return;
+                }
+                p->downloadedBytes = p->totalBytes;
+                if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+                LOG_TRACE("PnaTms: STAGE14 READ-ONLY PREFLIGHT COMPLETE "
+                          "conditionsConfirmed=%u prepareAllowed=0 "
+                          "publisherAuth=0 authorized=0 "
+                          "writes=0 flag=0 reboot=0 network=0",
+                          (unsigned)(status == PNA_DEST_CONFIRMED));
+                finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+                       (int)PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT);
+                return;
+            }
+            p->downloadedBytes = p->totalBytes;
+            if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+            LOG_TRACE("PnaTms: STAGE13 INSTALLER PREPARATION DRY RUN PASS "
+                      "journalUnchanged=1 destinationUntouched=1 "
+                      "network=0 publisherAuth=0 install=0");
+            finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+                   (int)PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN);
+            return;
+        }
         p->downloadedBytes = p->totalBytes;
         if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
         LOG_TRACE("PnaTms: STAGE12 APUPDATE COMPAT PASS innerFiles=%u "
@@ -1737,6 +1873,510 @@ static void checkpointApupdateInspect(PnaTms* p) {
                   (unsigned)p->apupdate.fileCount);
         finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
                (int)PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY);
+    }
+}
+#endif
+
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+/* Stage 14B: inspect /mtd2/apupdate WITHOUT modifying it or the staged
+ * package. Source was already rehashed and its inner CRCs checked by the
+ * existing Stage 9 -> Stage 12 path. A matching payload does not establish
+ * pending update state, ownership, publisher trust, or install permission.
+ * Phases: 0 open; 1 header; 2 rewritten-preview comparison; 3 content
+ * comparison; 4 report. Both open file handles are closed by finish(). */
+static void checkpointExistingDestination(PnaTms* p) {
+    if (!p) return;
+    if (p->existingPhase == 0u) {
+        p->existingPresent = OOP_CALL(file(), exists,
+                                      PNA_APUPDATE_INSTALL_PATH);
+        if (!p->existingPresent) {
+            LOG_TRACE("PnaTms: STAGE14B DESTINATION exists=0 (File HAL only; "
+                      "absence not authoritative)");
+            p->existingPhase = 4u;
+            return;
+        }
+        p->opened = OOP_CALL(file(), open, PNA_APUPDATE_INSTALL_PATH, "rb");
+        if (!p->opened) {
+            LOG_TRACE("PnaTms: STAGE14B destination exists but cannot open read-only");
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+            return;
+        }
+        long size = OOP_CALL(file(), size, p->opened);
+        if (size < 0) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+            return;
+        }
+        p->existingSize = (uint64_t)size;
+        p->existingSizeMatches = p->existingSize == p->apupdate.packageSize;
+        if (p->existingSize < PNA_APUPDATE_HEADER_LEN) {
+            p->existingFormat = PNA_EXISTING_HEADER_TOO_SHORT;
+            p->existingPhase = 4u;
+            return;
+        }
+        p->existingOffset = 0u;
+        p->existingPhase = 1u;
+        return;
+    }
+    const uint32_t start = NTH_GET_TICK();
+    if (p->existingPhase == 1u) {
+        for (unsigned reads = 0u; reads < PNA_STAGE6_READS_PER_TICK &&
+             p->existingOffset < PNA_APUPDATE_HEADER_LEN; ++reads) {
+            size_t count = PNA_APUPDATE_HEADER_LEN - p->existingOffset;
+            if (count > PNA_STAGE6_READ_CHUNK) count = PNA_STAGE6_READ_CHUNK;
+            if (OOP_CALL(file(), read, p->rx + p->existingOffset, 1u,
+                         count, p->opened) != count) {
+                LOG_TRACE("PnaTms: STAGE14B destination header read failed off=%lu",
+                          (unsigned long)p->existingOffset);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            p->existingOffset += (uint32_t)count;
+            if ((uint32_t)(NTH_GET_TICK() - start) >= PNA_STAGE6_TICK_BUDGET_MS)
+                break;
+        }
+        if (p->existingOffset < PNA_APUPDATE_HEADER_LEN) return;
+        p->existingFormat = pnaApupdateExistingClassify(
+            p->rx, PNA_APUPDATE_HEADER_LEN, p->existingSize);
+        LOG_TRACE("PnaTms: STAGE14B DESTINATION exists=1 size=%llu "
+                  "format=%s sourceSize=%llu sizeMatch=%u",
+                  (unsigned long long)p->existingSize,
+                  pnaApupdateExistingFormatName(p->existingFormat),
+                  (unsigned long long)p->apupdate.packageSize,
+                  (unsigned)p->existingSizeMatches);
+        if (!p->existingSizeMatches) {
+            p->existingPhase = 4u;
+            return;
+        }
+        if (p->existingFormat == PNA_EXISTING_HEADER_REWRITTEN) {
+            /* Recreate the exact expected 4096-byte INI header in p->rx,
+             * then reread destination into a 1024-byte side buffer. */
+            size_t textLength = 0u;
+            if (pnaApupdateBuildPreview(&p->apupdate, p->rx,
+                    sizeof(p->rx), &textLength) != PNA_APUPDATE_OK ||
+                OOP_CALL(file(), seek, p->opened, 0L,
+                         FILE_SEEK_ORG_SET) != 0) {
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            p->existingHeaderMatchesPreview = true;
+            p->existingOffset = 0u;
+            p->existingPhase = 2u;
+            return;
+        }
+        p->existingPhase = 3u;
+        p->existingOffset = 0u;
+        return;
+    }
+    if (p->existingPhase == 2u) {
+        for (unsigned reads = 0u; reads < PNA_STAGE6_READS_PER_TICK &&
+             p->existingOffset < PNA_APUPDATE_HEADER_LEN; ++reads) {
+            size_t count = PNA_APUPDATE_HEADER_LEN - p->existingOffset;
+            if (count > sizeof(p->existingCompareBuffer))
+                count = sizeof(p->existingCompareBuffer);
+            if (OOP_CALL(file(), read, p->existingCompareBuffer, 1u,
+                         count, p->opened) != count) {
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            if (memcmp(p->rx + p->existingOffset,
+                       p->existingCompareBuffer, count) != 0)
+                p->existingHeaderMatchesPreview = false;
+            p->existingOffset += (uint32_t)count;
+            if ((uint32_t)(NTH_GET_TICK() - start) >= PNA_STAGE6_TICK_BUDGET_MS)
+                break;
+        }
+        if (p->existingOffset < PNA_APUPDATE_HEADER_LEN) return;
+        p->existingPhase = 3u;
+        p->existingOffset = PNA_APUPDATE_HEADER_LEN;
+        return;
+    }
+    if (p->existingPhase == 3u) {
+        if (!p->existingSource) {
+            char path[PNA_TMS_STAGE_PATH_SIZE];
+            if (!pnaTmsStageFilePath(p->cfg.stagingPrefix, 0u,
+                                      path, sizeof(path))) {
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            p->existingSource = OOP_CALL(file(), open, path, "rb");
+            if (!p->existingSource) {
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            const long sourceSize = OOP_CALL(file(), size, p->existingSource);
+            if (sourceSize < 0 ||
+                (uint64_t)sourceSize != p->apupdate.packageSize) {
+                fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            p->existingOffset = (p->existingFormat ==
+                PNA_EXISTING_HEADER_REWRITTEN || p->existingFormat ==
+                PNA_EXISTING_HEADER_UNKNOWN) ? PNA_APUPDATE_HEADER_LEN : 0u;
+            if (OOP_CALL(file(), seek, p->existingSource,
+                    (long)p->existingOffset, FILE_SEEK_ORG_SET) != 0 ||
+                OOP_CALL(file(), seek, p->opened,
+                    (long)p->existingOffset, FILE_SEEK_ORG_SET) != 0) {
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            p->existingPayloadMatches = true;
+            return;
+        }
+        unsigned pairs = 0u;
+        while (pairs < (PNA_STAGE6_READS_PER_TICK / 2u) &&
+               p->existingOffset < p->apupdate.packageSize) {
+            size_t count = (size_t)(p->apupdate.packageSize - p->existingOffset);
+            if (count > PNA_STAGE6_READ_CHUNK) count = PNA_STAGE6_READ_CHUNK;
+            if (OOP_CALL(file(), read, p->rx, 1u, count, p->opened) != count ||
+                OOP_CALL(file(), read, p->existingCompareBuffer, 1u,
+                         count, p->existingSource) != count) {
+                LOG_TRACE("PnaTms: STAGE14B compare read failed offset=%lu",
+                          (unsigned long)p->existingOffset);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            if (memcmp(p->rx, p->existingCompareBuffer, count) != 0) {
+                p->existingPayloadMatches = false;
+                break;
+            }
+            p->existingOffset += (uint32_t)count;
+            ++pairs;
+            if ((uint32_t)(NTH_GET_TICK() - start) >= PNA_STAGE6_TICK_BUDGET_MS)
+                break;
+        }
+        if (!p->existingPayloadMatches ||
+            p->existingOffset == p->apupdate.packageSize) {
+            /* For BINARY this is a full-file comparison, including header.
+             * For REWRITTEN, header is compared to the generated INI preview
+             * and payload is compared to the staged binary after 4096 bytes. */
+            p->existingWholeMatches = p->existingPayloadMatches &&
+                (p->existingFormat == PNA_EXISTING_HEADER_BINARY ||
+                 (p->existingFormat == PNA_EXISTING_HEADER_REWRITTEN &&
+                  p->existingHeaderMatchesPreview));
+            p->existingPhase = 4u;
+        }
+        return;
+    }
+    if (p->existingPhase == 4u) {
+        if (!closeFile(p, false)) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+            return;
+        }
+        if (p->existingSource) {
+            FileHandle* source = p->existingSource;
+            p->existingSource = NULL;
+            if (OOP_CALL(file(), close, source) != 0) {
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+        }
+        LOG_TRACE("PnaTms: STAGE14B MATCH present=%u format=%s "
+                  "bytes=%llu sizeMatch=%u preparedHeaderExact=%u "
+                  "contentCompared=%u contentMatch=%u wholeMatch=%u",
+                  (unsigned)p->existingPresent,
+                  pnaApupdateExistingFormatName(p->existingFormat),
+                  (unsigned long long)p->existingSize,
+                  (unsigned)p->existingSizeMatches,
+                  (unsigned)p->existingHeaderMatchesPreview,
+                  (unsigned)(p->existingSizeMatches &&
+                             p->existingSize >= PNA_APUPDATE_HEADER_LEN),
+                  (unsigned)p->existingPayloadMatches,
+                  (unsigned)p->existingWholeMatches);
+        /* Avoid a >200-character log entry. Some embedded loggers use a
+         * fixed-size buffer shared by the message and its prefix. */
+        LOG_TRACE("PnaTms: STAGE14B inspect complete; no writes or reboot");
+        LOG_TRACE("PnaTms: STAGE14B pending=unknown; owner=unknown");
+        LOG_TRACE("PnaTms: STAGE14B before progress callback");
+        p->downloadedBytes = p->totalBytes;
+        if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+        LOG_TRACE("PnaTms: STAGE14B before completion");
+        finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+               (int)PNA_TMS_CHECKPOINT_EXISTING_DESTINATION);
+    }
+}
+#endif
+
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+/* Stage 14D: a SMALL read-only signature probe. It intentionally skips
+ * staging-journal inspection and the full package rehash. Its only input is
+ * the platform updater's protected destination; no result authorizes writes. */
+static void checkpointDestinationMagic(PnaTms* p) {
+    if (!p) return;
+    const char* path = PNA_APUPDATE_INSTALL_PATH;
+    if (!OOP_CALL(file(), exists, path)) {
+        LOG_TRACE("PnaTms: STAGE14D destination absent (mount unknown)");
+        p->existingPhase = 4u;
+        if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+        finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+               (int)PNA_TMS_CHECKPOINT_DESTINATION_MAGIC);
+        return;
+    }
+
+    p->opened = OOP_CALL(file(), open, path, "rb");
+    if (!p->opened) {
+        LOG_TRACE("PnaTms: STAGE14D destination open failed");
+        fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+        return;
+    }
+    const long physicalSize = OOP_CALL(file(), size, p->opened);
+    if (physicalSize < 0) {
+        LOG_TRACE("PnaTms: STAGE14D destination size query failed");
+        fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+        return;
+    }
+    size_t readSize = (size_t)physicalSize;
+    if (readSize > 64u) readSize = 64u;
+    if (readSize && OOP_CALL(file(), read, p->existingCompareBuffer,
+                            1u, readSize, p->opened) != readSize) {
+        LOG_TRACE("PnaTms: STAGE14D destination short read");
+        fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+        return;
+    }
+    /* Close BEFORE logging any untrusted bytes; finish() will handle failed
+     * close without touching the protected destination contents. */
+    FileHandle* handle = p->opened;
+    p->opened = NULL;
+    if (OOP_CALL(file(), close, handle) != 0) {
+        LOG_TRACE("PnaTms: STAGE14D destination close failed");
+        fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+        return;
+    }
+    LOG_TRACE("PnaTms: STAGE14D size=%ld inspected=%lu bytes",
+              physicalSize, (unsigned long)readSize);
+
+    static const char hexDigits[] = "0123456789ABCDEF";
+    for (size_t offset = 0u; offset < readSize; offset += 16u) {
+        char hex[16u * 3u + 1u];
+        char ascii[16u + 1u];
+        size_t n = readSize - offset;
+        if (n > 16u) n = 16u;
+        for (size_t i = 0u; i < n; ++i) {
+            const uint8_t c = p->existingCompareBuffer[offset + i];
+            hex[i * 3u] = hexDigits[c >> 4u];
+            hex[i * 3u + 1u] = hexDigits[c & 0x0fu];
+            hex[i * 3u + 2u] = ' ';
+            ascii[i] = (c >= 0x20u && c <= 0x7eu) ? (char)c : '.';
+        }
+        hex[n * 3u] = '\0';
+        ascii[n] = '\0';
+        LOG_TRACE("PnaTms: STAGE14D HEAD +%02lu hex=%s ascii='%s'",
+                  (unsigned long)offset, hex, ascii);
+    }
+    LOG_TRACE("PnaTms: STAGE14D owner/pending=unknown; no write/flag/reboot");
+    p->existingPhase = 4u;
+    if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+    finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+           (int)PNA_TMS_CHECKPOINT_DESTINATION_MAGIC);
+}
+#endif
+
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+/* Stage 14C: inspect the protected destination without relying on its
+ * physical File HAL size to classify the embedded binary header. For a valid
+ * header, verify the destination's own embedded CRCs and inspect all bytes
+ * after the logical end. A malformed/rewritten header is reported as an
+ * observation, NOT as a trusted or replaceable package.
+ *
+ * All reads are <= 1024 bytes and the number of reads is bounded per tick.
+ * This function never creates, writes, unlinks, flags or reboots anything. */
+static void checkpointExistingDestinationExtended(PnaTms* p) {
+    if (!p) return;
+    if (p->existingPhase == 0u) {
+        p->existingPresent = OOP_CALL(file(), exists, PNA_APUPDATE_INSTALL_PATH);
+        if (!p->existingPresent) {
+            LOG_TRACE("PnaTms: STAGE14C destination not observed; mount unknown");
+            p->existingPhase = 4u;
+            return;
+        }
+        p->opened = OOP_CALL(file(), open, PNA_APUPDATE_INSTALL_PATH, "rb");
+        if (!p->opened) {
+            LOG_TRACE("PnaTms: STAGE14C destination cannot open read-only");
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+            return;
+        }
+        const long length = OOP_CALL(file(), size, p->opened);
+        if (length < 0) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+            return;
+        }
+        p->existingSize = (uint64_t)length;
+        p->existingSizeMatches = p->existingSize == p->apupdate.packageSize;
+        p->existingFormat = PNA_EXISTING_HEADER_TOO_SHORT;
+        p->existingPhase = (p->existingSize < PNA_APUPDATE_HEADER_LEN) ? 4u : 1u;
+        p->existingOffset = 0u;
+        return;
+    }
+
+    const uint32_t started = NTH_GET_TICK();
+    if (p->existingPhase == 1u) {
+        for (unsigned reads = 0u;
+             reads < PNA_STAGE6_READS_PER_TICK &&
+             p->existingOffset < PNA_APUPDATE_HEADER_LEN; ++reads) {
+            size_t length = PNA_APUPDATE_HEADER_LEN - p->existingOffset;
+            if (length > PNA_STAGE6_READ_CHUNK)
+                length = PNA_STAGE6_READ_CHUNK;
+            if (OOP_CALL(file(), read, p->rx + p->existingOffset,
+                         1u, length, p->opened) != length) {
+                LOG_TRACE("PnaTms: STAGE14C header read failed off=%lu",
+                          (unsigned long)p->existingOffset);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            p->existingOffset += (uint32_t)length;
+            if ((uint32_t)(NTH_GET_TICK() - started) >=
+                PNA_STAGE6_TICK_BUDGET_MS) break;
+        }
+        if (p->existingOffset != PNA_APUPDATE_HEADER_LEN) return;
+        if (!pnaApupdateExistingAnalyze(p->rx, PNA_APUPDATE_HEADER_LEN,
+                                       p->existingSize, &p->existingParsed,
+                                       &p->existingAnalysis)) {
+            fail(p, TMS_ERR_PROTOCOL, PNA_DIAG_DESTINATION_INSPECT);
+            return;
+        }
+        p->existingFormat = p->existingAnalysis.format;
+        LOG_TRACE("PnaTms: STAGE14C DEST size=%llu source=%llu format=%s",
+                  (unsigned long long)p->existingSize,
+                  (unsigned long long)p->apupdate.packageSize,
+                  pnaApupdateExistingFormatName(p->existingFormat));
+        LOG_TRACE("PnaTms: STAGE14C HEADER crcStored=%08lX crcCalc=%08lX match=%u",
+                  (unsigned long)p->existingAnalysis.storedHeaderCrc,
+                  (unsigned long)p->existingAnalysis.calculatedHeaderCrc,
+                  (unsigned)p->existingAnalysis.headerCrcMatches);
+        LOG_TRACE("PnaTms: STAGE14C HEADER count=%u parseResult=%d first=%02X %02X %02X %02X",
+                  (unsigned)p->existingAnalysis.claimedFileCount,
+                  (int)p->existingAnalysis.parseResult,
+                  (unsigned)p->rx[0], (unsigned)p->rx[1],
+                  (unsigned)p->rx[2], (unsigned)p->rx[3]);
+        if (p->existingFormat != PNA_EXISTING_HEADER_BINARY) {
+            LOG_TRACE("PnaTms: STAGE14C logical length unknown; no tail inference");
+            p->existingPhase = 4u;
+            return;
+        }
+        LOG_TRACE("PnaTms: STAGE14C BINARY logical=%llu trailing=%llu files=%u",
+                  (unsigned long long)p->existingAnalysis.logicalBytes,
+                  (unsigned long long)p->existingAnalysis.trailingBytes,
+                  (unsigned)p->existingParsed.fileCount);
+        for (unsigned i = 0u; i < p->existingParsed.fileCount; ++i) {
+            const PnaApupdateEntry* e = &p->existingParsed.entries[i];
+            const uint8_t* rawEntry = p->rx + PNA_APUPDATE_HEAD_INFO_LEN +
+                                      (size_t)i * PNA_APUPDATE_FILE_INFO_LEN;
+            char version[33];
+            /* Packed FileInfo.version begins at offset 23, length 128.
+             * Emit at most 32 printable bytes to protect POS logger buffers. */
+            pnaApupdateExistingText(rawEntry + 23u, 32u,
+                                    version, sizeof(version));
+            LOG_TRACE("PnaTms: STAGE14C FILE %u/%u name='%s' ver='%s'",
+                      i + 1u, (unsigned)p->existingParsed.fileCount,
+                      e->name, version);
+            LOG_TRACE("PnaTms: STAGE14C FILE offset=%lu size=%lu crc=%08lX",
+                      (unsigned long)e->offset, (unsigned long)e->size,
+                      (unsigned long)e->rawCrc);
+        }
+        p->existingFileIndex = 0u;
+        p->existingFileOffset = 0u;
+        p->existingFileCrc = UINT32_MAX;
+        p->existingInnerCrcsMatch = true;
+        /* Header read has positioned the handle at offset 4096. */
+        p->existingPhase = 2u;
+        return;
+    }
+    if (p->existingPhase == 2u) {
+        unsigned reads = 0u;
+        while (reads < PNA_STAGE6_READS_PER_TICK &&
+               p->existingFileIndex < p->existingParsed.fileCount) {
+            const PnaApupdateEntry* e =
+                &p->existingParsed.entries[p->existingFileIndex];
+            const size_t remaining = e->size - p->existingFileOffset;
+            size_t length = remaining;
+            if (length > PNA_STAGE6_READ_CHUNK)
+                length = PNA_STAGE6_READ_CHUNK;
+            if (OOP_CALL(file(), read, p->existingCompareBuffer,
+                         1u, length, p->opened) != length) {
+                LOG_TRACE("PnaTms: STAGE14C payload read failed file=%u off=%lu",
+                          (unsigned)(p->existingFileIndex + 1u),
+                          (unsigned long)p->existingFileOffset);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            p->existingFileCrc = pnaApupdateCrc32(
+                p->existingFileCrc, p->existingCompareBuffer, length);
+            p->existingFileOffset += (uint32_t)length;
+            ++reads;
+            if (p->existingFileOffset == e->size) {
+                const bool match = p->existingFileCrc == e->rawCrc;
+                LOG_TRACE("PnaTms: STAGE14C CRC file=%u/%u match=%u got=%08lX",
+                          (unsigned)(p->existingFileIndex + 1u),
+                          (unsigned)p->existingParsed.fileCount,
+                          (unsigned)match, (unsigned long)p->existingFileCrc);
+                if (!match) p->existingInnerCrcsMatch = false;
+                ++p->existingFileIndex;
+                p->existingFileOffset = 0u;
+                p->existingFileCrc = UINT32_MAX;
+            }
+            if ((uint32_t)(NTH_GET_TICK() - started) >=
+                PNA_STAGE6_TICK_BUDGET_MS) break;
+        }
+        if (p->existingFileIndex != p->existingParsed.fileCount) return;
+        p->existingTailOffset = p->existingAnalysis.logicalBytes;
+        p->existingPhase = (p->existingTailOffset < p->existingSize) ? 3u : 4u;
+        return;
+    }
+    if (p->existingPhase == 3u) {
+        unsigned reads = 0u;
+        while (reads < PNA_STAGE6_READS_PER_TICK &&
+               p->existingTailOffset < p->existingSize) {
+            size_t length = (size_t)(p->existingSize - p->existingTailOffset);
+            if (length > PNA_STAGE6_READ_CHUNK)
+                length = PNA_STAGE6_READ_CHUNK;
+            if (OOP_CALL(file(), read, p->existingCompareBuffer,
+                         1u, length, p->opened) != length) {
+                LOG_TRACE("PnaTms: STAGE14C tail read failed at=%llu",
+                          (unsigned long long)p->existingTailOffset);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+                return;
+            }
+            for (size_t i = 0u; i < length; ++i) {
+                const uint8_t b = p->existingCompareBuffer[i];
+                if (b == 0x00u) ++p->existingTailZero;
+                else if (b == 0xffu) ++p->existingTailFF;
+                else ++p->existingTailOther;
+            }
+            p->existingTailOffset += length;
+            ++reads;
+            if ((uint32_t)(NTH_GET_TICK() - started) >=
+                PNA_STAGE6_TICK_BUDGET_MS) break;
+        }
+        if (p->existingTailOffset == p->existingSize) p->existingPhase = 4u;
+        return;
+    }
+    if (p->existingPhase == 4u) {
+        if (!closeFile(p, false)) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_DESTINATION_INSPECT);
+            return;
+        }
+        if (p->existingFormat == PNA_EXISTING_HEADER_BINARY) {
+            const char* tailType = "NONE";
+            if (p->existingAnalysis.trailingBytes) {
+                tailType = p->existingTailOther == 0u && p->existingTailFF == 0u
+                    ? "ZERO" : (p->existingTailOther == 0u &&
+                                  p->existingTailZero == 0u ? "FF" : "MIXED");
+            }
+            LOG_TRACE("PnaTms: STAGE14C CRC_ALL_MATCH=%u",
+                      (unsigned)p->existingInnerCrcsMatch);
+            LOG_TRACE("PnaTms: STAGE14C TAIL type=%s bytes=%llu",
+                      tailType,
+                      (unsigned long long)p->existingAnalysis.trailingBytes);
+            LOG_TRACE("PnaTms: STAGE14C TAIL zero=%llu ff=%llu other=%llu",
+                      (unsigned long long)p->existingTailZero,
+                      (unsigned long long)p->existingTailFF,
+                      (unsigned long long)p->existingTailOther);
+        }
+        LOG_TRACE("PnaTms: STAGE14C INSPECT COMPLETE; pending/owner unknown");
+        LOG_TRACE("PnaTms: STAGE14C write=0 flag=0 reboot=0 install=0");
+        p->downloadedBytes = p->totalBytes;
+        if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+        finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+               (int)PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED);
     }
 }
 #endif
@@ -1843,13 +2483,25 @@ static void processPna(void* context) {
         case PNA_TMS_INSPECT_PACKAGE:
             checkpointApupdateInspect(p);
             return;
+        case PNA_TMS_INSPECT_DESTINATION:
+            if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC)
+                checkpointDestinationMagic(p);
+            else if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED)
+                checkpointExistingDestinationExtended(p);
+            else
+                checkpointExistingDestination(p);
+            return;
 #endif
         case PNA_TMS_VERIFY_FILE: {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
             if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
-                p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
+                p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+                p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
                 checkpointRestartReverify(p);
                 return;
             }
@@ -1948,10 +2600,20 @@ static bool startPna(void* context, TmsTrigger trigger, uint64_t operationId,
 #endif
     p->netError = NTH_OK;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC) {
+        p->existingPhase = 0u;
+        p->stage = PNA_TMS_INSPECT_DESTINATION;
+        LOG_TRACE("PnaTms: STAGE14D read-only destination signature probe");
+        return true;
+    }
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
-        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
         /* Stage 9/10/11 do not allocate an NTH transaction or contact the server. */
         beginRestartReverification(p);
         return true;
@@ -1979,7 +2641,12 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
     offline = cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
-              cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY;
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+         cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED ||
+         cfg->checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC;
 #endif
     if (!offline && (!memchr(cfg->host, '\0', sizeof(cfg->host)) ||
                      !cfg->host[0] || cfg->port == 0))
@@ -2001,7 +2668,12 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint != PNA_TMS_CHECKPOINT_REVERIFY_STAGED &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN &&
-        cfg->checkpoint != PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY)
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_EXISTING_DESTINATION &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_DESTINATION_MAGIC)
         return false;
     diagnostic = cfg->checkpoint != PNA_TMS_CHECKPOINT_NONE;
 #endif
@@ -2015,7 +2687,11 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
-        cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY)
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+         cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED)
         needsStaging = true;
 #endif
     if (needsStaging) {

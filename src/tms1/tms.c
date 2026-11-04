@@ -229,7 +229,6 @@ static bool run(const TmsCfg* cfg, TmsTrigger trigger) {
 /* Poll-style async backends can be pumped from the app event loop. */
 static void process(void) {
     TmsMgr* mgr = &__tmsMgr;
-    LOG_TRACE("tms under process.");
     if (!mgr->active)
         return;
 

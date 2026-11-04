@@ -7,24 +7,24 @@
 
 /* Legacy platform-specific apupdate container. The compiler's packed
  * struct layout is represented explicitly to avoid unaligned u32 reads. */
-#define PNA_APUPDATE_HEADER_LEN 4096u
+#define PNA_APUPDATE_HEADER_LEN    4096u
 #define PNA_APUPDATE_HEAD_INFO_LEN 160u
 #define PNA_APUPDATE_FILE_INFO_LEN 204u
-#define PNA_APUPDATE_MAX_FILES 15u
-#define PNA_APUPDATE_NAME_LEN 20u
+#define PNA_APUPDATE_MAX_FILES     15u
+#define PNA_APUPDATE_NAME_LEN      20u
 
 /* A read-only description. A raw CRC is the uncomplemented legacy value. */
 typedef struct {
-    char name[PNA_APUPDATE_NAME_LEN + 1u];
+    char     name[PNA_APUPDATE_NAME_LEN + 1u];
     uint32_t offset;
     uint32_t size;
     uint32_t rawCrc;
 } PnaApupdateEntry;
 
 typedef struct {
-    uint8_t fileCount;
-    uint32_t headerCrc;
-    uint64_t packageSize;
+    uint8_t          fileCount;
+    uint32_t         headerCrc;
+    uint64_t         packageSize;
     PnaApupdateEntry entries[PNA_APUPDATE_MAX_FILES];
 } PnaApupdateInfo;
 
@@ -40,7 +40,8 @@ typedef enum {
 } PnaApupdateResult;
 
 /* Legacy rolling CRC32: initialize to 0xFFFFFFFF and DO NOT XOR final CRC
- * for header/embedded-file comparison. The text install instructions use ~CRC. */
+ * for header/embedded-file comparison. The text install instructions use ~CRC.
+ */
 uint32_t pnaApupdateCrc32(uint32_t crc, const uint8_t* data, size_t len);
 
 /* Requires the entire 4096-byte header. Does no file I/O or allocation.
@@ -48,6 +49,15 @@ uint32_t pnaApupdateCrc32(uint32_t crc, const uint8_t* data, size_t len);
  * Exact total size is required: no hidden extra bytes accepted. */
 PnaApupdateResult pnaApupdateParse(const uint8_t* header, size_t headerLen,
                                    uint64_t packageSize, PnaApupdateInfo* out);
+
+/* Diagnostic-only interpretation: validate the same header CRC, count,
+ * names and payload bounds, but permit extra bytes AFTER all payloads.
+ * On success, out->packageSize is the logical end of embedded payloads,
+ * not the physical file size. Never authorizes package replacement. */
+PnaApupdateResult pnaApupdateParsePadded(const uint8_t*   header,
+                                         size_t           headerLen,
+                                         uint64_t         physicalSize,
+                                         PnaApupdateInfo* out);
 
 /* Builds the legacy updater's INI header ONLY IN MEMORY after every payload
  * CRC has been confirmed by the caller. Does not set a flag or write a file.

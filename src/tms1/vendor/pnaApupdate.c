@@ -48,8 +48,11 @@ static bool parseSafeName(char out[PNA_APUPDATE_NAME_LEN + 1u],
     return true;
 }
 
-PnaApupdateResult pnaApupdateParse(const uint8_t* header, size_t headerLen,
-                                   uint64_t packageSize, PnaApupdateInfo* out) {
+static PnaApupdateResult parseContainer(const uint8_t* header,
+                                        size_t headerLen,
+                                        uint64_t packageSize,
+                                        PnaApupdateInfo* out,
+                                        bool allowTrailing) {
     if (!header || !out || headerLen != PNA_APUPDATE_HEADER_LEN ||
         packageSize < PNA_APUPDATE_HEADER_LEN) return PNA_APUPDATE_BAD_INPUT;
     memset(out, 0, sizeof(*out));
@@ -79,11 +82,24 @@ PnaApupdateResult pnaApupdateParse(const uint8_t* header, size_t headerLen,
             if (strcmp(e->name, out->entries[j].name) == 0)
                 return PNA_APUPDATE_INVALID_NAME;
     }
-    if (offset != packageSize) return PNA_APUPDATE_SIZE_MISMATCH;
+    if (!allowTrailing && offset != packageSize)
+        return PNA_APUPDATE_SIZE_MISMATCH;
     out->fileCount = (uint8_t)count;
     out->headerCrc = actual;
-    out->packageSize = packageSize;
+    out->packageSize = offset;
     return PNA_APUPDATE_OK;
+}
+
+PnaApupdateResult pnaApupdateParse(const uint8_t* header, size_t headerLen,
+                                   uint64_t packageSize, PnaApupdateInfo* out) {
+    return parseContainer(header, headerLen, packageSize, out, false);
+}
+
+PnaApupdateResult pnaApupdateParsePadded(const uint8_t* header,
+                                         size_t headerLen,
+                                         uint64_t physicalSize,
+                                         PnaApupdateInfo* out) {
+    return parseContainer(header, headerLen, physicalSize, out, true);
 }
 
 static bool append(char* dst, size_t cap, size_t* used,

@@ -4,10 +4,6 @@
 #include "version.h"
 #include "storage/storage.h"
 #include "settings/settings.h"
-#include "tms/tmsTimeSync.h"
-#include "tms/tmsUpgradeCheck.h"
-#include "tms/tmsDownload.h"
-#include "tms/tmsDownloadProbe.h"
 #include "ui/infoPage.h"
 #include "phrases/phrases.h"
 #include "timer.h"
@@ -102,11 +98,9 @@ STATE_DEF_ENTER(Upgrade) {
         LOG_TRACE("TMS: invalid device identity");
         return;
     }
+    bool accepted = tmsBringupStartDestinationMagic();
 
-    bool accepted = tmsBringupStartApupdateInspect("/mtd0/tms_managed_update");
-
-    LOG_TRACE("TMS STAGE12: accepted=%d", accepted);
-
+    LOG_TRACE("TMS STAGE14D: accepted=%d", accepted);
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,

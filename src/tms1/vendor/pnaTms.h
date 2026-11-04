@@ -21,6 +21,8 @@
 #include "pnaTmsMd5.h"
 #include "pnaTmsStage.h"
 #include "pnaApupdate.h"
+#include "pnaApupdateDestination.h"
+#include "pnaApupdateExisting.h"
 /* Optional device-specific available-storage query for Stage 7. */
 typedef bool (*PnaTmsStorageSpaceCheck)(void*       context,
                                         const char* stagingPrefix,
@@ -57,7 +59,24 @@ typedef enum {
     /* Offline Stage 12: rehash Stage 8 package, inspect legacy apupdate
      * container/header and every embedded file CRC; generate header IN MEMORY.
      * NO writes, installation, update flag, reboot, or network. */
-    PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY = 12
+    PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY = 12,
+    /* Offline Stage 13: all Stage 12 checks, plus an exact dry-run plan to
+     * copy the protected package to /mtd2/apupdate and rewrite its header.
+     * Never access /mtd2, write files, set update flag, or reboot. */
+    PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN = 13,
+    /* Read-only destination inspection, optional platform capacity probe. */
+    PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT = 14,
+    /* Stage 14B: inspect the existing /mtd2/apupdate READ-ONLY, compare its
+     * header and payload with the verified staging package. Code 140 is
+     * intentionally separate from future Stage 15. No installation. */
+    PNA_TMS_CHECKPOINT_EXISTING_DESTINATION = 140,
+    /* Stage 14C: independently inspect existing binary header and actual
+     * embedded-file CRCs, then characterize any trailing padding. Read only. */
+    PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED = 141,
+    /* Stage 14D: inspect ONLY first 64 bytes of /mtd2/apupdate. No
+     * managed package is opened or verified, no network, no writes.
+     * This identifies a magic prefix only; ownership remains unknown. */
+    PNA_TMS_CHECKPOINT_DESTINATION_MAGIC = 142
 } PnaTmsCheckpoint;
 #endif
 
@@ -115,6 +134,11 @@ typedef struct {
     /* Stage 11 ONLY: genuine platform verifier or explicit test simulation.
      * NULL means FAIL CLOSED after rehash, not implicit authorization. */
     TmsPackageAuthenticator packageAuthenticator;
+    /* Stage 14 only: optional read-only platform filesystem/update-state probe.
+     */
+    PnaApupdateDestinationProbe destinationProbe;
+    void*                       destinationProbeContext;
+    bool requireDestinationEvidence; /* Checked variant fails closed. */
 #endif
 } PnaTmsConfig;
 
@@ -126,7 +150,8 @@ typedef enum {
     PNA_TMS_WAIT_END,
     PNA_TMS_INSTALL_START,
     PNA_TMS_INSTALL_WAIT,
-    PNA_TMS_INSPECT_PACKAGE
+    PNA_TMS_INSPECT_PACKAGE,
+    PNA_TMS_INSPECT_DESTINATION
 } PnaTmsStage;
 
 /* Caller-owned stable object (heap allocation is supported). Never copy while
@@ -177,6 +202,31 @@ typedef struct {
     uint32_t apupdateCrc;    /* Legacy uncomplemented CRC32. */
     uint8_t  apupdateIndex;  /* File in embedded apupdate container. */
     uint8_t  apupdatePhase;  /* 0=open, 1=header, 2=files, 3=preview. */
+    /* Stage 14B only. All File HAL handles are opened read-only. The scratch
+     * comparison buffer avoids 4 KB stack allocations and caps each read to
+     * 1024 bytes. No two File HAL reads overlap or execute concurrently. */
+    FileHandle*               existingSource;
+    uint8_t                   existingCompareBuffer[1024u];
+    uint64_t                  existingSize;
+    uint32_t                  existingOffset;
+    uint8_t                   existingPhase;
+    PnaApupdateExistingFormat existingFormat;
+    bool                      existingPresent;
+    bool                      existingSizeMatches;
+    bool                      existingHeaderMatchesPreview;
+    bool                      existingPayloadMatches;
+    bool                      existingWholeMatches;
+    /* Stage 14C state. Only diagnostic builds allocate these fields. */
+    PnaApupdateInfo             existingParsed;
+    PnaApupdateExistingAnalysis existingAnalysis;
+    uint8_t                     existingFileIndex;
+    uint32_t                    existingFileOffset;
+    uint32_t                    existingFileCrc;
+    bool                        existingInnerCrcsMatch;
+    uint64_t                    existingTailOffset;
+    uint64_t                    existingTailZero;
+    uint64_t                    existingTailFF;
+    uint64_t                    existingTailOther;
 #endif
 } PnaTms;
 

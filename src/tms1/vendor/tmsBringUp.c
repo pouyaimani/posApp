@@ -72,6 +72,22 @@ static void onDone(const TmsStatus* status, void* user) {
             LOG_TRACE("TMS BRINGUP: STAGE11 AUTH GATE DRY RUN PASS "
                       "(simulation OR platform trust; auth never persisted; "
                       "authorized=0 install=0)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC)
+            LOG_TRACE("TMS BRINGUP: STAGE14D MAGIC PROBE PASS; owner unknown");
+        else if (currentCheckpoint ==
+                 PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED)
+            LOG_TRACE("TMS BRINGUP: STAGE14C INSPECTION PASS (read-only; "
+                      "ownership unknown)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION)
+            LOG_TRACE("TMS BRINGUP: STAGE14B EXISTING DESTINATION INSPECT PASS "
+                      "(read-only; install still blocked)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT)
+            LOG_TRACE("TMS BRINGUP: STAGE14 DESTINATION INSPECT PASS "
+                      "(read-only; no installation authorization)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN)
+            LOG_TRACE(
+                "TMS BRINGUP: STAGE13 INSTALLER PREPARATION DRY RUN PASS "
+                "(journal untouched; no destination I/O/flag/reboot/install)");
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY)
             LOG_TRACE("TMS BRINGUP: STAGE12 APUPDATE COMPAT PASS "
                       "(rehashed, header and embedded CRC valid; "
@@ -145,7 +161,10 @@ static bool stage11Preflight(void* context, const TmsInstallerPlan* plan,
 }
 
 /* Passed only on Stage 11 and COPIED into the backend config. */
-static TmsPackageAuthenticator requestedAuthProvider;
+static TmsPackageAuthenticator     requestedAuthProvider;
+static PnaApupdateDestinationProbe requestedDestProbe;
+static void*                       requestedDestProbeContext;
+static bool                        requestedDestStrict;
 
 static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
                             const PnaTmsIdentity*   identity,
@@ -157,10 +176,16 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         LOG_TRACE("TMS BRINGUP: TLS requested; unsupported by current NTH");
         return false;
     }
-    const bool offline = checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
-                         checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
-                         checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
-                         checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY;
+    const bool offline =
+        checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
+        checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
+        checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
+        checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+        checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+        checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+        checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED ||
+        checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC;
     if ((!offline && (!host || !host[0] || !port)) || tmsMgr()->isBusy() ||
         ((checkpoint == PNA_TMS_CHECKPOINT_MANIFEST ||
           checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR ||
@@ -192,6 +217,11 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         cfg.dryRunInstaller.preflight = stage11Preflight;
         cfg.packageAuthenticator      = requestedAuthProvider;
     }
+    if (checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT) {
+        cfg.destinationProbe           = requestedDestProbe;
+        cfg.destinationProbeContext    = requestedDestProbeContext;
+        cfg.requireDestinationEvidence = requestedDestStrict;
+    }
     cfg.checkStorageSpace   = spaceCheck;
     cfg.storageSpaceContext = spaceCheckContext;
     if (checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
@@ -202,7 +232,11 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
         checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
         checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
-        checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY) {
+        checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
+        checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
+        checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
+        checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
         if (!scratchPrefix || !scratchPrefix[0]) {
             LOG_TRACE("TMS BRINGUP: scratchPrefix required");
             return false;
@@ -368,6 +402,53 @@ bool tmsBringupStartAuthGateSimulation(const char* stagingPrefix) {
     TmsPackageAuthenticator mock = {.context = NULL,
                                     .verify  = stage11SimulateAuth};
     return tmsBringupStartAuthGateWithProvider(stagingPrefix, &mock);
+}
+
+bool tmsBringupStartInstallerPreparePlan(const char* stagingPrefix) {
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN,
+                           stagingPrefix, NULL, NULL);
+}
+
+bool tmsBringupStartDestinationInspect(const char* stagingPrefix) {
+    requestedDestProbe        = NULL;
+    requestedDestProbeContext = NULL;
+    requestedDestStrict       = false;
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT,
+                           stagingPrefix, NULL, NULL);
+}
+
+bool tmsBringupStartDestinationChecked(const char* stagingPrefix,
+                                       PnaApupdateDestinationProbe probe,
+                                       void* probeContext) {
+    if (!probe)
+        return false;
+    requestedDestProbe        = probe;
+    requestedDestProbeContext = probeContext;
+    requestedDestStrict       = true;
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT,
+                           stagingPrefix, NULL, NULL);
+}
+
+bool tmsBringupStartExistingDestinationInspect(const char* stagingPrefix) {
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_EXISTING_DESTINATION,
+                           stagingPrefix, NULL, NULL);
+}
+
+bool tmsBringupStartDestinationMagic(void) {
+    /* Deliberately avoids the Stage 8 managed prefix and full-file rehash. */
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_DESTINATION_MAGIC, NULL, NULL,
+                           NULL);
+}
+
+bool tmsBringupStartExistingDestinationExtended(const char* stagingPrefix) {
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED,
+                           stagingPrefix, NULL, NULL);
 }
 
 bool tmsBringupStartApupdateInspect(const char* stagingPrefix) {
