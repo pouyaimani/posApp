@@ -91,29 +91,17 @@ STATE_DEF_ENTER(Upgrade) {
         return;
     }
 
-    bool accepted = false;
+    bool accepted = true;
 
-    const char* prefix = "/mtd0/tms_compact_test";
+    // const char* prefix = "/mtd0/tms_compact_test";
 
-    PnaTmsStageStatus stage = tmsBringupStage8Inspect(prefix, NULL);
+    // PnaTmsStageStatus stage = tmsBringupStage8Inspect(prefix, NULL);
 
-    LOG_TRACE("TMS COMPACT: stage=%d", (int)stage);
+    // if (stage == PNA_TMS_STAGE_READY_UNTRUSTED) {
+    //     accepted = tmsBringupStartInstallerPreflight(prefix);
 
-    if (stage == PNA_TMS_STAGE_READY_UNTRUSTED) {
-        LOG_TRACE("TMS: READY package exists; download skipped");
-
-    } else if (stage == PNA_TMS_STAGE_EMPTY ||
-               stage == PNA_TMS_STAGE_INCOMPLETE) {
-
-        accepted = tmsBringupStartManagedReady(communicationIp,
-                                               settings()->server.tmsPort,
-                                               false, &identity, prefix);
-
-        LOG_TRACE("TMS: download accepted=%d", accepted);
-
-    } else {
-        LOG_ERROR("TMS: staging unavailable status=%d", (int)stage);
-    }
+    //     LOG_TRACE("TMS PREFLIGHT: accepted=%d", accepted);
+    // }
 
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);

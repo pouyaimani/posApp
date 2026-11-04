@@ -1,6 +1,7 @@
 #include "pnaTms.h"
 
 #include <limits.h>
+#include <stdio.h>
 #include <string.h>
 #include "nth/nth_config.h"
 #include "logger.h"
@@ -9,12 +10,14 @@
 enum { PNA_ERR_CONNECT = -100, PNA_ERR_SEND = -101, PNA_ERR_FRAME = -104,
        PNA_ERR_MANIFEST = -105, PNA_ERR_SECTOR = -106,
        PNA_ERR_STORAGE = -107, PNA_ERR_VERIFY = -108,
-       PNA_ERR_SERVER = -110 };
+       PNA_ERR_SERVER = -110, PNA_ERR_PREPARE = -119 };
 #define PNA_READ_CHUNK 1024u
 #define PNA_READS_PER_TICK 16u
 #define PNA_READ_BUDGET_MS 75u
 #define PNA_PUMP_BUDGET 6u
 #define PNA_READY_CODE 8
+#define PNA_PREPARE_CODE 9
+#define PNA_LEGACY_HEADER 4096u
 
 bool pnaTmsCopyField(void *dest, size_t destSize,
                      const char *source, size_t sourceCapacity) {
@@ -457,9 +460,234 @@ static void handleFrame(PnaTms *p) {
              command == PNA_CMD_SECTOR) handleSector(p);
     else fail(p, TMS_ERR_PROTOCOL, PNA_ERR_FRAME);
 }
+/* Offline preflight reuses the same backend, buffer and 100 ms pump.
+ * READY is not trusted: rehash the entire staged package on every run.
+ * This implementation deliberately contains NO destination write path. */
+static uint32_t getLe32(const uint8_t *v) {
+    return (uint32_t)v[0] | ((uint32_t)v[1] << 8u) |
+           ((uint32_t)v[2] << 16u) | ((uint32_t)v[3] << 24u);
+}
+
+static bool prepareStart(PnaTms *p) {
+    if (pnaTmsStageInspect(p->cfg.stagingPrefix, &p->journal) !=
+            PNA_TMS_STAGE_READY_UNTRUSTED || p->journal.fileCount != 1u ||
+        p->journal.files[0].size < PNA_LEGACY_HEADER ||
+        !pnaTmsStageFilePath(p->cfg.stagingPrefix, 0u,
+                              p->currentPath, sizeof(p->currentPath))) {
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_PREPARE);
+        return false;
+    }
+    p->opened = OOP_CALL(file(), open, p->currentPath, "rb");
+    if (!p->opened ||
+        OOP_CALL(file(), size, p->opened) != (long)p->journal.files[0].size) {
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+        return false;
+    }
+    p->totalBytes = p->journal.files[0].size;
+    p->verifyOffset = 0u;
+    pnaTmsMd5Init(&p->verifyMd5);
+    p->stage = PNA_TMS_PREPARE_MD5;
+    LOG_TRACE("PnaTms: PREPARE reverify bytes=%lu readOnly=1",
+              (unsigned long)p->journal.files[0].size);
+    return true;
+}
+
+/* Return false if a legacy embedded name could escape the INI's plain name
+ * field or if it is empty; no server-controlled file paths are used. */
+static bool parseInnerName(char out[21], const uint8_t *input) {
+    size_t n = 0u;
+    while (n < 20u && input[n]) {
+        uint8_t c = input[n];
+        if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+              (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '.'))
+            return false;
+        ++n;
+    }
+    if (!n || (n == 1u && input[0] == '.') ||
+        (n == 2u && input[0] == '.' && input[1] == '.')) return false;
+    for (size_t j = n; j < 20u; ++j)
+        if (input[j] != 0u && input[j] != ' ') return false;
+    memcpy(out, input, n);
+    out[n] = 0;
+    return true;
+}
+
+static bool prepareParseHeader(PnaTms *p) {
+    uint32_t headerCrc = crc32Update(UINT32_MAX, p->rx + 4u,
+                                     PNA_LEGACY_HEADER - 4u);
+    if (getLe32(p->rx) != headerCrc || p->rx[4] == 0u || p->rx[4] > 15u)
+        return false;
+    p->innerCount = p->rx[4];
+    uint64_t offset = PNA_LEGACY_HEADER;
+    for (unsigned i = 0u; i < p->innerCount; ++i) {
+        /* Packed legacy FileInfo[204]: size +7, crc +11, name +151.
+         * Records start at offset 160 in the binary header. */
+        const uint8_t *e = p->rx + 160u + 204u * i;
+        PnaTmsInnerFile *f = &p->inner[i];
+        if (!parseInnerName(f->name, e + 151u)) return false;
+        for (unsigned j = 0u; j < i; ++j)
+            if (strcmp(f->name, p->inner[j].name) == 0) return false;
+        f->size = getLe32(e + 7u);
+        f->rawCrc = getLe32(e + 11u);
+        if (!f->size || offset > UINT32_MAX || offset > p->totalBytes ||
+            f->size > p->totalBytes - offset) return false;
+        f->offset = (uint32_t)offset;
+        offset += f->size;
+    }
+    return offset == p->totalBytes;
+}
+
+/* Generate the same INI preview as the legacy installer into existing rx.
+ * No update destination is opened, created, erased or modified. */
+static bool preparePreview(PnaTms *p, size_t *textLen) {
+    static const char *section[4] = {
+        "[namelist]\r\n", "[adrlist]\r\n",
+        "[lenlist]\r\n", "[crclist]\r\n"
+    };
+    size_t used = 0;
+    memset(p->rx, 0, PNA_LEGACY_HEADER);
+    for (unsigned s = 0; s < 4u; ++s) {
+        size_t n = strlen(section[s]);
+        if (n >= PNA_LEGACY_HEADER - used) return false;
+        memcpy(p->rx + used, section[s], n);
+        used += n;
+        for (unsigned i = 0; i < p->innerCount; ++i) {
+            const PnaTmsInnerFile *f = &p->inner[i];
+            int written;
+            if (s == 0u)
+                written = snprintf((char *)p->rx + used,
+                                   PNA_LEGACY_HEADER - used,
+                                   "file%u=%s\r\n", i, f->name);
+            else if (s == 1u)
+                written = snprintf((char *)p->rx + used,
+                                   PNA_LEGACY_HEADER - used,
+                                   "adr%u=0x%08X\r\n", i, (unsigned)f->offset);
+            else if (s == 2u)
+                written = snprintf((char *)p->rx + used,
+                                   PNA_LEGACY_HEADER - used,
+                                   "len%u=%u\r\n", i, (unsigned)f->size);
+            else
+                written = snprintf((char *)p->rx + used,
+                                   PNA_LEGACY_HEADER - used,
+                                   "crc%u=0x%08X\r\n", i,
+                                   (unsigned)(f->rawCrc ^ UINT32_MAX));
+            if (written < 0 || (size_t)written >= PNA_LEGACY_HEADER - used)
+                return false;
+            used += (size_t)written;
+        }
+    }
+    *textLen = used;
+    return true;
+}
+
+static void prepareProcess(PnaTms *p) {
+    uint32_t start = NTH_GET_TICK();
+    if (p->stage == PNA_TMS_PREPARE_MD5 ||
+        p->stage == PNA_TMS_PREPARE_HEADER) {
+        const uint32_t target = p->stage == PNA_TMS_PREPARE_MD5 ?
+                                p->journal.files[0].size : PNA_LEGACY_HEADER;
+        for (unsigned i = 0u; i < PNA_READS_PER_TICK &&
+                              p->verifyOffset < target; ++i) {
+            size_t len = target - p->verifyOffset;
+            if (len > PNA_READ_CHUNK) len = PNA_READ_CHUNK;
+            uint8_t *dest = p->stage == PNA_TMS_PREPARE_MD5 ?
+                            p->rx : p->rx + p->verifyOffset;
+            if (OOP_CALL(file(), read, dest, 1u, len, p->opened) != len) {
+                fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE); return;
+            }
+            if (p->stage == PNA_TMS_PREPARE_MD5) {
+                pnaTmsMd5Update(&p->verifyMd5, dest, len);
+                p->downloadedBytes += len;
+            }
+            p->verifyOffset += (uint32_t)len;
+            if ((uint32_t)(NTH_GET_TICK() - start) >= PNA_READ_BUDGET_MS)
+                break;
+        }
+        if (p->verifyOffset < target) {
+            (void)progress(p, TMS_STATE_VERIFYING, false); return;
+        }
+        if (p->stage == PNA_TMS_PREPARE_MD5) {
+            uint8_t digest[PNA_TMS_MD5_SIZE];
+            pnaTmsMd5Final(&p->verifyMd5, digest);
+            if (memcmp(digest, p->journal.files[0].md5, sizeof(digest)) ||
+                OOP_CALL(file(), seek, p->opened, 0, FILE_SEEK_ORG_SET)) {
+                fail(p, TMS_ERR_INTEGRITY, PNA_ERR_VERIFY); return;
+            }
+            p->verifyOffset = 0u;
+            p->stage = PNA_TMS_PREPARE_HEADER;
+            LOG_TRACE("PnaTms: PREPARE source MD5 match=1");
+        } else {
+            if (!prepareParseHeader(p)) {
+                fail(p, TMS_ERR_INTEGRITY, PNA_ERR_PREPARE); return;
+            }
+            p->fileIndex = 0u;
+            p->verifyOffset = 0u;
+            p->verifyCrc = UINT32_MAX;
+            if (OOP_CALL(file(), seek, p->opened,
+                         (long)p->inner[0].offset, FILE_SEEK_ORG_SET)) {
+                fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE); return;
+            }
+            p->stage = PNA_TMS_PREPARE_PAYLOAD;
+        }
+        return;
+    }
+    if (p->stage != PNA_TMS_PREPARE_PAYLOAD) {
+        fail(p, TMS_ERR_BACKEND_FAILURE, PNA_ERR_PREPARE); return;
+    }
+    for (unsigned i = 0u; i < PNA_READS_PER_TICK &&
+                          p->fileIndex < p->innerCount; ++i) {
+        const PnaTmsInnerFile *f = &p->inner[p->fileIndex];
+        size_t len = f->size - p->verifyOffset;
+        if (len > PNA_READ_CHUNK) len = PNA_READ_CHUNK;
+        if (OOP_CALL(file(), read, p->rx, 1u, len, p->opened) != len) {
+            fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE); return;
+        }
+        p->verifyCrc = crc32Update(p->verifyCrc, p->rx, len);
+        p->verifyOffset += (uint32_t)len;
+        if (p->verifyOffset == f->size) {
+            if (p->verifyCrc != f->rawCrc) {
+                fail(p, TMS_ERR_INTEGRITY, PNA_ERR_PREPARE); return;
+            }
+            ++p->fileIndex;
+            p->verifyOffset = 0u;
+            p->verifyCrc = UINT32_MAX;
+            if (p->fileIndex < p->innerCount &&
+                OOP_CALL(file(), seek, p->opened,
+                         (long)p->inner[p->fileIndex].offset,
+                         FILE_SEEK_ORG_SET)) {
+                fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE); return;
+            }
+        }
+        if ((uint32_t)(NTH_GET_TICK() - start) >= PNA_READ_BUDGET_MS)
+            break;
+    }
+    if (p->fileIndex < p->innerCount) return;
+    if (!closeFile(p, false)) {
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE); return;
+    }
+    size_t textLen = 0;
+    if (!preparePreview(p, &textLen)) {
+        fail(p, TMS_ERR_INTEGRITY, PNA_ERR_PREPARE); return;
+    }
+    uint32_t headerCrc = crc32Update(UINT32_MAX, p->rx,
+                                     PNA_LEGACY_HEADER) ^ UINT32_MAX;
+    LOG_TRACE("PnaTms: PREPARE PASS bytes=%lu inner=%u ini=%lu crc=%08lX",
+              (unsigned long)p->journal.files[0].size,
+              (unsigned)p->innerCount, (unsigned long)textLen,
+              (unsigned long)headerCrc);
+    LOG_TRACE("PnaTms: PREPARE NO INSTALL write=0 flag=0 reboot=0 auth=0");
+    if (!progress(p, TMS_STATE_VERIFYING, true)) return;
+    finish(p, TMS_RESULT_SUCCESS, TMS_ERR_NONE, PNA_PREPARE_CODE);
+}
+
 static void processPna(void *context) {
     PnaTms *p = (PnaTms *)context;
     if (!p || !p->active) return;
+    /* Offline preflight never allocates NTH or writes an update partition. */
+    if (p->cfg.prepareOnly) {
+        prepareProcess(p);
+        return;
+    }
     /* Application calls nth()->tick() separately, before this pump. */
     for (unsigned transitions = 0; transitions < PNA_PUMP_BUDGET && p->active;
          ++transitions) {
@@ -521,6 +749,10 @@ static bool startPna(void *context, TmsTrigger trigger, uint64_t operationId,
     p->totalBytes = p->downloadedBytes = p->verifiedBytes = 0;
     p->netFailed = false;
     p->netError = NTH_OK;
+    if (p->cfg.prepareOnly) {
+        (void)prepareStart(p);
+        return true;
+    }
     if (!progress(p, TMS_STATE_CONNECTING, false)) return true;
     (void)connectNth(p);
     return true;
@@ -532,8 +764,9 @@ static bool cancelPna(void *context, uint64_t id) {
     return true;
 }
 bool pnaTmsInit(PnaTms *p, const PnaTmsConfig *cfg) {
-    if (!p || !cfg || p->active || cfg->tls || !cfg->port || !cfg->host[0] ||
-        !memchr(cfg->host, 0, sizeof(cfg->host)) ||
+    if (!p || !cfg || p->active || cfg->tls ||
+        (!cfg->prepareOnly && (!cfg->port || !cfg->host[0] ||
+                               !memchr(cfg->host, 0, sizeof(cfg->host)))) ||
         !cfg->stagingPrefix[0] ||
         !memchr(cfg->stagingPrefix, 0, sizeof(cfg->stagingPrefix)) ||
         strlen(cfg->stagingPrefix) > sizeof(cfg->stagingPrefix) - sizeof("_00.bin"))

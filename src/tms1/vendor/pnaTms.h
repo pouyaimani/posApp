@@ -12,7 +12,8 @@
 #include "nth/nth.h"
 #include "file/file.h"
 
-/* Production staging only: no checkpoints, installer, update flag or reboot. */
+/* Compact download and read-only installer preflight. No activation or writes.
+ */
 #define PNA_TMS_STAGE_PATH_SIZE 128u
 
 typedef bool (*PnaTmsStorageSpaceCheck)(void* context, const char* prefix,
@@ -27,6 +28,7 @@ typedef struct {
     uint32_t       ioTimeoutMs;
     uint8_t        maxSectorAttempts; /* Zero defaults to 3. */
     bool           requireEndPacket;
+    bool prepareOnly; /* Read-only: reverify READY and preview legacy header. */
     PnaTmsStorageSpaceCheck checkStorageSpace; /* Optional preflight. */
     void*                   storageSpaceContext;
 } PnaTmsConfig;
@@ -36,8 +38,19 @@ typedef enum {
     PNA_TMS_CONNECTING,
     PNA_TMS_WAIT_RESPONSE,
     PNA_TMS_VERIFY_FILE,
-    PNA_TMS_WAIT_END
+    PNA_TMS_WAIT_END,
+    PNA_TMS_PREPARE_MD5,
+    PNA_TMS_PREPARE_HEADER,
+    PNA_TMS_PREPARE_PAYLOAD
 } PnaTmsStage;
+
+/* Legacy 4096-byte apupdate container (raw CRC, not a signature). */
+typedef struct {
+    char     name[21];
+    uint32_t offset;
+    uint32_t size;
+    uint32_t rawCrc;
+} PnaTmsInnerFile;
 
 typedef struct {
     PnaTmsConfig     cfg;
@@ -77,6 +90,8 @@ typedef struct {
     uint32_t        verifyCrc;
     uint32_t        verifyOffset;
     PnaTmsMd5       verifyMd5;
+    uint8_t         innerCount;
+    PnaTmsInnerFile inner[15];
 } PnaTms;
 
 bool       pnaTmsCopyField(void* dest, size_t destSize, const char* source,
