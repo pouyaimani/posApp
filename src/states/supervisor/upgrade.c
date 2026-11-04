@@ -103,6 +103,10 @@ STATE_DEF_ENTER(Upgrade) {
     //     LOG_TRACE("TMS PREFLIGHT: accepted=%d", accepted);
     // }
 
+    accepted = tmsBringupStartApupdateAudit("/mtd0/tms_compact_test");
+
+    LOG_TRACE("TMS SLOT AUDIT: accepted=%d", accepted);
+
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,

@@ -17,6 +17,26 @@ enum { PNA_ERR_CONNECT = -100, PNA_ERR_SEND = -101, PNA_ERR_FRAME = -104,
 #define PNA_PUMP_BUDGET 6u
 #define PNA_READY_CODE 8
 #define PNA_PREPARE_CODE 9
+#if TMS_ENABLE_APUPDATE_WRITER
+#define PNA_DEST_PREPARED_CODE 12
+#define PNA_ERR_DEST_BLOCKED -121
+#define PNA_APUPDATE_PATH "/mtd2/apupdate"
+#define PNA_APUPDATE_SCAN_LIMIT (64u * 1024u * 1024u)
+#endif
+#if TMS_ENABLE_APUPDATE_AUDIT
+#define PNA_AUDIT_CODE 11
+#define PNA_ERR_AUDIT -120
+/* Legacy macro FILE_TMS_PATH points here. Audit is read-only. */
+#if !TMS_ENABLE_APUPDATE_WRITER
+#define PNA_APUPDATE_PATH "/mtd2/apupdate"
+#define PNA_APUPDATE_SCAN_LIMIT (64u * 1024u * 1024u)
+#endif
+#endif
+#if TMS_ENABLE_COPY_TO_SCRATCH
+#define PNA_SCRATCH_CODE 10
+/* A test-only file: NEVER point this at APUPDATE. Must not pre-exist. */
+#define PNA_SCRATCH_PATH "/mtd0/tms_cp_01.bin"
+#endif
 #define PNA_LEGACY_HEADER 4096u
 
 bool pnaTmsCopyField(void *dest, size_t destSize,
@@ -95,6 +115,33 @@ static void finish(PnaTms *p, TmsResult result, TmsError error, int code) {
     p->stage = PNA_TMS_IDLE;
     releaseNth(p);
     bool closed = closeFile(p, false);
+#if TMS_ENABLE_COPY_TO_SCRATCH || TMS_ENABLE_APUPDATE_WRITER
+    if (p->scratchSource) {
+        if (OOP_CALL(file(), close, p->scratchSource) != 0) closed = false;
+        p->scratchSource = NULL;
+    }
+#if TMS_ENABLE_COPY_TO_SCRATCH
+    if (p->scratchOwned) {
+        /* Never remove a file unless THIS operation successfully created it. */
+        if (!closed || OOP_CALL(file(), remove, PNA_SCRATCH_PATH) != 0 ||
+            OOP_CALL(file(), exists, PNA_SCRATCH_PATH)) {
+            LOG_TRACE("PnaTms: SCRATCH cleanup failed; inspect test file");
+            if (result == TMS_RESULT_SUCCESS) {
+                result = TMS_RESULT_FAILURE;
+                error = TMS_ERR_STORAGE;
+                code = PNA_ERR_STORAGE;
+            }
+        } else LOG_TRACE("PnaTms: SCRATCH removed=1");
+        p->scratchOwned = false;
+    }
+#endif
+#if TMS_ENABLE_APUPDATE_WRITER
+    if (p->destinationTouched) {
+        LOG_TRACE("PnaTms: DEST modified result=%d flag=0 reboot=0", result);
+        p->destinationTouched = false;
+    }
+#endif
+#endif
     if (result != TMS_RESULT_SUCCESS && result != TMS_RESULT_NO_UPDATE &&
         p->journalOwned) {
         if (closed && pnaTmsStageDiscard(p->cfg.stagingPrefix, false))
@@ -580,6 +627,307 @@ static bool preparePreview(PnaTms *p, size_t *textLen) {
     return true;
 }
 
+#if TMS_ENABLE_COPY_TO_SCRATCH || TMS_ENABLE_APUPDATE_WRITER
+static const char *copyPath(const PnaTms *p) {
+#if TMS_ENABLE_APUPDATE_WRITER
+    if (p->cfg.prepareDestination) return PNA_APUPDATE_PATH;
+#endif
+#if TMS_ENABLE_COPY_TO_SCRATCH
+    (void)p;
+    return PNA_SCRATCH_PATH;
+#else
+    (void)p;
+    return NULL;
+#endif
+}
+
+#if TMS_ENABLE_APUPDATE_WRITER
+/* Never write the protected slot unless BOTH SDK/platform checks are
+ * configured and confirm it is idle/ours and the publisher is trusted.
+ * The marker is only an additional weak condition, not authorization. */
+static bool destinationGuard(PnaTms *p) {
+    static const uint8_t marker[7] = {'T','M','S','c','l','e','a'};
+    uint8_t head[sizeof(marker)];
+    if (!p->cfg.slotIdleAndOwned || !p->cfg.publisherTrusted ||
+        !p->cfg.slotIdleAndOwned(p->cfg.safetyContext) ||
+        !p->cfg.publisherTrusted(p->cfg.safetyContext, p->currentPath,
+                                 p->journal.files[0].md5,
+                                 (uint32_t)p->totalBytes)) return false;
+    FileHandle *h = OOP_CALL(file(), open, PNA_APUPDATE_PATH, "rb");
+    if (!h) return false;
+    long size = OOP_CALL(file(), size, h);
+    bool ok = size >= (long)p->totalBytes &&
+              size <= (long)PNA_APUPDATE_SCAN_LIMIT &&
+              OOP_CALL(file(), read, head, 1u, sizeof(head), h) == sizeof(head) &&
+              memcmp(head, marker, sizeof(marker)) == 0;
+    if (OOP_CALL(file(), close, h) != 0) ok = false;
+    return ok;
+}
+#endif
+
+/* Shared 1024-byte-copy / readback pipeline for disposable scratch or
+ * explicitly approved updater destination. Reuses the existing RX buffer. */
+static bool scratchStart(PnaTms *p, uint32_t headerCrc) {
+    const char *target = copyPath(p);
+#if TMS_ENABLE_APUPDATE_WRITER
+    if (p->cfg.prepareDestination) {
+        if (!destinationGuard(p)) {
+            LOG_TRACE("PnaTms: DEST BLOCKED idle/owner/auth/marker");
+            fail(p, TMS_ERR_BACKEND_FAILURE, PNA_ERR_DEST_BLOCKED);
+            return false;
+        }
+    } else
+#endif
+    if (OOP_CALL(file(), exists, target)) {
+        LOG_TRACE("PnaTms: SCRATCH refused; path exists");
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+        return false;
+    }
+    LOG_TRACE("PnaTms: COPY open protected=%d", (int)
+#if TMS_ENABLE_APUPDATE_WRITER
+              p->cfg.prepareDestination
+#else
+              0
+#endif
+              );
+    /* T3Rtos open("rb") refuses missing files; open("rb+") creates them.
+     * T3Rtos write/overwrite work by pathname, independent of open mode. */
+    p->opened = OOP_CALL(file(), open, target,
+#if TMS_ENABLE_APUPDATE_WRITER
+                          p->cfg.prepareDestination ? "rb" : "wb+"
+#else
+                          "wb+"
+#endif
+                          );
+    if (!p->opened) {
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+        return false;
+    }
+#if TMS_ENABLE_APUPDATE_WRITER
+    if (p->cfg.prepareDestination) p->destinationTouched = true;
+    else
+#endif
+    p->scratchOwned = true;
+    LOG_TRACE("PnaTms: COPY overwrite header len=4096");
+    if (OOP_CALL(file(), overwrite, p->rx, 1u, PNA_LEGACY_HEADER,
+                 p->opened) != PNA_LEGACY_HEADER ||
+        OOP_CALL(file(), tell, p->opened) != (long)PNA_LEGACY_HEADER) {
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+        return false;
+    }
+    p->scratchSource = OOP_CALL(file(), open, p->currentPath, "rb");
+    if (!p->scratchSource ||
+        OOP_CALL(file(), size, p->scratchSource) != (long)p->totalBytes ||
+        OOP_CALL(file(), seek, p->scratchSource, PNA_LEGACY_HEADER,
+                 FILE_SEEK_ORG_SET) != 0) {
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+        return false;
+    }
+    p->scratchHeaderCrc = headerCrc;
+    p->scratchOffset = PNA_LEGACY_HEADER;
+    p->downloadedBytes = 0u;
+    p->stage = PNA_TMS_SCRATCH_COPY;
+    LOG_TRACE("PnaTms: COPY header-first bytes=%lu",
+              (unsigned long)p->totalBytes);
+    return true;
+}
+
+static void scratchProcess(PnaTms *p) {
+    uint32_t tick = NTH_GET_TICK();
+    if (p->stage == PNA_TMS_SCRATCH_COPY) {
+        for (unsigned i = 0u; i < PNA_READS_PER_TICK &&
+                              p->scratchOffset < p->totalBytes; ++i) {
+            size_t n = p->totalBytes - p->scratchOffset;
+            if (n > PNA_READ_CHUNK) n = PNA_READ_CHUNK;
+            if (p->scratchOffset == PNA_LEGACY_HEADER)
+                LOG_TRACE("PnaTms: COPY first payload write len=%u",
+                          (unsigned)n);
+            if (OOP_CALL(file(), read, p->rx, 1u, n, p->scratchSource) != n ||
+                OOP_CALL(file(), write, p->rx, 1u, n, p->opened) != n) {
+                fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+                return;
+            }
+            p->scratchOffset += (uint32_t)n;
+            if ((uint32_t)(NTH_GET_TICK() - tick) >= PNA_READ_BUDGET_MS)
+                break;
+        }
+        if (p->scratchOffset < p->totalBytes) return;
+        if (!closeFile(p, true)) {
+            fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+            return;
+        }
+        if (OOP_CALL(file(), close, p->scratchSource) != 0) {
+            p->scratchSource = NULL;
+            fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+            return;
+        }
+        p->scratchSource = NULL;
+        p->opened = OOP_CALL(file(), open, copyPath(p), "rb");
+        p->scratchSource = OOP_CALL(file(), open, p->currentPath, "rb");
+        if (!p->opened || !p->scratchSource ||
+#if TMS_ENABLE_APUPDATE_WRITER
+            (p->cfg.prepareDestination ?
+             (OOP_CALL(file(), size, p->opened) < (long)p->totalBytes) :
+             (OOP_CALL(file(), size, p->opened) != (long)p->totalBytes)) ||
+#else
+            OOP_CALL(file(), size, p->opened) != (long)p->totalBytes ||
+#endif
+            OOP_CALL(file(), size, p->scratchSource) != (long)p->totalBytes ||
+            OOP_CALL(file(), seek, p->scratchSource, PNA_LEGACY_HEADER,
+                     FILE_SEEK_ORG_SET) != 0) {
+            fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+            return;
+        }
+        p->scratchOffset = 0u;
+        p->verifyCrc = UINT32_MAX;
+        p->stage = PNA_TMS_SCRATCH_VERIFY_HEADER;
+        LOG_TRACE("PnaTms: COPY complete; readback");
+        return;
+    }
+    if (p->stage == PNA_TMS_SCRATCH_VERIFY_HEADER) {
+        for (unsigned i = 0u; i < PNA_READS_PER_TICK &&
+                              p->scratchOffset < PNA_LEGACY_HEADER; ++i) {
+            size_t n = PNA_LEGACY_HEADER - p->scratchOffset;
+            if (n > PNA_READ_CHUNK) n = PNA_READ_CHUNK;
+            if (OOP_CALL(file(), read, p->rx, 1u, n, p->opened) != n) {
+                fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+                return;
+            }
+            p->verifyCrc = crc32Update(p->verifyCrc, p->rx, n);
+            p->scratchOffset += (uint32_t)n;
+            if ((uint32_t)(NTH_GET_TICK() - tick) >= PNA_READ_BUDGET_MS)
+                break;
+        }
+        if (p->scratchOffset < PNA_LEGACY_HEADER) return;
+        if ((p->verifyCrc ^ UINT32_MAX) != p->scratchHeaderCrc) {
+            fail(p, TMS_ERR_INTEGRITY, PNA_ERR_VERIFY);
+            return;
+        }
+        p->stage = PNA_TMS_SCRATCH_VERIFY_PAYLOAD;
+        return;
+    }
+    if (p->stage != PNA_TMS_SCRATCH_VERIFY_PAYLOAD) {
+        fail(p, TMS_ERR_BACKEND_FAILURE, PNA_ERR_PREPARE);
+        return;
+    }
+    /* src+dst each read in 1024-byte chunks; byte-for-byte comparison. */
+    for (unsigned i = 0u; i < PNA_READS_PER_TICK &&
+                          p->scratchOffset < p->totalBytes; ++i) {
+        size_t n = p->totalBytes - p->scratchOffset;
+        if (n > PNA_READ_CHUNK) n = PNA_READ_CHUNK;
+        if (OOP_CALL(file(), read, p->rx, 1u, n, p->scratchSource) != n ||
+            OOP_CALL(file(), read, p->rx + PNA_READ_CHUNK,
+                     1u, n, p->opened) != n ||
+            memcmp(p->rx, p->rx + PNA_READ_CHUNK, n) != 0) {
+            fail(p, TMS_ERR_INTEGRITY, PNA_ERR_VERIFY);
+            return;
+        }
+        p->scratchOffset += (uint32_t)n;
+        if ((uint32_t)(NTH_GET_TICK() - tick) >= PNA_READ_BUDGET_MS)
+            break;
+    }
+    if (p->scratchOffset < p->totalBytes) return;
+    LOG_TRACE("PnaTms: COPY PASS bytes=%lu hdrCRC=%08lX protected=%d",
+              (unsigned long)p->totalBytes,
+              (unsigned long)p->scratchHeaderCrc,
+#if TMS_ENABLE_APUPDATE_WRITER
+              (int)p->cfg.prepareDestination
+#else
+              0
+#endif
+              );
+    if (!progress(p, TMS_STATE_VERIFYING, true)) return;
+    /* finish() closes handles. Only the disposable scratch file is removed. */
+#if TMS_ENABLE_APUPDATE_WRITER && TMS_ENABLE_COPY_TO_SCRATCH
+    int code = p->cfg.prepareDestination ? PNA_DEST_PREPARED_CODE : PNA_SCRATCH_CODE;
+#elif TMS_ENABLE_APUPDATE_WRITER
+    int code = PNA_DEST_PREPARED_CODE;
+#else
+    int code = PNA_SCRATCH_CODE;
+#endif
+    finish(p, TMS_RESULT_SUCCESS, TMS_ERR_NONE, code);
+}
+#endif /* scratch or protected copy */
+
+#if TMS_ENABLE_APUPDATE_AUDIT
+/* Read-only slot classification. The legacy clear-cache routine writes only
+ * the first 7 bytes ("TMSclea"); old payload bytes beyond the marker are
+ * allowed and counted rather than treated as corruption. Neither a matching
+ * marker nor residual data establishes updater ownership or authorization. */
+static bool auditApupdateStart(PnaTms *p) {
+    p->opened = OOP_CALL(file(), open, PNA_APUPDATE_PATH, "rb");
+    if (!p->opened) {
+        LOG_TRACE("PnaTms: SLOT not readable; no update write");
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
+        return false;
+    }
+    long physical = OOP_CALL(file(), size, p->opened);
+    if (physical < (long)p->totalBytes || physical < 7L ||
+        physical > (long)PNA_APUPDATE_SCAN_LIMIT) {
+        LOG_TRACE("PnaTms: SLOT size invalid physical=%ld needed=%lu",
+                  physical, (unsigned long)p->totalBytes);
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
+        return false;
+    }
+    p->auditSize = (uint32_t)physical;
+    p->auditOffset = 0u;
+    p->auditResidualBytes = 0u;
+    p->stage = PNA_TMS_AUDIT_APUPDATE;
+    LOG_TRACE("PnaTms: SLOT scan readOnly=1 size=%lu need=%lu",
+              (unsigned long)p->auditSize, (unsigned long)p->totalBytes);
+    return true;
+}
+
+static void auditApupdateProcess(PnaTms *p) {
+    static const uint8_t marker[7] = { 'T','M','S','c','l','e','a' };
+    uint32_t started = NTH_GET_TICK();
+    for (unsigned i = 0u; i < PNA_READS_PER_TICK &&
+                          p->auditOffset < p->auditSize; ++i) {
+        uint32_t readAt = p->auditOffset;
+        size_t len = p->auditSize - readAt;
+        if (len > PNA_READ_CHUNK) len = PNA_READ_CHUNK;
+        if (OOP_CALL(file(), read, p->rx, 1u, len, p->opened) != len) {
+            LOG_TRACE("PnaTms: SLOT read failure offset=%lu",
+                      (unsigned long)readAt);
+            fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
+            return;
+        }
+        for (size_t j = 0u; j < len; ++j) {
+            uint32_t at = readAt + (uint32_t)j;
+            if (at < sizeof(marker)) {
+                /* The marker is an explicit legacy clear-state identifier. */
+                if (p->rx[j] != marker[at]) {
+                    LOG_TRACE("PnaTms: SLOT marker invalid at=%lu got=%02X",
+                              (unsigned long)at, (unsigned)p->rx[j]);
+                    fail(p, TMS_ERR_INTEGRITY, PNA_ERR_AUDIT);
+                    return;
+                }
+            } else if (p->rx[j] != 0xffu) {
+                /* Clear-cache writes 7 marker bytes; the old payload may remain. */
+                if (p->auditResidualBytes == 0u)
+                    LOG_TRACE("PnaTms: SLOT residual first=%lu byte=%02X",
+                              (unsigned long)at, (unsigned)p->rx[j]);
+                ++p->auditResidualBytes;
+            }
+        }
+        p->auditOffset += (uint32_t)len;
+        if ((uint32_t)(NTH_GET_TICK() - started) >= PNA_READ_BUDGET_MS)
+            break;
+    }
+    if (p->auditOffset < p->auditSize) return;
+    if (!closeFile(p, false)) {
+        fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
+        return;
+    }
+    LOG_TRACE("PnaTms: SLOT marker=TMSclea bytes=%lu nonFFTail=%lu",
+              (unsigned long)p->auditSize,
+              (unsigned long)p->auditResidualBytes);
+    LOG_TRACE("PnaTms: SLOT owner=unknown pending=unknown auth=0 write=0 flag=0 reboot=0");
+    if (!progress(p, TMS_STATE_VERIFYING, true)) return;
+    finish(p, TMS_RESULT_SUCCESS, TMS_ERR_NONE, PNA_AUDIT_CODE);
+}
+#endif /* TMS_ENABLE_APUPDATE_AUDIT */
+
 static void prepareProcess(PnaTms *p) {
     uint32_t start = NTH_GET_TICK();
     if (p->stage == PNA_TMS_PREPARE_MD5 ||
@@ -675,6 +1023,25 @@ static void prepareProcess(PnaTms *p) {
               (unsigned long)p->journal.files[0].size,
               (unsigned)p->innerCount, (unsigned long)textLen,
               (unsigned long)headerCrc);
+#if TMS_ENABLE_APUPDATE_AUDIT
+    if (p->cfg.auditApupdate) {
+        (void)auditApupdateStart(p);
+        return;
+    }
+#endif
+#if TMS_ENABLE_APUPDATE_WRITER
+    if (p->cfg.prepareDestination) {
+        (void)scratchStart(p, headerCrc);
+        return;
+    }
+#endif
+#if TMS_ENABLE_COPY_TO_SCRATCH
+    if (p->cfg.copyToScratch) {
+        /* The preflight has verified MD5 + all embedded CRCs. */
+        (void)scratchStart(p, headerCrc);
+        return;
+    }
+#endif
     LOG_TRACE("PnaTms: PREPARE NO INSTALL write=0 flag=0 reboot=0 auth=0");
     if (!progress(p, TMS_STATE_VERIFYING, true)) return;
     finish(p, TMS_RESULT_SUCCESS, TMS_ERR_NONE, PNA_PREPARE_CODE);
@@ -685,6 +1052,20 @@ static void processPna(void *context) {
     if (!p || !p->active) return;
     /* Offline preflight never allocates NTH or writes an update partition. */
     if (p->cfg.prepareOnly) {
+#if TMS_ENABLE_APUPDATE_AUDIT
+        if (p->stage == PNA_TMS_AUDIT_APUPDATE) {
+            auditApupdateProcess(p);
+            return;
+        }
+#endif
+#if TMS_ENABLE_COPY_TO_SCRATCH || TMS_ENABLE_APUPDATE_WRITER
+        if (p->stage == PNA_TMS_SCRATCH_COPY ||
+            p->stage == PNA_TMS_SCRATCH_VERIFY_HEADER ||
+            p->stage == PNA_TMS_SCRATCH_VERIFY_PAYLOAD) {
+            scratchProcess(p);
+            return;
+        }
+#endif
         prepareProcess(p);
         return;
     }
@@ -765,6 +1146,10 @@ static bool cancelPna(void *context, uint64_t id) {
 }
 bool pnaTmsInit(PnaTms *p, const PnaTmsConfig *cfg) {
     if (!p || !cfg || p->active || cfg->tls ||
+#if TMS_ENABLE_APUPDATE_WRITER
+        (cfg->prepareDestination && (!cfg->prepareOnly ||
+         !cfg->slotIdleAndOwned || !cfg->publisherTrusted)) ||
+#endif
         (!cfg->prepareOnly && (!cfg->port || !cfg->host[0] ||
                                !memchr(cfg->host, 0, sizeof(cfg->host)))) ||
         !cfg->stagingPrefix[0] ||

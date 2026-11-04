@@ -12,9 +12,28 @@
 #include "nth/nth.h"
 #include "file/file.h"
 
-/* Compact download and read-only installer preflight. No activation or writes.
- */
+/* Compact download and read-only installer preflight. No activation. */
+#ifndef TMS_ENABLE_COPY_TO_SCRATCH
+#define TMS_ENABLE_COPY_TO_SCRATCH 0
+#endif
+/* Optional read-only inspection of the existing updater slot.
+ * OFF by default; no production footprint. No write/erase/activation calls. */
+#ifndef TMS_ENABLE_APUPDATE_WRITER
+#define TMS_ENABLE_APUPDATE_WRITER 0
+#endif
+#ifndef TMS_ENABLE_APUPDATE_AUDIT
+#define TMS_ENABLE_APUPDATE_AUDIT 1
+#endif
 #define PNA_TMS_STAGE_PATH_SIZE 128u
+
+/* Platform-provided checks, NOT File HAL wrappers. Never substitute the
+ * legacy 7-byte marker for a pending-update/ownership query or trust check. */
+typedef bool (*PnaTmsSafetyCheck)(void* context);
+/* Must independently authenticate publisher signature for exactly this source.
+ * The staged MD5 is for equality only; it is NOT publisher authentication. */
+typedef bool (*PnaTmsPublisherCheck)(void* context, const char* stagedPath,
+                                     const uint8_t expectedMd5[16],
+                                     uint32_t      stagedBytes);
 
 typedef bool (*PnaTmsStorageSpaceCheck)(void* context, const char* prefix,
                                         uint64_t requiredBytes);
@@ -28,7 +47,22 @@ typedef struct {
     uint32_t       ioTimeoutMs;
     uint8_t        maxSectorAttempts; /* Zero defaults to 3. */
     bool           requireEndPacket;
-    bool prepareOnly; /* Read-only: reverify READY and preview legacy header. */
+    bool prepareOnly; /* Offline: always reverify READY and its embedded files.
+                       */
+#if TMS_ENABLE_APUPDATE_WRITER
+    bool prepareDestination;
+    PnaTmsSafetyCheck
+        slotIdleAndOwned; /* Real platform updater status check. */
+    PnaTmsPublisherCheck
+          publisherTrusted; /* Real cryptographic publisher check. */
+    void* safetyContext;
+#endif
+#if TMS_ENABLE_APUPDATE_AUDIT
+    bool auditApupdate; /* Inspect /mtd2/apupdate as read-only storage. */
+#endif
+#if TMS_ENABLE_COPY_TO_SCRATCH
+    bool copyToScratch; /* Explicit opt-in disposable /mtd0 copy test ONLY. */
+#endif
     PnaTmsStorageSpaceCheck checkStorageSpace; /* Optional preflight. */
     void*                   storageSpaceContext;
 } PnaTmsConfig;
@@ -41,7 +75,15 @@ typedef enum {
     PNA_TMS_WAIT_END,
     PNA_TMS_PREPARE_MD5,
     PNA_TMS_PREPARE_HEADER,
-    PNA_TMS_PREPARE_PAYLOAD
+    PNA_TMS_PREPARE_PAYLOAD,
+#if TMS_ENABLE_APUPDATE_AUDIT
+    PNA_TMS_AUDIT_APUPDATE,
+#endif
+#if TMS_ENABLE_COPY_TO_SCRATCH || TMS_ENABLE_APUPDATE_WRITER
+    PNA_TMS_SCRATCH_COPY,
+    PNA_TMS_SCRATCH_VERIFY_HEADER,
+    PNA_TMS_SCRATCH_VERIFY_PAYLOAD,
+#endif
 } PnaTmsStage;
 
 /* Legacy 4096-byte apupdate container (raw CRC, not a signature). */
@@ -92,6 +134,21 @@ typedef struct {
     PnaTmsMd5       verifyMd5;
     uint8_t         innerCount;
     PnaTmsInnerFile inner[15];
+#if TMS_ENABLE_APUPDATE_AUDIT
+    uint32_t auditSize;   /* Reported physical slot size. */
+    uint32_t auditOffset; /* Bytes examined, 1024 or less per HAL read. */
+    uint32_t
+        auditResidualBytes; /* Non-FF bytes after the 7-byte clear marker. */
+#endif
+#if TMS_ENABLE_COPY_TO_SCRATCH || TMS_ENABLE_APUPDATE_WRITER
+    FileHandle* scratchSource;
+    uint32_t    scratchOffset;
+    uint32_t    scratchHeaderCrc;
+    bool        scratchOwned;
+#if TMS_ENABLE_APUPDATE_WRITER
+    bool destinationTouched;
+#endif
+#endif
 } PnaTms;
 
 bool       pnaTmsCopyField(void* dest, size_t destSize, const char* source,
