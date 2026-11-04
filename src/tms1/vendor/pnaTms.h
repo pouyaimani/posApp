@@ -20,6 +20,8 @@
 #if PNA_TMS_ENABLE_DIAGNOSTICS
 #include "pnaTmsMd5.h"
 #include "pnaTmsStage.h"
+#include "pnaSdkScratchProbe.h"
+#include "pnaSdkWriteOrderProbe.h"
 #include "pnaApupdate.h"
 #include "pnaApupdateDestination.h"
 #include "pnaApupdateExisting.h"
@@ -76,7 +78,15 @@ typedef enum {
     /* Stage 14D: inspect ONLY first 64 bytes of /mtd2/apupdate. No
      * managed package is opened or verified, no network, no writes.
      * This identifies a magic prefix only; ownership remains unknown. */
-    PNA_TMS_CHECKPOINT_DESTINATION_MAGIC = 142
+    PNA_TMS_CHECKPOINT_DESTINATION_MAGIC = 142,
+    /* Stage 15A: offline package rehash/CRC and NON-EXECUTABLE SDK plan. */
+    PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN = 150,
+    /* Stage 15B: SDK storage semantics on a NEW /mtd0 scratch file only.
+     * NEVER touch /mtd2/apupdate; no system update/activation operations. */
+    PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE = 151,
+    /* Stage 15C: test two File HAL write orders on a disposable /mtd0 file.
+     * Independent fresh-file trials; no updater/flag/reboot access. */
+    PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE = 152
 } PnaTmsCheckpoint;
 #endif
 
@@ -151,7 +161,9 @@ typedef enum {
     PNA_TMS_INSTALL_START,
     PNA_TMS_INSTALL_WAIT,
     PNA_TMS_INSPECT_PACKAGE,
-    PNA_TMS_INSPECT_DESTINATION
+    PNA_TMS_INSPECT_DESTINATION,
+    PNA_TMS_SDK_SCRATCH_PROBE,
+    PNA_TMS_SDK_WRITE_ORDER_PROBE
 } PnaTmsStage;
 
 /* Caller-owned stable object (heap allocation is supported). Never copy while
@@ -227,6 +239,8 @@ typedef struct {
     uint64_t                    existingTailZero;
     uint64_t                    existingTailFF;
     uint64_t                    existingTailOther;
+    PnaSdkScratchProbe    sdkScratch; /* Stage 15B diagnostic-only state. */
+    PnaSdkWriteOrderProbe sdkOrder;   /* Stage 15C test-only state. */
 #endif
 } PnaTms;
 

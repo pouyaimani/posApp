@@ -72,6 +72,15 @@ static void onDone(const TmsStatus* status, void* user) {
             LOG_TRACE("TMS BRINGUP: STAGE11 AUTH GATE DRY RUN PASS "
                       "(simulation OR platform trust; auth never persisted; "
                       "authorized=0 install=0)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE)
+            LOG_TRACE("TMS BRINGUP: STAGE15C ORDER PROBE COMPLETE "
+                      "(see A/B viability; no updater access)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE)
+            LOG_TRACE("TMS BRINGUP: STAGE15B FILE HAL SCRATCH PROBE PASS "
+                      "(disposable file removed; no updater access)");
+        else if (currentCheckpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN)
+            LOG_TRACE("TMS BRINGUP: STAGE15A SDK PLAN PASS "
+                      "(offline, all SDK calls disabled)");
         else if (currentCheckpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC)
             LOG_TRACE("TMS BRINGUP: STAGE14D MAGIC PROBE PASS; owner unknown");
         else if (currentCheckpoint ==
@@ -177,11 +186,14 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         return false;
     }
     const bool offline =
+        checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE ||
+        checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE ||
         checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
         checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
         checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
         checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
         checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
         checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
         checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
         checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED ||
@@ -234,6 +246,9 @@ static bool startDiagnostic(const char* host, uint16_t port, bool useTls,
         checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
         checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
         checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
+        checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE ||
+        checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE ||
         checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
         checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
         checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
@@ -402,6 +417,29 @@ bool tmsBringupStartAuthGateSimulation(const char* stagingPrefix) {
     TmsPackageAuthenticator mock = {.context = NULL,
                                     .verify  = stage11SimulateAuth};
     return tmsBringupStartAuthGateWithProvider(stagingPrefix, &mock);
+}
+
+bool tmsBringupStartSdkStoragePlan(const char* stagingPrefix) {
+    /* No platform SDK mutator is linked or invoked by Stage 15A. */
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN, stagingPrefix,
+                           NULL, NULL);
+}
+
+bool tmsBringupStartSdkWriteOrderProbe(const char* disposablePath) {
+    if (!pnaSdkOrderCanStart(disposablePath))
+        return false;
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE,
+                           disposablePath, NULL, NULL);
+}
+
+bool tmsBringupStartSdkScratchProbe(const char* disposablePath) {
+    if (!pnaSdkScratchCanStart(disposablePath))
+        return false;
+    return startDiagnostic(NULL, 0u, false, NULL,
+                           PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE, disposablePath,
+                           NULL, NULL);
 }
 
 bool tmsBringupStartInstallerPreparePlan(const char* stagingPrefix) {

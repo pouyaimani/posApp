@@ -98,9 +98,12 @@ STATE_DEF_ENTER(Upgrade) {
         LOG_TRACE("TMS: invalid device identity");
         return;
     }
-    bool accepted = tmsBringupStartDestinationMagic();
+    bool accepted =
+        tmsBringupStartSdkWriteOrderProbe("/mtd0/tms_15c_hal_01.bin");
 
-    LOG_TRACE("TMS STAGE14D: accepted=%d", accepted);
+    LOG_TRACE("TMS STAGE15C: accepted=%d", accepted);
+    ;
+
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,

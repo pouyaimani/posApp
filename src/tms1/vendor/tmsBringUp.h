@@ -155,6 +155,24 @@ bool tmsBringupStartApupdateInspect(const char* stagingPrefix);
  * Reuse the same Stage 8 READY prefix and preserve all existing files. */
 bool tmsBringupStartInstallerPreparePlan(const char* stagingPrefix);
 
+/* Stage 15A: offline, read-only rehash/CRC of the READY package followed by
+ * an SDK-specific NON-EXECUTABLE plan. No sdkFileDel/Insert/Write, update flag,
+ * reboot, destination I/O or network. Code 150 indicates a PLAN ONLY. */
+bool tmsBringupStartSdkStoragePlan(const char* stagingPrefix);
+
+/* Stage 15B: opt-in File HAL probe on a NEW disposable /mtd0 scratch file.
+ * Uses file()->open/write/seek/read/overwrite/close/remove directly.
+ * Never touches /mtd2/apupdate or invokes update flags/reboot. */
+bool tmsBringupStartSdkScratchProbe(const char* disposablePath);
+
+/* Stage 15C: on a NEW short /mtd0/tms_15c_*.bin file, independently test:
+ * A) file()->overwrite(header), then file()->write(payload),
+ * B) file()->write(header+payload), seek(0), file()->write(new header).
+ * Each 16-byte header/payload is checked with File HAL readback/size. The
+ * disposable file is deleted between trials and after completion. Code 152
+ * means diagnostic COMPLETE, not that either order is safe for /mtd2. */
+bool tmsBringupStartSdkWriteOrderProbe(const char* disposablePath);
+
 /* Stage 14: READ-ONLY destination inspection. Reverify the Stage 8 package,
  * validate all embedded CRCs, and inspect whether /mtd2/apupdate exists.
  * Unchecked version reports status=UNVERIFIED when the File HAL cannot

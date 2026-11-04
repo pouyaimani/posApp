@@ -1,6 +1,7 @@
 #include "pnaTms.h"
 #if PNA_TMS_ENABLE_DIAGNOSTICS
 #include "pnaApupdatePlan.h"
+#include "pnaApupdateSdkPlan.h"
 #endif
 
 #include <limits.h>
@@ -79,7 +80,9 @@ enum {
     PNA_DIAG_AUTH = -114,
     PNA_DIAG_APUPDATE = -115,
     PNA_DIAG_DESTINATION = -116,
-    PNA_DIAG_DESTINATION_INSPECT = -117
+    PNA_DIAG_DESTINATION_INSPECT = -117,
+    PNA_DIAG_SDK_SCRATCH = -118,
+    PNA_DIAG_SDK_WRITE_ORDER = -119
 };
 
 #if PNA_TMS_ENABLE_DIAGNOSTICS
@@ -184,6 +187,7 @@ static bool reportProgress(PnaTms* p, TmsState state) {
      * header/plan BEFORE reporting 100%, not after outer MD5 alone. */
     if ((p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) &&
@@ -197,6 +201,14 @@ static bool reportProgress(PnaTms* p, TmsState state) {
 #if PNA_TMS_ENABLE_DIAGNOSTICS
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC &&
         state == TMS_STATE_VERIFYING && p->existingPhase == 4u)
+        percent = 100u;
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE &&
+        state == TMS_STATE_VERIFYING &&
+        p->sdkScratch.phase == PNA_SDK_SCRATCH_COMPLETE)
+        percent = 100u;
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE &&
+        state == TMS_STATE_VERIFYING &&
+        p->sdkOrder.phase == PNA_SDK_ORDER_COMPLETE)
         percent = 100u;
 #endif
     TmsBackendEvent ev = {
@@ -290,6 +302,20 @@ static bool discardStaging(PnaTms* p) {
 /* All resources are released BEFORE notifying TmsMgr. */
 static void finish(PnaTms* p, TmsResult result, TmsError error, int code) {
     if (!p->active) return;
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE &&
+        p->sdkScratch.owned) {
+        bool removed = pnaSdkScratchAbort(&p->sdkScratch);
+        LOG_TRACE("PnaTms: STAGE15B failure/cancel cleanup=%u",
+                  (unsigned)removed);
+    }
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE &&
+        p->sdkOrder.owned) {
+        const bool removed = pnaSdkOrderAbort(&p->sdkOrder);
+        LOG_TRACE("PnaTms: STAGE15C failure/cancel cleanup=%u",
+                  (unsigned)removed);
+    }
+#endif
     p->active = false;
     p->stage = PNA_TMS_IDLE;
     releaseNth(p);
@@ -1518,6 +1544,7 @@ static void checkpointRestartReverify(PnaTms* p) {
     p->fileIndex = p->fileCount - 1u;
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
@@ -1766,6 +1793,7 @@ static void checkpointApupdateInspect(PnaTms* p) {
                   "bytes=%lu destination='/mtd2/apupdate' write=0 flag=0 reboot=0",
                   (unsigned)p->cfg.checkpoint, (unsigned long)textLen);
         if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
             p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
             p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
@@ -1804,6 +1832,34 @@ static void checkpointApupdateInspect(PnaTms* p) {
                       (unsigned)plan.installationAuthorized,
                       (unsigned)plan.writesEnabled, (unsigned)plan.flagEnabled,
                       (unsigned)plan.rebootEnabled);
+            if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN) {
+                PnaApupdateSdkDryRun sdk = {0};
+                if (!pnaApupdateSdkPlanBuild(&plan, p->rx, sizeof(p->rx),
+                                             &sdk)) {
+                    LOG_TRACE("PnaTms: STAGE15A SDK plan rejected");
+                    fail(p, TMS_ERR_INTEGRITY, PNA_DIAG_APUPDATE);
+                    return;
+                }
+                LOG_TRACE("PnaTms: STAGE15A SDK PLAN copyBytes=%llu "
+                          "insertCalls=%lu chunk=%lu last=%lu",
+                          (unsigned long long)sdk.copyBytes,
+                          (unsigned long)sdk.insertCalls,
+                          (unsigned long)sdk.insertChunkBytes,
+                          (unsigned long)sdk.lastInsertBytes);
+                LOG_TRACE("PnaTms: STAGE15A SDK SEQUENCE "
+                          "del(conditional) insert(offset) readback "
+                          "writeHeader(4096) readback");
+                LOG_TRACE("PnaTms: STAGE15A UNVERIFIED "
+                          "pathAlias=1 erase=1 writeSemantics=1 "
+                          "pendingFlag=1 capacity=1 publisher=1");
+                LOG_TRACE("PnaTms: STAGE15A SDK CALLS=0 "
+                          "copy=0 write=0 delete=0 flag=0 reboot=0");
+                p->downloadedBytes = p->totalBytes;
+                if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+                finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+                       (int)PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN);
+                return;
+            }
             if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
                 p->existingPhase = 0u;
@@ -2480,6 +2536,69 @@ static void processPna(void* context) {
             handleFrame(p);
             break;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
+        case PNA_TMS_SDK_WRITE_ORDER_PROBE: {
+            const PnaSdkOrderPhase before = p->sdkOrder.phase;
+            LOG_TRACE("PnaTms: STAGE15C entering phase=%d", (int)before);
+            const PnaSdkOrderStepResult result = pnaSdkOrderStep(&p->sdkOrder);
+            LOG_TRACE("PnaTms: STAGE15C phase=%d next=%d halRet=%d",
+                      (int)before, (int)p->sdkOrder.phase,
+                      p->sdkOrder.lastHalCode);
+            if (before == PNA_SDK_ORDER_A_VERIFY) {
+                LOG_TRACE("PnaTms: STAGE15C A size=%ld header=%d payload=%d viable=%u",
+                          p->sdkOrder.aSize, (int)p->sdkOrder.aHeader,
+                          (int)p->sdkOrder.aPayload,
+                          (unsigned)p->sdkOrder.viableA);
+            } else if (before == PNA_SDK_ORDER_B_VERIFY_INITIAL) {
+                LOG_TRACE("PnaTms: STAGE15C B initial size=%ld verified=%u",
+                          p->sdkOrder.bSizeBefore,
+                          (unsigned)p->sdkOrder.initialBVerified);
+            } else if (before == PNA_SDK_ORDER_B_VERIFY_FINAL) {
+                LOG_TRACE("PnaTms: STAGE15C B size=%ld header=%d payload=%d viable=%u",
+                          p->sdkOrder.bSizeAfter, (int)p->sdkOrder.bHeader,
+                          (int)p->sdkOrder.bPayload,
+                          (unsigned)p->sdkOrder.viableB);
+            }
+            if (result == PNA_SDK_ORDER_STEP_FAILED) {
+                LOG_TRACE("PnaTms: STAGE15C FAIL phase=%d cleanup=%u",
+                          p->sdkOrder.failedPhase,
+                          (unsigned)p->sdkOrder.cleanupOk);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_SDK_WRITE_ORDER);
+            } else if (result == PNA_SDK_ORDER_STEP_DONE) {
+                LOG_TRACE("PnaTms: STAGE15C RESULTS A=%u B=%u removed=%u",
+                          (unsigned)p->sdkOrder.viableA,
+                          (unsigned)p->sdkOrder.viableB,
+                          (unsigned)p->sdkOrder.cleanupOk);
+                LOG_TRACE("PnaTms: STAGE15C test-only updater=0 flag=0 reboot=0");
+                if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+                finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+                       (int)PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE);
+            }
+            return;
+        }
+        case PNA_TMS_SDK_SCRATCH_PROBE: {
+            const PnaSdkScratchPhase before = p->sdkScratch.phase;
+            /* Log BEFORE I/O so a device reset identifies the risky call. */
+            LOG_TRACE("PnaTms: STAGE15B entering step=%d", (int)before);
+            PnaSdkScratchStepResult result = pnaSdkScratchStep(&p->sdkScratch);
+            LOG_TRACE("PnaTms: STAGE15B step=%d next=%d halRet=%d",
+                      (int)before, (int)p->sdkScratch.phase,
+                      p->sdkScratch.lastHalCode);
+            if (result == PNA_SDK_SCRATCH_STEP_FAILED) {
+                LOG_TRACE("PnaTms: STAGE15B FAIL phase=%d cleanup=%u",
+                          p->sdkScratch.failedPhase,
+                          (unsigned)p->sdkScratch.cleanupOk);
+                fail(p, TMS_ERR_STORAGE, PNA_DIAG_SDK_SCRATCH);
+            } else if (result == PNA_SDK_SCRATCH_STEP_PASSED) {
+                LOG_TRACE("PnaTms: STAGE15B PASS tail=%d removed=%u "
+                          "fileHAL=test-only flag=0 reboot=0",
+                          (int)p->sdkScratch.tail,
+                          (unsigned)p->sdkScratch.cleanupOk);
+                if (!reportProgress(p, TMS_STATE_VERIFYING)) return;
+                finish(p, TMS_RESULT_DIAGNOSTIC, TMS_ERR_NONE,
+                       (int)PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE);
+            }
+            return;
+        }
         case PNA_TMS_INSPECT_PACKAGE:
             checkpointApupdateInspect(p);
             return;
@@ -2499,6 +2618,7 @@ static void processPna(void* context) {
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
                 p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
@@ -2600,6 +2720,29 @@ static bool startPna(void* context, TmsTrigger trigger, uint64_t operationId,
 #endif
     p->netError = NTH_OK;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE) {
+        if (!pnaSdkOrderBegin(&p->sdkOrder, p->cfg.stagingPrefix)) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_SDK_WRITE_ORDER);
+            return true;
+        }
+        p->stage = PNA_TMS_SDK_WRITE_ORDER_PROBE;
+        LOG_TRACE("PnaTms: STAGE15C File HAL write-order probe path='%s'",
+                  p->cfg.stagingPrefix);
+        (void)reportProgress(p, TMS_STATE_VERIFYING);
+        return true;
+    }
+    if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE) {
+        if (!pnaSdkScratchBegin(&p->sdkScratch, p->cfg.stagingPrefix)) {
+            fail(p, TMS_ERR_STORAGE, PNA_DIAG_SDK_SCRATCH);
+            return true;
+        }
+        p->stage = PNA_TMS_SDK_SCRATCH_PROBE;
+        LOG_TRACE("PnaTms: STAGE15B File HAL scratch path='%s' "
+                  "destination=/mtd0 only flag=0 reboot=0",
+                  p->cfg.stagingPrefix);
+        (void)reportProgress(p, TMS_STATE_VERIFYING);
+        return true;
+    }
     if (p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_MAGIC) {
         p->existingPhase = 0u;
         p->stage = PNA_TMS_INSPECT_DESTINATION;
@@ -2611,6 +2754,7 @@ static bool startPna(void* context, TmsTrigger trigger, uint64_t operationId,
         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
         p->cfg.checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+        p->cfg.checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
          p->cfg.checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED) {
@@ -2638,11 +2782,14 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
     /* Offline Stage 9 needs only the existing staging prefix. */
     bool offline = false;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
-    offline = cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
+    offline = cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_REVERIFY_STAGED ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_INSTALLER_DRY_RUN ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
               cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
          cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED ||
@@ -2670,6 +2817,9 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint != PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE &&
+        cfg->checkpoint != PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_EXISTING_DESTINATION &&
         cfg->checkpoint != PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED &&
@@ -2679,6 +2829,9 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
 #endif
     bool needsStaging = !diagnostic;
 #if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE ||
+        cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE)
+        needsStaging = true;
     if (cfg->checkpoint == PNA_TMS_CHECKPOINT_FIRST_SECTOR_WRITE ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_FULL_FILE ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_INCREMENTAL_MD5 ||
@@ -2689,10 +2842,19 @@ bool pnaTmsInit(PnaTms* p, const PnaTmsConfig* cfg) {
         cfg->checkpoint == PNA_TMS_CHECKPOINT_AUTH_GATE_DRY_RUN ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_READ_ONLY ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_APUPDATE_PREPARE_PLAN ||
+              cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_STORAGE_PLAN ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_DESTINATION_PREFLIGHT ||
         cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION ||
          cfg->checkpoint == PNA_TMS_CHECKPOINT_EXISTING_DESTINATION_EXTENDED)
         needsStaging = true;
+#endif
+#if PNA_TMS_ENABLE_DIAGNOSTICS
+    if (cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_SCRATCH_PROBE &&
+        !pnaSdkScratchCanStart(cfg->stagingPrefix))
+        return false;
+    if (cfg->checkpoint == PNA_TMS_CHECKPOINT_SDK_WRITE_ORDER_PROBE &&
+        !pnaSdkOrderCanStart(cfg->stagingPrefix))
+        return false;
 #endif
     if (needsStaging) {
         if (cfg->stagingPrefix[0] == '\0' ||
