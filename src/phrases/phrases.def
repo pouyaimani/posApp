@@ -276,7 +276,25 @@ X(PHRASE_NFC_MGR_ERR_READER_UNAVAILABLE     ,   "کارت‌خوان در دست
 )
 X(PHRASE_NFC_MGR_ERR_READER_BUSY            ,   "کارت‌خوان مشغول است"                   ,   "wage"
 )
-X(PHRASE_NFC_APP_NAME                       ,   "نام برنامه"                        ,   "wage"
+X(PHRASE_NFC_APP_NAME                       ,   "نام برنامه"                            ,   "app name"
+)
+X(PHRASE_TMS_CONNECTING                     ,   "اتصال به سرور به روزرسانی"            , "Connecting to TMS"
+)
+X(PHRASE_TMS_CHECKING                       ,   "بررسی به روزرسانی"                    , "Checking for updates"
+)
+X(PHRASE_TMS_DOWNLOADING                    ,   "دریافت فایل به روزرسانی"              , "Downloading update"
+)
+X(PHRASE_TMS_VERIFYING                      ,   "بررسی صحت فایل دریافتی"             , "Verifying download"
+)
+X(PHRASE_TMS_PREPARING                      ,   "آماده سازی به روزرسانی"                , "Preparing firmware"
+)
+X(PHRASE_TMS_RESTARTING                     ,   "راه اندازی مجدد دستگاه"              , "Restarting device"
+)
+X(PHRASE_TMS_NO_UPDATE                      ,   "به روزرسانی جدیدی موجود نیست"         , "No update available"
+)
+X(PHRASE_TMS_UPDATING                       ,   "در حال به روزرسانی"                   , "Updating"
+)
+X(PHRASE_TMS_DO_NOT_POWER_OFF               ,   "لطفا دستگاه را خاموش نکنید"            , "Do not turn off the device"
 )
 /**********************************************************************
  *

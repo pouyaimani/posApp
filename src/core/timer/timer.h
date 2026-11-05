@@ -43,8 +43,8 @@ TimerHandler* getTimerHanlder(void);
 
 #define TIMER_CREATE(checker, period, singleShot)                              \
     createTimer(checker, period, singleShot)
-#define TIMER_START(timer)  timer->start(timer)
-#define TIMER_STOP(timer)   timer->stop(timer)
-#define TIMER_REMOVE(timer) removeTimer(timer)
+#define TIMER_START(timer)   timer->start(timer)
+#define TIMER_STOP(timer)    timer->stop(timer)
+#define TIMER_DESTROY(timer) removeTimer(timer)
 
 #endif
