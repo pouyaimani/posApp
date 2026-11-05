@@ -289,6 +289,34 @@ static SystemErr_t hibernate(System* dev) {
     return (sdkSysEnterIdle() == SDK_OK ? SYS_ERR_OK : SYS_ERR_NOK);
 }
 
+static int32_t verifySign(System* self, const char* path, uint32_t start,
+                          uint32_t length) {
+    (void)self;
+
+    if (!path || !path[0] || length == 0 || start > UINT32_MAX - length)
+        return -1;
+
+    s32 ret = sdkSysVerifySign((char*)path, start, length);
+
+    LOG_TRACE("verify sign result = %d", ret);
+
+    if (ret == SDK_OK)
+        return 0;
+
+    return ret != 0 ? ret : -1;
+}
+
+static int32_t setUpdateFlag(System* self) {
+    (void)self;
+
+    s32 ret = sdkSysSetUpdateFlag();
+
+    if (ret == SDK_OK)
+        return 0;
+
+    return ret != 0 ? ret : -1;
+}
+
 void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.name                     = name;
     self->base.vtable.init              = init;
@@ -317,6 +345,8 @@ void T3Rtos_ctor(T3Rtos* self, const char* name) {
     self->base.vtable.setDateTimeBcd    = setDateTimeBcd;
     self->base.vtable.reallocate        = memRealloc;
     self->base.vtable.hibernate         = hibernate;
+    self->base.vtable.verifySign        = verifySign;
+    self->base.vtable.setUpdateFlag     = setUpdateFlag;
 
     self->base.maxBright = 5;
     self->base.maxSound  = 5;

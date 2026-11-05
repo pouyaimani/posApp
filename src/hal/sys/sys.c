@@ -51,27 +51,8 @@ void sys_freeMemory_debug(void* mem, const char* file, int line,
 }
 
 OOP_CTOR(System, const char* name) {
-    self->name                    = name;
-    self->vtable.flushDisplay     = NULL;
-    self->vtable.freeMemory       = NULL;
-    self->vtable.getDateTime      = NULL;
-    self->vtable.getMemory        = NULL;
-    self->vtable.getTick          = NULL;
-    self->vtable.init             = NULL;
-    self->vtable.logOut           = NULL;
-    self->vtable.getBatteryStatus = NULL;
-    self->vtable.sleep            = NULL;
-    self->vtable.reboot           = NULL;
-    self->vtable.powerOff         = NULL;
-    self->vtable.getSN            = NULL;
-    self->vtable.setVolume        = NULL;
-    self->vtable.setBrightness    = NULL;
-    self->vtable.beepOnce         = NULL;
-    self->vtable.getVolume        = NULL;
-    self->vtable.getBrightness    = NULL;
-    self->vtable.setDateTime      = NULL;
-    self->vtable.getName          = NULL;
-    self->vtable.getCode          = NULL;
+    self->name = name;
+    memset(&self->vtable, 0, sizeof(self->vtable));
 }
 
 System* sys() {

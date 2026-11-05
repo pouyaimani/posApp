@@ -22,7 +22,27 @@
 #define TMS_ENABLE_APUPDATE_WRITER 0
 #endif
 #ifndef TMS_ENABLE_APUPDATE_AUDIT
-#define TMS_ENABLE_APUPDATE_AUDIT 1
+#define TMS_ENABLE_APUPDATE_AUDIT 0
+#endif
+/* Optional SIGNATURE-only check during the existing read-only preflight.
+ * Verify all embedded regions through System HAL; no update writes/flags.
+ * Off by default to preserve the compact production footprint. */
+#ifndef TMS_ENABLE_SIGNATURE_PREFLIGHT
+#define TMS_ENABLE_SIGNATURE_PREFLIGHT 1
+#endif
+/* Test-POS ONLY: report sdkSysVerifySign failures while continuing the
+ * read-only installer preflight. This does NOT authenticate a package.
+ * Never compile this option with a destination writer or scratch copier. */
+#ifndef TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
+#define TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT 1
+#endif
+#if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT && !TMS_ENABLE_SIGNATURE_PREFLIGHT
+#error                                                                         \
+    "TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT requires TMS_ENABLE_SIGNATURE_PREFLIGHT=1"
+#endif
+#if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT &&                                      \
+    (TMS_ENABLE_APUPDATE_WRITER || TMS_ENABLE_COPY_TO_SCRATCH)
+#error "Unsigned debug preflight forbids updater and scratch writes"
 #endif
 #define PNA_TMS_STAGE_PATH_SIZE 128u
 

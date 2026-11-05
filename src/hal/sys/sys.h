@@ -66,6 +66,14 @@ OOP_VTABLE(System) {
     OOP_IMETHOD(int, System, getBrightness);
     OOP_IMETHOD(void, System, beepOnce);
     OOP_IMETHOD(SystemErr_t, System, hibernate);
+    /* Verify a firmware signature.
+     * Returns 0 on success, nonzero on failure. */
+    OOP_IMETHOD(int32_t, System, verifySign, const char* path, uint32_t start,
+                uint32_t length);
+
+    /* Set the firmware update flag.
+     * Returns 0 on success, nonzero on failure. */
+    OOP_IMETHOD(int32_t, System, setUpdateFlag);
 };
 
 OOP_CLASS(System) {

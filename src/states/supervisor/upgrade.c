@@ -57,6 +57,21 @@ void tmsDownloadProgress(uint32_t written, uint32_t total, void* user) {
 
 void updateTick(void) { tmsBringupProcess(); }
 
+static void checkTmsUpdate(void) {
+    const char* prefix = "/mtd0/tms_compact_test";
+
+    PnaTmsStageStatus status = tmsBringupStage8Inspect(prefix, NULL);
+
+    LOG_TRACE("TMS: staging status=%d", (int)status);
+
+    if (status == PNA_TMS_STAGE_READY_UNTRUSTED) {
+        LOG_TRACE("TMS: verified staging record exists");
+        return;
+    }
+
+    LOG_TRACE("TMS: no READY package, status=%d", (int)status);
+}
+
 STATE_DEF_ENTER(Upgrade) {
     char communicationIp[32];
     normalizeIp(settings()->server.tmsIp, communicationIp,
@@ -91,22 +106,9 @@ STATE_DEF_ENTER(Upgrade) {
         return;
     }
 
-    bool accepted = true;
+    bool accepted = tmsBringupStartInstallerPreflight("/mtd0/tms_compact_test");
 
-    // const char* prefix = "/mtd0/tms_compact_test";
-
-    // PnaTmsStageStatus stage = tmsBringupStage8Inspect(prefix, NULL);
-
-    // if (stage == PNA_TMS_STAGE_READY_UNTRUSTED) {
-    //     accepted = tmsBringupStartInstallerPreflight(prefix);
-
-    //     LOG_TRACE("TMS PREFLIGHT: accepted=%d", accepted);
-    // }
-
-    accepted = tmsBringupStartApupdateAudit("/mtd0/tms_compact_test");
-
-    LOG_TRACE("TMS SLOT AUDIT: accepted=%d", accepted);
-
+    LOG_TRACE("TMS DEBUG SIGN PREFLIGHT: accepted=%d", (int)accepted);
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,

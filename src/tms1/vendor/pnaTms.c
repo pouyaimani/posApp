@@ -5,6 +5,9 @@
 #include <string.h>
 #include "nth/nth_config.h"
 #include "logger.h"
+#if TMS_ENABLE_SIGNATURE_PREFLIGHT || TMS_ENABLE_APUPDATE_WRITER
+#include "sys/sys.h"
+#endif
 
 /* Stage-8 behavior, without the Stage 1-15C diagnostic switchboard. */
 enum { PNA_ERR_CONNECT = -100, PNA_ERR_SEND = -101, PNA_ERR_FRAME = -104,
@@ -17,6 +20,9 @@ enum { PNA_ERR_CONNECT = -100, PNA_ERR_SEND = -101, PNA_ERR_FRAME = -104,
 #define PNA_PUMP_BUDGET 6u
 #define PNA_READY_CODE 8
 #define PNA_PREPARE_CODE 9
+#if TMS_ENABLE_SIGNATURE_PREFLIGHT || TMS_ENABLE_APUPDATE_WRITER
+#define PNA_ERR_SIGNATURE -122
+#endif
 #if TMS_ENABLE_APUPDATE_WRITER
 #define PNA_DEST_PREPARED_CODE 12
 #define PNA_ERR_DEST_BLOCKED -121
@@ -141,6 +147,15 @@ static void finish(PnaTms *p, TmsResult result, TmsError error, int code) {
         p->destinationTouched = false;
     }
 #endif
+#endif
+#if TMS_ENABLE_APUPDATE_WRITER
+    /* A failed destination close must never be reported as PREPARED. */
+    if (!closed && (result == TMS_RESULT_SUCCESS ||
+                    result == TMS_RESULT_NO_UPDATE)) {
+        result = TMS_RESULT_FAILURE;
+        error = TMS_ERR_STORAGE;
+        code = PNA_ERR_STORAGE;
+    }
 #endif
     if (result != TMS_RESULT_SUCCESS && result != TMS_RESULT_NO_UPDATE &&
         p->journalOwned) {
@@ -627,6 +642,54 @@ static bool preparePreview(PnaTms *p, size_t *textLen) {
     return true;
 }
 
+/* The vendor's platformVerifyFirmwareFile() verifies each updated region
+ * with sdkSysVerifySign(APUPDATE, offset, completedLength). Here every
+ * parsed embedded file is selected for the generated update INI, so all
+ * these regions must pass the System HAL's trusted signature check.
+ * Do not substitute manifest MD5 or CRC32 for a signature. */
+#if TMS_ENABLE_SIGNATURE_PREFLIGHT || TMS_ENABLE_APUPDATE_WRITER
+static bool verifyEmbeddedSignatures(const PnaTms *p, const char *path) {
+#if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
+    unsigned rejectedCount = 0u;
+#endif
+    System *system = sys();
+    if (!p || !path || !path[0] || !system ||
+        !system->vtable.verifySign || p->innerCount == 0u) {
+        LOG_TRACE("PnaTms: SIGN unsupported path/system");
+        return false;
+    }
+    for (unsigned i = 0u; i < p->innerCount; ++i) {
+        const PnaTmsInnerFile *entry = &p->inner[i];
+        if (!entry->size || entry->offset < PNA_LEGACY_HEADER ||
+            entry->offset > p->totalBytes ||
+            entry->size > p->totalBytes - entry->offset) return false;
+        int32_t ret = OOP_CALL(system, verifySign, path,
+                               entry->offset, entry->size);
+        if (ret != 0) {
+            LOG_TRACE("PnaTms: SIGN FAIL file=%u/%u ret=%ld",
+                      i + 1u, (unsigned)p->innerCount, (long)ret);
+#if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
+            /* Only an actual SDK rejection can be tolerated, and only
+             * in a build with ALL copy/write paths excluded. An absent
+             * verifier or invalid metadata still fails closed. */
+            ++rejectedCount;
+            continue;
+#else
+            return false;
+#endif
+        }
+        LOG_TRACE("PnaTms: SIGN OK file=%u/%u", i + 1u,
+                  (unsigned)p->innerCount);
+    }
+#if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
+    if (rejectedCount != 0u)
+        LOG_TRACE("PnaTms: SIGN UNVERIFIED debug only rejected=%u/%u",
+                  rejectedCount, (unsigned)p->innerCount);
+#endif
+    return true;
+}
+#endif
+
 #if TMS_ENABLE_COPY_TO_SCRATCH || TMS_ENABLE_APUPDATE_WRITER
 static const char *copyPath(const PnaTms *p) {
 #if TMS_ENABLE_APUPDATE_WRITER
@@ -772,11 +835,23 @@ static void scratchProcess(PnaTms *p) {
 #else
             OOP_CALL(file(), size, p->opened) != (long)p->totalBytes ||
 #endif
-            OOP_CALL(file(), size, p->scratchSource) != (long)p->totalBytes ||
-            OOP_CALL(file(), seek, p->scratchSource, PNA_LEGACY_HEADER,
-                     FILE_SEEK_ORG_SET) != 0) {
+            OOP_CALL(file(), size, p->scratchSource) != (long)p->totalBytes) {
             fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
             return;
+        }
+        /* Bind destination readback to the ORIGINAL verified package, not
+         * just to the source file's current contents. The first 4096 bytes
+         * of the destination are intentionally replaced with an INI; hash
+         * the original binary source header before comparing payload bytes. */
+        pnaTmsMd5Init(&p->verifyMd5);
+        for (uint32_t off = 0u; off < PNA_LEGACY_HEADER;
+             off += PNA_READ_CHUNK) {
+            if (OOP_CALL(file(), read, p->rx, 1u, PNA_READ_CHUNK,
+                         p->scratchSource) != PNA_READ_CHUNK) {
+                fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+                return;
+            }
+            pnaTmsMd5Update(&p->verifyMd5, p->rx, PNA_READ_CHUNK);
         }
         p->scratchOffset = 0u;
         p->verifyCrc = UINT32_MAX;
@@ -822,11 +897,40 @@ static void scratchProcess(PnaTms *p) {
             fail(p, TMS_ERR_INTEGRITY, PNA_ERR_VERIFY);
             return;
         }
+        pnaTmsMd5Update(&p->verifyMd5, p->rx, n);
         p->scratchOffset += (uint32_t)n;
         if ((uint32_t)(NTH_GET_TICK() - tick) >= PNA_READ_BUDGET_MS)
             break;
     }
     if (p->scratchOffset < p->totalBytes) return;
+    uint8_t verifiedMd5[PNA_TMS_MD5_SIZE];
+    pnaTmsMd5Final(&p->verifyMd5, verifiedMd5);
+    if (memcmp(verifiedMd5, p->journal.files[0].md5,
+               sizeof(verifiedMd5)) != 0) {
+        LOG_TRACE("PnaTms: COPY source changed during preparation");
+        fail(p, TMS_ERR_INTEGRITY, PNA_ERR_VERIFY);
+        return;
+    }
+#if TMS_ENABLE_APUPDATE_WRITER
+    /* The HAL can address files by path; close both read handles before
+     * asking the SDK to verify the updater's signed payload regions. */
+    if (p->cfg.prepareDestination) {
+        bool closed = closeFile(p, false);
+        if (p->scratchSource) {
+            if (OOP_CALL(file(), close, p->scratchSource) != 0)
+                closed = false;
+            p->scratchSource = NULL;
+        }
+        if (!closed) {
+            fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
+            return;
+        }
+        if (!verifyEmbeddedSignatures(p, PNA_APUPDATE_PATH)) {
+            fail(p, TMS_ERR_INTEGRITY, PNA_ERR_SIGNATURE);
+            return;
+        }
+    }
+#endif
     LOG_TRACE("PnaTms: COPY PASS bytes=%lu hdrCRC=%08lX protected=%d",
               (unsigned long)p->totalBytes,
               (unsigned long)p->scratchHeaderCrc,
@@ -1013,6 +1117,19 @@ static void prepareProcess(PnaTms *p) {
     if (!closeFile(p, false)) {
         fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE); return;
     }
+#if TMS_ENABLE_SIGNATURE_PREFLIGHT || TMS_ENABLE_APUPDATE_WRITER
+    /* Authenticate the exact READY package BEFORE any destination write.
+     * If this SDK cannot verify /mtd0 paths, fail closed; do not bypass it. */
+#if TMS_ENABLE_SIGNATURE_PREFLIGHT
+    if (!verifyEmbeddedSignatures(p, p->currentPath)) {
+#else
+    if (p->cfg.prepareDestination &&
+        !verifyEmbeddedSignatures(p, p->currentPath)) {
+#endif
+        fail(p, TMS_ERR_INTEGRITY, PNA_ERR_SIGNATURE);
+        return;
+    }
+#endif
     size_t textLen = 0;
     if (!preparePreview(p, &textLen)) {
         fail(p, TMS_ERR_INTEGRITY, PNA_ERR_PREPARE); return;
