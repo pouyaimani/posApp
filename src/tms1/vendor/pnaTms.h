@@ -12,14 +12,15 @@
 #include "nth/nth.h"
 #include "file/file.h"
 
-/* Compact download and read-only installer preflight. No activation. */
+/* Compact TMS. Protected APUPDATE writes are optional and may trigger
+ * platform installation automatically; there is no SDK flag/reboot call. */
 #ifndef TMS_ENABLE_COPY_TO_SCRATCH
 #define TMS_ENABLE_COPY_TO_SCRATCH 0
 #endif
 /* Optional read-only inspection of the existing updater slot.
  * OFF by default; no production footprint. No write/erase/activation calls. */
 #ifndef TMS_ENABLE_APUPDATE_WRITER
-#define TMS_ENABLE_APUPDATE_WRITER 0
+#define TMS_ENABLE_APUPDATE_WRITER 1
 #endif
 #ifndef TMS_ENABLE_APUPDATE_AUDIT
 #define TMS_ENABLE_APUPDATE_AUDIT 0
@@ -28,13 +29,31 @@
  * Verify all embedded regions through System HAL; no update writes/flags.
  * Off by default to preserve the compact production footprint. */
 #ifndef TMS_ENABLE_SIGNATURE_PREFLIGHT
-#define TMS_ENABLE_SIGNATURE_PREFLIGHT 1
+#define TMS_ENABLE_SIGNATURE_PREFLIGHT 0
 #endif
 /* Test-POS ONLY: report sdkSysVerifySign failures while continuing the
  * read-only installer preflight. This does NOT authenticate a package.
  * Never compile this option with a destination writer or scratch copier. */
 #ifndef TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
-#define TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT 1
+#define TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT 0
+#endif
+/* Explicit DEVELOPMENT POS ONLY: omit SDK signature authentication while
+ * testing protected destination writes. On tested POS firmware, writing
+ * APUPDATE itself can trigger installation, WITHOUT any application call to
+ * setUpdateFlag()/reboot(). This does NOT authenticate a publisher.
+ * Keep both switches OFF in production builds. */
+#ifndef TMS_DEV_POS_BUILD
+#define TMS_DEV_POS_BUILD 1
+#endif
+#ifndef TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE
+#define TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE 1
+#endif
+#if TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE &&                                    \
+    (!TMS_DEV_POS_BUILD || !TMS_ENABLE_APUPDATE_WRITER)
+#error "Unsigned destination preparation requires DEV_POS_BUILD and WRITER"
+#endif
+#if TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE && TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
+#error "Choose either unsigned read-only preflight or unsigned preparation"
 #endif
 #if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT && !TMS_ENABLE_SIGNATURE_PREFLIGHT
 #error                                                                         \
@@ -46,14 +65,29 @@
 #endif
 #define PNA_TMS_STAGE_PATH_SIZE 128u
 
-/* Platform-provided checks, NOT File HAL wrappers. Never substitute the
- * legacy 7-byte marker for a pending-update/ownership query or trust check. */
-typedef bool (*PnaTmsSafetyCheck)(void* context);
-/* Must independently authenticate publisher signature for exactly this source.
- * The staged MD5 is for equality only; it is NOT publisher authentication. */
-typedef bool (*PnaTmsPublisherCheck)(void* context, const char* stagedPath,
-                                     const uint8_t expectedMd5[16],
-                                     uint32_t      stagedBytes);
+#if TMS_ENABLE_APUPDATE_WRITER
+/* One-operation replacement decision, not a pending-update status query.
+ * Invoked synchronously ONCE after READY integrity and the normal vendor
+ * signature checks (omitted ONLY by an explicit dev-POS build), plus the
+ * TMSclea/size precheck, immediately before modifying APUPDATE.
+ * The implementer MUST enforce explicit operator authorization and any
+ * applicable transaction/updater ownership requirements. Never return true
+ * merely because the 7-byte clear marker exists.
+ * The pointers are borrowed and valid only for the duration of the call.
+ * MD5 binds the decision to the reverified READY package; it is not a
+ * publisher-authentication mechanism. Normal builds require SDK signatures;
+ * an explicitly enabled DEV-POS unsigned preparation does not authenticate
+ * firmware; writing APUPDATE may itself activate the platform updater. */
+typedef struct {
+    uint64_t       operationId;
+    const char*    destinationPath;
+    const char*    stagedPath;
+    const uint8_t* expectedMd5; /* 16 bytes, journal MD5 */
+    uint32_t       stagedBytes;
+} PnaTmsReplaceRequest;
+typedef bool (*PnaTmsAuthorizeReplace)(void*                       context,
+                                       const PnaTmsReplaceRequest* request);
+#endif
 
 typedef bool (*PnaTmsStorageSpaceCheck)(void* context, const char* prefix,
                                         uint64_t requiredBytes);
@@ -70,12 +104,9 @@ typedef struct {
     bool prepareOnly; /* Offline: always reverify READY and its embedded files.
                        */
 #if TMS_ENABLE_APUPDATE_WRITER
-    bool prepareDestination;
-    PnaTmsSafetyCheck
-        slotIdleAndOwned; /* Real platform updater status check. */
-    PnaTmsPublisherCheck
-          publisherTrusted; /* Real cryptographic publisher check. */
-    void* safetyContext;
+    bool                   prepareDestination;
+    PnaTmsAuthorizeReplace authorizeReplace; /* Explicit, single-use consent. */
+    void*                  authorizationContext;
 #endif
 #if TMS_ENABLE_APUPDATE_AUDIT
     bool auditApupdate; /* Inspect /mtd2/apupdate as read-only storage. */
@@ -167,6 +198,7 @@ typedef struct {
     bool        scratchOwned;
 #if TMS_ENABLE_APUPDATE_WRITER
     bool destinationTouched;
+    bool replacementDecisionUsed; /* Refuse a repeated authorization attempt. */
 #endif
 #endif
 } PnaTms;

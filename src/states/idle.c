@@ -56,13 +56,42 @@ static void go2Supporter(void* arg) {
 
 void showKahrobaMenu(void* arg);
 
+#include "file/file.h"
+#include "logger.h"
+
+static void inspectApupdateHeader(void) {
+    FileHandle* h = OOP_CALL(file(), open, "/mtd2/apupdate", "rb");
+
+    if (!h) {
+        LOG_TRACE("TMS: apupdate open failed");
+        return;
+    }
+
+    uint8_t header[8] = {0};
+    long    size      = OOP_CALL(file(), size, h);
+
+    size_t n = OOP_CALL(file(), read, header, 1, sizeof(header), h);
+
+    LOG_TRACE("TMS: dest size=%ld read=%u", size, (unsigned)n);
+
+    if (n == sizeof(header)) {
+        LOG_TRACE("TMS: dest head=%02X %02X %02X %02X", header[0], header[1],
+                  header[2], header[3]);
+
+        LOG_TRACE("TMS: dest next=%02X %02X %02X %02X", header[4], header[5],
+                  header[6], header[7]);
+    }
+
+    OOP_CALL(file(), close, h);
+}
+
 int removeFiles(void) {
     OOP_CALL(file(), remove, "/mtd0/tms_stage10_probe_00.bin");
 }
 
 static const KeyHandler keyHandler[] = {
     {KEY_0, showKahrobaMenu},
-    {KEY_1, removeFiles},
+    {KEY_1, inspectApupdateHeader},
     {KEY_2, NULL},
     {KEY_3, NULL},
     {KEY_4, NULL},

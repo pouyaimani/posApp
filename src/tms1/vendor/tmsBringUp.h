@@ -36,14 +36,17 @@ bool tmsBringupStartApupdateAudit(const char *stagingPrefix);
 #endif
 
 /* Protected updater preparation is compiled OUT by default.
- * Only enable after providing SDK-backed updater-idle/ownership and
- * independently trusted publisher checks. No flag/reboot is ever called.
- * Does not remove the destination on failure. Code 12 = PREPARED only. */
+ * Requires a synchronous, once-per-operation replacement decision bound to
+ * the verified READY MD5/size and operation ID. The callback must enforce
+ * explicit operator consent and applicable platform ownership constraints.
+ * SDK signatures are mandatory in production. An explicitly opted-in
+ * DEV-POS unsigned test build skips signatures but returns code 13 instead of
+ * authenticated PREPARED code 12. Neither code sets update flag or reboots.
+ * No unsigned result authorizes installation. */
 #if TMS_ENABLE_APUPDATE_WRITER
 bool tmsBringupStartApupdatePrepare(const char *stagingPrefix,
-                                    PnaTmsSafetyCheck slotIdleAndOwned,
-                                    PnaTmsPublisherCheck publisherTrusted,
-                                    void *safetyContext);
+                                    PnaTmsAuthorizeReplace authorizeReplace,
+                                    void *authorizationContext);
 #endif
 
 /* One-off full-package COPY to a disposable /mtd0 file. Compile out of

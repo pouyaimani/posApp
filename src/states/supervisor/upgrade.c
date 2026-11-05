@@ -72,6 +72,66 @@ static void checkTmsUpdate(void) {
     LOG_TRACE("TMS: no READY package, status=%d", (int)status);
 }
 
+/* The exact package previously verified on your POS. */
+static const uint8_t expectedPackageMd5[16] = {
+    0xFC, 0xEB, 0xF3, 0x51, 0xC0, 0xB3, 0xF1, 0x8C,
+    0xD6, 0x21, 0x86, 0xB0, 0xEF, 0xB2, 0x5D, 0xF3};
+
+typedef struct {
+    bool operatorApproved;
+    bool exclusiveMaintenanceActive;
+} TmsTestAuthorization;
+
+/* Must remain valid until the asynchronous TMS operation completes. */
+static TmsTestAuthorization tmsAuthorization = {0};
+
+static bool authorizeTmsReplacement(void*                       context,
+                                    const PnaTmsReplaceRequest* request) {
+    TmsTestAuthorization* auth = context;
+
+    if (!auth || !request || !request->expectedMd5)
+        return false;
+
+    if (!auth->operatorApproved || !auth->exclusiveMaintenanceActive)
+        return false;
+
+    if (request->operationId == 0 || request->stagedBytes != 1496248u)
+        return false;
+
+    if (!request->destinationPath ||
+        strcmp(request->destinationPath, "/mtd2/apupdate") != 0)
+        return false;
+
+    if (!request->stagedPath ||
+        strcmp(request->stagedPath, "/mtd0/tms_compact_test_00.bin") != 0)
+        return false;
+
+    if (memcmp(request->expectedMd5, expectedPackageMd5, 16) != 0)
+        return false;
+
+    /* Consume the operator's authorization exactly once. */
+    auth->operatorApproved = false;
+
+    LOG_TRACE("TMS DEV: replacement authorized op=%llu",
+              (unsigned long long)request->operationId);
+
+    return true;
+}
+
+static void startTmsDevPreparation() {}
+
+static void onTmsPrepareConfirmed(bool confirmed, bool maintenanceLockHeld) {
+    if (!confirmed || !maintenanceLockHeld) {
+        LOG_TRACE("TMS DEV: confirmation or maintenance lock missing");
+        return;
+    }
+
+    tmsAuthorization.operatorApproved           = true;
+    tmsAuthorization.exclusiveMaintenanceActive = true;
+
+    startTmsDevPreparation();
+}
+
 STATE_DEF_ENTER(Upgrade) {
     char communicationIp[32];
     normalizeIp(settings()->server.tmsIp, communicationIp,
@@ -106,9 +166,25 @@ STATE_DEF_ENTER(Upgrade) {
         return;
     }
 
-    bool accepted = tmsBringupStartInstallerPreflight("/mtd0/tms_compact_test");
+    onTmsPrepareConfirmed(true, true);
 
-    LOG_TRACE("TMS DEBUG SIGN PREFLIGHT: accepted=%d", (int)accepted);
+    /*
+     * These must represent real, currently enforced conditions.
+     * Do not set them merely because this function was called.
+     */
+    if (!tmsAuthorization.operatorApproved ||
+        !tmsAuthorization.exclusiveMaintenanceActive) {
+        LOG_TRACE("TMS DEV: preparation not authorized");
+        return;
+    }
+
+    bool accepted = tmsBringupStartApupdatePrepare(
+        "/mtd0/tms_compact_test", authorizeTmsReplacement, &tmsAuthorization);
+
+    if (!accepted)
+        tmsAuthorization.operatorApproved = false;
+
+    LOG_TRACE("TMS DEV PREPARE: accepted=%d", (int)accepted);
     if (!accepted) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
