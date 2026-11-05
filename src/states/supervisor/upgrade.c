@@ -178,11 +178,16 @@ STATE_DEF_ENTER(Upgrade) {
         return;
     }
 
-    bool accepted = tmsBringupStartApupdatePrepare(
-        "/mtd0/tms_compact_test", authorizeTmsReplacement, &tmsAuthorization);
+    const TmsFullConfig cfg = {.host             = communicationIp,
+                               .port             = settings()->server.tmsPort,
+                               .useTls           = false,
+                               .identity         = &identity,
+                               .stagingPrefix    = "/mtd0/tms_compact_test",
+                               .authorizeReplace = authorizeTmsReplacement,
+                               .authorizationContext = &tmsAuthorization,
+                               .discardExistingReady = true};
 
-    if (!accepted)
-        tmsAuthorization.operatorApproved = false;
+    bool accepted = tmsBringupStartFullUpgrade(&cfg);
 
     LOG_TRACE("TMS DEV PREPARE: accepted=%d", (int)accepted);
     if (!accepted) {

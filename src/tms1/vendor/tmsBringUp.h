@@ -5,6 +5,46 @@
 #include <stdint.h>
 #include "pnaTms.h"
 
+/* End-to-end DEV flow. CHECK and DOWNLOAD are stages of the PNA backend's
+ * online run; PREPARING is a second, offline run. SUCCESS+code=8 means READY
+ * only, while code=13 in the current DEV build means updater prepared.
+ * Neither is proof that the new firmware has booted. */
+typedef enum {
+    TMS_FULL_IDLE = 0,
+    TMS_FULL_CHECKING,
+    TMS_FULL_PREPARE_QUEUED,
+    TMS_FULL_PREPARING,
+    TMS_FULL_ACTIVATION_QUEUED,
+    TMS_FULL_REBOOT_REQUESTED,
+    TMS_FULL_NO_UPDATE,
+    TMS_FULL_FAILED
+} TmsFullStage;
+
+typedef struct {
+    const char*           host;
+    uint16_t              port;
+    bool                  useTls;
+    const PnaTmsIdentity* identity;      /* Copied synchronously at start. */
+    const char*           stagingPrefix; /* Copied synchronously at start. */
+#if TMS_ENABLE_APUPDATE_WRITER
+    PnaTmsAuthorizeReplace authorizeReplace;
+#else
+    void* authorizeReplace;
+#endif
+    void* authorizationContext; /* Must remain valid until preparation ends. */
+    PnaTmsStorageSpaceCheck checkStorageSpace;
+    void* storageSpaceContext;  /* Must remain valid during download. */
+    bool  discardExistingReady; /* Explicitly remove old READY, DEV test. */
+} TmsFullConfig;
+
+typedef struct {
+    TmsFullStage stage;
+    TmsStatus    last; /* Current online/offline result, not post-boot proof. */
+} TmsFullStatus;
+
+bool          tmsBringupStartFullUpgrade(const TmsFullConfig* config);
+TmsFullStatus tmsBringupGetFullStatus(void);
+
 /* Compact TMS bring-up adapter. The caller must call nth()->tick() in its
  * existing event loop before process(). READY success (backendCode=8) never
  * activates the updater. Only a successful protected destination preparation
@@ -45,7 +85,7 @@ bool tmsBringupStartApupdateAudit(const char* stagingPrefix);
  * SDK signatures are mandatory in production. An explicitly opted-in
  * DEV-POS unsigned test build skips signatures but returns code 13 instead of
  * authenticated PREPARED code 12. This bring-up adapter requests the platform
- * update flag and restart only after that preparation succeeds and all backend
+ * update flag and reboot only after that preparation succeeds and all backend
  * resources have been released. Code 13 is for controlled DEV-POS tests only;
  * never enable unsigned activation on a production/payment terminal. */
 #if TMS_ENABLE_APUPDATE_WRITER
