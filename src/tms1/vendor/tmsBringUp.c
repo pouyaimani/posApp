@@ -4,16 +4,52 @@
 #include <string.h>
 #include "common.h"
 #include "logger.h"
+#include "sys/sys.h"
 #include "../tms.h"
 
 /* Owned across manager/NTH callbacks; never freed from onDone(). */
 static PnaTms* backend;
 
+#if TMS_ENABLE_APUPDATE_WRITER
+/* Deferred until tmsBringupProcess() returns from the manager/backend pump.
+ * Never reboot directly from a backend notification callback. */
+static bool updateActivationPending;
+
+/* A destination-preparation success is distinct from READY staging (8),
+ * preflight (9), scratch-copy (10) and audit (11) successes. */
+#if TMS_DEV_POS_BUILD && TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE
+#define TMS_PREPARED_CODE_FOR_BUILD                                            \
+    13 /* Unsigned DEV POS: NEVER production                                   \
+        */
+#else
+#define TMS_PREPARED_CODE_FOR_BUILD                                            \
+    12 /* SDK-signed destination preparation                                   \
+        */
+#endif
+#endif
+
 static void onDone(const TmsStatus* status, void* context) {
     (void)context;
-    if (status)
-        LOG_TRACE("TMS: done result=%d err=%d code=%ld", (int)status->result,
-                  (int)status->error, (long)status->backendCode);
+    if (!status) {
+        LOG_TRACE("TMS: null completion status");
+        return;
+    }
+
+    LOG_TRACE("TMS: done op=%llu result=%d err=%d code=%ld",
+              (unsigned long long)status->operationId, (int)status->result,
+              (int)status->error, (long)status->backendCode);
+
+#if TMS_ENABLE_APUPDATE_WRITER
+    /* Only a fully copied and verified updater destination may be activated.
+     * The development result 13 skips SDK signature validation intentionally.
+     */
+    if (status->result == TMS_RESULT_SUCCESS && status->error == TMS_ERR_NONE &&
+        status->backendCode == TMS_PREPARED_CODE_FOR_BUILD) {
+        updateActivationPending = true;
+        LOG_TRACE("TMS: APUPDATE prepared; activation queued op=%llu",
+                  (unsigned long long)status->operationId);
+    }
+#endif
 }
 static void freeIdleBackend(void) {
     if (backend && !tmsMgr()->isBusy()) {
@@ -23,6 +59,12 @@ static void freeIdleBackend(void) {
 }
 
 static bool startBackend(const PnaTmsConfig* cfg) {
+#if TMS_ENABLE_APUPDATE_WRITER
+    if (updateActivationPending) {
+        LOG_TRACE("TMS: cannot start another operation before activation");
+        return false;
+    }
+#endif
     if (tmsMgr()->isBusy())
         return false;
     freeIdleBackend();
@@ -157,6 +199,36 @@ bool tmsBringupStage8Discard(const char* prefix) {
 void tmsBringupProcess(void) {
     tmsMgr()->process();
     freeIdleBackend();
+
+#if TMS_ENABLE_APUPDATE_WRITER
+    if (!updateActivationPending)
+        return;
+
+    /* No activation while an operation is active or its backend is allocated.
+     * This is deliberately outside onDone(), after file/NTH cleanup. */
+    if (tmsMgr()->isBusy() || backend) {
+        LOG_TRACE("TMS: activation deferred; backend still busy");
+        return;
+    }
+
+    updateActivationPending = false; /* One attempt only. */
+    System* system          = sys();
+    if (!system || !system->vtable.setUpdateFlag || !system->vtable.reboot) {
+        LOG_TRACE("TMS: activation failed; System HAL methods unavailable");
+        return;
+    }
+
+    /* DEV integration: setUpdateFlag() and restart() are assumed to take no
+     * arguments. The System HAL declaration was not supplied, so check its
+     * return-value contract before relying on this for a production build. */
+    LOG_TRACE("TMS: APUPDATE ready; requesting update flag");
+    OOP_CALL(system, setUpdateFlag);
+    LOG_TRACE("TMS: update flag requested; restarting");
+    OOP_CALL(system, reboot);
+
+    /* Expected only if the device HAL's restart call returns. */
+    LOG_TRACE("TMS: restart returned unexpectedly");
+#endif
 }
 
 #if defined(TMS_ENABLE_HEADER_FIRST_PROBE) && TMS_ENABLE_HEADER_FIRST_PROBE

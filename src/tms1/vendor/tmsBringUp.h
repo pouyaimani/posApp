@@ -5,34 +5,37 @@
 #include <stdint.h>
 #include "pnaTms.h"
 
-/* Compact staging and read-only installer preflight; no activation.
- * Caller must call nth()->tick() in its existing event loop before process().
- * A READY result is TMS_RESULT_SUCCESS, backendCode=8 (staging only).
+/* Compact TMS bring-up adapter. The caller must call nth()->tick() in its
+ * existing event loop before process(). READY success (backendCode=8) never
+ * activates the updater. Only a successful protected destination preparation
+ * (backendCode=12, or code=13 on an unsigned DEVELOPMENT POS) schedules the
+ * activation sequence implemented in tmsBringupProcess().
  */
-bool tmsBringupStartManagedReady(const char *host, uint16_t port, bool useTls,
-                                 const PnaTmsIdentity *identity,
-                                 const char *stagingPrefix);
-bool tmsBringupStartManagedReadyChecked(const char *host, uint16_t port,
-                                        bool useTls, const PnaTmsIdentity *identity,
-                                        const char *stagingPrefix,
+bool tmsBringupStartManagedReady(const char* host, uint16_t port, bool useTls,
+                                 const PnaTmsIdentity* identity,
+                                 const char*           stagingPrefix);
+bool tmsBringupStartManagedReadyChecked(const char* host, uint16_t port,
+                                        bool                    useTls,
+                                        const PnaTmsIdentity*   identity,
+                                        const char*             stagingPrefix,
                                         PnaTmsStorageSpaceCheck checkSpace,
-                                        void *checkContext);
+                                        void*                   checkContext);
 
-PnaTmsStageStatus tmsBringupStage8Inspect(const char *stagingPrefix,
-                                          PnaTmsStageInfo *info);
-bool tmsBringupStage8Discard(const char *stagingPrefix);
+PnaTmsStageStatus tmsBringupStage8Inspect(const char*      stagingPrefix,
+                                          PnaTmsStageInfo* info);
+bool              tmsBringupStage8Discard(const char* stagingPrefix);
 /* Reverify READY outer MD5 + binary container + embedded CRCs. Generate the
  * 4096-byte legacy updater header in memory; never write to /mtd2/apupdate.
  * TMS_RESULT_SUCCESS / backendCode=9 means READ-ONLY PREFLIGHT, not installed.
  * Reuses the existing 100 ms tmsBringupProcess() loop. */
-bool tmsBringupStartInstallerPreflight(const char *stagingPrefix);
+bool tmsBringupStartInstallerPreflight(const char* stagingPrefix);
 
 /* Reverify READY then read-only inspect /mtd2/apupdate. Require the
  * 7-byte "TMSclea" marker, but allow and count non-FF residual payload.
  * Success means recognized marker and completed scan, NOT authorization.
  * Test-only: compile TMS_ENABLE_APUPDATE_AUDIT=1 consistently. */
 #if defined(TMS_ENABLE_APUPDATE_AUDIT) && TMS_ENABLE_APUPDATE_AUDIT
-bool tmsBringupStartApupdateAudit(const char *stagingPrefix);
+bool tmsBringupStartApupdateAudit(const char* stagingPrefix);
 #endif
 
 /* Protected updater preparation is compiled OUT by default.
@@ -41,19 +44,21 @@ bool tmsBringupStartApupdateAudit(const char *stagingPrefix);
  * explicit operator consent and applicable platform ownership constraints.
  * SDK signatures are mandatory in production. An explicitly opted-in
  * DEV-POS unsigned test build skips signatures but returns code 13 instead of
- * authenticated PREPARED code 12. Neither code sets update flag or reboots.
- * No unsigned result authorizes installation. */
+ * authenticated PREPARED code 12. This bring-up adapter requests the platform
+ * update flag and restart only after that preparation succeeds and all backend
+ * resources have been released. Code 13 is for controlled DEV-POS tests only;
+ * never enable unsigned activation on a production/payment terminal. */
 #if TMS_ENABLE_APUPDATE_WRITER
-bool tmsBringupStartApupdatePrepare(const char *stagingPrefix,
+bool tmsBringupStartApupdatePrepare(const char*            stagingPrefix,
                                     PnaTmsAuthorizeReplace authorizeReplace,
-                                    void *authorizationContext);
+                                    void* authorizationContext);
 #endif
 
 /* One-off full-package COPY to a disposable /mtd0 file. Compile out of
  * production. It verifies readback and deletes ONLY the test-owned file.
  * Never accesses /mtd2/apupdate, never sets update flag or reboots. */
 #if defined(TMS_ENABLE_COPY_TO_SCRATCH) && TMS_ENABLE_COPY_TO_SCRATCH
-bool tmsBringupStartScratchCopy(const char *stagingPrefix);
+bool tmsBringupStartScratchCopy(const char* stagingPrefix);
 #endif
 
 /* One-off File HAL scratch test for header-first writes.
