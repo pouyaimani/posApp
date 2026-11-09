@@ -17,7 +17,8 @@ typedef enum {
     TMS_FULL_ACTIVATION_QUEUED,
     TMS_FULL_REBOOT_REQUESTED,
     TMS_FULL_NO_UPDATE,
-    TMS_FULL_FAILED
+    TMS_FULL_FAILED,
+    TMS_FULL_CANCELED
 } TmsFullStage;
 
 typedef struct {
@@ -50,6 +51,12 @@ TmsFullStatus tmsBringupGetFullStatus(void);
  * Returns false unless a fully prepared full-upgrade awaits activation.
  * Does not bypass any backend integrity or authorization checks. */
 bool tmsBringupAllowFullActivation(void);
+/* Request cancellation of the full upgrade. Safe during online transfer and
+ * read-only preparation. Rejects once /mtd2/apupdate has been touched, or
+ * after successful preparation has queued activation.
+ * true means the request was accepted (not necessarily completed).
+ * Keep pumping tmsBringupProcess() until TMS_FULL_CANCELED is observed. */
+bool tmsBringupCancelFullUpgrade(void);
 
 /* Compact TMS bring-up adapter. The caller must call nth()->tick() in its
  * existing event loop before process(). READY success (backendCode=8) never

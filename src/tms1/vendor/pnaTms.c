@@ -1466,6 +1466,17 @@ static bool cancelPna(void* context, uint64_t id) {
     PnaTms* p = (PnaTms*)context;
     if (!p || !p->active || p->operationId != id)
         return false;
+#if TMS_ENABLE_APUPDATE_WRITER
+    /* An interrupted write to the platform updater partition can leave a
+     * partially prepared executable. Before this point, prepareOnly is
+     * strictly read-only and may safely be canceled. Once the destination
+     * has been opened for replacement, finish the operation instead. */
+    if (p->cfg.prepareDestination && p->destinationTouched) {
+        LOG_TRACE("PnaTms: cancel refused: APUPDATE already touched op=%llu",
+                  (unsigned long long)id);
+        return false;
+    }
+#endif
     finish(p, TMS_RESULT_CANCELED, TMS_ERR_NONE, 0);
     return true;
 }

@@ -15,7 +15,7 @@ static PnaTms* backend;
  * after processPna() has returned and the previous backend is freed. */
 static struct {
     TmsFullStage stage;
-    char stagingPrefix[96];
+    char         stagingPrefix[96];
 #if TMS_ENABLE_APUPDATE_WRITER
     PnaTmsAuthorizeReplace authorizeReplace;
 #endif
@@ -23,10 +23,22 @@ static struct {
     TmsStatus lastStatus;
 } fullUpgrade;
 
+/* Transition to a terminal canceled result. Does not activate or reboot.
+ * The backend is allowed to finish synchronously inside cancel(). */
+static void fullCanceled(void) {
+    fullUpgrade.stage                      = TMS_FULL_CANCELED;
+    fullUpgrade.lastStatus.result          = TMS_RESULT_CANCELED;
+    fullUpgrade.lastStatus.state           = TMS_STATE_CANCELED;
+    fullUpgrade.lastStatus.error           = TMS_ERR_NONE;
+    fullUpgrade.lastStatus.backendCode     = 0;
+    fullUpgrade.lastStatus.cancelRequested = false;
+    LOG_TRACE("TMS FULL: canceled");
+}
+
 static void fullFail(TmsError error, int32_t backendCode) {
-    fullUpgrade.stage = TMS_FULL_FAILED;
-    fullUpgrade.lastStatus.result = TMS_RESULT_FAILURE;
-    fullUpgrade.lastStatus.error = error;
+    fullUpgrade.stage                  = TMS_FULL_FAILED;
+    fullUpgrade.lastStatus.result      = TMS_RESULT_FAILURE;
+    fullUpgrade.lastStatus.error       = error;
     fullUpgrade.lastStatus.backendCode = backendCode;
     LOG_TRACE("TMS FULL: failed error=%d code=%ld", (int)error,
               (long)backendCode);
@@ -43,9 +55,11 @@ static bool fullActivationUiAcknowledged;
 /* A destination-preparation success is distinct from READY staging (8),
  * preflight (9), scratch-copy (10) and audit (11) successes. */
 #if TMS_DEV_POS_BUILD && TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE
-#define TMS_PREPARED_CODE_FOR_BUILD 13 /* Unsigned DEV POS: NEVER production */
+#define TMS_PREPARED_CODE_FOR_BUILD 13 /* Unsigned DEV POS: NEVER production   \
+                                        */
 #else
-#define TMS_PREPARED_CODE_FOR_BUILD 12 /* SDK-signed destination preparation */
+#define TMS_PREPARED_CODE_FOR_BUILD 12 /* SDK-signed destination preparation   \
+                                        */
 #endif
 #endif
 
@@ -66,6 +80,10 @@ static void onDone(const TmsStatus* status, void* context) {
     if (fullUpgrade.stage == TMS_FULL_CHECKING ||
         fullUpgrade.stage == TMS_FULL_PREPARING) {
         fullUpgrade.lastStatus = *status;
+        if (status->result == TMS_RESULT_CANCELED) {
+            fullCanceled();
+            return; /* Do not queue preparation or activation. */
+        }
         if (fullUpgrade.stage == TMS_FULL_CHECKING) {
             if (status->result == TMS_RESULT_NO_UPDATE &&
                 status->error == TMS_ERR_NONE) {
@@ -80,7 +98,8 @@ static void onDone(const TmsStatus* status, void* context) {
                 return;
             }
             fullFail(status->result == TMS_RESULT_FAILURE
-                         ? status->error : TMS_ERR_INVALID_EVENT,
+                         ? status->error
+                         : TMS_ERR_INVALID_EVENT,
                      status->backendCode);
             return;
         }
@@ -89,11 +108,12 @@ static void onDone(const TmsStatus* status, void* context) {
         if (status->result == TMS_RESULT_SUCCESS &&
             status->error == TMS_ERR_NONE &&
             status->backendCode == TMS_PREPARED_CODE_FOR_BUILD) {
-            fullUpgrade.stage = TMS_FULL_ACTIVATION_QUEUED;
+            fullUpgrade.stage            = TMS_FULL_ACTIVATION_QUEUED;
             fullActivationUiAcknowledged = false;
         } else {
             fullFail(status->result == TMS_RESULT_FAILURE
-                         ? status->error : TMS_ERR_INVALID_EVENT,
+                         ? status->error
+                         : TMS_ERR_INVALID_EVENT,
                      status->backendCode);
             return;
         }
@@ -106,8 +126,7 @@ static void onDone(const TmsStatus* status, void* context) {
 #if TMS_ENABLE_APUPDATE_WRITER
     /* The existing single-stage preparation API retains its behavior too.
      * This is the only backend DONE result that may queue activation. */
-    if (status->result == TMS_RESULT_SUCCESS &&
-        status->error == TMS_ERR_NONE &&
+    if (status->result == TMS_RESULT_SUCCESS && status->error == TMS_ERR_NONE &&
         status->backendCode == TMS_PREPARED_CODE_FOR_BUILD) {
         updateActivationPending = true;
         LOG_TRACE("TMS: APUPDATE prepared; activation queued op=%llu",
@@ -268,9 +287,8 @@ bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
     return false;
 #else
     if (!config || !config->host || !config->identity ||
-        !config->stagingPrefix || !config->authorizeReplace ||
-        !config->port || config->useTls ||
-        tmsMgr()->isBusy() || updateActivationPending ||
+        !config->stagingPrefix || !config->authorizeReplace || !config->port ||
+        config->useTls || tmsMgr()->isBusy() || updateActivationPending ||
         fullUpgrade.stage == TMS_FULL_CHECKING ||
         fullUpgrade.stage == TMS_FULL_PREPARE_QUEUED ||
         fullUpgrade.stage == TMS_FULL_PREPARING ||
@@ -285,8 +303,7 @@ bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
         LOG_TRACE("TMS FULL: invalid staging prefix");
         return false;
     }
-    PnaTmsStageStatus staged =
-        pnaTmsStageInspect(config->stagingPrefix, NULL);
+    PnaTmsStageStatus staged = pnaTmsStageInspect(config->stagingPrefix, NULL);
     if (staged == PNA_TMS_STAGE_READY_UNTRUSTED &&
         config->discardExistingReady) {
         LOG_TRACE("TMS FULL DEV: explicit discard of existing READY staging");
@@ -297,8 +314,7 @@ bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
         staged = pnaTmsStageInspect(config->stagingPrefix, NULL);
     }
     /* New online check/download must not silently replace a READY package. */
-    if (staged != PNA_TMS_STAGE_EMPTY &&
-        staged != PNA_TMS_STAGE_INCOMPLETE) {
+    if (staged != PNA_TMS_STAGE_EMPTY && staged != PNA_TMS_STAGE_INCOMPLETE) {
         LOG_TRACE("TMS FULL: staging blocked status=%d (inspect/discard)",
                   (int)staged);
         return false;
@@ -307,11 +323,12 @@ bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
     memset(&fullUpgrade, 0, sizeof(fullUpgrade));
     fullActivationUiAcknowledged = false;
     memcpy(fullUpgrade.stagingPrefix, config->stagingPrefix, length + 1u);
-    fullUpgrade.authorizeReplace = config->authorizeReplace;
+    fullUpgrade.authorizeReplace     = config->authorizeReplace;
     fullUpgrade.authorizationContext = config->authorizationContext;
-    fullUpgrade.stage = TMS_FULL_CHECKING;
+    fullUpgrade.stage                = TMS_FULL_CHECKING;
 
-    LOG_TRACE("TMS FULL: checking server -> download -> prepare -> flag -> reboot");
+    LOG_TRACE(
+        "TMS FULL: checking server -> download -> prepare -> flag -> reboot");
     if (!tmsBringupStartManagedReadyChecked(
             config->host, config->port, config->useTls, config->identity,
             config->stagingPrefix, config->checkStorageSpace,
@@ -323,10 +340,50 @@ bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
 #endif
 }
 
+bool tmsBringupCancelFullUpgrade(void) {
+    switch (fullUpgrade.stage) {
+    case TMS_FULL_CHECKING:
+    case TMS_FULL_PREPARING:
+        /* PNA's cancel guard rejects an in-flight protected-slot write.
+         * No state change is made unless the backend accepts cancellation. */
+        if (!tmsMgr()->isBusy()) {
+            LOG_TRACE("TMS FULL: cancel rejected; no active backend");
+            return false;
+        }
+        if (!tmsMgr()->cancel()) {
+            LOG_TRACE("TMS FULL: cancel rejected by backend stage=%d",
+                      (int)fullUpgrade.stage);
+            return false;
+        }
+        LOG_TRACE("TMS FULL: cancel request accepted");
+        return true;
+
+    case TMS_FULL_PREPARE_QUEUED:
+        /* READY has been committed, but the destination writer has not
+         * started. Cancel the handoff without touching /mtd2/apupdate.
+         * The READY package remains staged for explicit later handling. */
+        if (tmsMgr()->isBusy())
+            return false;
+        fullCanceled();
+        return true;
+
+    case TMS_FULL_CANCELED:
+        return true;
+
+    case TMS_FULL_ACTIVATION_QUEUED:
+    case TMS_FULL_REBOOT_REQUESTED:
+        LOG_TRACE("TMS FULL: cancel blocked after destination preparation");
+        return false;
+
+    default:
+        return false;
+    }
+}
+
 TmsFullStatus tmsBringupGetFullStatus(void) {
     TmsFullStatus status = {
         .stage = fullUpgrade.stage,
-        .last = fullUpgrade.lastStatus,
+        .last  = fullUpgrade.lastStatus,
     };
     if (fullUpgrade.stage == TMS_FULL_CHECKING ||
         fullUpgrade.stage == TMS_FULL_PREPARING)
@@ -361,9 +418,9 @@ void tmsBringupProcess(void) {
             return;
         fullUpgrade.stage = TMS_FULL_PREPARING;
         LOG_TRACE("TMS FULL: beginning verified APUPDATE preparation");
-        if (!tmsBringupStartApupdatePrepare(
-                fullUpgrade.stagingPrefix, fullUpgrade.authorizeReplace,
-                fullUpgrade.authorizationContext)) {
+        if (!tmsBringupStartApupdatePrepare(fullUpgrade.stagingPrefix,
+                                            fullUpgrade.authorizeReplace,
+                                            fullUpgrade.authorizationContext)) {
             fullFail(TMS_ERR_BACKEND_START, 0);
             return;
         }
@@ -389,11 +446,10 @@ void tmsBringupProcess(void) {
         return;
     }
 
-    updateActivationPending = false; /* One attempt only. */
+    updateActivationPending      = false; /* One attempt only. */
     fullActivationUiAcknowledged = false;
-    System* system = sys();
-    if (!system || !system->vtable.setUpdateFlag ||
-        !system->vtable.reboot) {
+    System* system               = sys();
+    if (!system || !system->vtable.setUpdateFlag || !system->vtable.reboot) {
         LOG_TRACE("TMS: activation failed; System HAL methods unavailable");
         if (fullUpgrade.stage == TMS_FULL_ACTIVATION_QUEUED)
             fullFail(TMS_ERR_INSTALLATION, 0);

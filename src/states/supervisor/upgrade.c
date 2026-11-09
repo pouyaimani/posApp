@@ -49,7 +49,8 @@ typedef enum {
     UI_PHASE_VERIFYING,
     UI_PHASE_PREPARING,
     UI_PHASE_RESTARTING,
-    UI_PHASE_NO_UPDATE
+    UI_PHASE_NO_UPDATE,
+    UI_PHASE_CANCELED
 } UpgradeUiPhase;
 
 /* The old test's exact package. This is deliberately NOT production policy. */
@@ -122,25 +123,20 @@ static const char* uiTitle(UpgradeUiPhase phase) {
     switch (phase) {
     case UI_PHASE_CONNECTING:
         return phraseGetDef(PHRASE_TMS_CONNECTING);
-
     case UI_PHASE_CHECKING:
         return phraseGetDef(PHRASE_TMS_CHECKING);
-
     case UI_PHASE_DOWNLOADING:
         return phraseGetDef(PHRASE_TMS_DOWNLOADING);
-
     case UI_PHASE_VERIFYING:
         return phraseGetDef(PHRASE_TMS_VERIFYING);
-
     case UI_PHASE_PREPARING:
         return phraseGetDef(PHRASE_TMS_PREPARING);
-
     case UI_PHASE_RESTARTING:
         return phraseGetDef(PHRASE_TMS_RESTARTING);
-
     case UI_PHASE_NO_UPDATE:
         return phraseGetDef(PHRASE_TMS_NO_UPDATE);
-
+    case UI_PHASE_CANCELED:
+        return phraseGetDef(PHRASE_TMS_CANCELED);
     default:
         return phraseGetDef(PHRASE_TMS_UPDATING);
     }
@@ -226,6 +222,14 @@ static void refreshUpgradeUi(const TmsFullStatus* full) {
         stopUpgradeTimer();
         paintProgress(UI_PHASE_NO_UPDATE, 0u);
         LOG_TRACE("TMS UI: no update; ESC to exit");
+        break;
+    case TMS_FULL_CANCELED:
+        /* Required only for future asynchronously cancelable backends;
+         * current PNA cancel normally completes inside the ESC handler. */
+        stopUpgradeTimer();
+        paintProgress(UI_PHASE_CANCELED,
+                      lastUiPercent <= 99u ? lastUiPercent : 0u);
+        LOG_TRACE("TMS UI: canceled; ESC to exit");
         break;
     case TMS_FULL_FAILED:
         showUpgradeFailure(full);
@@ -336,14 +340,42 @@ STATE_DEF_EXIT(Upgrade) {
 }
 
 STATE_DEF_HANDLE(Upgrade, KeypadEvent) {
-    if (ev->key != KEY_ESC)
+    if (!ev || ev->key != KEY_ESC)
         return;
-    if (noUpdateAvailable) {
-        SM_GOTO(state->parent);
+
+    TmsFullStatus full = tmsBringupGetFullStatus();
+    if (noUpdateAvailable || full.stage == TMS_FULL_NO_UPDATE ||
+        full.stage == TMS_FULL_CANCELED) {
+        infoMgrsetCommon(upgradeParent, upgradeParent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_TMS_CANCELED), "");
         return;
     }
-    /* Do not interrupt an in-flight updater write or leave it without pump. */
-    LOG_TRACE("TMS UI: ESC ignored during full upgrade");
+
+    /* First ESC requests cancellation. The backend may reject it once an
+     * APUPDATE write has begun; in that case we MUST keep pumping. */
+    if (!tmsBringupCancelFullUpgrade()) {
+        LOG_TRACE("TMS UI: cancel unavailable/unsafe stage=%d state=%d",
+                  (int)full.stage, (int)full.last.state);
+        return;
+    }
+
+    /* Current PNA backend completes cancellation synchronously. Finish its
+     * deferred backend cleanup before leaving the state and its pump. */
+    full = tmsBringupGetFullStatus();
+    if (full.stage == TMS_FULL_CANCELED) {
+        tmsBringupProcess(); /* Release idle backend; cannot start next step. */
+        LOG_TRACE("TMS UI: canceled; leaving Upgrade state");
+        infoMgrsetCommon(upgradeParent, upgradeParent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_TMS_CANCELED), "");
+        return;
+    }
+
+    /* Future async backends: keep the timer active until CANCELED arrives.
+     * refreshUpgradeUi() will display canceled and stop the timer; ESC
+     * then closes that screen. Never leave while still active. */
+    LOG_TRACE("TMS UI: cancellation pending");
 }
 
 OOP_CTOR(Upgrade, State* parent, const char* name) {

@@ -296,6 +296,8 @@ X(PHRASE_TMS_UPDATING                       ,   "در حال به روزرسان
 )
 X(PHRASE_TMS_DO_NOT_POWER_OFF               ,   "لطفا دستگاه را خاموش نکنید"            , "Do not turn off the device"
 )
+X(PHRASE_TMS_CANCELED                       ,   "به روزرسانی لغو شد"                       , "Update canceled"
+)
 /**********************************************************************
  *
  *                              Shift
