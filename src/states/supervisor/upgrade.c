@@ -26,8 +26,8 @@
 #include "ui/progressBar.h"
 #include "display/display.h"
 #include "infoMgr/infoMgr.h"
-#include "tms1/vendor/pnaTms.h"
-#include "tms1/vendor/tmsBringup.h"
+#include "tms/vendor/pnaTms.h"
+#include "tms/vendor/tmsBringup.h"
 #include "version.h"
 
 #define UPGRADE_STAGING_PREFIX "/mtd0/tms_compact_test"
