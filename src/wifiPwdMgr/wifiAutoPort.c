@@ -93,7 +93,8 @@ void wifiAutoPortFinished(void* ctx, WifiAutoOutcome outcome,
      * after the operation has been aborted/drained.
      */
     if (outcome == WIFI_AUTO_CONNECTED || outcome == WIFI_AUTO_NO_SAVED_AP ||
-        outcome == WIFI_AUTO_ALL_FAILED || outcome == WIFI_AUTO_SCAN_FAILED) {
+        outcome == WIFI_AUTO_ALL_FAILED || outcome == WIFI_AUTO_SCAN_FAILED ||
+        (outcome == WIFI_AUTO_CANCELLED && wifiAutoConnector()->canHandoff())) {
 
         wifiPmSecureZero(g_autoPassword, sizeof(g_autoPassword));
     }

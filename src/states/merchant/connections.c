@@ -241,29 +241,35 @@ static void startManualWifiScan(State* state) {
 STATE_DEF_ENTER(WifiScan) {
     WifiAutoConnector* ac = wifiAutoConnector();
 
+    manualWifiWaiting = false;
+
     /*
-     * User wants manual Wi-Fi control.
-     * Prevent Idle from starting another auto connection.
+     * Manual Wi-Fi takes priority.
+     * This immediately blocks new automatic cycles in Idle.
      */
     wifi()->onUserSelection = true;
 
-    WifiAutoStage stage = ac->getStage();
+    LOG_TRACE("Manual WiFi: selection requested");
 
-    if (ac->isReady() && stage != WIFI_AUTO_IDLE &&
-        stage != WIFI_AUTO_FINISHED) {
-
-        LOG_TRACE("Manual WiFi: waiting for auto connector, stage=%d",
-                  (int)stage);
+    if (ac->isReady() && !ac->canHandoff()) {
 
         manualWifiWaiting = true;
 
-        SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SEARCHING_4_WIFI),
-                  phraseGetDef(PHRASE_PLEASE_WAIT));
+        LOG_TRACE("Manual WiFi: waiting for auto, stage=%d",
+                  (int)ac->getStage());
+
+        /*
+         * Stop after the current HAL operation completes.
+         * Do not cancel the operation directly.
+         */
+        ac->requestStop();
+
+        SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_PLEASE_WAIT), "");
 
         return;
     }
 
-    manualWifiWaiting = false;
+    LOG_TRACE("Manual WiFi: HAL available");
 
     startManualWifiScan(state);
 }
@@ -293,26 +299,26 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
     if (manualWifiWaiting) {
 
-        WifiAutoConnector* ac    = wifiAutoConnector();
-        WifiAutoStage      stage = ac->getStage();
+        WifiAutoConnector* ac = wifiAutoConnector();
 
-        LOG_TRACE("Manual WiFi: waiting, auto stage=%d", (int)stage);
-
-        if (stage == WIFI_AUTO_IDLE || stage == WIFI_AUTO_FINISHED) {
-
-            LOG_TRACE("Manual WiFi: auto finished, starting scan");
-
-            manualWifiWaiting = false;
-
-            startManualWifiScan(state);
+        if (!ac->canHandoff()) {
+            LOG_TRACE("Manual WiFi: still waiting, auto stage=%d",
+                      (int)ac->getStage());
+            return;
         }
 
+        LOG_TRACE("Manual WiFi: automatic operation completed");
+
+        manualWifiWaiting = false;
+
+        startManualWifiScan(state);
         return;
     }
 
-    /* Only handle manual scan results. */
+    /* Ignore events unrelated to manual scanning. */
     if (ev->type != WIFI_EV_SCAN)
         return;
+
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
         wifiMenu = MEM_ALLOC(sizeof(*wifiMenu));
         ui_menu_create(wifiMenu, disp()->screen);
@@ -335,6 +341,18 @@ STATE_DEF_HANDLE(WifiScan, WifiEvent) {
 }
 
 STATE_DEF_HANDLE(WifiScan, TimeOutEvent) {
+    if (manualWifiWaiting) {
+        LOG_ERROR("Manual WiFi: timeout waiting for HAL, auto stage=%d",
+                  (int)wifiAutoConnector()->getStage());
+
+        manualWifiWaiting = false;
+
+        /*
+         * Abandon this manual request.
+         * Do not start another scan until HAL recovery.
+         */
+        wifi()->onUserSelection = false;
+    }
     infoMgrsetCommon(state->parent, state->parent);
     infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                    phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
@@ -453,6 +471,7 @@ static void createUi() {
 }
 
 STATE_DEF_ENTER(Connectios) {
+    LOG_TRACE("Connections: entering, releasing manual WiFi ownership");
     wifi()->onUserSelection = false;
     createUi();
     menuMgr()->run(menu, state->parent, &menuCfgBack2idleOBM);

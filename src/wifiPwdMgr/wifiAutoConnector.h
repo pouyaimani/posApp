@@ -74,8 +74,9 @@ typedef struct {
  *   3. wifiAutoConnector()->start()
  *   4. Forward confirmed HAL events to on*() methods.
  *
- * Timeout and cancellation only end this state machine; the application must
- * abort/drain any still-running HAL operation before calling start() again.
+ * Timeout and immediate cancellation end this state machine without stopping
+ * the HAL; canHandoff() remains false until a deliberate HAL recovery.
+ * requestStop() is the safe, event-driven handoff for manual Wi-Fi.
  */
 OOP_CLASS(WifiAutoConnector) {
     OOP_METHOD(bool, init, const WifiAutoPort* port);
@@ -86,6 +87,19 @@ OOP_CLASS(WifiAutoConnector) {
     OOP_METHOD(void, onDisconnected, void);
     OOP_METHOD(void, onConnectResult, bool success);
     OOP_METHOD(void, onTimeout, void);
+    /*
+     * Give manual Wi-Fi priority without aborting an active SDK operation.
+     * The current scan/disconnect/connect must report its final HAL event;
+     * no further automatic attempts will be started after that event.
+     */
+    OOP_METHOD(void, requestStop, void);
+    /*
+     * True only when this connector has no outstanding HAL operation.
+     * False following logical cancel() or onTimeout() until the application
+     * explicitly recovers/drains the HAL. Does not inspect other HAL users.
+     */
+    OOP_METHOD(bool, canHandoff, void);
+    /* Logical cancel: does NOT abort the underlying HAL request. */
     OOP_METHOD(void, cancel, void);
 
     OOP_METHOD(WifiAutoStage, getStage, void);
