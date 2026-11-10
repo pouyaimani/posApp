@@ -2,15 +2,16 @@
 #include "eventFactory.h"
 #include "eventIds.h"
 #include "state.h"
+#include "wifiPwdMgr/wifiAutoPort.h"
 
 /* Generate the Wifi factory. */
 EVENT_DEFINE_FACTORY(WifiEvent);
 
 static void wifi_dispatchTo(Event* self, State* state) {
-    /*
-     * WIFI handling will be discussed below.
-     * This assumes State exposes handleWifi.
-     */
+    /* Deliver to the automatic connector first. */
+    wifiAutoPortHandleEvent((const WifiEvent*)self);
+
+    /* Preserve the existing state-specific event handling. */
     OOP_CALL(state, handleWifi, self);
 }
 

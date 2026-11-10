@@ -1,4 +1,4 @@
-#include "wifiAutoConnector.h"
+#include "wifiAutoPort.h"
 #include "wifiPwdMgr.h"
 #include "wifi/wifi.h"
 #include "logger.h"
@@ -200,7 +200,7 @@ bool wifiAutoPortScanGet(void* ctx, uint16_t index, WifiPmAccessPoint* out) {
     return true;
 }
 
-void wifiAutoPortFill(WifiAutoPort* port) {
+bool wifiAutoPortFill(WifiAutoPort* port) {
     if (!port) {
         return false;
     }
@@ -213,4 +213,45 @@ void wifiAutoPortFill(WifiAutoPort* port) {
     port->activateRoute     = wifiAutoPortActivateRoute;
     port->finished          = wifiAutoPortFinished;
     return true;
+}
+
+void wifiAutoPortHandleEvent(const WifiEvent* ev) {
+    if (ev == NULL)
+        return;
+
+    WifiAutoConnector* ac = wifiAutoConnector();
+
+    if (!ac->isReady())
+        return;
+
+    WifiAutoStage stage = ac->getStage();
+
+    switch (ev->type) {
+
+    case WIFI_EV_SCAN:
+        if (stage == WIFI_AUTO_SCANNING) {
+            if (ev->scanStatus == WIFI_SCAN_SUCCEED)
+                ac->onScanComplete(true);
+            else if (ev->scanStatus == WIFI_SCAN_FAILED)
+                ac->onScanComplete(false);
+        }
+        break;
+
+    case WIFI_EV_DISCONNECT:
+        if (stage == WIFI_AUTO_WAIT_DISCONNECT)
+            ac->onDisconnected();
+        break;
+
+    case WIFI_EV_CONNECT:
+        if (stage == WIFI_AUTO_WAIT_CONNECT) {
+            if (ev->connectStatus == WIFI_CONNECT_SUCCEED)
+                ac->onConnectResult(true);
+            else if (ev->connectStatus == WIFI_CONNECT_FAILED)
+                ac->onConnectResult(false);
+        }
+        break;
+
+    default:
+        break;
+    }
 }

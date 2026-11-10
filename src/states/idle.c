@@ -80,90 +80,91 @@ static const KeyHandler keyHandler[] = {
     {KEY_FUNCTION, go2Supporter},
 };
 
+/**
+ * @brief Periodically checks whether automatic Wi-Fi connection is needed.
+ *
+ * Starts WifiAutoConnector only when:
+ * - Both managers are initialized.
+ * - No manual Wi-Fi operation is active.
+ * - The selected network route is Wi-Fi.
+ * - Wi-Fi is not already connected.
+ * - No automatic connection operation is running.
+ * - At least one saved network exists.
+ */
 static void wifiAutoConnect(void) {
     WifiAutoConnector* ac = wifiAutoConnector();
+    WifiPwdMgr*        pm = wifiPwdMgr();
 
-    if (!ac->isReady() || !wifiPwdMgr()->isReady())
+    LOG_TRACE("WiFi auto: checking connection conditions");
+
+    /* Check manager initialization. */
+    if (!ac->isReady()) {
+        LOG_TRACE("WiFi auto: skipped, connector not ready");
         return;
+    }
+
+    if (!pm->isReady()) {
+        LOG_TRACE("WiFi auto: skipped, password manager not ready");
+        return;
+    }
 
     /* Do not interfere with manual Wi-Fi operations. */
-    if (wifi()->onUserSelection)
+    if (wifi()->onUserSelection) {
+        LOG_TRACE("WiFi auto: skipped, manual Wi-Fi selection active");
         return;
+    }
 
-    /* Automatic Wi-Fi connection is only needed on Wi-Fi route. */
-    if (OOP_CALL(network(), getRoute) != NET_ROUTE_WIFI)
+    /* Check selected network route. */
+    NetRoute_t route = OOP_CALL(network(), getRoute);
+
+    if (route != NET_ROUTE_WIFI) {
+        LOG_TRACE("WiFi auto: skipped, active route=%d, expected=%d",
+                  (int)route, (int)NET_ROUTE_WIFI);
         return;
+    }
 
-    /* Already connected: nothing to do. */
-    if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED)
+    /* Check current Wi-Fi connection status. */
+    WifiConnectSt_t connectSt = OOP_CALL(wifi(), getConnectStatus);
+
+    if (connectSt == WIFI_CONNECT_SUCCEED) {
+        LOG_TRACE("WiFi auto: skipped, already connected");
         return;
+    }
 
+    LOG_TRACE("WiFi auto: connection status=%d", (int)connectSt);
+
+    /* Check automatic connector stage. */
     WifiAutoStage stage = ac->getStage();
 
-    /* Do not interrupt an active automatic operation. */
-    if (stage != WIFI_AUTO_IDLE && stage != WIFI_AUTO_FINISHED)
-        return;
+    if (stage != WIFI_AUTO_IDLE && stage != WIFI_AUTO_FINISHED) {
 
-    if (wifiPwdMgr()->count() == 0u)
+        LOG_TRACE("WiFi auto: skipped, operation in progress, stage=%d",
+                  (int)stage);
         return;
+    }
 
+    /* Check whether any credentials are stored. */
+    uint8_t savedCount = pm->count();
+
+    if (savedCount == 0u) {
+        LOG_TRACE("WiFi auto: skipped, no saved networks");
+        return;
+    }
+
+    LOG_TRACE("WiFi auto: conditions satisfied, "
+              "stage=%d, saved networks=%u",
+              (int)stage, (unsigned)savedCount);
+
+    /* Start automatic connection. */
     LOG_TRACE("WiFi auto: starting automatic connection");
 
     if (!ac->start()) {
-        LOG_ERROR("WiFi auto: start failed");
-    }
-}
-
-static void forwardWifiAutoEvent(const WifiEvent* ev) {
-    if (ev == NULL)
+        LOG_ERROR("WiFi auto: start failed, stage=%d", (int)ac->getStage());
         return;
-
-    WifiAutoConnector* ac = wifiAutoConnector();
-
-    if (!ac->isReady())
-        return;
-
-    WifiAutoStage stage = ac->getStage();
-
-    LOG_TRACE("WiFi auto: event=%d, stage=%d", (int)ev->type, (int)stage);
-
-    switch (ev->type) {
-
-    case WIFI_EV_SCAN:
-        if (stage == WIFI_AUTO_SCANNING) {
-            if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
-                ac->onScanComplete(true);
-            } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
-                ac->onScanComplete(false);
-            }
-        }
-        break;
-
-    case WIFI_EV_DISCONNECT:
-        if (stage == WIFI_AUTO_WAIT_DISCONNECT) {
-            LOG_TRACE("WiFi auto: disconnect confirmed");
-            ac->onDisconnected();
-        }
-        break;
-
-    case WIFI_EV_CONNECT:
-        if (stage == WIFI_AUTO_WAIT_CONNECT) {
-            if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
-                LOG_TRACE("WiFi auto: connect succeeded");
-                ac->onConnectResult(true);
-            } else if (ev->connectStatus == WIFI_CONNECT_FAILED) {
-                LOG_TRACE("WiFi auto: connect failed");
-                ac->onConnectResult(false);
-            }
-        }
-        break;
-
-    default:
-        break;
     }
-}
 
-STATE_DEF_HANDLE(Idle, WifiEvent) { forwardWifiAutoEvent(ev); }
+    LOG_TRACE("WiFi auto: start accepted, new stage=%d", (int)ac->getStage());
+}
 
 static void cellAutoConnect() {
     if (OOP_CALL(cellular(), getSimStatus) != SIM_STATUS_OK) {
@@ -349,7 +350,6 @@ OOP_CTOR(Idle, State* parent, const char* name) {
     self->base.vtable.handleKeypad  = STATE_HANDLE(Idle, KeypadEvent);
     self->base.vtable.handleTimeout = STATE_HANDLE(Idle, TimeOutEvent);
     self->base.vtable.handleMag     = STATE_HANDLE(Idle, MagEvent);
-    self->base.vtable.handleWifi    = STATE_HANDLE(Idle, WifiEvent);
 
     createUi();
 
@@ -359,8 +359,8 @@ OOP_CTOR(Idle, State* parent, const char* name) {
     OOP_CALL(&self->base, addTimer, powerOff,
              MINUTES(settings()->terminal.powerOffTimeOut), self);
 
-    OOP_CALL(&self->base, addTimer, netAutoConnect, SECS(10), self);
+    // OOP_CALL(&self->base, addTimer, netAutoConnect, SECS(10), self);
 
-    // timer = TIMER_CREATE(netAutoConnect, SECS(10), false);
-    // TIMER_START(timer);
+    timer = TIMER_CREATE(netAutoConnect, SECS(10), false);
+    TIMER_START(timer);
 }

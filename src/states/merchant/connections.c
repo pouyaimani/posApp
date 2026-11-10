@@ -16,6 +16,7 @@
 #include "menuMgr/menuMgr.h"
 #include "infoMgr/infoMgr.h"
 #include "wifiPwdMgr/wifiPwdMgr.h"
+#include "wifiPwdMgr/wifiAutoConnector.h"
 
 static Cellular* cel;
 static Network*  net;
@@ -26,6 +27,8 @@ static SubState* wifiEnterPass;
 static SubState* cellularLogin;
 
 WifiApInfo_t* selectedAp;
+
+static bool manualWifiWaiting = false;
 
 #define WIFI_DISCONNECT_STATE    0
 #define WIFI_CONNECT_STATE       1
@@ -197,31 +200,72 @@ static void WifiEnterPass(State* parent) {
 
 static Menu* wifiMenu = NULL;
 
-STATE_DEF_ENTER(WifiScan) {
-    wifi()->onUserSelection       = true;
-    Result_t res                  = network()->init(NET_ROUTE_WIFI);
+static void startManualWifiScan(State* state) {
+    Result_t res = network()->init(NET_ROUTE_WIFI);
+
     settings()->terminal.netRoute = NET_ROUTE_WIFI;
     settings()->save();
+
     if (res.err != ERR_DSC_OK) {
         LOG_ERROR("Network init error = %d", res.err);
     }
+
     SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SEARCHING_4_WIFI),
               phraseGetDef(PHRASE_PLEASE_WAIT));
-    WifiScanSt_t scnSt = OOP_CALL(wifi(), hgetScanStatus);
-    if (scnSt == WIFI_SCAN_UNDER_PROCESS) {
+
+    WifiScanSt_t scanSt = OOP_CALL(wifi(), hgetScanStatus);
+
+    if (scanSt == WIFI_SCAN_UNDER_PROCESS)
         return;
-    } else if (scnSt == WIFI_SCAN_SUCCEED) {
+
+    if (scanSt == WIFI_SCAN_SUCCEED) {
         WifiEvent* ev = (WifiEvent*)createEvent(SM_EVENT_WIFI);
-        RETURN_IF_NULL(ev, ;);
+
+        if (ev == NULL)
+            return;
+
+        ev->type       = WIFI_EV_SCAN;
         ev->scanStatus = WIFI_SCAN_SUCCEED;
+
         DISPATCH_EVENT(ev);
         return;
     }
+
     if (wifi()->startScan() != WIFI_ERR_OK) {
         infoMgrsetCommon(state->parent, state->parent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                        phraseGetDef(PHRASE_SEARCHING_WIFI_ERR), "");
     }
+}
+
+STATE_DEF_ENTER(WifiScan) {
+    WifiAutoConnector* ac = wifiAutoConnector();
+
+    /*
+     * User wants manual Wi-Fi control.
+     * Prevent Idle from starting another auto connection.
+     */
+    wifi()->onUserSelection = true;
+
+    WifiAutoStage stage = ac->getStage();
+
+    if (ac->isReady() && stage != WIFI_AUTO_IDLE &&
+        stage != WIFI_AUTO_FINISHED) {
+
+        LOG_TRACE("Manual WiFi: waiting for auto connector, stage=%d",
+                  (int)stage);
+
+        manualWifiWaiting = true;
+
+        SHOW_INFO(INFO_WAITING, phraseGetDef(PHRASE_SEARCHING_4_WIFI),
+                  phraseGetDef(PHRASE_PLEASE_WAIT));
+
+        return;
+    }
+
+    manualWifiWaiting = false;
+
+    startManualWifiScan(state);
 }
 
 STATE_DEF_EXIT(WifiScan) {
@@ -247,6 +291,28 @@ STATE_DEF_HANDLE(WifiScan, KeypadEvent) {
 }
 
 STATE_DEF_HANDLE(WifiScan, WifiEvent) {
+    if (manualWifiWaiting) {
+
+        WifiAutoConnector* ac    = wifiAutoConnector();
+        WifiAutoStage      stage = ac->getStage();
+
+        LOG_TRACE("Manual WiFi: waiting, auto stage=%d", (int)stage);
+
+        if (stage == WIFI_AUTO_IDLE || stage == WIFI_AUTO_FINISHED) {
+
+            LOG_TRACE("Manual WiFi: auto finished, starting scan");
+
+            manualWifiWaiting = false;
+
+            startManualWifiScan(state);
+        }
+
+        return;
+    }
+
+    /* Only handle manual scan results. */
+    if (ev->type != WIFI_EV_SCAN)
+        return;
     if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
         wifiMenu = MEM_ALLOC(sizeof(*wifiMenu));
         ui_menu_create(wifiMenu, disp()->screen);

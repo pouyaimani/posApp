@@ -2,6 +2,8 @@
 #define WIFI_AUTO_PORT_H_
 
 #include "wifiPwdMgr.h"
+#include "wifi/wifiEvent.h"
+#include "wifiAutoConnector.h"
 
 bool wifiAutoPortStartScan(void* ctx);
 
@@ -20,5 +22,8 @@ void wifiAutoPortFinished(void* ctx, WifiAutoOutcome outcome,
                           WifiPmResult persistence);
 
 bool wifiAutoPortFill(WifiAutoPort* port);
+
+/* Forward HAL Wi-Fi events to the automatic connector. */
+void wifiAutoPortHandleEvent(const WifiEvent* ev);
 
 #endif
