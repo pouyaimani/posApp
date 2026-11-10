@@ -65,45 +65,98 @@ static void saveWifiInfo(State* parent, WifiApInfo_t* ap, const char* pwd) {
     settings()->save();
 }
 
-// static void saveConnectedWifi(State* parent, const WifiApInfo_t* ap,
-//                               const char* pwd) {
-//     WifiPmAccessPoint pmAp;
-//     WifiPmResult      saved;
-//     if (ap == NULL || pwd == NULL)
-//         return;
-//     memcpy(pmAp.ssid, WIFI_PM_SSID_CAPACITY - 1, ap->essid);
-//     memcpy(pmAp.bssid, WIFI_PM_BSSID_CAPACITY, ap->mac);
-//     pmAp.security = (uint32_t)ap->secMode;
-//     saved         = wifiPwdMgr()->rememberSuccess(&pmAp, pwd);
-//     if (saved != WIFI_PM_OK)
-//         LOG_ERROR("Wi-Fi connected but credential save failed: %d", saved);
-//     LOG_TRACE("saveConnectedWifi: setting route to %d", NET_ROUTE_WIFI);
-//     Result_t res = network()->setRoute(NET_ROUTE_WIFI);
-//     if (res.err != ERR_DSC_OK) {
-//         LOG_TRACE("Unable to set device route.");
-//         infoMgrsetCommon(parent, parent);
-//         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
-//                        phraseGetDef(PHRASE_CONNECTION_ERR), "");
-//         return;
-//     }
-// }
+/**
+ * @brief Remember a successfully connected Wi-Fi network.
+ *
+ * Must only be called after WIFI_CONNECT_SUCCEED.
+ * Credentials are copied into WifiPwdMgr and persisted.
+ */
+static void saveConnectedWifi(const WifiApInfo_t* ap, const char* pwd) {
+    WifiPmAccessPoint pmAp = {0};
+    WifiPmResult      result;
+
+    if (ap == NULL || pwd == NULL) {
+        LOG_ERROR("saveConnectedWifi: invalid arguments");
+        return;
+    }
+
+    if (!wifiPwdMgr()->isReady()) {
+        LOG_ERROR("saveConnectedWifi: WifiPwdMgr not ready");
+        return;
+    }
+
+    pmAp.ssid     = ap->essid;
+    pmAp.bssid    = ap->mac;
+    pmAp.security = ap->secMode;
+
+    result = wifiPwdMgr()->rememberSuccess(&pmAp, pwd);
+
+    if (result != WIFI_PM_OK) {
+        LOG_ERROR("saveConnectedWifi: save failed, err=%d", (int)result);
+        return;
+    }
+
+    LOG_TRACE("saveConnectedWifi: network saved successfully");
+    LOG_TRACE("saveConnectedWifi: stored networks=%u",
+              (unsigned)wifiPwdMgr()->count());
+}
 
 STATE_DEF_HANDLE(WifiConnect, WifiEvent) {
     if (connectState == WIFI_DISCONNECT_STATE) {
-        wifi()->connect(selectedAp, inmgr()->input);
+
+        /* Wait for confirmed disconnection. */
+        if (ev->type != WIFI_EV_DISCONNECT)
+            return;
+
+        LOG_TRACE("WifiConnect: disconnected, starting connection");
+
         connectState = WIFI_CONNECT_STATE;
-    } else {
-        LOG_TRACE("Wifi: connect status = %d", ev->connectStatus);
-        if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
-            infoMgrsetCommon(state->parent, state->parent);
-            infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
-                           phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
-            saveWifiInfo(state->parent, selectedAp, inmgr()->input);
-        } else {
+
+        WifiErr_t err = wifi()->connect(selectedAp, inmgr()->input);
+
+        if (err != WIFI_ERR_OK) {
+            LOG_ERROR("WifiConnect: connect request failed=%d", (int)err);
+
             infoMgrsetCommon(state->parent, state->parent);
             infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                            phraseGetDef(PHRASE_CONNECTION_ERR), "");
         }
+
+        return;
+    }
+
+    /* Only process connection-result events. */
+    if (ev->type != WIFI_EV_CONNECT || connectState != WIFI_CONNECT_STATE)
+        return;
+
+    LOG_TRACE("WifiConnect: connect status=%d", (int)ev->connectStatus);
+
+    if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
+
+        LOG_TRACE("WifiConnect: connected successfully");
+
+        /*
+         * NEW: Remember successful Wi-Fi credentials.
+         *
+         * Save before displaying the result because
+         * infoMgr may change states or input ownership.
+         */
+        saveConnectedWifi(selectedAp, inmgr()->input);
+
+        /* Existing application settings behavior. */
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_SUCCESS, &infoFinishCtx,
+                       phraseGetDef(PHRASE_CONNECTION_SUCCEED), "");
+
+        saveWifiInfo(state->parent, selectedAp, inmgr()->input);
+
+    } else if (ev->connectStatus == WIFI_CONNECT_FAILED) {
+
+        LOG_ERROR("WifiConnect: connection failed");
+
+        infoMgrsetCommon(state->parent, state->parent);
+        infoMgr()->run(INFO_ERROR, &infoFinishCtx,
+                       phraseGetDef(PHRASE_CONNECTION_ERR), "");
     }
 }
 

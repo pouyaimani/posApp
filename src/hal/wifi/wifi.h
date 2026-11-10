@@ -48,6 +48,7 @@ OOP_VTABLE(Wifi) {
     OOP_IMETHOD(WifiScanSt_t, Wifi, hgetScanStatus);
     OOP_IMETHOD(WifiConnectSt_t, Wifi, getConnectStatus);
     OOP_IMETHOD(WifiSigStrength_t, Wifi, getSignalStrength);
+    OOP_IMETHOD(bool, Wifi, isDisconnected);
 };
 
 OOP_CLASS(Wifi) {

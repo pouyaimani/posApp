@@ -180,7 +180,7 @@ static WifiScanSt_t getScanStatus(Wifi* wifi) {
     WIFI_SCAN_AP_STATUS st    = sdkWifiGetScanAPStatus(&apNum);
     if (st == WIFI_SCAN_AP_ING) {
         wifi->scanSt = WIFI_SCAN_UNDER_PROCESS;
-    } else if (st == WIFI_SCAN_AP_SUCCESS && apNum > 1) {
+    } else if (st == WIFI_SCAN_AP_SUCCESS && apNum > 0) {
         int ret = sdkWifiGetScanApInfos(apinfo, &apNum);
         if (ret == SDK_WIFI_OK) {
             wifi->scanSt = WIFI_SCAN_SUCCEED;
@@ -199,20 +199,39 @@ static WifiScanSt_t getScanStatus(Wifi* wifi) {
 }
 
 static WifiConnectSt_t getConnectStatus(Wifi* wifi) {
+    (void)wifi;
+
     WIFI_CONNECT_AP_STATUS st = sdkWifiGetConnectAPStatus();
-    WifiConnectSt_t        connectSt;
+
+    /* Log only when the SDK status changes. */
+    static int lastStatus = -1;
+
+    if (lastStatus != (int)st) {
+        LOG_TRACE("WiFi SDK: connection status changed %d -> %d", lastStatus,
+                  (int)st);
+
+        lastStatus = (int)st;
+    }
+
     switch (st) {
     case WIFI_CONNECT_AP_SUCCESS:
-        connectSt = WIFI_CONNECT_SUCCEED;
-        break;
+        return WIFI_CONNECT_SUCCEED;
+
     case WIFI_CONNECT_AP_ERR:
-        connectSt = WIFI_CONNECT_FAILED;
-        break;
+        return WIFI_CONNECT_FAILED;
+
     default:
-        connectSt = WIFI_CONNECT_UNDER_PROCESS;
-        break;
+        return WIFI_CONNECT_UNDER_PROCESS;
     }
-    return connectSt;
+}
+
+/* Check whether the SDK reports Wi-Fi as disconnected. */
+static bool isDisconnected(Wifi* wifi) {
+    VAR_UNUSED(wifi);
+
+    WIFI_CONNECT_AP_STATUS st = sdkWifiGetConnectAPStatus();
+
+    return (int)st == WIFI_CONNECT_AP_ERR;
 }
 
 static WifiSigStrength_t getSignalStrength(Wifi* self) {
@@ -240,6 +259,7 @@ OOP_CTOR(WifiT3Rtos) {
     self->base.vtable.hdisconnect       = disconnect;
     self->base.vtable.getConnectStatus  = getConnectStatus;
     self->base.vtable.getSignalStrength = getSignalStrength;
+    self->base.vtable.isDisconnected    = isDisconnected;
 }
 
 #endif

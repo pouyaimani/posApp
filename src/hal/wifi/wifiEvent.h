@@ -20,6 +20,7 @@ typedef enum WifiConnectSt_t {
 typedef enum WifiEvType_t {
     WIFI_EV_CONNECT,
     WIFI_EV_SCAN,
+    WIFI_EV_DISCONNECT
 } WifiEvType_t;
 
 OOP_DECLARE_CLASS(WifiApList_t);

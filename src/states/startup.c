@@ -18,9 +18,59 @@
 #include "record/txnRecs.h"
 #include "file/file.h"
 #include "wifiPwdMgr/wifiPwdMgr.h"
+#include "wifiPwdMgr/wifiAutoConnector.h"
 
 static lv_obj_t* startUpPage;
 static lv_obj_t* label;
+
+static void initWifiPwdMgr(void) {
+    WifiPwdMgr* mgr = wifiPwdMgr();
+
+    if (mgr->isReady()) {
+        LOG_TRACE("WifiPwdMgr already initialized");
+        return;
+    }
+
+    WifiPmResult result = mgr->init(WIFI_PM_STORAGE_SLOTS);
+
+    if (result != WIFI_PM_OK) {
+        LOG_ERROR("WifiPwdMgr initialization failed: %d", (int)result);
+        return;
+    }
+
+    LOG_TRACE("WifiPwdMgr initialized successfully");
+    LOG_TRACE("WifiPwdMgr stored networks: %u", (unsigned)mgr->count());
+}
+
+static bool initWifiAutoConnector(void) {
+    WifiAutoConnector* mgr = wifiAutoConnector();
+
+    /* Prevent repeated initialization. */
+    if (mgr->isReady()) {
+        LOG_TRACE("WifiAutoConnector already initialized");
+        return true;
+    }
+
+    /* Password manager must be initialized first. */
+    if (!wifiPwdMgr()->isReady()) {
+        LOG_ERROR("WifiAutoConnector: WifiPwdMgr not ready");
+        return false;
+    }
+
+    /* Bind the connector to the existing Wi-Fi HAL. */
+    WifiAutoPort port;
+    wifiAutoPortFill(&port);
+
+    if (!mgr->init(&port)) {
+        LOG_ERROR("WifiAutoConnector initialization failed");
+        return false;
+    }
+
+    LOG_TRACE("WifiAutoConnector initialized successfully");
+    LOG_TRACE("WifiAutoConnector stage=%d", (int)mgr->getStage());
+
+    return true;
+}
 
 STATE_DEF_ENTER(Startup) {
     KEYPAD_INIT();
@@ -43,17 +93,18 @@ STATE_DEF_ENTER(Startup) {
         LOG_DEBUG("Network init error = %d", res.err);
     }
 
+    initWifiPwdMgr();
+
+    /* Initialize Wi-Fi automatic connection controller. */
+    if (!initWifiAutoConnector()) {
+        LOG_ERROR("WiFi auto connector is unavailable");
+    }
+
     LOG_TRACE("Free space in flash = %lu", OOP_CALL(file(), getFlashFreeSpace));
 
     // shifts()->init();
 
     // txnrecord()->init();
-    // WifiPmResult wpmres = wifiPwdMgr()->init(WIFI_PM_STORAGE_SLOTS);
-    // if (wpmres != WIFI_PM_OK) {
-    //     LOG_ERROR("Wifi password Managr could not be initialized. "
-    //               "initialization result = %d",
-    //               wpmres);
-    // }
 
     LOG_DEBUG("device voulme = %d", settings()->terminal.devVolume);
     OOP_CALL(sys(), setVolume, settings()->terminal.devVolume);

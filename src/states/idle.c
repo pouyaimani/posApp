@@ -28,6 +28,7 @@
 #include "assets.h"
 #include "txnMgr.h"
 #include "infoMgr/infoMgr.h"
+#include "wifiPwdMgr/wifiAutoConnector.h"
 
 #define MENU_BAR_HEIGHT 46
 
@@ -56,34 +57,7 @@ static void go2Supporter(void* arg) {
 
 void showKahrobaMenu(void* arg);
 
-#include "file/file.h"
-#include "logger.h"
-
-static void inspectApupdateHeader(void) {
-    FileHandle* h = OOP_CALL(file(), open, "/mtd2/apupdate", "rb");
-
-    if (!h) {
-        LOG_TRACE("TMS: apupdate open failed");
-        return;
-    }
-
-    uint8_t header[8] = {0};
-    long    size      = OOP_CALL(file(), size, h);
-
-    size_t n = OOP_CALL(file(), read, header, 1, sizeof(header), h);
-
-    LOG_TRACE("TMS: dest size=%ld read=%u", size, (unsigned)n);
-
-    if (n == sizeof(header)) {
-        LOG_TRACE("TMS: dest head=%02X %02X %02X %02X", header[0], header[1],
-                  header[2], header[3]);
-
-        LOG_TRACE("TMS: dest next=%02X %02X %02X %02X", header[4], header[5],
-                  header[6], header[7]);
-    }
-
-    OOP_CALL(file(), close, h);
-}
+void disconnectWifi(void* arg) { wifi()->disconnect(); }
 
 int removeFiles(void) {
     OOP_CALL(file(), remove, "/mtd0/tms_stage10_probe_00.bin");
@@ -91,7 +65,7 @@ int removeFiles(void) {
 
 static const KeyHandler keyHandler[] = {
     {KEY_0, showKahrobaMenu},
-    {KEY_1, inspectApupdateHeader},
+    {KEY_1, disconnectWifi},
     {KEY_2, NULL},
     {KEY_3, NULL},
     {KEY_4, NULL},
@@ -106,56 +80,90 @@ static const KeyHandler keyHandler[] = {
     {KEY_FUNCTION, go2Supporter},
 };
 
-static void wifiAutoConnect() {
-    WifiScanSt_t    scanSt    = OOP_CALL(wifi(), hgetScanStatus);
-    WifiConnectSt_t connectSt = OOP_CALL(wifi(), getConnectStatus);
-    LOG_TRACE("Wifi auto connect: scan status = %d, connect status = %d",
-              scanSt, connectSt);
-    if (connectSt == WIFI_CONNECT_FAILED && scanSt == WIFI_SCAN_FAILED &&
-        !wifi()->onUserSelection) {
-        wifi()->startScan();
+static void wifiAutoConnect(void) {
+    WifiAutoConnector* ac = wifiAutoConnector();
+
+    if (!ac->isReady() || !wifiPwdMgr()->isReady())
+        return;
+
+    /* Do not interfere with manual Wi-Fi operations. */
+    if (wifi()->onUserSelection)
+        return;
+
+    /* Automatic Wi-Fi connection is only needed on Wi-Fi route. */
+    if (OOP_CALL(network(), getRoute) != NET_ROUTE_WIFI)
+        return;
+
+    /* Already connected: nothing to do. */
+    if (OOP_CALL(wifi(), getConnectStatus) == WIFI_CONNECT_SUCCEED)
+        return;
+
+    WifiAutoStage stage = ac->getStage();
+
+    /* Do not interrupt an active automatic operation. */
+    if (stage != WIFI_AUTO_IDLE && stage != WIFI_AUTO_FINISHED)
+        return;
+
+    if (wifiPwdMgr()->count() == 0u)
+        return;
+
+    LOG_TRACE("WiFi auto: starting automatic connection");
+
+    if (!ac->start()) {
+        LOG_ERROR("WiFi auto: start failed");
     }
 }
 
-STATE_DEF_HANDLE(Idle, WifiEvent) {
-    LOG_TRACE("ev->type = %d", ev->type);
-    if (ev->type == WIFI_EV_SCAN) {
-        if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
-            LOG_TRACE("saved wifi ssid = %s", settings()->terminal.wfiSSID);
-            LOG_TRACE("wifi()->apList.size = %d", wifi()->apList.size);
-            for (uint8_t i = 0; i < wifi()->apList.size; i++) {
-                DEFINE_STRING(safeSsid, 64);
-                normalizeSsid(wifi()->apList.list[i].essid,
-                              sizeof(wifi()->apList.list[i].essid), safeSsid,
-                              sizeof(safeSsid));
-                if (strcmp(wifi()->apList.list[i].essid,
-                           settings()->terminal.wfiSSID) == 0) {
-                    WifiApInfo_t apInfo  = {0};
-                    char         pwd[64] = {0};
-                    snprintf(apInfo.essid, sizeof(apInfo.essid), "%s",
-                             settings()->terminal.wfiSSID);
-                    snprintf(apInfo.mac, sizeof(apInfo.mac), "%s",
-                             settings()->terminal.wifiMac);
-                    apInfo.secMode = settings()->terminal.wifiEnc;
-                    snprintf(pwd, sizeof(pwd), "%s",
-                             settings()->terminal.wifiPwd);
-                    LOG_TRACE("Saved wifi ssid [%s%s%s] is found nearby.",
-                              LOG_COLOR_RED, apInfo.essid, LOG_COLOR_RESET);
-                    RETURN_IF_LE(strlen(apInfo.essid), 0, ;);
-                    RETURN_IF_LE(strlen(pwd), 0, ;);
-                    RETURN_IF(apInfo.secMode, 0, ;);
-                    LOG_TRACE("start connecting to [%s%s%s]", LOG_COLOR_RED,
-                              apInfo.essid, LOG_COLOR_RESET);
-                    wifi()->connect(&apInfo, pwd);
-                }
+static void forwardWifiAutoEvent(const WifiEvent* ev) {
+    if (ev == NULL)
+        return;
+
+    WifiAutoConnector* ac = wifiAutoConnector();
+
+    if (!ac->isReady())
+        return;
+
+    WifiAutoStage stage = ac->getStage();
+
+    LOG_TRACE("WiFi auto: event=%d, stage=%d", (int)ev->type, (int)stage);
+
+    switch (ev->type) {
+
+    case WIFI_EV_SCAN:
+        if (stage == WIFI_AUTO_SCANNING) {
+            if (ev->scanStatus == WIFI_SCAN_SUCCEED) {
+                ac->onScanComplete(true);
+            } else if (ev->scanStatus == WIFI_SCAN_FAILED) {
+                ac->onScanComplete(false);
             }
         }
-    } else if (ev->type == WIFI_EV_CONNECT) {
-        LOG_TRACE("result of connecting to [%s%s%s] -> %d", LOG_COLOR_RED,
-                  settings()->terminal.wfiSSID, LOG_COLOR_RESET,
-                  ev->connectStatus);
+        break;
+
+    case WIFI_EV_DISCONNECT:
+        if (stage == WIFI_AUTO_WAIT_DISCONNECT) {
+            LOG_TRACE("WiFi auto: disconnect confirmed");
+            ac->onDisconnected();
+        }
+        break;
+
+    case WIFI_EV_CONNECT:
+        if (stage == WIFI_AUTO_WAIT_CONNECT) {
+            if (ev->connectStatus == WIFI_CONNECT_SUCCEED) {
+                LOG_TRACE("WiFi auto: connect succeeded");
+                ac->onConnectResult(true);
+            } else if (ev->connectStatus == WIFI_CONNECT_FAILED) {
+                LOG_TRACE("WiFi auto: connect failed");
+                ac->onConnectResult(false);
+            }
+        }
+        break;
+
+    default:
+        break;
     }
 }
+
+STATE_DEF_HANDLE(Idle, WifiEvent) { forwardWifiAutoEvent(ev); }
 
 static void cellAutoConnect() {
     if (OOP_CALL(cellular(), getSimStatus) != SIM_STATUS_OK) {
