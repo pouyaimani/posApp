@@ -79,6 +79,25 @@ void inputComplete(InputResult result, void* userData) {
         callback(callbackData);
 }
 
+/** Adapter from a terminal input result to application state navigation. */
+void inputCompleteCbOnFinish(InputResult result, void* userData) {
+    const InputFinishCtx* ctx = (const InputFinishCtx*)userData;
+    if (!ctx)
+        return;
+    if (result != INPUT_RES_FINISHED && result != INPUT_RES_CANCELED)
+        return;
+
+    /* Snapshot before navigation: the destination may reuse the shared context.
+     */
+    State* next = result == INPUT_RES_FINISHED ? ctx->onFinish : ctx->onCancel;
+    CallBack_t callback     = ctx->cb;
+    void*      callbackData = ctx->userData;
+    if (next)
+        SM_GOTO(next);
+    if (result == INPUT_RES_FINISHED && callback)
+        callback(callbackData);
+}
+
 /** Refresh labels and reveal the input-screen objects. */
 static void ui_show(void) {
     InputController* ctrl = manager.ctrl;

@@ -91,4 +91,6 @@ extern InputFinishCtx inFinishCtx;
  */
 void inputComplete(InputResult result, void* userData);
 
+void inputCompleteCbOnFinish(InputResult result, void* userData);
+
 #endif

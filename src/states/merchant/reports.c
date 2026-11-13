@@ -80,7 +80,7 @@ static void runReportInput(InputMode mode, const char* title, char* output,
                              .maxLen  = max,
                              .timeout = BACK_IDLE_TMO,
                              .tocb    = back2idle},
-                 inputComplete, &inFinishCtx);
+                 inputCompleteCbOnFinish, &inFinishCtx);
 
     inmgr()->commit(output, NULL, outputSize);
 }
