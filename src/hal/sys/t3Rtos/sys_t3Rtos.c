@@ -22,8 +22,8 @@ static TerminalInfo tinfo;
 #define APP_CORE_START (APP_START + 0x200)
 // end
 
-// define APP_VER for coremanage to read
-#define APP_VER "V" APPID DEVICE_MACHINE_ID APPVERSION // VHWCS33231218001
+// This app version is used to verification in signed device
+#define APP_VER "VPNAP330000001"
 const char ver[20] __attribute__((at(APP_START + MCU_BASE_ADDR))) = APP_VER;
 // end
 
@@ -220,13 +220,13 @@ static SystemErr_t getSN(System* dev, char* out, size_t len) {
         return SYS_ERR_NOK;
     }
     memset(out, 0, len);
-    // int8_t err = sdkSysReadDeviceSN(SYS_SN_TYPE_CUSTOM,
-    //                  out, len);
-    // if (err != SDK_SYS_OK) {
-    //     LOG_ERROR("SYS: failure in reading device serail number. error = %d",
-    //     err); return ERR_NOK;
-    // }
-    strcpy(out, CHANGE_SERIAL);
+    int8_t err = sdkSysReadDeviceSN(SYS_SN_TYPE_CUSTOM, out, len);
+    if (err != SDK_SYS_OK) {
+        LOG_ERROR("SYS: failure in reading device serail number. error = %d",
+                  err);
+        return ERR_NOK;
+    }
+    // strcpy(out, CHANGE_SERIAL);
 
     return SYS_ERR_OK;
 }
