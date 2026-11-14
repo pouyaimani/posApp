@@ -21,6 +21,8 @@ OOP_CLASS(FileHandle) {
     void* file_ptr;
     char  path[128];
     long  pos;
+    /* New field: permitted operations and append behavior. */
+    uint8_t modeFlags;
 };
 
 typedef enum {
