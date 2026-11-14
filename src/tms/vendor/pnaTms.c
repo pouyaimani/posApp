@@ -154,21 +154,21 @@ static void finish(PnaTms* p, TmsResult result, TmsError error, int code) {
         /* Never remove a file unless THIS operation successfully created it. */
         if (!closed || OOP_CALL(file(), remove, PNA_SCRATCH_PATH) != 0 ||
             OOP_CALL(file(), exists, PNA_SCRATCH_PATH)) {
-            LOG_TRACE("PnaTms: SCRATCH cleanup failed; inspect test file");
+            LOG_TMS("PnaTms: SCRATCH cleanup failed; inspect test file");
             if (result == TMS_RESULT_SUCCESS) {
                 result = TMS_RESULT_FAILURE;
                 error  = TMS_ERR_STORAGE;
                 code   = PNA_ERR_STORAGE;
             }
         } else
-            LOG_TRACE("PnaTms: SCRATCH removed=1");
+            LOG_TMS("PnaTms: SCRATCH removed=1");
         p->scratchOwned = false;
     }
 #endif
 #if TMS_ENABLE_APUPDATE_WRITER
     if (p->destinationTouched) {
-        LOG_TRACE("PnaTms: DEST modified result=%d; platform update may run",
-                  result);
+        LOG_TMS("PnaTms: DEST modified result=%d; platform update may run",
+                result);
         p->destinationTouched = false;
     }
 #endif
@@ -187,7 +187,7 @@ static void finish(PnaTms* p, TmsResult result, TmsError error, int code) {
         if (closed && pnaTmsStageDiscard(p->cfg.stagingPrefix, false))
             p->journalOwned = false;
         else
-            LOG_TRACE("PnaTms: incomplete journal retained for recovery");
+            LOG_TMS("PnaTms: incomplete journal retained for recovery");
     }
     TmsBackendNotify cb         = p->notify;
     void*            cbCtx      = p->notifyContext;
@@ -198,7 +198,7 @@ static void finish(PnaTms* p, TmsResult result, TmsError error, int code) {
                                    .result      = result,
                                    .error       = error,
                                    .backendCode = code};
-    LOG_TRACE("PnaTms: done result=%d error=%d code=%d", result, error, code);
+    LOG_TMS("PnaTms: done result=%d error=%d code=%d", result, error, code);
     if (cb)
         cb(cbCtx, id, &event);
 }
@@ -450,8 +450,8 @@ static void handleManifest(PnaTms* p) {
         return;
     }
     p->journalOwned = true;
-    LOG_TRACE("PnaTms: managed download files=%u bytes=%llu", (unsigned)count,
-              (unsigned long long)p->totalBytes);
+    LOG_TMS("PnaTms: managed download files=%u bytes=%llu", (unsigned)count,
+            (unsigned long long)p->totalBytes);
     (void)beginFile(p);
 }
 static void handleSector(PnaTms* p) {
@@ -549,9 +549,9 @@ static void verifyFile(PnaTms* p) {
     }
     p->verifiedBytes += expected;
     p->verifyStarted = false;
-    LOG_TRACE("PnaTms: verified file=%u/%u bytes=%lu",
-              (unsigned)(p->fileIndex + 1u), (unsigned)p->fileCount,
-              (unsigned long)expected);
+    LOG_TMS("PnaTms: verified file=%u/%u bytes=%lu",
+            (unsigned)(p->fileIndex + 1u), (unsigned)p->fileCount,
+            (unsigned long)expected);
     afterFile(p);
     if (p->active && p->endReceived)
         finishReady(p);
@@ -565,8 +565,8 @@ static void finishReady(PnaTms* p) {
     p->journalOwned = false;
     if (!progress(p, TMS_STATE_VERIFYING, true))
         return;
-    LOG_TRACE("PnaTms: READY files=%u bytes=%llu install=0 auth=0",
-              (unsigned)p->fileCount, (unsigned long long)p->verifiedBytes);
+    LOG_TMS("PnaTms: READY files=%u bytes=%llu install=0 auth=0",
+            (unsigned)p->fileCount, (unsigned long long)p->verifiedBytes);
     /* Success means READY staging only; never package activation. */
     finish(p, TMS_RESULT_SUCCESS, TMS_ERR_NONE, PNA_READY_CODE);
 }
@@ -628,8 +628,8 @@ static bool prepareStart(PnaTms* p) {
     p->verifyOffset = 0u;
     pnaTmsMd5Init(&p->verifyMd5);
     p->stage = PNA_TMS_PREPARE_MD5;
-    LOG_TRACE("PnaTms: PREPARE reverify bytes=%lu readOnly=1",
-              (unsigned long)p->journal.files[0].size);
+    LOG_TMS("PnaTms: PREPARE reverify bytes=%lu readOnly=1",
+            (unsigned long)p->journal.files[0].size);
     return true;
 }
 
@@ -735,7 +735,7 @@ static bool verifyEmbeddedSignatures(const PnaTms* p, const char* path) {
     unsigned rejectedCount = 0u;
 #endif
     if (!p || !path || !path[0] || p->innerCount == 0u) {
-        LOG_TRACE("PnaTms: SIGN invalid input");
+        LOG_TMS("PnaTms: SIGN invalid input");
         return false;
     }
 #if TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE
@@ -751,14 +751,14 @@ static bool verifyEmbeddedSignatures(const PnaTms* p, const char* path) {
                 entry->size > p->totalBytes - entry->offset)
                 return false;
         }
-        LOG_TRACE("PnaTms: SIGN SKIPPED DEV TEST destination=%d auth=0",
-                  (int)(strcmp(path, PNA_APUPDATE_PATH) == 0));
+        LOG_TMS("PnaTms: SIGN SKIPPED DEV TEST destination=%d auth=0",
+                (int)(strcmp(path, PNA_APUPDATE_PATH) == 0));
         return true;
     }
 #endif
     System* system = sys();
     if (!system || !system->vtable.verifySign) {
-        LOG_TRACE("PnaTms: SIGN unsupported path/system");
+        LOG_TMS("PnaTms: SIGN unsupported path/system");
         return false;
     }
     for (unsigned i = 0u; i < p->innerCount; ++i) {
@@ -770,8 +770,8 @@ static bool verifyEmbeddedSignatures(const PnaTms* p, const char* path) {
         int32_t ret =
             OOP_CALL(system, verifySign, path, entry->offset, entry->size);
         if (ret != 0) {
-            LOG_TRACE("PnaTms: SIGN FAIL file=%u/%u ret=%ld", i + 1u,
-                      (unsigned)p->innerCount, (long)ret);
+            LOG_TMS("PnaTms: SIGN FAIL file=%u/%u ret=%ld", i + 1u,
+                    (unsigned)p->innerCount, (long)ret);
 #if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
             /* Only an actual SDK rejection can be tolerated, and only
              * in a build with ALL copy/write paths excluded. An absent
@@ -782,13 +782,12 @@ static bool verifyEmbeddedSignatures(const PnaTms* p, const char* path) {
             return false;
 #endif
         }
-        LOG_TRACE("PnaTms: SIGN OK file=%u/%u", i + 1u,
-                  (unsigned)p->innerCount);
+        LOG_TMS("PnaTms: SIGN OK file=%u/%u", i + 1u, (unsigned)p->innerCount);
     }
 #if TMS_DEBUG_ALLOW_UNSIGNED_PREFLIGHT
     if (rejectedCount != 0u)
-        LOG_TRACE("PnaTms: SIGN UNVERIFIED debug only rejected=%u/%u",
-                  rejectedCount, (unsigned)p->innerCount);
+        LOG_TMS("PnaTms: SIGN UNVERIFIED debug only rejected=%u/%u",
+                rejectedCount, (unsigned)p->innerCount);
 #endif
     return true;
 }
@@ -862,7 +861,7 @@ static bool destinationGuard(PnaTms* p) {
     unsigned headerState = readable && offset == PNA_LEGACY_HEADER
                                ? (legacyClear ? 1u : (erasedHeader ? 2u : 0u))
                                : 0u;
-    LOG_TRACE("PnaTms: DEST header state=%u size=%ld", headerState, size);
+    LOG_TMS("PnaTms: DEST header state=%u size=%ld", headerState, size);
     if (!headerState || p->totalBytes > UINT32_MAX)
         return false;
 
@@ -886,26 +885,26 @@ static bool scratchStart(PnaTms* p, uint32_t headerCrc) {
 #if TMS_ENABLE_APUPDATE_WRITER
     if (p->cfg.prepareDestination) {
         if (!destinationGuard(p)) {
-            LOG_TRACE("PnaTms: DEST BLOCKED header/authorization (see state)");
+            LOG_TMS("PnaTms: DEST BLOCKED header/authorization (see state)");
             fail(p, TMS_ERR_BACKEND_FAILURE, PNA_ERR_DEST_BLOCKED);
             return false;
         }
     } else
 #endif
         if (OOP_CALL(file(), exists, target)) {
-        LOG_TRACE("PnaTms: SCRATCH refused; path exists");
+        LOG_TMS("PnaTms: SCRATCH refused; path exists");
         fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
         return false;
     }
 #if TMS_ENABLE_APUPDATE_WRITER
     if (p->cfg.prepareDestination)
-        LOG_TRACE("PnaTms: APUPDATE write may trigger system update");
+        LOG_TMS("PnaTms: APUPDATE write may trigger system update");
 #endif
-    LOG_TRACE("PnaTms: COPY open protected=%d", (int)
+    LOG_TMS("PnaTms: COPY open protected=%d", (int)
 #if TMS_ENABLE_APUPDATE_WRITER
-                                                    p->cfg.prepareDestination
+                                                  p->cfg.prepareDestination
 #else
-                                                    0
+                                                  0
 #endif
     );
     /* T3Rtos open("rb") refuses missing files; open("rb+") creates them.
@@ -927,7 +926,7 @@ static bool scratchStart(PnaTms* p, uint32_t headerCrc) {
     else
 #endif
         p->scratchOwned = true;
-    LOG_TRACE("PnaTms: COPY overwrite header len=4096");
+    LOG_TMS("PnaTms: COPY overwrite header len=4096");
     if (OOP_CALL(file(), overwrite, p->rx, 1u, PNA_LEGACY_HEADER, p->opened) !=
             PNA_LEGACY_HEADER ||
         OOP_CALL(file(), tell, p->opened) != (long)PNA_LEGACY_HEADER) {
@@ -946,8 +945,8 @@ static bool scratchStart(PnaTms* p, uint32_t headerCrc) {
     p->scratchOffset    = PNA_LEGACY_HEADER;
     p->downloadedBytes  = 0u;
     p->stage            = PNA_TMS_SCRATCH_COPY;
-    LOG_TRACE("PnaTms: COPY header-first bytes=%lu",
-              (unsigned long)p->totalBytes);
+    LOG_TMS("PnaTms: COPY header-first bytes=%lu",
+            (unsigned long)p->totalBytes);
     return true;
 }
 
@@ -960,8 +959,7 @@ static void scratchProcess(PnaTms* p) {
             if (n > PNA_READ_CHUNK)
                 n = PNA_READ_CHUNK;
             if (p->scratchOffset == PNA_LEGACY_HEADER)
-                LOG_TRACE("PnaTms: COPY first payload write len=%u",
-                          (unsigned)n);
+                LOG_TMS("PnaTms: COPY first payload write len=%u", (unsigned)n);
             if (OOP_CALL(file(), read, p->rx, 1u, n, p->scratchSource) != n ||
                 OOP_CALL(file(), write, p->rx, 1u, n, p->opened) != n) {
                 fail(p, TMS_ERR_STORAGE, PNA_ERR_STORAGE);
@@ -1015,7 +1013,7 @@ static void scratchProcess(PnaTms* p) {
         p->scratchOffset = 0u;
         p->verifyCrc     = UINT32_MAX;
         p->stage         = PNA_TMS_SCRATCH_VERIFY_HEADER;
-        LOG_TRACE("PnaTms: COPY complete; readback");
+        LOG_TMS("PnaTms: COPY complete; readback");
         return;
     }
     if (p->stage == PNA_TMS_SCRATCH_VERIFY_HEADER) {
@@ -1071,7 +1069,7 @@ static void scratchProcess(PnaTms* p) {
     pnaTmsMd5Final(&p->verifyMd5, verifiedMd5);
     if (memcmp(verifiedMd5, p->journal.files[0].md5, sizeof(verifiedMd5)) !=
         0) {
-        LOG_TRACE("PnaTms: COPY source changed during preparation");
+        LOG_TMS("PnaTms: COPY source changed during preparation");
         fail(p, TMS_ERR_INTEGRITY, PNA_ERR_VERIFY);
         return;
     }
@@ -1097,19 +1095,19 @@ static void scratchProcess(PnaTms* p) {
 #endif
 #if TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE
     if (p->cfg.prepareDestination)
-        LOG_TRACE("PnaTms: UNSIGNED DEV handoff; SDK sign skipped");
+        LOG_TMS("PnaTms: UNSIGNED DEV handoff; SDK sign skipped");
 #endif
-    LOG_TRACE("PnaTms: COPY PASS bytes=%lu hdrCRC=%08lX protected=%d",
-              (unsigned long)p->totalBytes, (unsigned long)p->scratchHeaderCrc,
+    LOG_TMS("PnaTms: COPY PASS bytes=%lu hdrCRC=%08lX protected=%d",
+            (unsigned long)p->totalBytes, (unsigned long)p->scratchHeaderCrc,
 #if TMS_ENABLE_APUPDATE_WRITER
-              (int)p->cfg.prepareDestination
+            (int)p->cfg.prepareDestination
 #else
-              0
+            0
 #endif
     );
 #if TMS_ENABLE_APUPDATE_WRITER
     if (p->cfg.prepareDestination)
-        LOG_TRACE("PnaTms: APUPDATE verified; confirm version after restart");
+        LOG_TMS("PnaTms: APUPDATE verified; confirm version after restart");
 #endif
     if (!progress(p, TMS_STATE_VERIFYING, true))
         return;
@@ -1134,15 +1132,15 @@ static void scratchProcess(PnaTms* p) {
 static bool auditApupdateStart(PnaTms* p) {
     p->opened = OOP_CALL(file(), open, PNA_APUPDATE_PATH, "rb");
     if (!p->opened) {
-        LOG_TRACE("PnaTms: SLOT not readable; no update write");
+        LOG_TMS("PnaTms: SLOT not readable; no update write");
         fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
         return false;
     }
     long physical = OOP_CALL(file(), size, p->opened);
     if (physical < (long)p->totalBytes || physical < 7L ||
         physical > (long)PNA_APUPDATE_SCAN_LIMIT) {
-        LOG_TRACE("PnaTms: SLOT size invalid physical=%ld needed=%lu", physical,
-                  (unsigned long)p->totalBytes);
+        LOG_TMS("PnaTms: SLOT size invalid physical=%ld needed=%lu", physical,
+                (unsigned long)p->totalBytes);
         fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
         return false;
     }
@@ -1150,8 +1148,8 @@ static bool auditApupdateStart(PnaTms* p) {
     p->auditOffset        = 0u;
     p->auditResidualBytes = 0u;
     p->stage              = PNA_TMS_AUDIT_APUPDATE;
-    LOG_TRACE("PnaTms: SLOT scan readOnly=1 size=%lu need=%lu",
-              (unsigned long)p->auditSize, (unsigned long)p->totalBytes);
+    LOG_TMS("PnaTms: SLOT scan readOnly=1 size=%lu need=%lu",
+            (unsigned long)p->auditSize, (unsigned long)p->totalBytes);
     return true;
 }
 
@@ -1165,8 +1163,8 @@ static void auditApupdateProcess(PnaTms* p) {
         if (len > PNA_READ_CHUNK)
             len = PNA_READ_CHUNK;
         if (OOP_CALL(file(), read, p->rx, 1u, len, p->opened) != len) {
-            LOG_TRACE("PnaTms: SLOT read failure offset=%lu",
-                      (unsigned long)readAt);
+            LOG_TMS("PnaTms: SLOT read failure offset=%lu",
+                    (unsigned long)readAt);
             fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
             return;
         }
@@ -1175,8 +1173,8 @@ static void auditApupdateProcess(PnaTms* p) {
             if (at < sizeof(marker)) {
                 /* The marker is an explicit legacy clear-state identifier. */
                 if (p->rx[j] != marker[at]) {
-                    LOG_TRACE("PnaTms: SLOT marker invalid at=%lu got=%02X",
-                              (unsigned long)at, (unsigned)p->rx[j]);
+                    LOG_TMS("PnaTms: SLOT marker invalid at=%lu got=%02X",
+                            (unsigned long)at, (unsigned)p->rx[j]);
                     fail(p, TMS_ERR_INTEGRITY, PNA_ERR_AUDIT);
                     return;
                 }
@@ -1184,8 +1182,8 @@ static void auditApupdateProcess(PnaTms* p) {
                 /* Clear-cache writes 7 marker bytes; the old payload may
                  * remain. */
                 if (p->auditResidualBytes == 0u)
-                    LOG_TRACE("PnaTms: SLOT residual first=%lu byte=%02X",
-                              (unsigned long)at, (unsigned)p->rx[j]);
+                    LOG_TMS("PnaTms: SLOT residual first=%lu byte=%02X",
+                            (unsigned long)at, (unsigned)p->rx[j]);
                 ++p->auditResidualBytes;
             }
         }
@@ -1199,11 +1197,10 @@ static void auditApupdateProcess(PnaTms* p) {
         fail(p, TMS_ERR_STORAGE, PNA_ERR_AUDIT);
         return;
     }
-    LOG_TRACE("PnaTms: SLOT marker=TMSclea bytes=%lu nonFFTail=%lu",
-              (unsigned long)p->auditSize,
-              (unsigned long)p->auditResidualBytes);
-    LOG_TRACE("PnaTms: SLOT owner=unknown pending=unknown auth=0 write=0 "
-              "flag=0 reboot=0");
+    LOG_TMS("PnaTms: SLOT marker=TMSclea bytes=%lu nonFFTail=%lu",
+            (unsigned long)p->auditSize, (unsigned long)p->auditResidualBytes);
+    LOG_TMS("PnaTms: SLOT owner=unknown pending=unknown auth=0 write=0 "
+            "flag=0 reboot=0");
     if (!progress(p, TMS_STATE_VERIFYING, true))
         return;
     finish(p, TMS_RESULT_SUCCESS, TMS_ERR_NONE, PNA_AUDIT_CODE);
@@ -1250,7 +1247,7 @@ static void prepareProcess(PnaTms* p) {
             }
             p->verifyOffset = 0u;
             p->stage        = PNA_TMS_PREPARE_HEADER;
-            LOG_TRACE("PnaTms: PREPARE source MD5 match=1");
+            LOG_TMS("PnaTms: PREPARE source MD5 match=1");
         } else {
             if (!prepareParseHeader(p)) {
                 fail(p, TMS_ERR_INTEGRITY, PNA_ERR_PREPARE);
@@ -1329,9 +1326,9 @@ static void prepareProcess(PnaTms* p) {
     }
     uint32_t headerCrc =
         crc32Update(UINT32_MAX, p->rx, PNA_LEGACY_HEADER) ^ UINT32_MAX;
-    LOG_TRACE("PnaTms: PREPARE PASS bytes=%lu inner=%u ini=%lu crc=%08lX",
-              (unsigned long)p->journal.files[0].size, (unsigned)p->innerCount,
-              (unsigned long)textLen, (unsigned long)headerCrc);
+    LOG_TMS("PnaTms: PREPARE PASS bytes=%lu inner=%u ini=%lu crc=%08lX",
+            (unsigned long)p->journal.files[0].size, (unsigned)p->innerCount,
+            (unsigned long)textLen, (unsigned long)headerCrc);
 #if TMS_ENABLE_APUPDATE_AUDIT
     if (p->cfg.auditApupdate) {
         (void)auditApupdateStart(p);
@@ -1351,7 +1348,7 @@ static void prepareProcess(PnaTms* p) {
         return;
     }
 #endif
-    LOG_TRACE("PnaTms: PREPARE NO INSTALL write=0 flag=0 reboot=0 auth=0");
+    LOG_TMS("PnaTms: PREPARE NO INSTALL write=0 flag=0 reboot=0 auth=0");
     if (!progress(p, TMS_STATE_VERIFYING, true))
         return;
     finish(p, TMS_RESULT_SUCCESS, TMS_ERR_NONE, PNA_PREPARE_CODE);
@@ -1472,8 +1469,8 @@ static bool cancelPna(void* context, uint64_t id) {
      * strictly read-only and may safely be canceled. Once the destination
      * has been opened for replacement, finish the operation instead. */
     if (p->cfg.prepareDestination && p->destinationTouched) {
-        LOG_TRACE("PnaTms: cancel refused: APUPDATE already touched op=%llu",
-                  (unsigned long long)id);
+        LOG_TMS("PnaTms: cancel refused: APUPDATE already touched op=%llu",
+                (unsigned long long)id);
         return false;
     }
 #endif

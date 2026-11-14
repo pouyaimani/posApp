@@ -3,6 +3,8 @@
 #include <string.h>
 
 #include "logger.h"
+#include "wifi/wifi.h"
+#include "network/network.h"
 
 /*
  * Runtime state is private to this singleton, just like WifiPwdMgr.
@@ -44,10 +46,10 @@ static void acFinish(WifiAutoOutcome outcome, WifiPmResult persistence,
     g_auto.safeToHandoff = halCompleted;
     acClearCurrent();
 
-    LOG_TRACE("WiFi auto: finished outcome=%d, persistence=%d, "
-              "attempts=%u, handoffSafe=%d",
-              (int)outcome, (int)persistence, (unsigned)g_auto.tries,
-              (int)g_auto.safeToHandoff);
+    LOG_WAC("WiFi auto: finished outcome=%d, persistence=%d, "
+            "attempts=%u, handoffSafe=%d",
+            (int)outcome, (int)persistence, (unsigned)g_auto.tries,
+            (int)g_auto.safeToHandoff);
 
     if (g_auto.port.finished != NULL)
         g_auto.port.finished(g_auto.port.ctx, outcome, persistence);
@@ -67,7 +69,7 @@ static void acAttemptNext(void) {
 
     /* Stop before selecting a new AP after the previous request completed. */
     if (g_auto.stopRequested) {
-        LOG_TRACE("WiFi auto: yielding to manual Wi-Fi");
+        LOG_WAC("WiFi auto: yielding to manual Wi-Fi");
         acFinish(WIFI_AUTO_CANCELLED, WIFI_PM_OK, true);
         return;
     }
@@ -95,8 +97,8 @@ static void acAttemptNext(void) {
     ++g_auto.tries;
     g_auto.stage = WIFI_AUTO_WAIT_DISCONNECT;
 
-    LOG_TRACE("WiFi auto: selected AP index=%u, attempt=%u", (unsigned)index,
-              (unsigned)g_auto.tries);
+    LOG_WAC("WiFi auto: selected AP index=%u, attempt=%u", (unsigned)index,
+            (unsigned)g_auto.tries);
 
     /* A separate, confirmed disconnect event must call onDisconnected(). */
     if (!g_auto.port.requestDisconnect(g_auto.port.ctx)) {
@@ -122,7 +124,7 @@ static bool acInit(const WifiAutoPort* port) {
     g_auto.stage         = WIFI_AUTO_IDLE;
     g_auto.safeToHandoff = true;
 
-    LOG_TRACE("WiFi auto: connector initialized");
+    LOG_WAC("WiFi auto: connector initialized");
     return true;
 }
 
@@ -141,7 +143,7 @@ static bool acStart(void) {
     g_auto.stopRequested = false;
     g_auto.safeToHandoff = false;
 
-    LOG_TRACE("WiFi auto: starting scan");
+    LOG_WAC("WiFi auto: starting scan");
     if (!g_auto.port.startScan(g_auto.port.ctx)) {
         LOG_ERROR("WiFi auto: scan request rejected");
         acFinish(WIFI_AUTO_SCAN_FAILED, WIFI_PM_OK, true);
@@ -155,7 +157,7 @@ static void acOnScanComplete(bool success) {
         return;
 
     if (g_auto.stopRequested) {
-        LOG_TRACE("WiFi auto: scan completed, manual Wi-Fi takes priority");
+        LOG_WAC("WiFi auto: scan completed, manual Wi-Fi takes priority");
         acFinish(WIFI_AUTO_CANCELLED, WIFI_PM_OK, true);
         return;
     }
@@ -166,8 +168,7 @@ static void acOnScanComplete(bool success) {
     }
 
     g_auto.apCount = g_auto.port.scanCount(g_auto.port.ctx);
-    LOG_TRACE("WiFi auto: scan completed, AP count=%u",
-              (unsigned)g_auto.apCount);
+    LOG_WAC("WiFi auto: scan completed, AP count=%u", (unsigned)g_auto.apCount);
 
     if (g_auto.apCount > WIFI_PM_MAX_SCAN_APS) {
         LOG_ERROR("WiFi auto: scan AP count exceeds supported maximum");
@@ -183,14 +184,14 @@ static void acOnDisconnected(void) {
         return;
 
     if (g_auto.stopRequested) {
-        LOG_TRACE("WiFi auto: disconnect completed, yielding to manual Wi-Fi");
+        LOG_WAC("WiFi auto: disconnect completed, yielding to manual Wi-Fi");
         acFinish(WIFI_AUTO_CANCELLED, WIFI_PM_OK, true);
         return;
     }
 
     g_auto.stage = WIFI_AUTO_WAIT_CONNECT;
-    LOG_TRACE("WiFi auto: disconnected; connecting AP index=%u",
-              (unsigned)g_auto.current.apIndex);
+    LOG_WAC("WiFi auto: disconnected; connecting AP index=%u",
+            (unsigned)g_auto.current.apIndex);
 
     if (!g_auto.port.requestConnect(g_auto.port.ctx, g_auto.current.apIndex,
                                     g_auto.current.password)) {
@@ -208,13 +209,13 @@ static void acOnConnectResult(bool success) {
         return;
 
     if (g_auto.stopRequested) {
-        LOG_TRACE("WiFi auto: connect completed, yielding to manual Wi-Fi");
+        LOG_WAC("WiFi auto: connect completed, yielding to manual Wi-Fi");
         acFinish(WIFI_AUTO_CANCELLED, WIFI_PM_OK, true);
         return;
     }
 
     if (!success) {
-        LOG_TRACE("WiFi auto: connect failed; trying next AP");
+        LOG_WAC("WiFi auto: connect failed; trying next AP");
         acAttemptNext();
         return;
     }
@@ -247,7 +248,7 @@ static void acCancel(void) {
     if (acIsActive()) {
         /* Cancellation is logical; HAL abort/drain belongs to the port owner.
          */
-        LOG_TRACE("WiFi auto: cancelled at stage=%d", (int)g_auto.stage);
+        LOG_WAC("WiFi auto: cancelled at stage=%d", (int)g_auto.stage);
         acFinish(WIFI_AUTO_CANCELLED, WIFI_PM_OK, false);
     }
 }
@@ -257,9 +258,9 @@ static void acRequestStop(void) {
         return;
 
     if (!g_auto.stopRequested) {
-        LOG_TRACE("WiFi auto: manual stop requested at stage=%d; "
-                  "waiting for HAL completion",
-                  (int)g_auto.stage);
+        LOG_WAC("WiFi auto: manual stop requested at stage=%d; "
+                "waiting for HAL completion",
+                (int)g_auto.stage);
         g_auto.stopRequested = true;
     }
 }
@@ -290,4 +291,90 @@ OOP_CTOR(WifiAutoConnector) {
 WifiAutoConnector* wifiAutoConnector(void) {
     CALL_ONCE(OOP_CALL_CTOR(WifiAutoConnector, &__wifiAutoConnector););
     return &__wifiAutoConnector;
+}
+
+/**
+ * @brief Periodically checks whether automatic Wi-Fi connection is needed.
+ *
+ * Starts WifiAutoConnector only when:
+ * - Both managers are initialized.
+ * - No manual Wi-Fi operation is active.
+ * - The selected network route is Wi-Fi.
+ * - Wi-Fi is not already connected.
+ * - No automatic connection operation is running.
+ * - At least one saved network exists.
+ */
+void wifiAutoConnect(void) {
+    WifiAutoConnector* ac = wifiAutoConnector();
+    WifiPwdMgr*        pm = wifiPwdMgr();
+
+    LOG_WAC("WiFi auto: checking connection conditions");
+
+    /* Check manager initialization. */
+    if (!ac->isReady()) {
+        LOG_WAC("WiFi auto: skipped, connector not ready");
+        return;
+    }
+
+    if (!pm->isReady()) {
+        LOG_WAC("WiFi auto: skipped, password manager not ready");
+        return;
+    }
+
+    /* Do not interfere with manual Wi-Fi operations. */
+    if (wifi()->onUserSelection) {
+        LOG_WAC("WiFi auto: skipped, manual Wi-Fi selection active");
+        return;
+    }
+
+    /* Check selected network route. */
+    NetRoute_t route = OOP_CALL(network(), getRoute);
+
+    if (route != NET_ROUTE_WIFI) {
+        LOG_WAC("WiFi auto: skipped, active route=%d, expected=%d", (int)route,
+                (int)NET_ROUTE_WIFI);
+        return;
+    }
+
+    /* Check current Wi-Fi connection status. */
+    WifiConnectSt_t connectSt = OOP_CALL(wifi(), getConnectStatus);
+
+    if (connectSt == WIFI_CONNECT_SUCCEED) {
+        LOG_WAC("WiFi auto: skipped, already connected");
+        return;
+    }
+
+    LOG_WAC("WiFi auto: connection status=%d", (int)connectSt);
+
+    /* Check automatic connector stage. */
+    WifiAutoStage stage = ac->getStage();
+
+    if (stage != WIFI_AUTO_IDLE && stage != WIFI_AUTO_FINISHED) {
+
+        LOG_WAC("WiFi auto: skipped, operation in progress, stage=%d",
+                (int)stage);
+        return;
+    }
+
+    /* Check whether any credentials are stored. */
+    uint8_t savedCount = pm->count();
+
+    if (savedCount == 0u) {
+        LOG_WAC("WiFi auto: skipped, no saved networks");
+        return;
+    }
+
+    LOG_WAC("WiFi auto: conditions satisfied, "
+            "stage=%d, saved networks=%u",
+            (int)stage, (unsigned)savedCount);
+
+    /* Start automatic connection. */
+    LOG_WAC("WiFi auto: starting automatic connection");
+
+    if (!ac->start()) {
+        LOG_ERROR("WiFi auto: start failed, stage=%d", (int)ac->getStage());
+        return;
+    }
+
+    LOG_WAC("WiFi auto: start accepted, new stage=%d", (int)ac->getStage());
 }

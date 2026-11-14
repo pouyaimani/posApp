@@ -43,7 +43,7 @@ void captureMagData() {
     TxnMgr* mgr = txnMgr();
 
     if (!mgr->active || !mgr->stepStarted || mgr->step != TXN_STEP_MAG) {
-        LOG_TRACE("TxnMgr MAG: ignoring stale swipe event");
+        LOG_TXN("TxnMgr MAG: ignoring stale swipe event");
     }
 
     /*
@@ -52,7 +52,7 @@ void captureMagData() {
      */
     if (!magCardTxnCapture(&magContext, &mgr->data)) {
 
-        LOG_TRACE("TxnMgr MAG: invalid magnetic-card data");
+        LOG_TXN("TxnMgr MAG: invalid magnetic-card data");
 
         /* Remain on MAG step so the input provider may retry. */
         magCardTxnClear(&magContext);
@@ -61,9 +61,9 @@ void captureMagData() {
 
     mgr->userData = &magContext;
 
-    LOG_TRACE("TxnMgr MAG: card captured successfully "
-              "Track2 length=%lu",
-              (unsigned long)magContext.track2Len);
+    LOG_TXN("TxnMgr MAG: card captured successfully "
+            "Track2 length=%lu",
+            (unsigned long)magContext.track2Len);
 
     /*
      * Important:
@@ -98,17 +98,17 @@ bool isInputStep(const TxnMgr* mgr) {
 }
 
 void amountErrInfoDone(InfoResult res, void* arg) {
-    LOG_TRACE("TxnMgr: amount error screen closed; restarting amount input");
+    LOG_TXN("TxnMgr: amount error screen closed; restarting amount input");
     txnMgr()->retry();
 }
 
 void billIdErrInfoDone(InfoResult res, void* arg) {
-    LOG_TRACE("TxnMgr: amount error screen closed; restarting amount input");
+    LOG_TXN("TxnMgr: amount error screen closed; restarting amount input");
     txnMgr()->retry();
 }
 
 void payIdErrInfoDone(InfoResult res, void* arg) {
-    LOG_TRACE("TxnMgr: amount error screen closed; restarting amount input");
+    LOG_TXN("TxnMgr: amount error screen closed; restarting amount input");
     txnMgr()->previous();
 }
 
@@ -123,38 +123,38 @@ bool validateAmount(TxnMgr* mgr) {
     size_t   len    = 0;
 
     if (!mgr) {
-        LOG_TRACE("TxnMgr: amount validation rejected: null manager");
+        LOG_TXN("TxnMgr: amount validation rejected: null manager");
         return false;
     }
 
     if (strlen(inmgr()->input) < LEN_MIN_AMOUNT) {
-        LOG_TRACE("TxnMgr: amount validation failed: below minimum length");
+        LOG_TXN("TxnMgr: amount validation failed: below minimum length");
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = amountErrInfoDone},
                        phraseGetDef(PHRASE_AMOUNT_FLOOR_ER), "");
         return false;
     }
 
     if (strlen(inmgr()->input) > LEN_MAX_AMOUNT) {
-        LOG_TRACE("TxnMgr: amount validation failed: above maximum length");
+        LOG_TXN("TxnMgr: amount validation failed: above maximum length");
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = amountErrInfoDone},
                        phraseGetDef(PHRASE_AMOUNT_EXCEED), "");
         return false;
     }
 
     if (!str2u64(inmgr()->input, &amount)) {
-        LOG_TRACE("TxnMgr: amount validation failed: conversion error");
+        LOG_TXN("TxnMgr: amount validation failed: conversion error");
         LOG_FATAL("Converting amount form string to u64 failed.");
         return false;
     }
 
     /* TODO: Apply numeric minimum/maximum rules for your payment protocol. */
     mgr->data.core.amount = amount;
-    LOG_TRACE("TxnMgr: amount validated and stored");
+    LOG_TXN("TxnMgr: amount validated and stored");
     return true;
 }
 
 bool validateBillId(TxnMgr* mgr) {
-    LOG_TRACE("Bill id = %s", inmgr()->input);
+    LOG_TXN("Bill id = %s", inmgr()->input);
     if (!isBillIdValid(inmgr()->input)) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = billIdErrInfoDone},
                        phraseGetDef(PHRASE_BILL_INVALID), "");
@@ -166,7 +166,7 @@ bool validateBillId(TxnMgr* mgr) {
 }
 
 bool validatePaymentId(TxnMgr* mgr) {
-    LOG_TRACE("PaymentId id = %s", inmgr()->input);
+    LOG_TXN("PaymentId id = %s", inmgr()->input);
     if (!isBillValid(mgr->data.extention.bill.billId, inmgr()->input)) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = payIdErrInfoDone},
                        phraseGetDef(PHRASE_BILL_INVALID), "");
@@ -204,14 +204,13 @@ void onInputComplete(InputResult result, void* userData) {
     TxnMgr* mgr = userData;
 
     if (!isInputStep(mgr)) {
-        LOG_TRACE(
-            "TxnMgr: ignoring input callback outside an active input step");
+        LOG_TXN("TxnMgr: ignoring input callback outside an active input step");
         return;
     }
 
     switch (result) {
     case INPUT_RES_FINISHED:
-        LOG_TRACE("TxnMgr: input finished; step=%d", (int)mgr->step);
+        LOG_TXN("TxnMgr: input finished; step=%d", (int)mgr->step);
         switch (mgr->step) {
         case TXN_STEP_AMOUNT:
             if (!validateAmount(mgr)) {
@@ -248,7 +247,7 @@ void onInputComplete(InputResult result, void* userData) {
         return;
 
     case INPUT_RES_CANCELED:
-        LOG_TRACE("TxnMgr: input canceled; step=%d", (int)mgr->step);
+        LOG_TXN("TxnMgr: input canceled; step=%d", (int)mgr->step);
         mgr->fail(TXN_MGR_ERR_CANCELED);
         return;
 
@@ -268,11 +267,11 @@ void onInputTimeout(InputResult result, void* userData) {
     (void)result;
 
     if (!isInputStep(mgr)) {
-        LOG_TRACE("TxnMgr: ignoring timeout outside an active input step");
+        LOG_TXN("TxnMgr: ignoring timeout outside an active input step");
         return;
     }
 
-    LOG_TRACE("TxnMgr: input timeout; step=%d", (int)mgr->step);
+    LOG_TXN("TxnMgr: input timeout; step=%d", (int)mgr->step);
     mgr->fail(TXN_MGR_ERR_TIMEOUT);
 }
 
@@ -283,7 +282,7 @@ void onInputTimeout(InputResult result, void* userData) {
 void enterAmount(int idx, void* userData) {
     VAR_UNUSED(idx);
     VAR_UNUSED(userData);
-    LOG_TRACE("TxnMgr: starting amount input");
+    LOG_TXN("TxnMgr: starting amount input");
     inputCfg = (InputCfg){.mode    = INMD_ENTER_AMOUNT,
                           .title   = phraseGetDef(PHRASE_AMOUNT),
                           .info    = phraseGetDef(PHRASE_TO_RIAL_1),
@@ -321,7 +320,7 @@ void enterPaymentId(void) {
 
 void setOperator(int idx, void* userData) {
     VAR_UNUSED(userData);
-    LOG_TRACE("setOperator(): idx = %d", idx);
+    LOG_TXN("setOperator(): idx = %d", idx);
     SimCardOp_t selectedOp;
     switch (idx) {
     case 0:
@@ -406,7 +405,7 @@ void enterPhone(void) {
 }
 
 void enterPin(void) {
-    LOG_TRACE("TxnMgr: starting PED PIN input");
+    LOG_TXN("TxnMgr: starting PED PIN input");
     inputCfg = (InputCfg){.type    = INPUT_TYPE_PED,
                           .mode    = INMD_ENTER_PIN,
                           .title   = phraseGetDef(PHRASE_CARD_PIN),

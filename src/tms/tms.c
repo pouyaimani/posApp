@@ -31,8 +31,7 @@ static bool isFinalResult(TmsResult result) {
  * singleton: it may already be processing another vendor operation.
  */
 static bool rejectRun(const TmsCfg* cfg, TmsTrigger trigger, TmsError err) {
-    LOG_TRACE("TmsMgr: run rejected trigger=%d error=%d", (int)trigger,
-              (int)err);
+    LOG_TMS("TmsMgr: run rejected trigger=%d error=%d", (int)trigger, (int)err);
 
     if (cfg && cfg->onDone) {
         const TmsStatus rejected = {
@@ -58,10 +57,9 @@ static void finish(uint64_t operationId, TmsResult result, TmsError error,
 
     if (!mgr->active || mgr->status.operationId != operationId ||
         !isFinalResult(result)) {
-        LOG_TRACE("TmsMgr: ignored finish op=%llu current=%llu active=%d",
-                  (unsigned long long)operationId,
-                  (unsigned long long)mgr->status.operationId,
-                  (int)mgr->active);
+        LOG_TMS("TmsMgr: ignored finish op=%llu current=%llu active=%d",
+                (unsigned long long)operationId,
+                (unsigned long long)mgr->status.operationId, (int)mgr->active);
         return;
     }
 
@@ -98,9 +96,9 @@ static void finish(uint64_t operationId, TmsResult result, TmsError error,
     void*       userData = mgr->config.userData;
     mgr->active          = false;
 
-    LOG_TRACE("TmsMgr: done op=%llu result=%d error=%d backend=%ld progress=%u",
-              (unsigned long long)operationId, (int)result, (int)status.error,
-              (long)backendCode, (unsigned)status.progress);
+    LOG_TMS("TmsMgr: done op=%llu result=%d error=%d backend=%ld progress=%u",
+            (unsigned long long)operationId, (int)result, (int)status.error,
+            (long)backendCode, (unsigned)status.progress);
 
     if (callback)
         callback(&status, userData);
@@ -117,21 +115,20 @@ static void backendNotify(void* notifyContext, uint64_t operationId,
                           const TmsBackendEvent* event) {
     TmsMgr* mgr = &__tmsMgr;
     if (notifyContext != mgr || !event) {
-        LOG_TRACE("TmsMgr: ignored notification: bad context/event");
+        LOG_TMS("TmsMgr: ignored notification: bad context/event");
         return;
     }
 
     if (!mgr->active || mgr->status.operationId != operationId) {
-        LOG_TRACE("TmsMgr: stale event ignored op=%llu current=%llu active=%d",
-                  (unsigned long long)operationId,
-                  (unsigned long long)mgr->status.operationId,
-                  (int)mgr->active);
+        LOG_TMS("TmsMgr: stale event ignored op=%llu current=%llu active=%d",
+                (unsigned long long)operationId,
+                (unsigned long long)mgr->status.operationId, (int)mgr->active);
         return;
     }
 
     if (event->type == TMS_BACKEND_EVENT_DONE) {
         if (!isFinalResult(event->result)) {
-            LOG_TRACE("TmsMgr: invalid terminal result=%d", (int)event->result);
+            LOG_TMS("TmsMgr: invalid terminal result=%d", (int)event->result);
             finish(operationId, TMS_RESULT_FAILURE, TMS_ERR_INVALID_EVENT,
                    event->backendCode);
             return;
@@ -143,11 +140,10 @@ static void backendNotify(void* notifyContext, uint64_t operationId,
     if (event->type != TMS_BACKEND_EVENT_PROGRESS ||
         !isActiveState(event->state) || event->progress > 100 ||
         (event->fileCount && event->fileIndex > event->fileCount)) {
-        LOG_TRACE("TmsMgr: ignoring invalid progress event type=%d stage=%d "
-                  "progress=%u file=%u/%u",
-                  (int)event->type, (int)event->state,
-                  (unsigned)event->progress, (unsigned)event->fileIndex,
-                  (unsigned)event->fileCount);
+        LOG_TMS("TmsMgr: ignoring invalid progress event type=%d stage=%d "
+                "progress=%u file=%u/%u",
+                (int)event->type, (int)event->state, (unsigned)event->progress,
+                (unsigned)event->fileIndex, (unsigned)event->fileCount);
         return;
     }
 
@@ -157,10 +153,10 @@ static void backendNotify(void* notifyContext, uint64_t operationId,
     mgr->status.fileCount   = event->fileCount;
     mgr->status.backendCode = event->backendCode;
 
-    LOG_TRACE("TmsMgr: progress op=%llu state=%d progress=%u file=%u/%u",
-              (unsigned long long)operationId, (int)event->state,
-              (unsigned)event->progress, (unsigned)event->fileIndex,
-              (unsigned)event->fileCount);
+    LOG_TMS("TmsMgr: progress op=%llu state=%d progress=%u file=%u/%u",
+            (unsigned long long)operationId, (int)event->state,
+            (unsigned)event->progress, (unsigned)event->fileIndex,
+            (unsigned)event->fileCount);
 
     TmsStatus   snapshot = mgr->status;
     TmsStatusCb callback = mgr->config.onProgress;
@@ -176,7 +172,7 @@ static void backendNotify(void* notifyContext, uint64_t operationId,
  */
 static bool run(const TmsCfg* cfg, TmsTrigger trigger) {
     TmsMgr* mgr = &__tmsMgr;
-    LOG_TRACE("TmsMgr: run requested trigger=%d", (int)trigger);
+    LOG_TMS("TmsMgr: run requested trigger=%d", (int)trigger);
 
     if (!cfg)
         return rejectRun(cfg, trigger, TMS_ERR_NULL_CONFIG);
@@ -209,16 +205,16 @@ static bool run(const TmsCfg* cfg, TmsTrigger trigger) {
 
     /* Callback can run and even start another operation before return. */
     const TmsBackend backend = mgr->config.backend;
-    LOG_TRACE("TmsMgr: accepted op=%llu blocking=%d",
-              (unsigned long long)startedId,
-              (int)((backend.flags & TMS_BACKEND_FLAG_BLOCKING_START) != 0));
+    LOG_TMS("TmsMgr: accepted op=%llu blocking=%d",
+            (unsigned long long)startedId,
+            (int)((backend.flags & TMS_BACKEND_FLAG_BLOCKING_START) != 0));
 
     bool started = backend.ops->start(backend.context, trigger, startedId,
                                       backendNotify, mgr);
 
     if (!started && mgr->active && mgr->status.operationId == startedId) {
-        LOG_TRACE("TmsMgr: backend returned false without completion op=%llu",
-                  (unsigned long long)startedId);
+        LOG_TMS("TmsMgr: backend returned false without completion op=%llu",
+                (unsigned long long)startedId);
         finish(startedId, TMS_RESULT_FAILURE, TMS_ERR_BACKEND_START, 0);
     }
 
@@ -244,7 +240,7 @@ static void process(void) {
 static bool cancel(void) {
     TmsMgr* mgr = &__tmsMgr;
     if (!mgr->active) {
-        LOG_TRACE("TmsMgr: cancel rejected: not active");
+        LOG_TMS("TmsMgr: cancel rejected: not active");
         return false;
     }
     if (mgr->status.cancelRequested)
@@ -252,21 +248,21 @@ static bool cancel(void) {
 
     const TmsBackend backend = mgr->config.backend;
     if (!backend.ops || !backend.ops->cancel) {
-        LOG_TRACE("TmsMgr: cancellation unsupported");
+        LOG_TMS("TmsMgr: cancellation unsupported");
         return false;
     }
 
     const uint64_t operationId  = mgr->status.operationId;
     mgr->status.cancelRequested = true;
-    LOG_TRACE("TmsMgr: cancel requested op=%llu",
-              (unsigned long long)operationId);
+    LOG_TMS("TmsMgr: cancel requested op=%llu",
+            (unsigned long long)operationId);
 
     /* cancel() is allowed to synchronously report terminal completion. */
     bool accepted = backend.ops->cancel(backend.context, operationId);
     if (!accepted && mgr->active && mgr->status.operationId == operationId) {
         mgr->status.cancelRequested = false;
-        LOG_TRACE("TmsMgr: cancellation request declined op=%llu",
-                  (unsigned long long)operationId);
+        LOG_TMS("TmsMgr: cancellation request declined op=%llu",
+                (unsigned long long)operationId);
     }
     return accepted;
 }
@@ -274,7 +270,7 @@ static bool cancel(void) {
 static bool reset(void) {
     TmsMgr* mgr = &__tmsMgr;
     if (mgr->active) {
-        LOG_TRACE("TmsMgr: reset rejected: active");
+        LOG_TMS("TmsMgr: reset rejected: active");
         return false;
     }
 
@@ -285,7 +281,7 @@ static bool reset(void) {
         .error  = TMS_ERR_NONE,
     };
     /* lastOperationId deliberately preserved for stale-callback filtering. */
-    LOG_TRACE("TmsMgr: reset complete");
+    LOG_TMS("TmsMgr: reset complete");
     return true;
 }
 
@@ -294,7 +290,7 @@ static bool isBusy(void) { return __tmsMgr.active; }
 static TmsStatus getStatus(void) { return __tmsMgr.status; }
 
 OOP_CTOR(TmsMgr) {
-    LOG_TRACE("TmsMgr: initializing singleton");
+    LOG_TMS("TmsMgr: initializing singleton");
     self->config = (TmsCfg){0};
     self->status = (TmsStatus){
         .result = TMS_RESULT_NONE,

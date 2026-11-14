@@ -65,7 +65,7 @@ static void info_stop_pulse(void) {
 
 /** Hide all manager-owned screen objects. */
 static void ui_hide(void) {
-    LOG_TRACE("nfcMgr: ui_hide");
+    LOG_NFC("nfcMgr: ui_hide");
 
     info_stop_pulse();
 
@@ -84,7 +84,7 @@ static void ui_show(bool multiple) {
                                     : "Present only one card")
             : (request.info ? request.info : phraseGetDef(PHRASE_TAP_PHONE));
 
-    LOG_TRACE("nfcMgr: ui_show multiple=%d", (int)multiple);
+    LOG_NFC("nfcMgr: ui_show multiple=%d", (int)multiple);
 
     LV_SET_TEXT(infoLabel, info);
 
@@ -96,7 +96,7 @@ static void ui_show(bool multiple) {
 
 /** Build a minimal screen using the same UI helpers as inputMgr. */
 static void ui_create(void) {
-    LOG_TRACE("nfcMgr: ui_create begin");
+    LOG_NFC("nfcMgr: ui_create begin");
 
     iconLabel = lv_img_create(disp()->screen);
     lv_img_set_src(iconLabel, ICON_TAP_PHONE);
@@ -109,7 +109,7 @@ static void ui_create(void) {
 
     ui_hide();
 
-    LOG_TRACE("nfcMgr: ui_create complete");
+    LOG_NFC("nfcMgr: ui_create complete");
 }
 
 /* --------------------------------------------------------------------------
@@ -121,35 +121,35 @@ static void ui_create(void) {
  * Keep ownership if close fails for a later retry.
  */
 static PiccErr_t closeOwnedReader(void) {
-    LOG_TRACE("nfcMgr: closeOwnedReader begin ownsReader=%d reader=%p",
-              (int)ownsReader, (void*)reader);
+    LOG_NFC("nfcMgr: closeOwnedReader begin ownsReader=%d reader=%p",
+            (int)ownsReader, (void*)reader);
 
     if (!ownsReader || !reader) {
-        LOG_TRACE(
+        LOG_NFC(
             "nfcMgr: closeOwnedReader skipped ownsReader=%d readerPresent=%d",
             (int)ownsReader, reader != NULL);
         return PICC_ERR_OK;
     }
 
-    LOG_TRACE("nfcMgr: stopping PICC polling before reader close");
+    LOG_NFC("nfcMgr: stopping PICC polling before reader close");
 
     piccStopPolling(reader);
 
-    LOG_TRACE("nfcMgr: calling reader close");
+    LOG_NFC("nfcMgr: calling reader close");
 
     PiccErr_t error = OOP_CALL(reader, close);
 
     if (error == PICC_ERR_OK) {
         ownsReader = false;
 
-        LOG_TRACE("nfcMgr: reader closed successfully; ownership released");
+        LOG_NFC("nfcMgr: reader closed successfully; ownership released");
     } else {
-        LOG_TRACE("nfcMgr: reader close failed error=%d; ownership retained",
-                  (int)error);
+        LOG_NFC("nfcMgr: reader close failed error=%d; ownership retained",
+                (int)error);
     }
 
-    LOG_TRACE("nfcMgr: closeOwnedReader end error=%d ownsReader=%d", (int)error,
-              (int)ownsReader);
+    LOG_NFC("nfcMgr: closeOwnedReader end error=%d ownsReader=%d", (int)error,
+            (int)ownsReader);
 
     return error;
 }
@@ -162,18 +162,18 @@ static PiccErr_t closeOwnedReader(void) {
  * Finish once, snapshot event data before HAL close resets it, then notify.
  */
 static void finish(NfcResult result, PiccErr_t error, const PiccData_t* card) {
-    LOG_TRACE("nfcMgr: finish requested result=%d error=%d card=%p active=%d",
-              (int)result, (int)error, (const void*)card, (int)active);
+    LOG_NFC("nfcMgr: finish requested result=%d error=%d card=%p active=%d",
+            (int)result, (int)error, (const void*)card, (int)active);
 
     if (!active) {
-        LOG_TRACE("nfcMgr: finish ignored; no active request");
+        LOG_NFC("nfcMgr: finish ignored; no active request");
         return;
     }
 
     /* Mark the request complete before performing cleanup or callbacks. */
     active = false;
 
-    LOG_TRACE("nfcMgr: request marked inactive");
+    LOG_NFC("nfcMgr: request marked inactive");
 
     /* Snapshot the callback before clearing the current request context. */
     NfcComplete done     = callback;
@@ -182,7 +182,7 @@ static void finish(NfcResult result, PiccErr_t error, const PiccData_t* card) {
     callback     = NULL;
     callbackData = NULL;
 
-    LOG_TRACE("nfcMgr: completion callback present=%d", done != NULL);
+    LOG_NFC("nfcMgr: completion callback present=%d", done != NULL);
 
     /* Build the result before closing the reader. */
     NfcStatus status = {0};
@@ -194,15 +194,15 @@ static void finish(NfcResult result, PiccErr_t error, const PiccData_t* card) {
     if (card) {
         status.card = *card;
 
-        LOG_TRACE("nfcMgr: card data captured cardType=%d",
-                  (int)status.card.cardType);
+        LOG_NFC("nfcMgr: card data captured cardType=%d",
+                (int)status.card.cardType);
     } else {
-        LOG_TRACE("nfcMgr: no card data supplied");
+        LOG_NFC("nfcMgr: no card data supplied");
     }
 
     /* Stop polling before either transferring or releasing ownership. */
     if (ownsReader) {
-        LOG_TRACE("nfcMgr: stopping polling during request completion");
+        LOG_NFC("nfcMgr: stopping polling during request completion");
 
         piccStopPolling(reader);
     }
@@ -215,17 +215,17 @@ static void finish(NfcResult result, PiccErr_t error, const PiccData_t* card) {
         ownsReader            = false;
         status.readerRetained = true;
 
-        LOG_TRACE("nfcMgr: reader ownership transferred to caller");
+        LOG_NFC("nfcMgr: reader ownership transferred to caller");
     } else {
-        LOG_TRACE("nfcMgr: closing owned reader after result=%d", (int)result);
+        LOG_NFC("nfcMgr: closing owned reader after result=%d", (int)result);
 
         status.cleanupError = closeOwnedReader();
 
         if (result == NFC_RES_DETECTED && status.cleanupError != PICC_ERR_OK) {
 
-            LOG_TRACE("nfcMgr: reader cleanup failed after detection "
-                      "cleanupError=%d; converting result to error",
-                      (int)status.cleanupError);
+            LOG_NFC("nfcMgr: reader cleanup failed after detection "
+                    "cleanupError=%d; converting result to error",
+                    (int)status.cleanupError);
 
             status.result = NFC_RES_ERROR;
             status.error  = status.cleanupError;
@@ -234,25 +234,25 @@ static void finish(NfcResult result, PiccErr_t error, const PiccData_t* card) {
 
     status.readerOpen = reader && reader->opened;
 
-    LOG_TRACE("nfcMgr: reader state after cleanup open=%d ownsReader=%d",
-              (int)status.readerOpen, (int)ownsReader);
+    LOG_NFC("nfcMgr: reader state after cleanup open=%d ownsReader=%d",
+            (int)status.readerOpen, (int)ownsReader);
 
     ui_hide();
 
-    LOG_TRACE("nfcMgr: completed result=%d card=%d error=%d "
-              "cleanup=%d retained=%d readerOpen=%d",
-              (int)status.result, (int)status.card.cardType, (int)status.error,
-              (int)status.cleanupError, (int)status.readerRetained,
-              (int)status.readerOpen);
+    LOG_NFC("nfcMgr: completed result=%d card=%d error=%d "
+            "cleanup=%d retained=%d readerOpen=%d",
+            (int)status.result, (int)status.card.cardType, (int)status.error,
+            (int)status.cleanupError, (int)status.readerRetained,
+            (int)status.readerOpen);
 
     if (done) {
-        LOG_TRACE("nfcMgr: invoking completion callback");
+        LOG_NFC("nfcMgr: invoking completion callback");
 
         done(&status, doneData);
 
-        LOG_TRACE("nfcMgr: completion callback returned");
+        LOG_NFC("nfcMgr: completion callback returned");
     } else {
-        LOG_TRACE("nfcMgr: no completion callback to invoke");
+        LOG_NFC("nfcMgr: no completion callback to invoke");
     }
 }
 
@@ -262,13 +262,13 @@ static void finish(NfcResult result, PiccErr_t error, const PiccData_t* card) {
 
 /** Open and power the reader only when this state becomes current. */
 STATE_DEF_ENTER(Nfc) {
-    LOG_TRACE("nfcMgr: state enter active=%d reader=%p", (int)active,
-              (void*)reader);
+    LOG_NFC("nfcMgr: state enter active=%d reader=%p", (int)active,
+            (void*)reader);
 
     entered = true;
 
     if (!active) {
-        LOG_TRACE("nfcMgr: state enter ignored; no active request");
+        LOG_NFC("nfcMgr: state enter ignored; no active request");
         return;
     }
 
@@ -278,18 +278,18 @@ STATE_DEF_ENTER(Nfc) {
      * run() checked this too; recheck in case state entry was deferred.
      */
     if (reader->opened) {
-        LOG_TRACE("nfcMgr: state enter failed; reader is already open");
+        LOG_NFC("nfcMgr: state enter failed; reader is already open");
 
         finish(NFC_RES_ERROR, PICC_ERR_OTHER, NULL);
         return;
     }
 
-    LOG_TRACE("nfcMgr: initializing reader");
+    LOG_NFC("nfcMgr: initializing reader");
 
     PiccErr_t error = OOP_CALL(reader, init);
 
     if (error != PICC_ERR_OK) {
-        LOG_TRACE("nfcMgr: reader initialization failed error=%d", (int)error);
+        LOG_NFC("nfcMgr: reader initialization failed error=%d", (int)error);
 
         finish(NFC_RES_ERROR, error, NULL);
         return;
@@ -297,28 +297,28 @@ STATE_DEF_ENTER(Nfc) {
 
     ownsReader = true;
 
-    LOG_TRACE("nfcMgr: reader initialized; ownership acquired");
+    LOG_NFC("nfcMgr: reader initialized; ownership acquired");
 
-    LOG_TRACE("nfcMgr: powering on reader technologies=%lu",
-              (unsigned long)request.technologies);
+    LOG_NFC("nfcMgr: powering on reader technologies=%lu",
+            (unsigned long)request.technologies);
 
     error = OOP_CALL(reader, powerOn, request.technologies);
 
     if (error != PICC_ERR_OK) {
-        LOG_TRACE("nfcMgr: reader power-on failed error=%d", (int)error);
+        LOG_NFC("nfcMgr: reader power-on failed error=%d", (int)error);
 
         finish(NFC_RES_ERROR, error, NULL);
         return;
     }
 
-    LOG_TRACE("nfcMgr: reader powered on successfully");
+    LOG_NFC("nfcMgr: reader powered on successfully");
 
-    LOG_TRACE("nfcMgr: starting PICC polling");
+    LOG_NFC("nfcMgr: starting PICC polling");
 
     error = piccStartPolling(reader);
 
     if (error != PICC_ERR_OK) {
-        LOG_TRACE("nfcMgr: failed to start PICC polling error=%d", (int)error);
+        LOG_NFC("nfcMgr: failed to start PICC polling error=%d", (int)error);
 
         finish(NFC_RES_ERROR, error, NULL);
         return;
@@ -326,8 +326,8 @@ STATE_DEF_ENTER(Nfc) {
 
     scanId = reader->scanId;
 
-    LOG_TRACE("nfcMgr: scanning started technologies=%lu scan=%lu",
-              (unsigned long)request.technologies, (unsigned long)scanId);
+    LOG_NFC("nfcMgr: scanning started technologies=%lu scan=%lu",
+            (unsigned long)request.technologies, (unsigned long)scanId);
 }
 
 /**
@@ -335,8 +335,8 @@ STATE_DEF_ENTER(Nfc) {
  * caller.
  */
 STATE_DEF_EXIT(Nfc) {
-    LOG_TRACE("nfcMgr: state exit active=%d entered=%d ownsReader=%d",
-              (int)active, (int)entered, (int)ownsReader);
+    LOG_NFC("nfcMgr: state exit active=%d entered=%d ownsReader=%d",
+            (int)active, (int)entered, (int)ownsReader);
 
     active       = false;
     entered      = false;
@@ -346,13 +346,13 @@ STATE_DEF_EXIT(Nfc) {
     PiccErr_t error = closeOwnedReader();
 
     if (error != PICC_ERR_OK) {
-        LOG_TRACE("nfcMgr: state exit reader cleanup failed error=%d",
-                  (int)error);
+        LOG_NFC("nfcMgr: state exit reader cleanup failed error=%d",
+                (int)error);
     }
 
     ui_hide();
 
-    LOG_TRACE("nfcMgr: state exit complete ownsReader=%d", (int)ownsReader);
+    LOG_NFC("nfcMgr: state exit complete ownsReader=%d", (int)ownsReader);
 }
 
 /* --------------------------------------------------------------------------
@@ -364,36 +364,35 @@ STATE_DEF_EXIT(Nfc) {
  */
 STATE_DEF_HANDLE(Nfc, PiccEvent) {
     if (!active || !entered || !ownsReader) {
-        LOG_TRACE("nfcMgr: PICC event ignored; invalid state "
-                  "active=%d entered=%d ownsReader=%d",
-                  (int)active, (int)entered, (int)ownsReader);
+        LOG_NFC("nfcMgr: PICC event ignored; invalid state "
+                "active=%d entered=%d ownsReader=%d",
+                (int)active, (int)entered, (int)ownsReader);
         return;
     }
 
     if (!ev) {
-        LOG_TRACE("nfcMgr: PICC event ignored; event pointer is NULL");
+        LOG_NFC("nfcMgr: PICC event ignored; event pointer is NULL");
         return;
     }
 
     if (!ev->data) {
-        LOG_TRACE("nfcMgr: PICC event ignored; data is NULL scan=%lu",
-                  (unsigned long)ev->scanId);
+        LOG_NFC("nfcMgr: PICC event ignored; data is NULL scan=%lu",
+                (unsigned long)ev->scanId);
         return;
     }
 
     if (ev->scanId != scanId) {
-        LOG_TRACE("nfcMgr: stale PICC event ignored "
-                  "eventScan=%lu activeScan=%lu",
-                  (unsigned long)ev->scanId, (unsigned long)scanId);
+        LOG_NFC("nfcMgr: stale PICC event ignored "
+                "eventScan=%lu activeScan=%lu",
+                (unsigned long)ev->scanId, (unsigned long)scanId);
         return;
     }
 
-    LOG_TRACE("nfcMgr: PICC event received scan=%lu cardType=%d error=%d",
-              (unsigned long)ev->scanId, (int)ev->data->cardType,
-              (int)ev->error);
+    LOG_NFC("nfcMgr: PICC event received scan=%lu cardType=%d error=%d",
+            (unsigned long)ev->scanId, (int)ev->data->cardType, (int)ev->error);
 
     if (ev->error != PICC_ERR_OK) {
-        LOG_TRACE("nfcMgr: PICC event reported error=%d", (int)ev->error);
+        LOG_NFC("nfcMgr: PICC event reported error=%d", (int)ev->error);
 
         finish(NFC_RES_ERROR, ev->error, NULL);
         return;
@@ -401,13 +400,13 @@ STATE_DEF_HANDLE(Nfc, PiccEvent) {
 
     switch (ev->data->cardType) {
     case PICC_CARD_NONE:
-        LOG_TRACE("nfcMgr: no card detected; continuing scan");
+        LOG_NFC("nfcMgr: no card detected; continuing scan");
 
         ui_show(false);
         return;
 
     case PICC_CARD_MULTIPLE:
-        LOG_TRACE("nfcMgr: multiple cards detected; requesting one card");
+        LOG_NFC("nfcMgr: multiple cards detected; requesting one card");
 
         ui_show(true);
         return;
@@ -417,16 +416,16 @@ STATE_DEF_HANDLE(Nfc, PiccEvent) {
     case PICC_CARD_A_MEMORY:
     case PICC_CARD_B_MEMORY:
     case PICC_CARD_FELICA:
-        LOG_TRACE("nfcMgr: supported card detected cardType=%d",
-                  (int)ev->data->cardType);
+        LOG_NFC("nfcMgr: supported card detected cardType=%d",
+                (int)ev->data->cardType);
 
         finish(NFC_RES_DETECTED, PICC_ERR_OK, ev->data);
         return;
 
     case PICC_CARD_UNKNOWN:
     default:
-        LOG_TRACE("nfcMgr: unsupported or unknown card type=%d",
-                  (int)ev->data->cardType);
+        LOG_NFC("nfcMgr: unsupported or unknown card type=%d",
+                (int)ev->data->cardType);
 
         finish(NFC_RES_ERROR, PICC_ERR_OTHER, NULL);
         return;
@@ -440,21 +439,21 @@ STATE_DEF_HANDLE(Nfc, PiccEvent) {
 /** ESC cancels. ENTER cannot manufacture a successful detection. */
 STATE_DEF_HANDLE(Nfc, KeypadEvent) {
     if (!ev) {
-        LOG_TRACE("nfcMgr: keypad event ignored; event pointer is NULL");
+        LOG_NFC("nfcMgr: keypad event ignored; event pointer is NULL");
         return;
     }
 
-    LOG_TRACE("nfcMgr: keypad event received key=%d active=%d entered=%d",
-              (int)ev->key, (int)active, (int)entered);
+    LOG_NFC("nfcMgr: keypad event received key=%d active=%d entered=%d",
+            (int)ev->key, (int)active, (int)entered);
 
     if (ev->key == KEY_ESC) {
-        LOG_TRACE("nfcMgr: ESC pressed; canceling NFC request");
+        LOG_NFC("nfcMgr: ESC pressed; canceling NFC request");
 
         finish(NFC_RES_CANCELED, PICC_ERR_OK, NULL);
         return;
     }
 
-    LOG_TRACE("nfcMgr: keypad event ignored; key does not cancel NFC request");
+    LOG_NFC("nfcMgr: keypad event ignored; key does not cancel NFC request");
 }
 
 /* --------------------------------------------------------------------------
@@ -463,15 +462,15 @@ STATE_DEF_HANDLE(Nfc, KeypadEvent) {
 
 /** Acquisition timeout is distinct from explicit user cancellation. */
 STATE_DEF_HANDLE(Nfc, TimeOutEvent) {
-    LOG_TRACE("nfcMgr: timeout event entered=%d active=%d", (int)entered,
-              (int)active);
+    LOG_NFC("nfcMgr: timeout event entered=%d active=%d", (int)entered,
+            (int)active);
 
     if (entered) {
-        LOG_TRACE("nfcMgr: acquisition timed out");
+        LOG_NFC("nfcMgr: acquisition timed out");
 
         finish(NFC_RES_TIMEOUT, PICC_ERR_TIMEOUT, NULL);
     } else {
-        LOG_TRACE("nfcMgr: timeout event ignored; NFC state has not entered");
+        LOG_NFC("nfcMgr: timeout event ignored; NFC state has not entered");
     }
 }
 
@@ -492,21 +491,21 @@ static NfcMgrError run(const NfcCfg* cfg, NfcComplete cb, void* userData) {
     const PiccTechMask_t supported =
         PICC_TECH_A | PICC_TECH_B | PICC_TECH_FELICA;
 
-    LOG_TRACE("nfcMgr: run requested cfg=%p callback=%d userData=%p",
-              (const void*)cfg, cb != NULL, userData);
+    LOG_NFC("nfcMgr: run requested cfg=%p callback=%d userData=%p",
+            (const void*)cfg, cb != NULL, userData);
 
     /* Validate request arguments. */
     if (!cfg || !cb) {
-        LOG_TRACE("nfcMgr: invalid configuration or callback");
+        LOG_NFC("nfcMgr: invalid configuration or callback");
         return NFC_MGR_ERR_ARGUMENT;
     }
 
-    LOG_TRACE("nfcMgr: technologies=%lu timeout=%lu keepOpen=%d",
-              (unsigned long)cfg->technologies, (unsigned long)cfg->timeout,
-              (int)cfg->keepOpenOnSuccess);
+    LOG_NFC("nfcMgr: technologies=%lu timeout=%lu keepOpen=%d",
+            (unsigned long)cfg->technologies, (unsigned long)cfg->timeout,
+            (int)cfg->keepOpenOnSuccess);
 
     if (cfg->technologies == 0) {
-        LOG_TRACE("nfcMgr: no technologies requested");
+        LOG_NFC("nfcMgr: no technologies requested");
         return NFC_MGR_ERR_ARGUMENT;
     }
 
@@ -514,15 +513,15 @@ static NfcMgrError run(const NfcCfg* cfg, NfcComplete cb, void* userData) {
     const PiccTechMask_t unsupported = cfg->technologies & ~supported;
 
     if (unsupported != 0) {
-        LOG_TRACE("nfcMgr: unsupported technologies mask=%lu",
-                  (unsigned long)unsupported);
+        LOG_NFC("nfcMgr: unsupported technologies mask=%lu",
+                (unsigned long)unsupported);
         return NFC_MGR_ERR_UNSUPPORTED;
     }
 
     /* Ensure no other acquisition is active. */
     if (active || entered || ownsReader) {
-        LOG_TRACE("nfcMgr: busy active=%d entered=%d ownsReader=%d",
-                  (int)active, (int)entered, (int)ownsReader);
+        LOG_NFC("nfcMgr: busy active=%d entered=%d ownsReader=%d", (int)active,
+                (int)entered, (int)ownsReader);
         return NFC_MGR_ERR_BUSY;
     }
 
@@ -530,13 +529,13 @@ static NfcMgrError run(const NfcCfg* cfg, NfcComplete cb, void* userData) {
     Picc* device = picc();
 
     if (!device) {
-        LOG_TRACE("nfcMgr: PICC device unavailable");
+        LOG_NFC("nfcMgr: PICC device unavailable");
         return NFC_MGR_ERR_READER_UNAVAILABLE;
     }
 
     /* Reject readers already opened or retained elsewhere. */
     if (device->opened) {
-        LOG_TRACE("nfcMgr: PICC reader already open");
+        LOG_NFC("nfcMgr: PICC reader already open");
         return NFC_MGR_ERR_READER_BUSY;
     }
 
@@ -552,25 +551,25 @@ static NfcMgrError run(const NfcCfg* cfg, NfcComplete cb, void* userData) {
     scanId = 0;
     active = true;
 
-    LOG_TRACE("nfcMgr: request accepted technologies=%lu timeout=%lu",
-              (unsigned long)request.technologies,
-              (unsigned long)request.timeout);
+    LOG_NFC("nfcMgr: request accepted technologies=%lu timeout=%lu",
+            (unsigned long)request.technologies,
+            (unsigned long)request.timeout);
 
     OOP_CALL(manager.state, setTimeOut, request.timeout);
 
-    LOG_TRACE("nfcMgr: requesting NFC state transition");
+    LOG_NFC("nfcMgr: requesting NFC state transition");
 
     SM_GOTO(manager.state);
 
-    LOG_TRACE("nfcMgr: state transition requested");
+    LOG_NFC("nfcMgr: state transition requested");
 
     return NFC_MGR_OK;
 }
 
 /** Public cancellation shares the terminal cleanup path. */
 static void cancel(void) {
-    LOG_TRACE("nfcMgr: cancel requested active=%d entered=%d", (int)active,
-              (int)entered);
+    LOG_NFC("nfcMgr: cancel requested active=%d entered=%d", (int)active,
+            (int)entered);
 
     finish(NFC_RES_CANCELED, PICC_ERR_OK, NULL);
 }
@@ -580,7 +579,7 @@ static void cancel(void) {
  * (not whether its state has exited).
  */
 static bool isBusy(void) {
-    LOG_TRACE("nfcMgr: isBusy active=%d entered=%d", (int)active, (int)entered);
+    LOG_NFC("nfcMgr: isBusy active=%d entered=%d", (int)active, (int)entered);
 
     return active;
 }
@@ -590,20 +589,19 @@ static bool isBusy(void) {
  * active.
  */
 static PiccErr_t retryCleanup(void) {
-    LOG_TRACE(
-        "nfcMgr: retryCleanup requested active=%d entered=%d ownsReader=%d",
-        (int)active, (int)entered, (int)ownsReader);
+    LOG_NFC("nfcMgr: retryCleanup requested active=%d entered=%d ownsReader=%d",
+            (int)active, (int)entered, (int)ownsReader);
 
     if (active || entered) {
-        LOG_TRACE("nfcMgr: retryCleanup rejected; manager is active");
+        LOG_NFC("nfcMgr: retryCleanup rejected; manager is active");
 
         return PICC_ERR_OTHER;
     }
 
     PiccErr_t error = closeOwnedReader();
 
-    LOG_TRACE("nfcMgr: retryCleanup complete error=%d ownsReader=%d",
-              (int)error, (int)ownsReader);
+    LOG_NFC("nfcMgr: retryCleanup complete error=%d ownsReader=%d", (int)error,
+            (int)ownsReader);
 
     return error;
 }
@@ -615,19 +613,19 @@ static PiccErr_t retryCleanup(void) {
 /** Construct state and UI once, retaining the naming pattern used by inmgr().
  */
 NfcMgr* nfcmgr(void) {
-    LOG_TRACE("nfcMgr: nfcmgr requested initialized=%d", (int)initialized);
+    LOG_NFC("nfcMgr: nfcmgr requested initialized=%d", (int)initialized);
 
     if (initialized) {
-        LOG_TRACE("nfcMgr: returning existing manager instance");
+        LOG_NFC("nfcMgr: returning existing manager instance");
         return &manager;
     }
 
     manager.state = MEM_ALLOC(sizeof(State));
 
-    LOG_TRACE("nfcMgr: state allocation result=%p", (void*)manager.state);
+    LOG_NFC("nfcMgr: state allocation result=%p", (void*)manager.state);
 
     if (!manager.state) {
-        LOG_TRACE("nfcMgr: initialization failed; state allocation failed");
+        LOG_NFC("nfcMgr: initialization failed; state allocation failed");
         return NULL;
     }
 
@@ -644,13 +642,13 @@ NfcMgr* nfcmgr(void) {
     manager.state->vtable.handleKeypad  = STATE_HANDLE(Nfc, KeypadEvent);
     manager.state->vtable.handleTimeout = STATE_HANDLE(Nfc, TimeOutEvent);
 
-    LOG_TRACE("nfcMgr: state callbacks registered");
+    LOG_NFC("nfcMgr: state callbacks registered");
 
     ui_create();
 
     initialized = true;
 
-    LOG_TRACE("nfcMgr: initialization complete");
+    LOG_NFC("nfcMgr: initialization complete");
 
     return &manager;
 }

@@ -151,4 +151,74 @@ Logger* logger();
     for (int i = 0; i < 10; i++)                                               \
     LOG_DEBUG("========== %s:%d ==========", __func__, __LINE__)
 
+/*=====================================================
+ *
+ *                  Module loggers
+ *
+ *=====================================================*/
+
+#define LOGGER_PED_ENABLE     0
+#define LOGGER_FILE_ENABLE    0
+#define LOGGER_ISO8583_ENABLE 0
+#define LOGGER_NFC_ENABLE     0
+#define LOGGER_TMS_ENABLE     0
+#define LOGGER_TXN_ENABLE     0
+#define LOGGER_EMV_ENABLE     0
+#define LOGGER_EVL_ENABLE     0
+#define LOGGER_WIFI_AC_ENABLE 0
+
+#if LOGGER_PED_ENABLE
+#define LOG_PED(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_PED(...) ;
+#endif
+
+#if LOGGER_FILE_ENABLE
+#define LOG_FILE(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_FILE(...) ;
+#endif
+
+#if LOGGER_ISO8583_ENABLE
+#define LOG_ISO(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_ISO(...) ;
+#endif
+
+#if LOGGER_NFC_ENABLE
+#define LOG_NFC(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_NFC(...) ;
+#endif
+
+#if LOGGER_TMS_ENABLE
+#define LOG_TMS(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_TMS(...) ;
+#endif
+
+#if LOGGER_TXN_ENABLE
+#define LOG_TXN(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_TXN(...) ;
+#endif
+
+#if LOGGER_EMV_ENABLE
+#define LOG_EMV(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_EMV(...) ;
+#endif
+
+#if LOGGER_EVL_ENABLE
+#define LOG_EVL(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_EVL(...) ;
+#endif
+
+#if LOGGER_WIFI_AC_ENABLE
+#define LOG_WAC(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_WAC(...) ;
+#endif
+
 #endif

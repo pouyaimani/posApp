@@ -126,9 +126,9 @@ void dump(const DL_ISO8583_HANDLER* iHandler, const DL_ISO8583_MSG* iMsg) {
     DL_UINT16 i;
     char      line[512];
 
-    LOG_TRACE("--------------- ISO8583 MSG DUMP ---------------");
-    LOG_TRACE("--------------- Fields count  = %d ---------------",
-              iHandler->fieldItems);
+    LOG_ISO("--------------- ISO8583 MSG DUMP ---------------");
+    LOG_ISO("--------------- Fields count  = %d ---------------",
+            iHandler->fieldItems);
     uint16_t fieldCnt = iHandler->fieldItems;
     for (i = 0; i < fieldCnt; i++) {
         if (iMsg->field[i].ptr != NULL) {
@@ -137,19 +137,18 @@ void dump(const DL_ISO8583_HANDLER* iHandler, const DL_ISO8583_MSG* iMsg) {
                      (int)iMsg->field[i].len, (int)iMsg->field[i].len,
                      iMsg->field[i].ptr);
 
-            LOG_TRACE(line);
+            LOG_ISO(line);
         }
     }
 
-    LOG_TRACE("------------------------------------------------");
+    LOG_ISO("------------------------------------------------");
 }
 
 void dumpRaw(const uint8_t* data, size_t len) {
     char   line[128];
     size_t pos;
 
-    LOG_TRACE("---------- ISO8583 RAW DUMP (%u bytes) ----------",
-              (unsigned)len);
+    LOG_ISO("---------- ISO8583 RAW DUMP (%u bytes) ----------", (unsigned)len);
 
     for (size_t i = 0; i < len; i += 16) {
         pos = 0;
@@ -159,10 +158,10 @@ void dumpRaw(const uint8_t* data, size_t len) {
                 snprintf(line + pos, sizeof(line) - pos, "%02X ", data[i + j]);
         }
 
-        LOG_TRACE("%s", line);
+        LOG_ISO("%s", line);
     }
 
-    LOG_TRACE("------------------------------------------------");
+    LOG_ISO("------------------------------------------------");
 }
 
 #endif

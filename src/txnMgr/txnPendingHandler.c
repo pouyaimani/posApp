@@ -59,12 +59,12 @@ bool pendingRequired(const TxnData* data) {
  * No caller may inspect pendingData after a failed load.
  */
 Error_t pendingLoad(void) {
-    LOG_TRACE("TxnMgr: loading pending record");
+    LOG_TXN("TxnMgr: loading pending record");
     TxnData previous = pendingData;
     Error_t err = storage()->load(pendingTxnDsc, ARRAY_COUNT(pendingTxnDsc),
                                   RECOVERY_TXN_DATA_ADDR);
     if (err != ERR_OK) {
-        LOG_TRACE("TxnMgr: pendingLoad failed; storage code=%d", (int)err);
+        LOG_TXN("TxnMgr: pendingLoad failed; storage code=%d", (int)err);
         /* A failed load may have partially changed descriptor destinations. */
         pendingData = previous;
     }
@@ -72,7 +72,7 @@ Error_t pendingLoad(void) {
      * Do not treat malformed/corrupt data or IO failure as an empty record.
      * Validate stored enum/status values using the complete TxnStatus enum.
      */
-    LOG_TRACE("TxnMgr: pendingLoad finished; code=%d", (int)err);
+    LOG_TXN("TxnMgr: pendingLoad finished; code=%d", (int)err);
     return err;
 }
 
@@ -85,11 +85,11 @@ Error_t pendingLoad(void) {
  */
 Error_t pendingSave(const TxnData* data) {
     if (!data) {
-        LOG_TRACE("TxnMgr: pendingSave rejected: null data");
+        LOG_TXN("TxnMgr: pendingSave rejected: null data");
         return ERR_NOK;
     }
 
-    LOG_TRACE("TxnMgr: saving pending record; status=%d", (int)data->status);
+    LOG_TXN("TxnMgr: saving pending record; status=%d", (int)data->status);
     TxnData previous = pendingData;
 
     pendingData = *data;
@@ -98,11 +98,11 @@ Error_t pendingSave(const TxnData* data) {
                                   RECOVERY_TXN_DATA_ADDR);
 
     if (err != ERR_OK) {
-        LOG_TRACE("TxnMgr: pendingSave failed; storage code=%d", (int)err);
+        LOG_TXN("TxnMgr: pendingSave failed; storage code=%d", (int)err);
         pendingData = previous;
     }
 
-    LOG_TRACE("TxnMgr: pendingSave finished; code=%d", (int)err);
+    LOG_TXN("TxnMgr: pendingSave finished; code=%d", (int)err);
     return err;
 }
 
@@ -114,11 +114,11 @@ Error_t pendingSave(const TxnData* data) {
  */
 Error_t pendingUpdate(TxnStatus status, TxnData* data) {
     if (!data || recoveryActive) {
-        LOG_TRACE("TxnMgr: pendingUpdate rejected by argument/recovery guard");
+        LOG_TXN("TxnMgr: pendingUpdate rejected by argument/recovery guard");
         return ERR_NOK;
     }
 
-    LOG_TRACE("TxnMgr: updating pending status=%d", (int)status);
+    LOG_TXN("TxnMgr: updating pending status=%d", (int)status);
     TxnData updated = *data;
     updated.status  = status;
 
@@ -128,7 +128,7 @@ Error_t pendingUpdate(TxnStatus status, TxnData* data) {
         data->status = status;
     }
 
-    LOG_TRACE("TxnMgr: pendingUpdate finished; code=%d", (int)err);
+    LOG_TXN("TxnMgr: pendingUpdate finished; code=%d", (int)err);
     return err;
 }
 
@@ -140,7 +140,7 @@ Error_t pendingUpdate(TxnStatus status, TxnData* data) {
  */
 Error_t pendingNew(TxnData* data) {
     if (!data || recoveryActive) {
-        LOG_TRACE("TxnMgr: pendingNew rejected by argument/recovery guard");
+        LOG_TXN("TxnMgr: pendingNew rejected by argument/recovery guard");
         return ERR_NOK;
     }
 
@@ -148,11 +148,11 @@ Error_t pendingNew(TxnData* data) {
      * TXN_STEP_PENDING or supplied an inconsistent flow configuration. */
     Error_t err = pendingLoad();
     if (err != ERR_OK) {
-        LOG_TRACE("TxnMgr: pendingNew failed; storage code=%d", (int)err);
+        LOG_TXN("TxnMgr: pendingNew failed; storage code=%d", (int)err);
         return err;
     }
     if (pendingRequired(&pendingData)) {
-        LOG_TRACE("TxnMgr: refusing to overwrite unresolved pending record");
+        LOG_TXN("TxnMgr: refusing to overwrite unresolved pending record");
         return ERR_NOK;
     }
     return pendingUpdate(TXN_STATUS_PENDING_REVERSE, data);
@@ -166,18 +166,18 @@ Error_t pendingNew(TxnData* data) {
  */
 Error_t pendingMark(TxnStatus status) {
     if (recoveryActive) {
-        LOG_TRACE("TxnMgr: pendingMark rejected: recovery active");
+        LOG_TXN("TxnMgr: pendingMark rejected: recovery active");
         return ERR_NOK;
     }
 
     Error_t err = pendingLoad();
 
     if (err != ERR_OK) {
-        LOG_TRACE("TxnMgr: pendingMark failed; storage code=%d", (int)err);
+        LOG_TXN("TxnMgr: pendingMark failed; storage code=%d", (int)err);
         return err;
     }
 
-    LOG_TRACE("TxnMgr: marking pending status=%d", (int)status);
+    LOG_TXN("TxnMgr: marking pending status=%d", (int)status);
     TxnData updated = pendingData;
     updated.status  = status;
 
@@ -191,9 +191,9 @@ Error_t pendingMark(TxnStatus status) {
  * Never reset merely because recovery communication failed.
  */
 Error_t pendingReset(void) {
-    LOG_TRACE("TxnMgr: pending reset requested");
+    LOG_TXN("TxnMgr: pending reset requested");
     if (recoveryActive) {
-        LOG_TRACE("TxnMgr: pendingReset rejected: recovery active");
+        LOG_TXN("TxnMgr: pendingReset rejected: recovery active");
         return ERR_NOK;
     }
 
@@ -209,27 +209,27 @@ Error_t pendingReset(void) {
  */
 Error_t pendingCheck(bool* hasPending) {
     if (!hasPending) {
-        LOG_TRACE("TxnMgr: pendingCheck rejected by argument/recovery guard");
+        LOG_TXN("TxnMgr: pendingCheck rejected by argument/recovery guard");
         return ERR_NOK;
     }
 
     *hasPending = false;
 
     if (recoveryActive) {
-        LOG_TRACE("TxnMgr: pendingCheck rejected by argument/recovery guard");
+        LOG_TXN("TxnMgr: pendingCheck rejected by argument/recovery guard");
         return ERR_NOK;
     }
 
     Error_t err = pendingLoad();
 
     if (err != ERR_OK) {
-        LOG_TRACE("TxnMgr: pendingCheck failed; storage code=%d", (int)err);
+        LOG_TXN("TxnMgr: pendingCheck failed; storage code=%d", (int)err);
         return err;
     }
 
     *hasPending = pendingRequired(&pendingData);
 
-    LOG_TRACE("TxnMgr: pending check complete; required=%d", (int)*hasPending);
+    LOG_TXN("TxnMgr: pending check complete; required=%d", (int)*hasPending);
     return ERR_OK;
 }
 
@@ -266,8 +266,7 @@ static void recoveryDone(TxnFlow* flow, const TxnFlowStatus* status,
     TxnMgr* mgr = txnMgr();
 
     if (!isRecoveryCompletion(flow)) {
-        LOG_TRACE(
-            "TxnMgr: ignoring recovery completion outside active recovery");
+        LOG_TXN("TxnMgr: ignoring recovery completion outside active recovery");
         return;
     }
 
@@ -282,8 +281,8 @@ static void recoveryDone(TxnFlow* flow, const TxnFlowStatus* status,
     mgr->flowStatus = *status;
 
     if (pendingData.status != expectedStatus) {
-        LOG_TRACE("TxnMgr: recovery status mismatch; expected=%d, actual=%d",
-                  (int)expectedStatus, (int)pendingData.status);
+        LOG_TXN("TxnMgr: recovery status mismatch; expected=%d, actual=%d",
+                (int)expectedStatus, (int)pendingData.status);
 
         recoveryActive = false;
         mgr->fail(TXN_MGR_ERR_PENDING_FLOW);
@@ -294,12 +293,11 @@ static void recoveryDone(TxnFlow* flow, const TxnFlowStatus* status,
      * The matching recovery callback must correspond to the
      * operation selected from the stored record.
      */
-    LOG_TRACE(
-        "TxnMgr: recovery completion; expected status=%d, target status=%d",
-        (int)expectedStatus, (int)completedStatus);
-    LOG_TRACE("TxnMgr: recovery flow result=%d, stage=%d, code=%d",
-              status ? (int)status->result : -1,
-              status ? (int)status->stage : -1, status ? status->code : -1);
+    LOG_TXN("TxnMgr: recovery completion; expected status=%d, target status=%d",
+            (int)expectedStatus, (int)completedStatus);
+    LOG_TXN("TxnMgr: recovery flow result=%d, stage=%d, code=%d",
+            status ? (int)status->result : -1, status ? (int)status->stage : -1,
+            status ? status->code : -1);
 
     if (status->result != TXN_FLOW_SUCCESS) {
         recoveryActive = false;
@@ -337,7 +335,7 @@ static void recoveryDone(TxnFlow* flow, const TxnFlowStatus* status,
      * Recovery is complete and durably recorded.
      * Continue the new transaction's sequence.
      */
-    LOG_TRACE("TxnMgr: recovery persisted; advancing new transaction");
+    LOG_TXN("TxnMgr: recovery persisted; advancing new transaction");
     mgr->next();
 }
 
@@ -351,13 +349,13 @@ void reverseDone(TxnFlow* flow, const TxnFlowStatus* status) {
 }
 
 void checkPending(void) {
-    LOG_TRACE("TxnMgr: pending recovery step entered");
+    LOG_TXN("TxnMgr: pending recovery step entered");
     TxnMgr* mgr = txnMgr();
 
     if (!mgr->active || !mgr->stepStarted || mgr->step != TXN_STEP_PENDING ||
         recoveryActive) {
-        LOG_TRACE("TxnMgr: pending step ignored: inactive, wrong step, or "
-                  "recovery busy");
+        LOG_TXN("TxnMgr: pending step ignored: inactive, wrong step, or "
+                "recovery busy");
         return;
     }
 
@@ -375,14 +373,14 @@ void checkPending(void) {
     const TxnFlowConfig* cfg = NULL;
 
     if (pendingData.status == TXN_STATUS_PENDING_SETTLEMENT) {
-        LOG_TRACE("TxnMgr: pending reversal selected");
+        LOG_TXN("TxnMgr: pending reversal selected");
         cfg = &settlementTxnFlowCfg;
     } else if (pendingData.status == TXN_STATUS_PENDING_REVERSE) {
-        LOG_TRACE("TxnMgr: pending settlement selected");
+        LOG_TXN("TxnMgr: pending settlement selected");
         cfg = &reverseTxnFlowCfg;
     } else {
         /* No recovery is required; continue immediately. */
-        LOG_TRACE("TxnMgr: no recovery required");
+        LOG_TXN("TxnMgr: no recovery required");
         mgr->next();
         return;
     }
@@ -404,7 +402,7 @@ void checkPending(void) {
     recoveryCfg.compose = NULL;
 
     if (!txnFlowPrepare(&recoveryFlow, NULL, &recoveryCfg)) {
-        LOG_TRACE("TxnMgr: recovery flow preparation failed");
+        LOG_TXN("TxnMgr: recovery flow preparation failed");
         mgr->fail(TXN_MGR_ERR_PENDING_PREPARE);
         return;
     }
@@ -434,7 +432,7 @@ void checkPending(void) {
      * Set the flag before connecting because completion may be
      * reported synchronously.
      */
-    LOG_TRACE("TxnMgr: starting recovery connection");
+    LOG_TXN("TxnMgr: starting recovery connection");
     recoveryActive = true;
 
     recoveryNotified   = false;
@@ -442,14 +440,14 @@ void checkPending(void) {
     bool     started   = txnFlowConnect(&recoveryFlow, recoveryIp,
                                         settings()->server.mainServerPort);
 
-    LOG_TRACE("TxnMgr: recovery connect returned started=%d; operation=%llu",
-              (int)started, (unsigned long long)startedId);
+    LOG_TXN("TxnMgr: recovery connect returned started=%d; operation=%llu",
+            (int)started, (unsigned long long)startedId);
 
     /* Some false returns invoke done synchronously, others do not.
      * Never fail a new operation started from a completion callback. */
     if (!started && operationId == startedId && !recoveryNotified &&
         mgr->active && recoveryActive) {
-        LOG_TRACE("TxnMgr: recovery start failed without completion callback");
+        LOG_TXN("TxnMgr: recovery start failed without completion callback");
         recoveryActive = false;
         mgr->fail(TXN_MGR_ERR_PENDING_FLOW);
     }

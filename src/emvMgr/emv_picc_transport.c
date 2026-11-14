@@ -63,13 +63,13 @@ static int picc_exchange(void* context, const EmvApduCommand* command,
 
     if (adapter == NULL || adapter->device == NULL || command == NULL ||
         response == NULL) {
-        LOG_TRACE("EMV PICC rejected: missing adapter/device/command/response");
+        LOG_TXN("EMV PICC rejected: missing adapter/device/command/response");
         return -1;
     }
 
     if (response->data == NULL || response->capacity == 0u ||
         response->capacity > UINT32_MAX) {
-        LOG_TRACE("EMV PICC rejected: invalid response buffer/capacity");
+        LOG_TXN("EMV PICC rejected: invalid response buffer/capacity");
         return -1;
     }
 
@@ -79,14 +79,14 @@ static int picc_exchange(void* context, const EmvApduCommand* command,
      */
     if (command->data_len > sizeof(body) || command->data_len > 255u ||
         (command->data_len != 0u && command->data == NULL)) {
-        LOG_TRACE(
+        LOG_TXN(
             "EMV PICC rejected: invalid command data length=%lu capacity=%lu",
             (unsigned long)command->data_len, (unsigned long)sizeof(body));
         return -1;
     }
 
     if (command->has_le && (command->le == 0u || command->le > 256u)) {
-        LOG_TRACE("EMV PICC rejected: short APDU Le must be 1..256");
+        LOG_TXN("EMV PICC rejected: short APDU Le must be 1..256");
         return -1;
     }
 
@@ -96,14 +96,14 @@ static int picc_exchange(void* context, const EmvApduCommand* command,
     le = command->has_le ? (uint32_t)command->le : 0u;
 
     if (le > response->capacity) {
-        LOG_TRACE(
+        LOG_TXN(
             "EMV PICC rejected: capacity=%lu smaller than expected length=%lu",
             (unsigned long)response->capacity, (unsigned long)le);
         return -1;
     }
 
     if (!adapter->device->opened || !adapter->device->powered) {
-        LOG_TRACE("EMV PICC rejected: reader is not opened and powered");
+        LOG_TXN("EMV PICC rejected: reader is not opened and powered");
         return -1;
     }
 
@@ -128,31 +128,31 @@ static int picc_exchange(void* context, const EmvApduCommand* command,
     resp.swa     = &swa;
     resp.swb     = &swb;
 
-    LOG_TRACE("EMV PICC: exchange begin lc=%lu le=%lu capacity=%lu",
-              (unsigned long)lc, (unsigned long)le, (unsigned long)len_out);
+    LOG_TXN("EMV PICC: exchange begin lc=%lu le=%lu capacity=%lu",
+            (unsigned long)lc, (unsigned long)le, (unsigned long)len_out);
 
     err = OOP_CALL(adapter->device, exchangeApdu, &req, &resp);
 
     wipeCommandData(body, sizeof(body));
 
-    LOG_TRACE("EMV PICC: HAL returned error=%d length=%lu", (int)err,
-              (unsigned long)len_out);
+    LOG_TXN("EMV PICC: HAL returned error=%d length=%lu", (int)err,
+            (unsigned long)len_out);
 
     if (err == PICC_ERR_TIMEOUT) {
-        LOG_TRACE("EMV PICC: exchange timed out");
+        LOG_TXN("EMV PICC: exchange timed out");
         return -2;
     }
 
     if (err != PICC_ERR_OK) {
-        LOG_TRACE("EMV PICC: exchange failed error=%d", (int)err);
+        LOG_TXN("EMV PICC: exchange failed error=%d", (int)err);
         return -1;
     }
 
     if (len_out > response->capacity || swa > UINT8_MAX || swb > UINT8_MAX) {
-        LOG_TRACE("EMV PICC: invalid HAL response length=%lu capacity=%lu "
-                  "sw1=%lu sw2=%lu",
-                  (unsigned long)len_out, (unsigned long)response->capacity,
-                  (unsigned long)swa, (unsigned long)swb);
+        LOG_TXN("EMV PICC: invalid HAL response length=%lu capacity=%lu "
+                "sw1=%lu sw2=%lu",
+                (unsigned long)len_out, (unsigned long)response->capacity,
+                (unsigned long)swa, (unsigned long)swb);
         return -1;
     }
 
@@ -160,9 +160,9 @@ static int picc_exchange(void* context, const EmvApduCommand* command,
     response->sw1    = (uint8_t)swa;
     response->sw2    = (uint8_t)swb;
 
-    LOG_TRACE("EMV PICC: completed length=%lu SW1=%02X SW2=%02X",
-              (unsigned long)response->length, (unsigned int)response->sw1,
-              (unsigned int)response->sw2);
+    LOG_TXN("EMV PICC: completed length=%lu SW1=%02X SW2=%02X",
+            (unsigned long)response->length, (unsigned int)response->sw1,
+            (unsigned int)response->sw2);
 
     return 0;
 }

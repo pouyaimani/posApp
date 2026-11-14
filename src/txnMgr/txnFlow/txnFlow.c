@@ -22,7 +22,7 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
         return;
     }
 
-    LOG_TRACE("Txn flow: on complete ...");
+    LOG_TXN("Txn flow: on complete ...");
 
     TxnFlowStatus status = {
         .result = result, .stage = flow->stage, .code = code};
@@ -39,7 +39,7 @@ static void complete(TxnFlow* flow, TxnFlowResult result, int code) {
 
     txnFlowRelease(flow);
 
-    LOG_TRACE("Txn flow: respcode = %d", flow->data->core.respCode);
+    LOG_TXN("Txn flow: respcode = %d", flow->data->core.respCode);
 
     HIDE_INFO();
 
@@ -64,7 +64,7 @@ void txnFlowRelease(TxnFlow* flow) {
 void txnFlowInit(TxnFlow* flow) {
     RETURN_IF_NULL(flow, ;);
 
-    LOG_TRACE("Txn flow: initing flow");
+    LOG_TXN("Txn flow: initing flow");
     memset(flow, 0, sizeof(*flow));
     flow->stage = TXN_STAGE_IDLE;
 }
@@ -97,8 +97,7 @@ bool txnFlowConnect(TxnFlow* flow, const char* host, uint16_t port) {
         return false;
     }
 
-    LOG_TRACE("Txn flow: connecting, host = %s, port = %u", host,
-              (unsigned)port);
+    LOG_TXN("Txn flow: connecting, host = %s, port = %u", host, (unsigned)port);
 
     flow->stage = TXN_STAGE_CONNECTING;
 
@@ -123,7 +122,7 @@ bool txnFlowConnect(TxnFlow* flow, const char* host, uint16_t port) {
 
     NthResult res = nth()->connect(flow->tx, host, port);
 
-    LOG_TRACE("Txn flow: connect result = %d", res);
+    LOG_TXN("Txn flow: connect result = %d", res);
 
     if (res != NTH_OK) {
         complete(flow, TXN_FLOW_FAILED, NTH_ERR_CONNECT);
@@ -227,19 +226,19 @@ static int8_t onSent(NthTransaction* tx, void* ctx) {
 
 static int8_t onReceive(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_TRACE("Txn flow: on Receive ...");
+    LOG_TXN("Txn flow: on Receive ...");
 
     TxnFlow* flow = ctx;
     flow->stage   = TXN_STAGE_PARSING;
     int rc        = flow->cfg->parse(flow, &tx->rxBuffer);
-    LOG_TRACE("Txn flow: respcode = %d", flow->data->core.respCode);
+    LOG_TXN("Txn flow: respcode = %d", flow->data->core.respCode);
     complete(flow, rc == ERR_NOK ? TXN_FLOW_FAILED : TXN_FLOW_SUCCESS, rc);
     return 0;
 }
 
 static int8_t onFailure(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_TRACE("Txn flow: on failure ...");
+    LOG_TXN("Txn flow: on failure ...");
     TxnFlow* flow = ctx;
     complete(ctx, TXN_FLOW_FAILED, 0);
     return 0;
@@ -247,7 +246,7 @@ static int8_t onFailure(NthTransaction* tx, void* ctx) {
 
 static int8_t onTimeout(NthTransaction* tx, void* ctx) {
     RETURN_VALUE_IF_NULL(tx, ;, false);
-    LOG_TRACE("Txn flow: on timeout ...");
+    LOG_TXN("Txn flow: on timeout ...");
     TxnFlow* flow = ctx;
     complete(ctx, TXN_FLOW_TIMEOUT, 0);
     return 0;

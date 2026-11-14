@@ -80,8 +80,8 @@ static bool authorizeTmsReplacement(void*                       context,
         return false;
 
     auth->operatorApproved = false; /* Consume exactly once. */
-    LOG_TRACE("TMS DEV: destination replacement authorized op=%llu",
-              (unsigned long long)request->operationId);
+    LOG_TMS("TMS DEV: destination replacement authorized op=%llu",
+            (unsigned long long)request->operationId);
     return true;
 }
 
@@ -154,7 +154,7 @@ static void paintProgress(UpgradeUiPhase phase, unsigned percent) {
     if ((int)phase != lastUiPhase) {
         ui_progress_bar_set_title(&progressBar, uiTitle(phase));
         lastUiPhase = (int)phase;
-        LOG_TRACE("TMS UI: phase=%d", (int)phase);
+        LOG_TMS("TMS UI: phase=%d", (int)phase);
     }
     if (percent != lastUiPercent) {
         ui_progress_bar_set_value(&progressBar, percent);
@@ -164,9 +164,9 @@ static void paintProgress(UpgradeUiPhase phase, unsigned percent) {
 
 static void showUpgradeFailure(const TmsFullStatus* full) {
     if (full) {
-        LOG_TRACE("TMS UI: failed stage=%d result=%d error=%d backend=%ld",
-                  (int)full->stage, (int)full->last.result,
-                  (int)full->last.error, (long)full->last.backendCode);
+        LOG_TMS("TMS UI: failed stage=%d result=%d error=%d backend=%ld",
+                (int)full->stage, (int)full->last.result, (int)full->last.error,
+                (long)full->last.backendCode);
     }
     stopUpgradeTimer();
     destroyDownloadBar();
@@ -221,7 +221,7 @@ static void refreshUpgradeUi(const TmsFullStatus* full) {
         noUpdateAvailable = true;
         stopUpgradeTimer();
         paintProgress(UI_PHASE_NO_UPDATE, 0u);
-        LOG_TRACE("TMS UI: no update; ESC to exit");
+        LOG_TMS("TMS UI: no update; ESC to exit");
         break;
     case TMS_FULL_CANCELED:
         /* Required only for future asynchronously cancelable backends;
@@ -229,7 +229,7 @@ static void refreshUpgradeUi(const TmsFullStatus* full) {
         stopUpgradeTimer();
         paintProgress(UI_PHASE_CANCELED,
                       lastUiPercent <= 99u ? lastUiPercent : 0u);
-        LOG_TRACE("TMS UI: canceled; ESC to exit");
+        LOG_TMS("TMS UI: canceled; ESC to exit");
         break;
     case TMS_FULL_FAILED:
         showUpgradeFailure(full);
@@ -287,7 +287,7 @@ STATE_DEF_ENTER(Upgrade) {
                              PNA_APP_VERSION, strlen(PNA_APP_VERSION) + 1u);
 
     if (!valid) {
-        LOG_TRACE("TMS UI: invalid device identity");
+        LOG_TMS("TMS UI: invalid device identity");
         showUpgradeFailure(NULL);
         return;
     }
@@ -313,13 +313,13 @@ STATE_DEF_ENTER(Upgrade) {
      * Otherwise a timer-allocation failure would strand an active backend. */
     timer = TIMER_CREATE(updateTick, UPGRADE_UI_PERIOD_MS, false);
     if (!timer) {
-        LOG_TRACE("TMS UI: timer allocation failed; upgrade not started");
+        LOG_TMS("TMS UI: timer allocation failed; upgrade not started");
         showUpgradeFailure(NULL);
         return;
     }
 
     const bool accepted = tmsBringupStartFullUpgrade(&cfg);
-    LOG_TRACE("TMS FULL UI: start accepted=%d", (int)accepted);
+    LOG_TMS("TMS FULL UI: start accepted=%d", (int)accepted);
     if (!accepted) {
         showUpgradeFailure(NULL);
         return;
@@ -355,8 +355,8 @@ STATE_DEF_HANDLE(Upgrade, KeypadEvent) {
     /* First ESC requests cancellation. The backend may reject it once an
      * APUPDATE write has begun; in that case we MUST keep pumping. */
     if (!tmsBringupCancelFullUpgrade()) {
-        LOG_TRACE("TMS UI: cancel unavailable/unsafe stage=%d state=%d",
-                  (int)full.stage, (int)full.last.state);
+        LOG_TMS("TMS UI: cancel unavailable/unsafe stage=%d state=%d",
+                (int)full.stage, (int)full.last.state);
         return;
     }
 
@@ -365,7 +365,7 @@ STATE_DEF_HANDLE(Upgrade, KeypadEvent) {
     full = tmsBringupGetFullStatus();
     if (full.stage == TMS_FULL_CANCELED) {
         tmsBringupProcess(); /* Release idle backend; cannot start next step. */
-        LOG_TRACE("TMS UI: canceled; leaving Upgrade state");
+        LOG_TMS("TMS UI: canceled; leaving Upgrade state");
         infoMgrsetCommon(upgradeParent, upgradeParent);
         infoMgr()->run(INFO_ERROR, &infoFinishCtx,
                        phraseGetDef(PHRASE_TMS_CANCELED), "");
@@ -375,7 +375,7 @@ STATE_DEF_HANDLE(Upgrade, KeypadEvent) {
     /* Future async backends: keep the timer active until CANCELED arrives.
      * refreshUpgradeUi() will display canceled and stop the timer; ESC
      * then closes that screen. Never leave while still active. */
-    LOG_TRACE("TMS UI: cancellation pending");
+    LOG_TMS("TMS UI: cancellation pending");
 }
 
 OOP_CTOR(Upgrade, State* parent, const char* name) {

@@ -60,7 +60,7 @@ static PedErr_t exitPinEntryMode() {
 }
 
 OOP_CTOR(Ped) {
-    LOG_TRACE("Constructing ped ...");
+    LOG_PED("Constructing ped ...");
     self->vtable.init              = NULL;
     self->vtable.injectKey         = NULL;
     self->vtable.enterPinEntryMode = NULL;

@@ -28,18 +28,18 @@ static int8_t compareMac(int keyIndex, char* data) {
     if (iso8583()->getBin(ELEMENT_MAC_2, mac, &length) == ISO_OK) {
     } else if (iso8583()->getBin(ELEMENT_MAC, mac, &length) == ISO_OK) {
     } else {
-        LOG_TRACE("mac:::::::::NO MAC !!!!");
+        LOG_ISO("mac:::::::::NO MAC !!!!");
         return ERR_NOK;
     }
-    LOG_TRACE("[mac (%d)] [%s]", length, mac);
+    LOG_ISO("[mac (%d)] [%s]", length, mac);
     // pedGetMacAscii(keyIndex, 16, packBufTemp, packedSize - 8, (char
     // *)asciiMac);
     int8_t macCompare = memcmp(mac, asciiMac, 8);
     if (macCompare != 0) {
-        LOG_TRACE("mac:::::::::check mac failed !!!!");
+        LOG_ISO("mac:::::::::check mac failed !!!!");
         return ERR_NOK;
     }
-    LOG_TRACE("mac:::::::::check mac succeed !!!!");
+    LOG_ISO("mac:::::::::check mac succeed !!!!");
     return ERR_OK;
 }
 
@@ -49,7 +49,7 @@ static Error_t setWorkingKeys() {
     IsoStatus_t ret =
         iso8583()->getBin(ELEMENT_RESERVED_PRIVATE_62, keys, &size);
     RETURN_VALUE_IF_NOT(ret, ISO_OK, ;, ERR_NOK);
-    LOG_TRACE("Keys length = %d, keys = %s", size, keys);
+    LOG_ISO("Keys length = %d, keys = %s", size, keys);
     DEFINE_BYTE_ARRAY(tmpKey, 16);
     int keyLen = 16;
     memcpy(tmpKey, keys, keyLen);
@@ -74,7 +74,7 @@ static void decodeBalanceValue(char* str, char* out, size_t len) {
     char debitType[2]   = {0};
     char balance[13]    = {0};
 
-    LOG_TRACE("decodeBalanceValue::str[%s]", str);
+    LOG_ISO("decodeBalanceValue::str[%s]", str);
 
     memcpy(accountType, str + index, 2);
     index += 2;
@@ -190,7 +190,7 @@ static Error_t isoParseCfgResponse(TxnData* txn, ByteArray* buf) {
     iso8583()->getStr(ELEMENT_CARD_ACCEPTOR_ID, feild);
     RESET_STRING(settings()->terminal.merchantId);
     strcpy(settings()->terminal.merchantId, feild);
-    LOG_TRACE("Merchant Id = %s", settings()->terminal.merchantId);
+    LOG_ISO("Merchant Id = %s", settings()->terminal.merchantId);
     RESET_STRING(feild);
     iso8583()->getStr(ELEMENT_ADDITIONAL_DATA_PRIVATE, feild);
     decodeMerchantDesc(feild, txn);
@@ -207,10 +207,10 @@ static Error_t isoParsePurchase(TxnData* txn, ByteArray* buf) {
         if (iso8583()->getStr(ELEMENT_RESERVED_NATIONAL_116, feild) == ISO_OK) {
             extractKahrobaPan(feild, strlen(feild), txn->core.pan,
                               sizeof(txn->core.pan));
-            LOG_TRACE("Parser: Kahroba extracted pan = %s", txn->core.pan);
+            LOG_ISO("Parser: Kahroba extracted pan = %s", txn->core.pan);
             return ERR_OK;
         }
-        LOG_TRACE("Parser: failed to extracted pan for kahroba purchase");
+        LOG_ISO("Parser: failed to extracted pan for kahroba purchase");
     }
     return ERR_OK;
 }
@@ -227,22 +227,22 @@ static Error_t isoParseBalanceResponse(TxnData* txn, ByteArray* buf) {
     if (iso8583()->getStr(ELEMENT_ADDITIONAL_AMOUNTS, feild) == ISO_OK) {
         decodeBalanceValue(feild, available, sizeof(available));
         decodeBalanceValue(feild + 20, ledger, sizeof(ledger));
-        LOG_TRACE("Parser: balance txn amount is in Bit 54. available = %s, "
-                  "ledger = %s",
-                  available, ledger);
+        LOG_ISO("Parser: balance txn amount is in Bit 54. available = %s, "
+                "ledger = %s",
+                available, ledger);
     } else if (iso8583()->getStr(ELEMENT_AMOUNT_TRANSACTION, feild) == ISO_OK) {
         removeLeadingZeros(feild, available, sizeof(available));
-        LOG_TRACE("Parser: balance txn amount is in Bit 4. available = %s",
-                  available);
+        LOG_ISO("Parser: balance txn amount is in Bit 4. available = %s",
+                available);
     }
     if (txn->core.txnType == TXN_KAHROBA_BALANCE) {
         DEFINE_STRING(feild, 128);
         if (iso8583()->getStr(ELEMENT_PAN, feild) == ISO_OK) {
             memset(txn->core.pan, 0, sizeof(txn->core.pan));
             memcpy(txn->core.pan, feild, sizeof(txn->core.pan));
-            LOG_TRACE("Parser: Kahroba extracted pan = %s", txn->core.pan);
+            LOG_ISO("Parser: Kahroba extracted pan = %s", txn->core.pan);
         }
-        LOG_TRACE("Parser: failed to extracted pan for kahroba purchase");
+        LOG_ISO("Parser: failed to extracted pan for kahroba purchase");
     }
 
     str2u64(available, &txn->extention.balance.available);
@@ -286,10 +286,10 @@ static Error_t checkMac(const char* data, size_t len) {
     size_t size          = sizeof(isoMac);
     if (iso8583()->getBin(ELEMENT_MAC_2, isoMac, &size) == ISO_OK) {
         isMacRetrived = true;
-        LOG_TRACE("Parser: mac is availabe in Bit 128.");
+        LOG_ISO("Parser: mac is availabe in Bit 128.");
     } else if (iso8583()->getBin(ELEMENT_MAC, isoMac, &size) == ISO_OK) {
         isMacRetrived = true;
-        LOG_TRACE("Parser: mac is availabe in Bit 64.");
+        LOG_ISO("Parser: mac is availabe in Bit 64.");
     }
     RETURN_VALUE_IF_NOT(isMacRetrived, true, ;, ERR_NOK);
     int res = memcmp(isoMac, mac, LEN_MAX_ISO_MAC);
@@ -375,17 +375,17 @@ Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* fields,
                  uint16_t fieldsCnt, TxnData* txn, ByteArray* buf,
                  void* userData) {
     if (!txn || !buf || (fieldsCnt > 0u && !fields)) {
-        LOG_TRACE("ISO Builder: invalid arguments");
+        LOG_ISO("ISO Builder: invalid arguments");
         return ERR_NOK;
     }
 
     if (txn->core.txnType == TXN_KAHROBA_PURCHASE && !userData) {
-        LOG_TRACE("ISO Builder: Kahroba context missing");
+        LOG_ISO("ISO Builder: Kahroba context missing");
         return ERR_NOK;
     }
 
-    LOG_TRACE("ISO Builder: MTI=%u PRCode=%u fieldCount=%u", (unsigned)mti,
-              (unsigned)prcode, (unsigned)fieldsCnt);
+    LOG_ISO("ISO Builder: MTI=%u PRCode=%u fieldCount=%u", (unsigned)mti,
+            (unsigned)prcode, (unsigned)fieldsCnt);
 
     IsoTransaction* itxn = isoFindTransaction(mti, prcode);
     if (!itxn)
@@ -404,8 +404,8 @@ Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* fields,
             found = true;
 
             if (!isoHelper[j].set) {
-                LOG_TRACE("ISO Builder: setter unavailable field=%u",
-                          (unsigned)fields[i]);
+                LOG_ISO("ISO Builder: setter unavailable field=%u",
+                        (unsigned)fields[i]);
                 return ERR_NOK;
             }
 
@@ -420,7 +420,7 @@ Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* fields,
         }
 
         if (!found) {
-            LOG_TRACE("ISO Builder: unsupported field=%u", (unsigned)fields[i]);
+            LOG_ISO("ISO Builder: unsupported field=%u", (unsigned)fields[i]);
             return ERR_NOK;
         }
     }
@@ -432,8 +432,8 @@ Error_t isoBuild(Mti_t mti, PrCode_t prcode, uint8_t* fields,
 
     Error_t rc = isoPack(buf);
 
-    LOG_TRACE("ISO Builder: pack result=%d length=%lu", (int)rc,
-              (unsigned long)buf->len);
+    LOG_ISO("ISO Builder: pack result=%d length=%lu", (int)rc,
+            (unsigned long)buf->len);
 
     return rc;
 }
@@ -456,7 +456,7 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     RespCode_t respCode;
     STRING_TO_U16(feild, (uint8_t*)&respCode);
     txn->core.respCode = respCode;
-    LOG_TRACE("Parser: txn responce code = %d", respCode);
+    LOG_ISO("Parser: txn responce code = %d", respCode);
     RESET_STRING(feild);
     txn->core.rrn = txn->core.trace = 0;
     if (iso8583()->getStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, feild) ==
@@ -469,8 +469,8 @@ RespCode_t isoParse(Mti_t mti, PrCode_t prcode, TxnData* txn, ByteArray* buf) {
     if (iso8583()->getStr(ELEMENT_AUTH_ID_RESPONSE, feild) == ISO_OK) {
         STRING_TO_U32(feild, &txn->core.trace);
     }
-    LOG_TRACE("Iso Parser: txn rrn = %llu", txn->core.rrn);
-    LOG_TRACE("Iso Parser: txn trace = %lu", txn->core.trace);
+    LOG_ISO("Iso Parser: txn rrn = %llu", txn->core.rrn);
+    LOG_ISO("Iso Parser: txn trace = %lu", txn->core.trace);
     RETURN_VALUE_IF_NOT(respCode, RESP_CODE_SUCESS, ;, respCode);
     // for (int i = 0; i < iso8583()->handler.fieldItems; i++) {
     //     if (iso8583()->msg.field[i].ptr != NULL) {

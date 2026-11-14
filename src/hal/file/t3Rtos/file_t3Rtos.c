@@ -169,8 +169,8 @@ static FileHandle* open(File* self, const char* path, const char* mode) {
 
     fileExists = exists(self, handle->path);
 
-    LOG_TRACE("FILE OPEN: path=%s mode=%s exists=%d", handle->path, mode,
-              (int)fileExists);
+    LOG_FILE("FILE OPEN: path=%s mode=%s exists=%d", handle->path, mode,
+             (int)fileExists);
 
     /*
      * r / r+:
@@ -209,7 +209,7 @@ static FileHandle* open(File* self, const char* path, const char* mode) {
 
         fileExists = false;
 
-        LOG_TRACE("FILE OPEN: Existing file deleted: %s", handle->path);
+        LOG_FILE("FILE OPEN: Existing file deleted: %s", handle->path);
     }
 
     /*
@@ -222,7 +222,7 @@ static FileHandle* open(File* self, const char* path, const char* mode) {
             goto fail;
         }
 
-        LOG_TRACE("FILE OPEN: File created: %s", handle->path);
+        LOG_FILE("FILE OPEN: File created: %s", handle->path);
     }
 
     handle->modeFlags = flags;
@@ -237,10 +237,10 @@ static FileHandle* open(File* self, const char* path, const char* mode) {
         handle->pos = 0u;
     }
 
-    LOG_TRACE("FILE OPEN: Success path=%s mode=%s "
-              "flags=0x%02X pos=%u",
-              handle->path, mode, (unsigned)handle->modeFlags,
-              (unsigned)handle->pos);
+    LOG_FILE("FILE OPEN: Success path=%s mode=%s "
+             "flags=0x%02X pos=%u",
+             handle->path, mode, (unsigned)handle->modeFlags,
+             (unsigned)handle->pos);
 
     return handle;
 
@@ -387,20 +387,20 @@ static size_t write(File* self, const void* buffer, size_t size, size_t count,
 
     handle->pos += (uint32_t)bytesToWrite;
 
-    LOG_TRACE("FILE WRITE: Success path=%s bytes=%u pos=%u", handle->path,
-              (unsigned)bytesToWrite, (unsigned)handle->pos);
+    LOG_FILE("FILE WRITE: Success path=%s bytes=%u pos=%u", handle->path,
+             (unsigned)bytesToWrite, (unsigned)handle->pos);
 
     return bytesToWrite;
 }
 
 static int removeFile(File* self, const char* path) {
-    LOG_TRACE("Deleteing file : %s", path);
+    LOG_FILE("Deleteing file : %s", path);
     if (!exists(self, path)) {
-        LOG_TRACE("file (%s) is not existed", path);
+        LOG_FILE("file (%s) is not existed", path);
         return 0;
     }
     int ret = sdkFileDel(path);
-    LOG_TRACE("deleting file (%s) result = %d", path, ret);
+    LOG_FILE("deleting file (%s) result = %d", path, ret);
     return ret == SDK_FILE_OK ? 0 : -1;
 }
 
@@ -433,8 +433,8 @@ static size_t overwrite(File* self, const void* buffer, size_t size,
         return 0u;
     }
 
-    LOG_TRACE("Overwrite succeed : path=%s bytes=%u error=%d", handle->path,
-              (unsigned)bytesToWrite, ret);
+    LOG_FILE("Overwrite succeed : path=%s bytes=%u error=%d", handle->path,
+             (unsigned)bytesToWrite, ret);
     /*
      * sdkFileWrite writes from the beginning, so the resulting logical
      * position is bytesToWrite—not old position + bytesToWrite.

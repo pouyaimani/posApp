@@ -49,20 +49,20 @@ int8_t getTxnName(TxnType type, char* name, size_t size) {
 void logTxnCore(TxnData* data) {
     uint32_t idate, itime;
     unpackDateTime(&data->dateTime, &idate, &itime);
-    LOG_TRACE("=============== Transaction core data ===============");
-    LOG_TRACE("[## datetime    ##]    = %llu", data->dateTime);
-    LOG_TRACE("[## date        ##]    = %lu", idate);
-    LOG_TRACE("[## time        ##]    = %lu", itime);
-    LOG_TRACE("[## status      ##]    = %d", data->status);
-    LOG_TRACE("[## txnType     ##]    = %d", data->core.txnType);
-    LOG_TRACE("[## mti         ##]    = %d", data->core.mti);
-    LOG_TRACE("[## processCode ##]    = %d", data->core.processCode);
-    LOG_TRACE("[## pan         ##]    = %s", data->core.pan);
-    LOG_TRACE("[## amount      ##]    = %llu", data->core.amount);
-    LOG_TRACE("[## rrn         ##]    = %llu", data->core.rrn);
-    LOG_TRACE("[## trace       ##]    = %lu", data->core.trace);
-    LOG_TRACE("[## stan        ##]    = %lu", data->core.stan);
-    LOG_TRACE("[## respCode    ##]    = %lu", data->core.respCode);
+    LOG_TXN("=============== Transaction core data ===============");
+    LOG_TXN("[## datetime    ##]    = %llu", data->dateTime);
+    LOG_TXN("[## date        ##]    = %lu", idate);
+    LOG_TXN("[## time        ##]    = %lu", itime);
+    LOG_TXN("[## status      ##]    = %d", data->status);
+    LOG_TXN("[## txnType     ##]    = %d", data->core.txnType);
+    LOG_TXN("[## mti         ##]    = %d", data->core.mti);
+    LOG_TXN("[## processCode ##]    = %d", data->core.processCode);
+    LOG_TXN("[## pan         ##]    = %s", data->core.pan);
+    LOG_TXN("[## amount      ##]    = %llu", data->core.amount);
+    LOG_TXN("[## rrn         ##]    = %llu", data->core.rrn);
+    LOG_TXN("[## trace       ##]    = %lu", data->core.trace);
+    LOG_TXN("[## stan        ##]    = %lu", data->core.stan);
+    LOG_TXN("[## respCode    ##]    = %lu", data->core.respCode);
 
-    LOG_TRACE("=====================================================");
+    LOG_TXN("=====================================================");
 }

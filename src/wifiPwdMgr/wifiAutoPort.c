@@ -21,9 +21,9 @@ bool wifiAutoPortActivateRoute(void* ctx) {
 
     NetRoute_t route = OOP_CALL(network(), getRoute);
 
-    LOG_TRACE("WiFi auto: activating route, "
-              "connectStatus=%d, route=%d",
-              (int)status, (int)route);
+    LOG_WAC("WiFi auto: activating route, "
+            "connectStatus=%d, route=%d",
+            (int)status, (int)route);
 
     if (status != WIFI_CONNECT_SUCCEED) {
         LOG_ERROR("WiFi auto: WiFi is not connected");
@@ -42,13 +42,13 @@ void wifiAutoPortFinished(void* ctx, WifiAutoOutcome outcome,
                           WifiPmResult persistence) {
     (void)ctx;
 
-    LOG_TRACE("WiFi auto: finished, outcome=%d, persistence=%d", (int)outcome,
-              (int)persistence);
+    LOG_WAC("WiFi auto: finished, outcome=%d, persistence=%d", (int)outcome,
+            (int)persistence);
 
     switch (outcome) {
 
     case WIFI_AUTO_CONNECTED:
-        LOG_TRACE("WiFi auto: connected successfully");
+        LOG_WAC("WiFi auto: connected successfully");
 
         if (persistence != WIFI_PM_OK) {
             LOG_ERROR("WiFi auto: password save failed=%d", (int)persistence);
@@ -56,7 +56,7 @@ void wifiAutoPortFinished(void* ctx, WifiAutoOutcome outcome,
         break;
 
     case WIFI_AUTO_NO_SAVED_AP:
-        LOG_TRACE("WiFi auto: no saved AP found");
+        LOG_WAC("WiFi auto: no saved AP found");
         break;
 
     case WIFI_AUTO_ALL_FAILED:
@@ -76,7 +76,7 @@ void wifiAutoPortFinished(void* ctx, WifiAutoOutcome outcome,
         break;
 
     case WIFI_AUTO_CANCELLED:
-        LOG_TRACE("WiFi auto: operation cancelled");
+        LOG_WAC("WiFi auto: operation cancelled");
         break;
 
     default:
@@ -129,7 +129,7 @@ bool wifiAutoPortRequestConnect(void* ctx, uint16_t apIndex,
 
     memcpy(g_autoPassword, password, len + 1u);
 
-    LOG_TRACE("WiFi auto: connecting to AP index=%u", (unsigned)apIndex);
+    LOG_WAC("WiFi auto: connecting to AP index=%u", (unsigned)apIndex);
 
     WifiErr_t err = wifi()->connect(&g_autoAp, g_autoPassword);
 
@@ -144,7 +144,7 @@ bool wifiAutoPortRequestConnect(void* ctx, uint16_t apIndex,
 bool wifiAutoPortRequestDisconnect(void* ctx) {
     (void)ctx;
 
-    LOG_TRACE("WiFi auto: requesting disconnect");
+    LOG_WAC("WiFi auto: requesting disconnect");
 
     WifiErr_t err = wifi()->disconnect();
 
@@ -153,7 +153,7 @@ bool wifiAutoPortRequestDisconnect(void* ctx) {
         return false;
     }
 
-    LOG_TRACE("WiFi auto: disconnect request accepted");
+    LOG_WAC("WiFi auto: disconnect request accepted");
 
     return true;
 }
@@ -164,7 +164,7 @@ bool wifiAutoPortStartScan(void* ctx) {
 
     WifiErr_t err = wifi()->startScan();
 
-    LOG_TRACE("WiFi auto: start scan, result=%d", (int)err);
+    LOG_WAC("WiFi auto: start scan, result=%d", (int)err);
 
     return err == WIFI_ERR_OK;
 }

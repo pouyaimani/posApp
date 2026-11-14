@@ -108,4 +108,6 @@ OOP_CLASS(WifiAutoConnector) {
 OOP_CTOR(WifiAutoConnector);
 WifiAutoConnector* wifiAutoConnector(void);
 
+void wifiAutoConnect(void);
+
 #endif /* WIFI_AUTO_CONNECTOR_H_ */

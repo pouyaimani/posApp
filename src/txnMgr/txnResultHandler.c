@@ -102,13 +102,13 @@ static bool showTransactionResult(const TxnFlowStatus* st, const TxnData* data,
     TxnMgr* mgr = txnMgr();
 
     if (!st || !data || !mgr->config.txnFlowCfg) {
-        LOG_TRACE("TxnResult: cannot show transaction result; "
-                  "status=%d, data=%d, config=%d",
-                  st != NULL, data != NULL, mgr->config.txnFlowCfg != NULL);
+        LOG_TXN("TxnResult: cannot show transaction result; "
+                "status=%d, data=%d, config=%d",
+                st != NULL, data != NULL, mgr->config.txnFlowCfg != NULL);
 
         return false;
     }
-    LOG_TRACE("Digital receipt: amount = %llu", data->core.amount);
+    LOG_TXN("Digital receipt: amount = %llu", data->core.amount);
     memcpy(&receiptData.txn, data, sizeof(TxnData));
     resultStatus = *st;
     resultCfg    = *mgr->config.txnFlowCfg;
@@ -143,14 +143,14 @@ static bool showTransactionResult(const TxnFlowStatus* st, const TxnData* data,
  ******************************************************************/
 
 static void handleRejected(TxnMgrError err, InfoDone cb) {
-    LOG_TRACE("TxnResult: transaction start rejected; error=%d", (int)err);
+    LOG_TXN("TxnResult: transaction start rejected; error=%d", (int)err);
 
     /*
      * A rejected request may occur while another transaction is
      * running. Do not replace its screen or navigate it to idle.
      */
     if (txnMgr()->active) {
-        LOG_TRACE("TxnResult: preserving active transaction after rejection");
+        LOG_TXN("TxnResult: preserving active transaction after rejection");
         return;
     }
 
@@ -167,17 +167,17 @@ static void handleRejected(TxnMgrError err, InfoDone cb) {
  ******************************************************************/
 
 static void handleFailure(TxnResultHandle handle) {
-    LOG_TRACE("TxnResult: failure; step=%d, error=%d, flow=%d, code=%d",
-              (int)handle.step, (int)handle.err,
-              handle.flowStatus ? (int)handle.flowStatus->result : -1,
-              handle.flowStatus ? handle.flowStatus->code : TXN_MGR_RESP_NONE);
+    LOG_TXN("TxnResult: failure; step=%d, error=%d, flow=%d, code=%d",
+            (int)handle.step, (int)handle.err,
+            handle.flowStatus ? (int)handle.flowStatus->result : -1,
+            handle.flowStatus ? handle.flowStatus->code : TXN_MGR_RESP_NONE);
 
     /*
      * Cancellation is a user action. Return to idle without an
      * unsuccessful-operation screen.
      */
     if (handle.err == TXN_MGR_ERR_CANCELED) {
-        LOG_TRACE("TxnResult: transaction canceled");
+        LOG_TXN("TxnResult: transaction canceled");
         showFailure(phraseGetDef(PHRASE_TXN_CANCELLED), handle.onDone);
         return;
     }
@@ -200,9 +200,9 @@ static void handleFailure(TxnResultHandle handle) {
          * or its partially collected input data.
          */
         if (handle.step == TXN_STEP_PENDING) {
-            LOG_TRACE("TxnResult: recovery host response rejected; code=%d",
-                      handle.flowStatus ? handle.flowStatus->code
-                                        : TXN_MGR_RESP_NONE);
+            LOG_TXN("TxnResult: recovery host response rejected; code=%d",
+                    handle.flowStatus ? handle.flowStatus->code
+                                      : TXN_MGR_RESP_NONE);
 
             showFailure(phraseGetDef(PHRASE_PENDED_TXN_FAILURE), handle.onDone);
             return;
@@ -220,7 +220,7 @@ static void handleFailure(TxnResultHandle handle) {
             return;
         }
 
-        LOG_TRACE("TxnResult: invalid host-decline completion context");
+        LOG_TXN("TxnResult: invalid host-decline completion context");
         showFailure("", handle.onDone);
         return;
     }
@@ -247,7 +247,7 @@ static void handleFailure(TxnResultHandle handle) {
          * "Host approved; local processing failed. Check transaction
          * status before attempting another payment."
          */
-        LOG_TRACE("TxnResult: host approved but local persistence failed");
+        LOG_TXN("TxnResult: host approved but local persistence failed");
 
         showFailure("", handle.onDone);
         return;
@@ -265,8 +265,8 @@ static void handleFailure(TxnResultHandle handle) {
  *                         Public callback
  ******************************************************************/
 void txnResultHandle(TxnResultHandle handle) {
-    LOG_TRACE("TxnResult: completion; result=%d, step=%d, error=%d",
-              (int)handle.result, (int)handle.step, (int)handle.err);
+    LOG_TXN("TxnResult: completion; result=%d, step=%d, error=%d",
+            (int)handle.result, (int)handle.step, (int)handle.err);
 
     if (handle.result == TXN_MGR_RESULT_REJECT) {
         handleRejected(handle.err, handle.onDone);
@@ -283,12 +283,12 @@ void txnResultHandle(TxnResultHandle handle) {
             !handle.data || !handle.flowStatus ||
             handle.flowStatus->result != TXN_FLOW_SUCCESS ||
             handle.flowStatus->code != RESP_CODE_SUCESS) {
-            LOG_TRACE("TxnResult: inconsistent success notification");
+            LOG_TXN("TxnResult: inconsistent success notification");
             showFailure("", handle.onDone);
             return;
         }
 
-        LOG_TRACE("TxnResult: displaying approved transaction");
+        LOG_TXN("TxnResult: displaying approved transaction");
 
         if (!showTransactionResult(handle.flowStatus, handle.data,
                                    handle.onDone, handle.digitalRec)) {
@@ -313,5 +313,5 @@ void txnResultHandle(TxnResultHandle handle) {
     }
 
     /* NONE and RUNNING are not terminal completion notifications. */
-    LOG_TRACE("TxnResult: ignoring nonterminal result=%d", (int)handle.result);
+    LOG_TXN("TxnResult: ignoring nonterminal result=%d", (int)handle.result);
 }

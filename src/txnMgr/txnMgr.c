@@ -209,26 +209,25 @@ static int beforeCommunicationSend(TxnFlow* flow) {
 
     if (!flow || flow != mgr->flow || !flow->cfg || !mgr->active ||
         !isCommunicationStep(mgr) || !mgr->stepStarted) {
-        LOG_TRACE("TxnMgr: before-send rejected: invalid or inactive flow");
+        LOG_TXN("TxnMgr: before-send rejected: invalid or inactive flow");
         return ERR_NOK;
     }
 
     if (!flow->cfg->needSettlement) {
-        LOG_TRACE("TxnMgr: before-send: recovery persistence not required");
+        LOG_TXN("TxnMgr: before-send: recovery persistence not required");
         return ERR_OK;
     }
 
-    LOG_TRACE("TxnMgr: saving reversal record before transmission");
+    LOG_TXN("TxnMgr: saving reversal record before transmission");
     Error_t err = mgr->pendingNew(flow->data);
 
     if (err != ERR_OK) {
-        LOG_TRACE("TxnMgr: transmission blocked: pending save code=%d",
-                  (int)err);
+        LOG_TXN("TxnMgr: transmission blocked: pending save code=%d", (int)err);
         return TXN_MGR_ERR_PENDING_SAVE;
     }
 
     currentPendingSaved = true;
-    LOG_TRACE("TxnMgr: reversal record saved; transmission allowed");
+    LOG_TXN("TxnMgr: reversal record saved; transmission allowed");
 
     return ERR_OK;
 }
@@ -243,13 +242,13 @@ static void handleHostDecline(TxnMgr* mgr, const TxnFlowStatus* status) {
     if (!mgr || !status)
         return;
 
-    LOG_TRACE("TxnMgr: host declined response=%d", status->code);
+    LOG_TXN("TxnMgr: host declined response=%d", status->code);
 
     if (currentPendingSaved) {
         Error_t err = mgr->pendingReset();
 
         if (err != ERR_OK) {
-            LOG_TRACE("TxnMgr: pending reset failed error=%d", (int)err);
+            LOG_TXN("TxnMgr: pending reset failed error=%d", (int)err);
 
             mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
             return;
@@ -277,9 +276,9 @@ static void handleHostPinRequired(TxnMgr* mgr, const TxnFlowStatus* status) {
     if (!mgr || !status)
         return;
 
-    LOG_TRACE("TxnMgr: host PIN required operation=%llu attempt=%u",
-              (unsigned long long)operationId,
-              (unsigned)mgr->authorizationAttempt);
+    LOG_TXN("TxnMgr: host PIN required operation=%llu attempt=%u",
+            (unsigned long long)operationId,
+            (unsigned)mgr->authorizationAttempt);
 
     /*
      * Do not proceed until the PIN step is installed.
@@ -288,7 +287,7 @@ static void handleHostPinRequired(TxnMgr* mgr, const TxnFlowStatus* status) {
     if (!mgr->steps || mgr->stepIndex + 1u >= mgr->stepCount ||
         mgr->steps[mgr->stepIndex + 1u] != TXN_STEP_HOST_PIN) {
 
-        LOG_TRACE("TxnMgr: host PIN step not configured");
+        LOG_TXN("TxnMgr: host PIN step not configured");
 
         handleHostDecline(mgr, status);
         return;
@@ -308,9 +307,9 @@ static void handleHostPinRequired(TxnMgr* mgr, const TxnFlowStatus* status) {
         Error_t err = mgr->pendingReset();
 
         if (err != ERR_OK) {
-            LOG_TRACE("TxnMgr: cannot continue PIN challenge; "
-                      "pending reset failed=%d",
-                      (int)err);
+            LOG_TXN("TxnMgr: cannot continue PIN challenge; "
+                    "pending reset failed=%d",
+                    (int)err);
 
             mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
             return;
@@ -321,7 +320,7 @@ static void handleHostPinRequired(TxnMgr* mgr, const TxnFlowStatus* status) {
 
     mgr->hostPinRequired = true;
 
-    LOG_TRACE("TxnMgr: advancing to host PIN step");
+    LOG_TXN("TxnMgr: advancing to host PIN step");
 
     if (!mgr->next()) {
         mgr->fail(TXN_MGR_ERR_COMMUNICATION);
@@ -354,27 +353,27 @@ static TxnHostAction resolveHostResponse(const TxnMgr* mgr, int responseCode) {
  * communication resources.
  */
 static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
-    LOG_TRACE("Txn Mgr: mainTxnFlowDone ...");
+    LOG_TXN("Txn Mgr: mainTxnFlowDone ...");
 
     TxnMgr* mgr = &__txnMgr;
 
     if (!flow || flow != mgr->flow || !mgr->active || !mgr->stepStarted ||
         !isCommunicationStep(mgr)) {
-        LOG_TRACE(
+        LOG_TXN(
             "TxnMgr: ignoring communication completion outside active step");
         return;
     }
 
-    LOG_TRACE("Txn Mgr: respcode = %d", flow->data->core.respCode);
+    LOG_TXN("Txn Mgr: respcode = %d", flow->data->core.respCode);
 
     communicationNotified = true;
     if (!status) {
-        LOG_TRACE("TxnMgr: communication completion has no status");
+        LOG_TXN("TxnMgr: communication completion has no status");
         mgr->fail(TXN_MGR_ERR_COMMUNICATION);
         return;
     }
-    LOG_TRACE("TxnMgr: communication result=%d, stage=%d, code=%d",
-              (int)status->result, (int)status->stage, status->code);
+    LOG_TXN("TxnMgr: communication result=%d, stage=%d, code=%d",
+            (int)status->result, (int)status->stage, status->code);
 
     mgr->flowStatus = *status;
 
@@ -388,8 +387,8 @@ static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
 
     TxnHostAction action = resolveHostResponse(mgr, status->code);
 
-    LOG_TRACE("TxnMgr: response=%d action=%d attempt=%u", status->code,
-              (int)action, (unsigned)mgr->authorizationAttempt);
+    LOG_TXN("TxnMgr: response=%d action=%d attempt=%u", status->code,
+            (int)action, (unsigned)mgr->authorizationAttempt);
 
     switch (action) {
 
@@ -410,7 +409,7 @@ static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
     mgr->data.status = TXN_STATUS_APPROVED;
 
     if (currentPendingSaved) {
-        LOG_TRACE("TxnMgr: host approved; persisting settlement record");
+        LOG_TXN("TxnMgr: host approved; persisting settlement record");
         /*
          * Persist the approved response, including host identifiers,
          * before reporting success to the application.
@@ -432,7 +431,7 @@ static void mainTxnFlowDone(TxnFlow* flow, const TxnFlowStatus* status) {
         mgr->data.status = TXN_STATUS_PENDING_SETTLEMENT;
     }
 
-    LOG_TRACE("TxnMgr: main communication completed successfully");
+    LOG_TXN("TxnMgr: main communication completed successfully");
     mgr->next();
 }
 
@@ -460,7 +459,7 @@ static void onSettlementDone(TxnFlow* flow, const TxnFlowStatus* status) {
 
     if (flow != &settlementFlow || !settlementActive ||
         settlementOperationId != operationId || !isSettlementStep(mgr)) {
-        LOG_TRACE("TxnMgr: ignoring unexpected settlement completion");
+        LOG_TXN("TxnMgr: ignoring unexpected settlement completion");
         if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
             ERR_OK) {
             mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
@@ -473,7 +472,7 @@ static void onSettlementDone(TxnFlow* flow, const TxnFlowStatus* status) {
     settlementActive = false;
 
     if (!status) {
-        LOG_TRACE("TxnMgr: settlement completed without status");
+        LOG_TXN("TxnMgr: settlement completed without status");
         if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
             ERR_OK) {
             mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
@@ -485,8 +484,8 @@ static void onSettlementDone(TxnFlow* flow, const TxnFlowStatus* status) {
 
     mgr->flowStatus = *status;
 
-    LOG_TRACE("TxnMgr: settlement completed; result=%d, stage=%d, code=%d",
-              (int)status->result, (int)status->stage, status->code);
+    LOG_TXN("TxnMgr: settlement completed; result=%d, stage=%d, code=%d",
+            (int)status->result, (int)status->stage, status->code);
 
     if (status->result != TXN_FLOW_SUCCESS) {
         if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
@@ -503,7 +502,7 @@ static void onSettlementDone(TxnFlow* flow, const TxnFlowStatus* status) {
     }
 
     if (status->code != RESP_CODE_SUCESS) {
-        LOG_TRACE("TxnMgr: settlement rejected by host; code=%d", status->code);
+        LOG_TXN("TxnMgr: settlement rejected by host; code=%d", status->code);
         if (mgr->pendingUpdate(TXN_STATUS_PENDING_REVERSE, &mgr->data) !=
             ERR_OK) {
             mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
@@ -529,9 +528,9 @@ static void onSettlementDone(TxnFlow* flow, const TxnFlowStatus* status) {
     Error_t err = mgr->pendingUpdate(TXN_STATUS_APPROVED, &approvedData);
 
     if (err != ERR_OK) {
-        LOG_TRACE("TxnMgr: settlement approved but saving completion "
-                  "failed; error=%d",
-                  (int)err);
+        LOG_TXN("TxnMgr: settlement approved but saving completion "
+                "failed; error=%d",
+                (int)err);
 
         mgr->fail(TXN_MGR_ERR_PENDING_SAVE);
         return;
@@ -539,7 +538,7 @@ static void onSettlementDone(TxnFlow* flow, const TxnFlowStatus* status) {
 
     mgr->data.status = TXN_STATUS_APPROVED;
 
-    LOG_TRACE("TxnMgr: settlement approved and completion saved");
+    LOG_TXN("TxnMgr: settlement approved and completion saved");
 
     /*
      * With settlement as the last step, next() completes the manager.
@@ -552,7 +551,7 @@ static void settleCurrentTransaction(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!isSettlementStep(mgr)) {
-        LOG_TRACE("TxnMgr: settlement ignored outside settlement step");
+        LOG_TXN("TxnMgr: settlement ignored outside settlement step");
         return;
     }
 
@@ -562,7 +561,7 @@ static void settleCurrentTransaction(void) {
     }
 
     if (!mgr->config.txnFlowCfg->needSettlement) {
-        LOG_TRACE("TxnMgr: settlement not required");
+        LOG_TXN("TxnMgr: settlement not required");
         mgr->next();
         return;
     }
@@ -577,8 +576,8 @@ static void settleCurrentTransaction(void) {
     if (mgr->flowStatus.result != TXN_FLOW_SUCCESS ||
         mgr->flowStatus.code != RESP_CODE_SUCESS || !currentPendingSaved ||
         mgr->data.status != TXN_STATUS_PENDING_SETTLEMENT) {
-        LOG_TRACE("TxnMgr: settlement rejected; "
-                  "approved pending-settlement context missing");
+        LOG_TXN("TxnMgr: settlement rejected; "
+                "approved pending-settlement context missing");
 
         mgr->fail(TXN_MGR_ERR_SETTLEMENT_CONTEXT);
         return;
@@ -586,7 +585,7 @@ static void settleCurrentTransaction(void) {
 
     if (settlementActive || settlementFlow.tx ||
         settlementFlow.stage != TXN_STAGE_IDLE) {
-        LOG_TRACE("TxnMgr: settlement flow is busy");
+        LOG_TXN("TxnMgr: settlement flow is busy");
         mgr->fail(TXN_MGR_ERR_SETTLEMENT_BUSY);
         return;
     }
@@ -610,7 +609,7 @@ static void settleCurrentTransaction(void) {
     settlementConfig.compose    = NULL;
 
     if (!txnFlowPrepare(&settlementFlow, NULL, &settlementConfig)) {
-        LOG_TRACE("TxnMgr: settlement preparation failed");
+        LOG_TXN("TxnMgr: settlement preparation failed");
         mgr->fail(TXN_MGR_ERR_SETTLEMENT_PREPARE);
         return;
     }
@@ -637,8 +636,8 @@ static void settleCurrentTransaction(void) {
      */
     uint64_t startedOperation = operationId;
 
-    LOG_TRACE("TxnMgr: starting settlement; operation=%llu",
-              (unsigned long long)startedOperation);
+    LOG_TXN("TxnMgr: starting settlement; operation=%llu",
+            (unsigned long long)startedOperation);
 
     bool started = txnFlowConnect(&settlementFlow, host,
                                   settings()->server.mainServerPort);
@@ -650,7 +649,7 @@ static void settleCurrentTransaction(void) {
          */
         settlementActive = false;
 
-        LOG_TRACE("TxnMgr: settlement could not start");
+        LOG_TXN("TxnMgr: settlement could not start");
         mgr->fail(TXN_MGR_ERR_SETTLEMENT_START);
     }
 }
@@ -663,7 +662,7 @@ static TxnFlowConfig communicationCfg;
 static char          communicationIp[32];
 
 void communication(void) {
-    LOG_TRACE("TxnMgr: communication step entered");
+    LOG_TXN("TxnMgr: communication step entered");
     TxnMgr* mgr = &__txnMgr;
 
     currentPendingSaved = false;
@@ -677,7 +676,7 @@ void communication(void) {
     communicationCfg.done       = mainTxnFlowDone;
 
     if (!txnFlowPrepare(mgr->flow, NULL, &communicationCfg)) {
-        LOG_TRACE("TxnMgr: communication flow preparation failed");
+        LOG_TXN("TxnMgr: communication flow preparation failed");
         mgr->fail(TXN_MGR_ERR_COMMUNICATION);
         return;
     }
@@ -690,19 +689,18 @@ void communication(void) {
     normalizeIp(settings()->server.mainServerIp, communicationIp,
                 sizeof(communicationIp));
 
-    LOG_TRACE("TxnMgr: starting transaction connection");
+    LOG_TXN("TxnMgr: starting transaction connection");
     communicationNotified = false;
     uint64_t startedId    = operationId;
     bool     started      = txnFlowConnect(mgr->flow, communicationIp,
                                            settings()->server.mainServerPort);
 
-    LOG_TRACE(
-        "TxnMgr: communication connect returned started=%d; operation=%llu",
-        (int)started, (unsigned long long)startedId);
+    LOG_TXN("TxnMgr: communication connect returned started=%d; operation=%llu",
+            (int)started, (unsigned long long)startedId);
 
     if (!started && operationId == startedId && !communicationNotified &&
         mgr->active && isCommunicationStep(mgr)) {
-        LOG_TRACE(
+        LOG_TXN(
             "TxnMgr: communication start failed without completion callback");
         mgr->fail(TXN_MGR_ERR_COMMUNICATION);
     }
@@ -715,12 +713,12 @@ static void enterHostPin(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->hostPinRequired) {
-        LOG_TRACE("TxnMgr: host PIN not required, skipping");
+        LOG_TXN("TxnMgr: host PIN not required, skipping");
         mgr->next();
         return;
     }
 
-    LOG_TRACE("TxnMgr: host PIN required");
+    LOG_TXN("TxnMgr: host PIN required");
 
     /*
      * Reuse the existing secure PIN input implementation.
@@ -738,14 +736,14 @@ static void communicationWithPin(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->hostPinRequired) {
-        LOG_TRACE("TxnMgr: PIN communication not required, skipping");
+        LOG_TXN("TxnMgr: PIN communication not required, skipping");
         mgr->next();
         return;
     }
     mgr->authorizationAttempt++;
     communication();
 
-    // LOG_TRACE("TxnMgr: PIN authorization integration pending");
+    // LOG_TXN("TxnMgr: PIN authorization integration pending");
     // mgr->fail(TXN_MGR_ERR_UNSUPPORTED_STEP);
 }
 
@@ -792,7 +790,7 @@ static void onStep(TxnMgrStep step) {
     }
 
     /* Missing or unassigned handlers terminate the transaction. */
-    LOG_TRACE("TxnMgr: step missing or unimplemented; step=%d", (int)step);
+    LOG_TXN("TxnMgr: step missing or unimplemented; step=%d", (int)step);
     __txnMgr.fail(TXN_MGR_ERR_UNSUPPORTED_STEP);
 }
 
@@ -807,19 +805,19 @@ static void executeStep(void) {
 
     if (!mgr->active || mgr->stepStarted || !mgr->onStep ||
         mgr->stepIndex >= mgr->stepCount) {
-        LOG_TRACE("TxnMgr: dispatch skipped; active=%d, started=%d, index=%lu, "
-                  "count=%lu",
-                  (int)mgr->active, (int)mgr->stepStarted,
-                  (unsigned long)mgr->stepIndex, (unsigned long)mgr->stepCount);
+        LOG_TXN("TxnMgr: dispatch skipped; active=%d, started=%d, index=%lu, "
+                "count=%lu",
+                (int)mgr->active, (int)mgr->stepStarted,
+                (unsigned long)mgr->stepIndex, (unsigned long)mgr->stepCount);
         return;
     }
 
     mgr->step        = mgr->steps[mgr->stepIndex];
     mgr->stepStarted = true;
 
-    LOG_TRACE("TxnMgr: dispatch operation=%llu, step=%d, index=%lu",
-              (unsigned long long)operationId, (int)mgr->step,
-              (unsigned long)mgr->stepIndex);
+    LOG_TXN("TxnMgr: dispatch operation=%llu, step=%d, index=%lu",
+            (unsigned long long)operationId, (int)mgr->step,
+            (unsigned long)mgr->stepIndex);
     mgr->onStep(mgr->step);
 }
 
@@ -828,13 +826,13 @@ static void executeStep(void) {
  ******************************************************************/
 
 STATE_DEF_EXIT(TxnMgr) {
-    LOG_TRACE("TxnMgr: State exited; operation lifetime unchanged");
+    LOG_TXN("TxnMgr: State exited; operation lifetime unchanged");
     (void)state;
     /* Temporary UI ownership changes do not finish the operation. */
 }
 
 STATE_DEF_ENTER(TxnMgr) {
-    LOG_TRACE("TxnMgr: State entered");
+    LOG_TXN("TxnMgr: State entered");
     (void)state;
 
     executeStep();
@@ -851,8 +849,8 @@ STATE_DEF_ENTER(TxnMgr) {
  * TXN_STEP_IDLE means the requested transaction never started.
  */
 static bool rejectRun(InfoDone done, TxnMgrError err) {
-    LOG_TRACE("TxnMgr: run rejected; error=%d, callback=%d", (int)err,
-              done != NULL);
+    LOG_TXN("TxnMgr: run rejected; error=%d, callback=%d", (int)err,
+            done != NULL);
     if (done) {
         TxnResultHandle resHandle = {.result     = TXN_MGR_RESULT_REJECT,
                                      .step       = TXN_STEP_IDLE,
@@ -883,13 +881,13 @@ static bool reset(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (mgr->active || recoveryActive) {
-        LOG_TRACE("TxnMgr: reset rejected; transaction or recovery active");
+        LOG_TXN("TxnMgr: reset rejected; transaction or recovery active");
         return false;
     }
 
     if ((mgr->flow && (mgr->flow->tx || mgr->flow->stage != TXN_STAGE_IDLE)) ||
         recoveryFlow.tx || recoveryFlow.stage != TXN_STAGE_IDLE) {
-        LOG_TRACE("TxnMgr: reset rejected; flow not released");
+        LOG_TXN("TxnMgr: reset rejected; flow not released");
         return false;
     }
 
@@ -923,7 +921,7 @@ static bool reset(void) {
 
     mgr->userData = NULL;
 
-    LOG_TRACE("TxnMgr: reset complete; no transaction started");
+    LOG_TXN("TxnMgr: reset complete; no transaction started");
     return true;
 }
 
@@ -941,16 +939,16 @@ static bool reset(void) {
  * When several conditions are invalid, the first check wins.
  */
 static bool run(TxnMgrCfg* cfg, InfoDone done) {
-    LOG_TRACE("TxnMgr: run requested. done cb address = %p", done);
+    LOG_TXN("TxnMgr: run requested. done cb address = %p", done);
     TxnMgr* mgr = &__txnMgr;
 
     if (!cfg) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_CONFIG");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_CONFIG");
         return rejectRun(done, TXN_MGR_ERR_NULL_CONFIG);
     }
 
     if (!cfg->txnFlowCfg) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_FLOW_CONFIG");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_FLOW_CONFIG");
         return rejectRun(done, TXN_MGR_ERR_NULL_FLOW_CONFIG);
     }
 
@@ -959,34 +957,32 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
      * normally also has mgr->active set.
      */
     if (recoveryActive) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_RECOVERY_BUSY");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_RECOVERY_BUSY");
         return rejectRun(done, TXN_MGR_ERR_RECOVERY_BUSY);
     }
 
     if (mgr->active) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_BUSY");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_BUSY");
         return rejectRun(done, TXN_MGR_ERR_BUSY);
     }
 
     if (!mgr->onStep) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NO_DISPATCHER");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_NO_DISPATCHER");
         return rejectRun(done, TXN_MGR_ERR_NO_DISPATCHER);
     }
 
     if (!cfg->txnFlowCfg->build) {
-        LOG_TRACE(
-            "TxnMgr: run rejection reason: TXN_MGR_ERR_NO_BUILD_CALLBACK");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_NO_BUILD_CALLBACK");
         return rejectRun(done, TXN_MGR_ERR_NO_BUILD_CALLBACK);
     }
 
     if (!cfg->txnFlowCfg->parse) {
-        LOG_TRACE(
-            "TxnMgr: run rejection reason: TXN_MGR_ERR_NO_PARSE_CALLBACK");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_NO_PARSE_CALLBACK");
         return rejectRun(done, TXN_MGR_ERR_NO_PARSE_CALLBACK);
     }
 
     if (!mgr->flow) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_FLOW");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_NULL_FLOW");
         return rejectRun(done, TXN_MGR_ERR_NULL_FLOW);
     }
 
@@ -995,18 +991,17 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
      * or has an unfinished communication stage.
      */
     if (mgr->flow->tx || mgr->flow->stage != TXN_STAGE_IDLE) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_FLOW_BUSY");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_FLOW_BUSY");
         return rejectRun(done, TXN_MGR_ERR_FLOW_BUSY);
     }
 
     if (recoveryFlow.tx || recoveryFlow.stage != TXN_STAGE_IDLE) {
-        LOG_TRACE(
-            "TxnMgr: run rejection reason: TXN_MGR_ERR_RECOVERY_FLOW_BUSY");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_RECOVERY_FLOW_BUSY");
         return rejectRun(done, TXN_MGR_ERR_RECOVERY_FLOW_BUSY);
     }
 
     if (operationId == UINT64_MAX) {
-        LOG_TRACE(
+        LOG_TXN(
             "TxnMgr: run rejection reason: TXN_MGR_ERR_OPERATION_ID_EXHAUSTED");
         return rejectRun(done, TXN_MGR_ERR_OPERATION_ID_EXHAUSTED);
     }
@@ -1014,13 +1009,13 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
     const TxnDefinition* def = findDefinition(cfg->txnFlowCfg->type);
 
     if (!def) {
-        LOG_TRACE("TxnMgr: run rejection reason: "
-                  "TXN_MGR_ERR_UNSUPPORTED_TRANSACTION");
+        LOG_TXN("TxnMgr: run rejection reason: "
+                "TXN_MGR_ERR_UNSUPPORTED_TRANSACTION");
         return rejectRun(done, TXN_MGR_ERR_UNSUPPORTED_TRANSACTION);
     }
 
     if (!def->steps || def->stepCount == 0) {
-        LOG_TRACE("TxnMgr: run rejection reason: TXN_MGR_ERR_EMPTY_SEQUENCE");
+        LOG_TXN("TxnMgr: run rejection reason: TXN_MGR_ERR_EMPTY_SEQUENCE");
         return rejectRun(done, TXN_MGR_ERR_EMPTY_SEQUENCE);
     }
 
@@ -1029,7 +1024,7 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
      * Do not silently replace an existing callback.
      */
     if (cfg->txnFlowCfg->beforeSend) {
-        LOG_TRACE(
+        LOG_TXN(
             "TxnMgr: run rejection reason: TXN_MGR_ERR_BEFORE_SEND_CONFLICT");
         return rejectRun(done, TXN_MGR_ERR_BEFORE_SEND_CONFLICT);
     }
@@ -1049,15 +1044,15 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
         }
 
         if (!hasPendingStep) {
-            LOG_TRACE("TxnMgr: run rejection reason: "
-                      "TXN_MGR_ERR_PENDING_STEP_REQUIRED");
+            LOG_TXN("TxnMgr: run rejection reason: "
+                    "TXN_MGR_ERR_PENDING_STEP_REQUIRED");
             return rejectRun(done, TXN_MGR_ERR_PENDING_STEP_REQUIRED);
         }
     }
 
     if (settlementActive || settlementFlow.tx ||
         settlementFlow.stage != TXN_STAGE_IDLE) {
-        LOG_TRACE("TxnMgr: run rejected; settlement flow busy");
+        LOG_TXN("TxnMgr: run rejected; settlement flow busy");
         return rejectRun(done, TXN_MGR_ERR_SETTLEMENT_BUSY);
     }
 
@@ -1102,10 +1097,9 @@ static bool run(TxnMgrCfg* cfg, InfoDone done) {
      * The manager's State entry dispatches the first step.
      * Same-State restart handling still depends on your SM API.
      */
-    LOG_TRACE(
-        "TxnMgr: run accepted; operation=%llu, type=%d, steps=%lu, done=%d",
-        (unsigned long long)operationId, (int)operationCfg.type,
-        (unsigned long)mgr->stepCount, done != NULL);
+    LOG_TXN("TxnMgr: run accepted; operation=%llu, type=%d, steps=%lu, done=%d",
+            (unsigned long long)operationId, (int)operationCfg.type,
+            (unsigned long)mgr->stepCount, done != NULL);
     SM_GOTO(mgr->smState);
 
     return true;
@@ -1123,7 +1117,7 @@ void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->active) {
-        LOG_TRACE("TxnMgr: completion ignored: no active operation");
+        LOG_TXN("TxnMgr: completion ignored: no active operation");
         return;
     }
 
@@ -1138,10 +1132,10 @@ void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
     status = &mgr->flowStatus;
 
     TxnMgrStep completedStep = mgr->step;
-    LOG_TRACE("TxnMgr: complete operation=%llu, result=%d, step=%d, error=%d, "
-              "response=%d",
-              (unsigned long long)operationId, (int)result, (int)completedStep,
-              (int)err, status->code);
+    LOG_TXN("TxnMgr: complete operation=%llu, result=%d, step=%d, error=%d, "
+            "response=%d",
+            (unsigned long long)operationId, (int)result, (int)completedStep,
+            (int)err, status->code);
 
     /*
      * Capture callbacks before notification: a callback may start
@@ -1167,14 +1161,14 @@ void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
     mgr->stepIndex = 0;
     mgr->done      = NULL;
 
-    LOG_TRACE("amount = %llu", mgr->data.core.amount);
+    LOG_TXN("amount = %llu", mgr->data.core.amount);
 
     /*
      * Keep transaction data available to the callback.
      * Do not modify manager state after invoking a callback.
      */
     if (done) {
-        LOG_TRACE("TxnMgr: notifying done callback");
+        LOG_TXN("TxnMgr: notifying done callback");
         TxnResultHandle resHandle = {.result     = result,
                                      .step       = completedStep,
                                      .err        = err,
@@ -1189,11 +1183,11 @@ void complete(TxnMgrResult result, TxnMgrError err, TxnFlowStatus* status) {
 
     if (result == TXN_MGR_RESULT_SUCCESS) {
         if (onSuccess) {
-            LOG_TRACE("TxnMgr: notifying legacy success callback");
+            LOG_TXN("TxnMgr: notifying legacy success callback");
             onSuccess();
         }
     } else if (onFailure) {
-        LOG_TRACE("TxnMgr: notifying legacy failure callback");
+        LOG_TXN("TxnMgr: notifying legacy failure callback");
         onFailure(completedStep, code);
     }
 }
@@ -1210,18 +1204,18 @@ static bool next(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->active || !mgr->stepStarted) {
-        LOG_TRACE("TxnMgr: next rejected; active=%d, started=%d",
-                  (int)mgr->active, (int)mgr->stepStarted);
+        LOG_TXN("TxnMgr: next rejected; active=%d, started=%d",
+                (int)mgr->active, (int)mgr->stepStarted);
         return false;
     }
 
     if (settlementActive || settlementFlow.tx ||
         settlementFlow.stage != TXN_STAGE_IDLE) {
-        LOG_TRACE("TxnMgr: run rejected; settlement flow busy");
+        LOG_TXN("TxnMgr: run rejected; settlement flow busy");
         return false;
     }
 
-    LOG_TRACE("TxnMgr: step succeeded; step=%d", (int)mgr->step);
+    LOG_TXN("TxnMgr: step succeeded; step=%d", (int)mgr->step);
     if (mgr->stepIndex + 1 >= mgr->stepCount) {
         complete(TXN_MGR_RESULT_SUCCESS, TXN_MGR_ERR_NONE, &mgr->flowStatus);
 
@@ -1250,25 +1244,25 @@ static bool retry(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->active || !mgr->stepStarted) {
-        LOG_TRACE("TxnMgr: retry rejected; active=%d, started=%d",
-                  (int)mgr->active, (int)mgr->stepStarted);
+        LOG_TXN("TxnMgr: retry rejected; active=%d, started=%d",
+                (int)mgr->active, (int)mgr->stepStarted);
         return false;
     }
 
     if (!mgr->steps || mgr->stepIndex >= mgr->stepCount) {
-        LOG_TRACE("TxnMgr: retry rejected; invalid step sequence");
+        LOG_TXN("TxnMgr: retry rejected; invalid step sequence");
         return false;
     }
 
     TxnMgrStep step = mgr->steps[mgr->stepIndex];
 
     if (step == TXN_STEP_PENDING || step == TXN_STEP_COMMUNICATION) {
-        LOG_TRACE("TxnMgr: retry rejected; step=%d requires recovery policy",
-                  (int)step);
+        LOG_TXN("TxnMgr: retry rejected; step=%d requires recovery policy",
+                (int)step);
         return false;
     }
 
-    LOG_TRACE("TxnMgr: retrying step=%d", (int)step);
+    LOG_TXN("TxnMgr: retrying step=%d", (int)step);
 
     mgr->step        = step;
     mgr->stepStarted = false;
@@ -1291,18 +1285,18 @@ static bool previous(void) {
     TxnMgr* mgr = &__txnMgr;
 
     if (!mgr->active || !mgr->stepStarted) {
-        LOG_TRACE("TxnMgr: previous rejected; active=%d, started=%d",
-                  (int)mgr->active, (int)mgr->stepStarted);
+        LOG_TXN("TxnMgr: previous rejected; active=%d, started=%d",
+                (int)mgr->active, (int)mgr->stepStarted);
         return false;
     }
 
     if (!mgr->steps || mgr->stepIndex >= mgr->stepCount) {
-        LOG_TRACE("TxnMgr: previous rejected; invalid step sequence");
+        LOG_TXN("TxnMgr: previous rejected; invalid step sequence");
         return false;
     }
 
     if (mgr->stepIndex == 0) {
-        LOG_TRACE("TxnMgr: already at first step. retrying first step");
+        LOG_TXN("TxnMgr: already at first step. retrying first step");
         retry();
         return false;
     }
@@ -1313,8 +1307,8 @@ static bool previous(void) {
      * policy rather than simply decrementing the index.
      */
     if (mgr->step == TXN_STEP_PENDING || mgr->step == TXN_STEP_COMMUNICATION) {
-        LOG_TRACE("TxnMgr: previous rejected; step=%d cannot be rewound",
-                  (int)mgr->step);
+        LOG_TXN("TxnMgr: previous rejected; step=%d cannot be rewound",
+                (int)mgr->step);
         return false;
     }
 
@@ -1322,13 +1316,12 @@ static bool previous(void) {
 
     if (previousStep == TXN_STEP_PENDING ||
         previousStep == TXN_STEP_COMMUNICATION) {
-        LOG_TRACE("TxnMgr: previous rejected; target step=%d",
-                  (int)previousStep);
+        LOG_TXN("TxnMgr: previous rejected; target step=%d", (int)previousStep);
         return false;
     }
 
-    LOG_TRACE("TxnMgr: previous; from=%d, to=%d", (int)mgr->step,
-              (int)previousStep);
+    LOG_TXN("TxnMgr: previous; from=%d, to=%d", (int)mgr->step,
+            (int)previousStep);
 
     --mgr->stepIndex;
 
@@ -1342,7 +1335,7 @@ static bool previous(void) {
 
 /* Local failure without a valid host response. */
 static void fail(TxnMgrError err) {
-    LOG_TRACE("TxnMgr: failure reported; error=%d", (int)err);
+    LOG_TXN("TxnMgr: failure reported; error=%d", (int)err);
     complete(TXN_MGR_RESULT_FAILURE, err, &__txnMgr.flowStatus);
 }
 
@@ -1351,7 +1344,7 @@ static void fail(TxnMgrError err) {
  ******************************************************************/
 
 OOP_CTOR(TxnMgr) {
-    LOG_TRACE("TxnMgr: initializing singleton");
+    LOG_TXN("TxnMgr: initializing singleton");
     self->smState = &__txnMgrState;
     self->flow    = &__flow;
 

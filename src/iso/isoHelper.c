@@ -137,14 +137,13 @@ static void handleMerchantName(LtvStructInfo* tag) {
     size_t len =
         end ? (size_t)(end - (char*)tmpBuffer) : strlen((char*)tmpBuffer);
 
-    LOG_TRACE("merchantFa (%zu): %.*s", len, (int)len, tmpBuffer);
+    LOG_ISO("merchantFa (%zu): %.*s", len, (int)len, tmpBuffer);
 
     convertStrNoNumber((char*)tmpBuffer, (int)len, 0, 4, 5,
                        settings()->terminal.merchantName);
 
-    LOG_TRACE("merchantName (%zu): %s",
-              strlen(settings()->terminal.merchantName),
-              settings()->terminal.merchantName);
+    LOG_ISO("merchantName (%zu): %s", strlen(settings()->terminal.merchantName),
+            settings()->terminal.merchantName);
 }
 
 static void handleMerchantPhone(LtvStructInfo* tag) {
@@ -152,7 +151,7 @@ static void handleMerchantPhone(LtvStructInfo* tag) {
            sizeof(settings()->terminal.merchantPhone));
     hexStringToBytes(tag->data, tag->len - 1,
                      (unsigned char*)settings()->terminal.merchantPhone);
-    LOG_TRACE("MerchantPhone [%s]", settings()->terminal.merchantPhone);
+    LOG_ISO("MerchantPhone [%s]", settings()->terminal.merchantPhone);
 }
 
 static void handleSwitchDateTime(LtvStructInfo* tag) {
@@ -171,12 +170,12 @@ static void handleSwitchDateTime(LtvStructInfo* tag) {
 static void handleVoucherSerial(LtvStructInfo* tag, TxnData* txn) {
     hexStringToBytes(tag->data, tag->len - 1,
                      txn->extention.charge.chargeSerial);
-    LOG_TRACE("charge serial = %s", txn->extention.charge.chargeSerial);
+    LOG_ISO("charge serial = %s", txn->extention.charge.chargeSerial);
 }
 
 static void handleVoucherPin(LtvStructInfo* tag, TxnData* txn) {
     if (!tag || !txn) {
-        LOG_TRACE("handleVoucherPin: rejected: tag or txn is NULL");
+        LOG_ISO("handleVoucherPin: rejected: tag or txn is NULL");
         return;
     }
     TRACE_POINT;
@@ -203,7 +202,7 @@ static void handleVoucherPin(LtvStructInfo* tag, TxnData* txn) {
     TRACE_POINT;
     strcpy(txn->extention.charge.chargePin, (const char*)pinData);
     TRACE_POINT;
-    LOG_TRACE("charge pin = %s", pinData);
+    LOG_ISO("charge pin = %s", pinData);
 }
 
 static void handleMerchantUniqueId(LtvStructInfo* tag) {
@@ -211,8 +210,8 @@ static void handleMerchantUniqueId(LtvStructInfo* tag) {
            sizeof(settings()->terminal.merchantUniqueId));
     hexStringToBytes(tag->data, tag->len - 1,
                      (unsigned char*)settings()->terminal.merchantUniqueId);
-    LOG_TRACE("settings()->terminal.merchantUniqueId = %s",
-              settings()->terminal.merchantUniqueId);
+    LOG_ISO("settings()->terminal.merchantUniqueId = %s",
+            settings()->terminal.merchantUniqueId);
 }
 
 void decodeMerchantDesc(char* buffer, TxnData* txn) {
@@ -223,8 +222,8 @@ void decodeMerchantDesc(char* buffer, TxnData* txn) {
     for (int i = 0; i < count; i++) {
         uint16_t tag;
         STRING_TO_U16(tags[i].tag, (uint16_t*)&tag);
-        LOG_TRACE("decodeMerchantDesc: i = %d, tag = %s , itag = %d", i,
-                  tags[i].tag, tag);
+        LOG_ISO("decodeMerchantDesc: i = %d, tag = %s , itag = %d", i,
+                tags[i].tag, tag);
         switch (tag) {
         case TAG_MERCHANT_NAME:
             handleMerchantName(&tags[i]);
@@ -253,7 +252,7 @@ void decodeMerchantDesc(char* buffer, TxnData* txn) {
             break;
 
         default:
-            LOG_TRACE("Unknown tag %d", tag);
+            LOG_ISO("Unknown tag %d", tag);
             break;
         }
     }
@@ -275,7 +274,7 @@ Error_t setMti(uint16_t mti) {
 
 static int8_t setBit2(TxnData* data, void* userData) {
     (void)data;
-    LOG_TRACE("| Bit 2 - (Pan) | -> %s", data->core.pan);
+    LOG_ISO("| Bit 2 - (Pan) | -> %s", data->core.pan);
     iso8583()->setStr(ELEMENT_PAN, data->core.pan);
     return ERR_OK;
 }
@@ -285,7 +284,7 @@ static int8_t setBit3(TxnData* data, void* userData) {
     DEFINE_STRING(prcode, (LEN_MAX_PRCODE + 1));
     prependZerosInt(code, LEN_MAX_PRCODE, prcode, sizeof(prcode));
     prcode[LEN_MAX_STAN] = 0;
-    LOG_TRACE("| Bit 3 - (Process Code) | -> %s", prcode);
+    LOG_ISO("| Bit 3 - (Process Code) | -> %s", prcode);
     iso8583()->setStr(ELEMENT_PROCESSING_CODE, (const DL_UINT8*)prcode);
     return ERR_OK;
 }
@@ -293,7 +292,7 @@ static int8_t setBit3(TxnData* data, void* userData) {
 static int8_t setBit4(TxnData* data, void* userData) {
     DEFINE_STRING(amount, (LEN_MAX_AMOUNT + 1));
     prependZerosInt(data->core.amount, LEN_MAX_AMOUNT, amount, sizeof(amount));
-    LOG_TRACE("| Bit 4 - (Txn Amount) | -> %s", amount);
+    LOG_ISO("| Bit 4 - (Txn Amount) | -> %s", amount);
     iso8583()->setStr(ELEMENT_AMOUNT_TRANSACTION, (const DL_UINT8*)amount);
     return ERR_OK;
 }
@@ -304,7 +303,7 @@ static int8_t setBit11(TxnData* data, void* userData) {
     DEFINE_STRING(stan, (LEN_MAX_STAN + 1));
     prependZerosInt(istan, LEN_MAX_STAN, stan, sizeof(stan));
     stan[LEN_MAX_STAN] = 0;
-    LOG_TRACE("| Bit 11 - (Stan) | -> %s", stan);
+    LOG_ISO("| Bit 11 - (Stan) | -> %s", stan);
     iso8583()->setStr(ELEMENT_STAN, (const DL_UINT8*)stan);
     return ERR_OK;
 }
@@ -312,19 +311,19 @@ static int8_t setBit12(TxnData* data, void* userData) {
     (void)data;
     DEFINE_STRING(timeStr, 6 + 1);
     if (data->dateTime == 0) {
-        LOG_TRACE(" Setting Bit 13: txn data has no date time information. "
-                  "setting current time.");
+        LOG_ISO(" Setting Bit 13: txn data has no date time information. "
+                "setting current time.");
         DateTime* dt = OOP_CALL(sys(), getDateTime);
         memcpy(timeStr, dt->time, 6);
     } else {
-        LOG_TRACE(" Setting Bit 13: txn data has date time information.");
+        LOG_ISO(" Setting Bit 13: txn data has date time information.");
         uint64_t dt = data->dateTime;
         uint32_t itime, idate;
         unpackDateTime(&dt, &idate, &itime);
         timeToRawStr(itime, timeStr, sizeof(timeStr));
     }
     iso8583()->setStr(ELEMENT_TIME_LOCAL_TRANSACTION, (const DL_UINT8*)timeStr);
-    LOG_TRACE("| Bit 12 - (Time) | -> %s", timeStr);
+    LOG_ISO("| Bit 12 - (Time) | -> %s", timeStr);
     return ERR_OK;
 }
 
@@ -332,12 +331,12 @@ static int8_t setBit13(TxnData* data, void* userData) {
     (void)data;
     DEFINE_STRING(dateStr, 4 + 1);
     if (data->dateTime == 0) {
-        LOG_TRACE(" Setting Bit 13: txn data has no date time information. "
-                  "setting current date.");
+        LOG_ISO(" Setting Bit 13: txn data has no date time information. "
+                "setting current date.");
         DateTime* dt = OOP_CALL(sys(), getDateTime);
         memcpy(dateStr, dt->date + 2, 4);
     } else {
-        LOG_TRACE(" Setting Bit 13: txn data has date time information.");
+        LOG_ISO(" Setting Bit 13: txn data has date time information.");
         DEFINE_STRING(dateTmp, 12);
         uint64_t dt = data->dateTime;
         uint32_t itime, idate;
@@ -346,7 +345,7 @@ static int8_t setBit13(TxnData* data, void* userData) {
         memcpy(dateStr, dateTmp + 4, 4);
     }
     iso8583()->setStr(ELEMENT_DATE_LOCAL_TRANSACTION, (const DL_UINT8*)dateStr);
-    LOG_TRACE("| Bit 13 - (Date) | -> %s", dateStr);
+    LOG_ISO("| Bit 13 - (Date) | -> %s", dateStr);
     return ERR_OK;
 }
 
@@ -359,14 +358,14 @@ static int8_t setBit22(TxnData* data, void* userData) {
         pem = "021";
     }
     iso8583()->setStr(ELEMENT_POS_ENTRY_MODE, pem);
-    LOG_TRACE("| Bit 22 - (Pos Entry Mode) | -> %s", pem);
+    LOG_ISO("| Bit 22 - (Pos Entry Mode) | -> %s", pem);
     return ERR_OK;
 }
 
 static int8_t setBit23(TxnData* data, void* userData) {
     (void)data;
     iso8583()->setStr(ELEMENT_CARD_SEQUENCE_NUMBER, "000");
-    LOG_TRACE("| Bit 23 - Card Sequence NUmber) | -> %s", "000");
+    LOG_ISO("| Bit 23 - Card Sequence NUmber) | -> %s", "000");
     return ERR_OK;
 }
 
@@ -375,7 +374,7 @@ static int8_t setBit24(TxnData* data, void* userData) {
     DEFINE_STRING(nii, 8);
     prependZerosInt(settings()->server.mainServerNii, 4, nii, sizeof(nii));
     iso8583()->setStr(ELEMENT_NETWORK_INTL_ID, (const DL_UINT8*)nii);
-    LOG_TRACE("| Bit 24 - (NII) | -> %s", nii);
+    LOG_ISO("| Bit 24 - (NII) | -> %s", nii);
     return ERR_OK;
 }
 
@@ -388,7 +387,7 @@ static int8_t setBit25(TxnData* data, void* userData) {
         pcc = "14";
     }
     iso8583()->setStr(ELEMENT_POS_CONDITION_CODE, pcc);
-    LOG_TRACE("| Bit 25 - (PCC) | -> %s", pcc);
+    LOG_ISO("| Bit 25 - (PCC) | -> %s", pcc);
     return ERR_OK;
 }
 
@@ -398,13 +397,13 @@ static int8_t setBit32(TxnData* data, void* userData) {
                     ? settings()->terminal.acquirerIIN
                     : "000000000";
     iso8583()->setStr(ELEMENT_ACQUIRING_INSTITUTION_ID, (const DL_UINT8*)IIN);
-    LOG_TRACE("| Bit 32 - (IIN) | -> %s", IIN);
+    LOG_ISO("| Bit 32 - (IIN) | -> %s", IIN);
     return ERR_OK;
 }
 
 static int8_t setBit35(TxnData* data, void* userData) {
     if (!data || !userData) {
-        LOG_TRACE("ISO Bit35: missing transaction/card context");
+        LOG_ISO("ISO Bit35: missing transaction/card context");
         return ERR_NOK;
     }
 
@@ -414,14 +413,14 @@ static int8_t setBit35(TxnData* data, void* userData) {
         const KahrobaTxnSession* session = (const KahrobaTxnSession*)userData;
 
         if (!session || !session->emvReady) {
-            LOG_TRACE("ISO Bit35: EMV context unavailable");
+            LOG_ISO("ISO Bit35: EMV context unavailable");
             return ERR_NOK;
         }
 
         const KahrobaCardData* card = &session->emv.card;
 
         if (card->track2Len == 0u || card->track2Len > sizeof(card->track2)) {
-            LOG_TRACE("ISO Bit35: invalid EMV Track2 length");
+            LOG_ISO("ISO Bit35: invalid EMV Track2 length");
             return ERR_NOK;
         }
 
@@ -431,13 +430,13 @@ static int8_t setBit35(TxnData* data, void* userData) {
                                session->emv.card.track2Len, track2,
                                sizeof(track2))) {
 
-            LOG_TRACE("ISO Bit35: EMV Track2 conversion failed");
+            LOG_ISO("ISO Bit35: EMV Track2 conversion failed");
             return ERR_NOK;
         }
 
         iso8583()->setStr(ELEMENT_TRACK2, (const DL_UINT8*)track2);
 
-        LOG_TRACE("| Bit 35 - (Track2:NFC) | -> %s", track2);
+        LOG_ISO("| Bit 35 - (Track2:NFC) | -> %s", track2);
 
         /* Clear the temporary sensitive string. */
         volatile char* p = (volatile char*)track2;
@@ -454,7 +453,7 @@ static int8_t setBit35(TxnData* data, void* userData) {
     if (!mag->ready || mag->track2Len == 0u ||
         mag->track2Len > LEN_MAX_TRACK2) {
 
-        LOG_TRACE("ISO Bit35: invalid magnetic context");
+        LOG_ISO("ISO Bit35: invalid magnetic context");
         return ERR_NOK;
     }
 
@@ -475,8 +474,8 @@ static int8_t setBit35(TxnData* data, void* userData) {
 
     iso8583()->setStr(ELEMENT_TRACK2, track2);
 
-    LOG_TRACE("ISO Bit35: magnetic Track2 set, source length=%lu",
-              (unsigned long)mag->track2Len);
+    LOG_ISO("ISO Bit35: magnetic Track2 set, source length=%lu",
+            (unsigned long)mag->track2Len);
 
     volatile char* p = (volatile char*)track2;
     for (size_t i = 0u; i < sizeof(track2); ++i)
@@ -491,23 +490,23 @@ static int8_t setBit37(TxnData* data, void* userData) {
     LOG_DEBUG("rrn before converting  = %llu", data->core.rrn);
     U64_TO_STRING(&data->core.rrn, rrn);
     iso8583()->setStr(ELEMENT_RETRIEVAL_REFERENCE_NUMBER, rrn);
-    LOG_TRACE("| Bit 37 - (RRN) | -> %s", rrn);
+    LOG_ISO("| Bit 37 - (RRN) | -> %s", rrn);
     return ERR_OK;
 }
 
 static int8_t setBit41(TxnData* data, void* userData) {
     (void)data;
     iso8583()->setStr(ELEMENT_TERMINAL_ID, settings()->terminal.terminalId);
-    LOG_TRACE("| Bit 41 - (Terminal ID) | -> %s",
-              settings()->terminal.terminalId);
+    LOG_ISO("| Bit 41 - (Terminal ID) | -> %s",
+            settings()->terminal.terminalId);
     return ERR_OK;
 }
 static int8_t setBit42(TxnData* data, void* userData) {
     (void)data;
     iso8583()->setStr(ELEMENT_CARD_ACCEPTOR_ID,
                       settings()->terminal.merchantId);
-    LOG_TRACE("| Bit 42 - (Merchant ID) | -> %s",
-              settings()->terminal.merchantId);
+    LOG_ISO("| Bit 42 - (Merchant ID) | -> %s",
+            settings()->terminal.merchantId);
     return ERR_OK;
 }
 
@@ -531,7 +530,7 @@ static int8_t buildChargeF48(TxnData* data, const char* sn, char* privateData) {
         setVoucherLtv(sn, PNA_APP_VERSION, 0 /*language*/, code, privateData);
     } else if (data->core.processCode == PRC_TOPUP) {
         sprintf(code, "%s0", opCode);
-        LOG_TRACE("Phone number = %s", data->extention.charge.phoneNumber);
+        LOG_ISO("Phone number = %s", data->extention.charge.phoneNumber);
         setTopupLtv(sn, PNA_APP_VERSION, 0 /*language*/, code,
                     data->extention.charge.phoneNumber, privateData);
     }
@@ -557,7 +556,7 @@ static int8_t setBit48(TxnData* data, void* userData) {
     }
     iso8583()->setStr(ELEMENT_ADDITIONAL_DATA_PRIVATE,
                       (const DL_UINT8*)privateData);
-    LOG_TRACE("Bit 48 | (Private Data): %s", privateData);
+    LOG_ISO("Bit 48 | (Private Data): %s", privateData);
     return ERR_OK;
 }
 
@@ -566,7 +565,7 @@ static int8_t setBit49(TxnData* data, void* userData) {
     char* currency = "364";
     iso8583()->setStr(ELEMENT_CURRENCY_CODE_TRANSACTION,
                       (const DL_UINT8*)currency);
-    LOG_TRACE("Bit 49 | (Currency Code): %s", currency);
+    LOG_ISO("Bit 49 | (Currency Code): %s", currency);
     return ERR_OK;
 }
 
@@ -577,7 +576,7 @@ static int8_t setBit52(TxnData* data, void* userData) {
         const KahrobaTxnSession* session = (const KahrobaTxnSession*)userData;
 
         if (!session || !session->emvReady) {
-            LOG_TRACE("ISO Bit52: EMV context unavailable");
+            LOG_ISO("ISO Bit52: EMV context unavailable");
             return ERR_NOK;
         }
 
@@ -587,14 +586,14 @@ static int8_t setBit52(TxnData* data, void* userData) {
     }
 
     DEFINE_STRING(pinblock, 24);
-    LOG_TRACE("ISO Bit52: get pinblock for pan = %s", data->core.pan);
+    LOG_ISO("ISO Bit52: get pinblock for pan = %s", data->core.pan);
     PedErr_t pederr = OOP_CALL(ped(), getPinBlock, data->core.pan, pinblock,
                                sizeof(pinblock));
     RETURN_VALUE_IF_NOT(pederr, PED_ERR_OK, ;, ERR_NOK);
     iso8583()->setBin(ELEMENT_PIN_DATA, pinblock, LEN_MAX_PIN_BLOCK);
     DEFINE_STRING(pbh, 24);
     bytesToHex(pinblock, 8, pbh, sizeof(pbh));
-    LOG_TRACE("Bit 52 | (Pin Block): %s", pbh);
+    LOG_ISO("Bit 52 | (Pin Block): %s", pbh);
     return ERR_OK;
 }
 
@@ -608,7 +607,7 @@ static int8_t setBit53(TxnData* data, void* userData) {
         sci = SecRelControlInfo;
     }
     iso8583()->setStr(ELEMENT_SECURITY_CONTROL_INFO, (const DL_UINT8*)sci);
-    LOG_TRACE("Bit 53 | (Security Control Info): %s", sci);
+    LOG_ISO("Bit 53 | (Security Control Info): %s", sci);
     return ERR_OK;
 }
 
@@ -625,14 +624,14 @@ static int8_t setBit53(TxnData* data, void* userData) {
  */
 static int8_t setBit55(TxnData* data, void* userData) {
     if (!data || !userData) {
-        LOG_TRACE("ISO Bit55: invalid arguments");
+        LOG_ISO("ISO Bit55: invalid arguments");
         return ERR_NOK;
     }
 
     if (data->core.txnType != TXN_KAHROBA_PURCHASE &&
         data->core.txnType != TXN_KAHROBA_BALANCE) {
-        LOG_TRACE("ISO Bit55: unsupported transaction type=%d",
-                  (int)data->core.txnType);
+        LOG_ISO("ISO Bit55: unsupported transaction type=%d",
+                (int)data->core.txnType);
         return ERR_NOK;
     }
 
@@ -642,20 +641,20 @@ static int8_t setBit55(TxnData* data, void* userData) {
         session->field55Len > sizeof(session->field55) ||
         session->field55Len > UINT16_MAX) {
 
-        LOG_TRACE("ISO Bit55: invalid EMV data");
+        LOG_ISO("ISO Bit55: invalid EMV data");
         return ERR_NOK;
     }
 
     /* Amount must match the amount used to generate ARQC. */
     if (data->core.amount != session->emv.authorizedAmount) {
-        LOG_TRACE("ISO Bit55: transaction amount mismatch");
+        LOG_ISO("ISO Bit55: transaction amount mismatch");
         return ERR_NOK;
     }
 
     /* An online authorization request requires ARQC. */
     if ((session->emv.acResult.cid & 0xC0u) != 0x80u) {
-        LOG_TRACE("ISO Bit55: expected ARQC, CID=%02X",
-                  (unsigned)session->emv.acResult.cid);
+        LOG_ISO("ISO Bit55: expected ARQC, CID=%02X",
+                (unsigned)session->emv.acResult.cid);
         return ERR_NOK;
     }
 
@@ -668,8 +667,8 @@ static int8_t setBit55(TxnData* data, void* userData) {
     iso8583()->setBin(ELEMENT_ICC_DATA, (const DL_UINT8*)session->field55,
                       (uint16_t)session->field55Len);
 
-    LOG_TRACE("ISO Bit55: set successfully, length=%lu",
-              (unsigned long)session->field55Len);
+    LOG_ISO("ISO Bit55: set successfully, length=%lu",
+            (unsigned long)session->field55Len);
 
     return ERR_OK;
 }
@@ -691,12 +690,12 @@ static int8_t setMac(TxnData* data, uint8_t feild) {
     RETURN_VALUE_IF_NOT(iso8583()->pack(tmpBuf, &packedLen), ISO_OK, ;
                         , ERR_NOK);
     RETURN_VALUE_IF_NOT((packedLen < LEN_MAX_ISO_MAC), false, ;, ERR_NOK);
-    LOG_TRACE("ISO Build mac: packed len = %u", packedLen);
+    LOG_ISO("ISO Build mac: packed len = %u", packedLen);
     PedErr_t pedErr =
         ped()->getMac(16, tmpBuf, packedLen - LEN_MAX_ISO_MAC, mac);
     RETURN_VALUE_IF_NOT(pedErr, PED_ERR_OK, ;, ERR_NOK);
     bytesToHex(mac, 4, macHex, sizeof(macHex));
-    LOG_TRACE("ISO Build mac: mac hex = %s", macHex);
+    LOG_ISO("ISO Build mac: mac hex = %s", macHex);
     iso8583()->setBin(feild, (const DL_UINT8*)macHex, LEN_MAX_ISO_MAC);
     return ERR_OK;
 }
@@ -746,7 +745,7 @@ static int8_t setBit64(TxnData* data, void* userData) {
 //     memcpy(feild + idx, forwardingId, 11);
 
 //     iso8583()->setStr(ELEMENT_ORIGINAL_DATA_ELEMENTS, (const
-//     DL_UINT8*)feild); LOG_TRACE("Bit 90 | (Original Data Elements): %s",
+//     DL_UINT8*)feild); LOG_ISO("Bit 90 | (Original Data Elements): %s",
 //     feild); return ERR_OK;
 // }
 
@@ -795,13 +794,13 @@ static bool formatBit90Id(const char* source, char out[12]) {
  */
 static int8_t setBit90(TxnData* data, void* userData) {
     if (!data) {
-        LOG_TRACE("Bit90: original transaction is NULL");
+        LOG_ISO("Bit90: original transaction is NULL");
         return ERR_NOK;
     }
 
     /* Validate before formatting; never truncate original identifiers. */
     if ((uint64_t)data->core.stan > 999999ULL) {
-        LOG_TRACE("Bit90: original MTI or STAN exceeds field width");
+        LOG_ISO("Bit90: original MTI or STAN exceeds field width");
         return ERR_NOK;
     }
 
@@ -811,7 +810,7 @@ static int8_t setBit90(TxnData* data, void* userData) {
     if (snprintf(mti, sizeof(mti), "%04lu", (unsigned long)200) != 4 ||
         snprintf(stan, sizeof(stan), "%06lu", (unsigned long)data->core.stan) !=
             6) {
-        LOG_TRACE("Bit90: MTI or STAN formatting failed");
+        LOG_ISO("Bit90: MTI or STAN formatting failed");
         return ERR_NOK;
     }
 
@@ -827,13 +826,13 @@ static int8_t setBit90(TxnData* data, void* userData) {
     /* Require exactly YYYYMMDDhhmmss before removing the year. */
     for (size_t i = 0; i < 14; ++i) {
         if (dateTimeText[i] < '0' || dateTimeText[i] > '9') {
-            LOG_TRACE("Bit90: invalid original date/time format");
+            LOG_ISO("Bit90: invalid original date/time format");
             return ERR_NOK;
         }
     }
 
     if (dateTimeText[14] != '\0') {
-        LOG_TRACE("Bit90: original date/time must contain fourteen digits");
+        LOG_ISO("Bit90: original date/time must contain fourteen digits");
         return ERR_NOK;
     }
 
@@ -848,12 +847,12 @@ static int8_t setBit90(TxnData* data, void* userData) {
     memcpy(forwardingId, data->core.pan, 6);
 
     if (!formatBit90Id(acquirerIin, acquiring)) {
-        LOG_TRACE("Bit90: invalid original field 32");
+        LOG_ISO("Bit90: invalid original field 32");
         return ERR_NOK;
     }
 
     if (!formatBit90Id(forwardingId, forwarding)) {
-        LOG_TRACE("Bit90: invalid original field 33");
+        LOG_ISO("Bit90: invalid original field 33");
         return ERR_NOK;
     }
 
@@ -873,7 +872,7 @@ static int8_t setBit90(TxnData* data, void* userData) {
      */
     iso8583()->setStr(ELEMENT_ORIGINAL_DATA_ELEMENTS, (const DL_UINT8*)field);
 
-    LOG_TRACE("Bit 90 | (Original Data Elements): %s", field);
+    LOG_ISO("Bit 90 | (Original Data Elements): %s", field);
 
     return ERR_OK;
 }
@@ -882,7 +881,7 @@ static int8_t setBit116(TxnData* data, void* userData) {
     (void)data;
     char* rn = "73000d02116";
     iso8583()->setStr(ELEMENT_RESERVED_NATIONAL_116, (const DL_UINT8*)rn);
-    LOG_TRACE("Bit 116 | (Reserved National): %s", rn);
+    LOG_ISO("Bit 116 | (Reserved National): %s", rn);
     return ERR_OK;
 }
 

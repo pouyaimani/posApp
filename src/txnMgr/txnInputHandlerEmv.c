@@ -167,7 +167,7 @@ void nfcInfoDone(InfoResult res, void* arg) {
 // );
 
 // if (amountResult != KAHROBA_AMOUNT_OK) {
-//     LOG_TRACE(
+//     LOG_TXN(
 //         "Kahroba: amount validation rejected reason=%d",
 //         (int)amountResult
 //     );
@@ -181,7 +181,7 @@ void nfcInfoDone(InfoResult res, void* arg) {
 //     return; /* For a void handler; adapt to its actual return type. */
 // }
 
-// LOG_TRACE(
+// LOG_TXN(
 //     "Kahroba: amount validated successfully"
 // );
 
@@ -189,7 +189,7 @@ void nfcInfoDone(InfoResult res, void* arg) {
 // /* nfcMgr()->run(...); */
 
 static void emvErrMessage(EmvMgrError err) {
-    LOG_TRACE("Kahroba: EMV processing failed error=%d", (int)err);
+    LOG_TXN("Kahroba: EMV processing failed error=%d", (int)err);
     Phrases_t phrase = PHRASE_NFC_CARD_ERROR;
 
     switch (err) {
@@ -245,7 +245,7 @@ static void handleABcardType(const NfcStatus* status, void* userData) {
             &txnMgr->data, &kahrobaSession.emv, kahrobaSession.field55,
             sizeof(kahrobaSession.field55), &kahrobaSession.field55Len)) {
 
-        LOG_TRACE("Kahroba: Field55 build failed");
+        LOG_TXN("Kahroba: Field55 build failed");
 
         /* Use the existing failure path and reader cleanup. */
         return;
@@ -257,9 +257,9 @@ static void handleABcardType(const NfcStatus* status, void* userData) {
     txnMgr->userData               = &kahrobaSession;
     kahrobaSession.hostPinRequired = &txnMgr->hostPinRequired;
 
-    LOG_TRACE("Kahroba: authorization data ready "
-              "Field55 length=%lu",
-              (unsigned long)kahrobaSession.field55Len);
+    LOG_TXN("Kahroba: authorization data ready "
+            "Field55 length=%lu",
+            (unsigned long)kahrobaSession.field55Len);
 
     txnMgr->next();
 }
@@ -270,7 +270,7 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
     if (status->result != NFC_RES_DETECTED) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
                        phraseGetDef(PHRASE_NFC_DETECT_ERROR), "");
-        LOG_TRACE("NFC detection error. result = %d", status->result);
+        LOG_TXN("NFC detection error. result = %d", status->result);
         OOP_CALL(picc(), close);
         return;
     }
@@ -278,7 +278,7 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
     if (!status->readerRetained) {
         infoMgr()->run(INFO_ERROR, &(InfoFinishCtx){.done = nfcInfoDone},
                        phraseGetDef(PHRASE_NFC_CARD_ERROR), "");
-        LOG_TRACE("Kahroba: NFC reader was not retained");
+        LOG_TXN("Kahroba: NFC reader was not retained");
         OOP_CALL(picc(), close);
         return;
     }
@@ -286,13 +286,13 @@ static void onNfcComplete(const NfcStatus* status, void* userData) {
     switch (status->card.cardType) {
     case PICC_CARD_A:
     case PICC_CARD_B:
-        LOG_TRACE("Kahroba: compatible card candidate detected");
+        LOG_TXN("Kahroba: compatible card candidate detected");
         handleABcardType(status, userData);
         break;
 
     default:
-        LOG_TRACE("Kahroba: unsupported card type=%d",
-                  (int)status->card.cardType);
+        LOG_TXN("Kahroba: unsupported card type=%d",
+                (int)status->card.cardType);
 
         /* Caller owns the reader and must release it. */
         (void)OOP_CALL(picc(), close);

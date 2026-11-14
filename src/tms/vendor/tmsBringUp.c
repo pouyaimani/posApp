@@ -32,7 +32,7 @@ static void fullCanceled(void) {
     fullUpgrade.lastStatus.error           = TMS_ERR_NONE;
     fullUpgrade.lastStatus.backendCode     = 0;
     fullUpgrade.lastStatus.cancelRequested = false;
-    LOG_TRACE("TMS FULL: canceled");
+    LOG_TMS("TMS FULL: canceled");
 }
 
 static void fullFail(TmsError error, int32_t backendCode) {
@@ -40,8 +40,8 @@ static void fullFail(TmsError error, int32_t backendCode) {
     fullUpgrade.lastStatus.result      = TMS_RESULT_FAILURE;
     fullUpgrade.lastStatus.error       = error;
     fullUpgrade.lastStatus.backendCode = backendCode;
-    LOG_TRACE("TMS FULL: failed error=%d code=%ld", (int)error,
-              (long)backendCode);
+    LOG_TMS("TMS FULL: failed error=%d code=%ld", (int)error,
+            (long)backendCode);
 }
 
 #if TMS_ENABLE_APUPDATE_WRITER
@@ -55,27 +55,29 @@ static bool fullActivationUiAcknowledged;
 /* A destination-preparation success is distinct from READY staging (8),
  * preflight (9), scratch-copy (10) and audit (11) successes. */
 #if TMS_DEV_POS_BUILD && TMS_DEBUG_SKIP_SIGNATURE_FOR_PREPARE
-#define TMS_PREPARED_CODE_FOR_BUILD 13 /* Unsigned DEV POS: NEVER production   \
-                                        */
+#define TMS_PREPARED_CODE_FOR_BUILD                                            \
+    13 /* Unsigned DEV POS: NEVER production                                   \
+        */
 #else
-#define TMS_PREPARED_CODE_FOR_BUILD 12 /* SDK-signed destination preparation   \
-                                        */
+#define TMS_PREPARED_CODE_FOR_BUILD                                            \
+    12 /* SDK-signed destination preparation                                   \
+        */
 #endif
 #endif
 
 static void onDone(const TmsStatus* status, void* context) {
     (void)context;
     if (!status) {
-        LOG_TRACE("TMS: null completion status");
+        LOG_TMS("TMS: null completion status");
         if (fullUpgrade.stage == TMS_FULL_CHECKING ||
             fullUpgrade.stage == TMS_FULL_PREPARING)
             fullFail(TMS_ERR_INVALID_EVENT, 0);
         return;
     }
 
-    LOG_TRACE("TMS: done op=%llu result=%d err=%d code=%ld",
-              (unsigned long long)status->operationId, (int)status->result,
-              (int)status->error, (long)status->backendCode);
+    LOG_TMS("TMS: done op=%llu result=%d err=%d code=%ld",
+            (unsigned long long)status->operationId, (int)status->result,
+            (int)status->error, (long)status->backendCode);
 
     if (fullUpgrade.stage == TMS_FULL_CHECKING ||
         fullUpgrade.stage == TMS_FULL_PREPARING) {
@@ -88,13 +90,13 @@ static void onDone(const TmsStatus* status, void* context) {
             if (status->result == TMS_RESULT_NO_UPDATE &&
                 status->error == TMS_ERR_NONE) {
                 fullUpgrade.stage = TMS_FULL_NO_UPDATE;
-                LOG_TRACE("TMS FULL: server reported NO_UPDATE");
+                LOG_TMS("TMS FULL: server reported NO_UPDATE");
                 return;
             }
             if (status->result == TMS_RESULT_SUCCESS &&
                 status->error == TMS_ERR_NONE && status->backendCode == 8) {
                 fullUpgrade.stage = TMS_FULL_PREPARE_QUEUED;
-                LOG_TRACE("TMS FULL: READY staging; preparation queued");
+                LOG_TMS("TMS FULL: READY staging; preparation queued");
                 return;
             }
             fullFail(status->result == TMS_RESULT_FAILURE
@@ -129,8 +131,8 @@ static void onDone(const TmsStatus* status, void* context) {
     if (status->result == TMS_RESULT_SUCCESS && status->error == TMS_ERR_NONE &&
         status->backendCode == TMS_PREPARED_CODE_FOR_BUILD) {
         updateActivationPending = true;
-        LOG_TRACE("TMS: APUPDATE prepared; activation queued op=%llu",
-                  (unsigned long long)status->operationId);
+        LOG_TMS("TMS: APUPDATE prepared; activation queued op=%llu",
+                (unsigned long long)status->operationId);
     }
 #endif
 }
@@ -145,7 +147,7 @@ static void freeIdleBackend(void) {
 static bool startBackend(const PnaTmsConfig* cfg) {
 #if TMS_ENABLE_APUPDATE_WRITER
     if (updateActivationPending) {
-        LOG_TRACE("TMS: cannot start another operation before activation");
+        LOG_TMS("TMS: cannot start another operation before activation");
         return false;
     }
 #endif
@@ -283,7 +285,7 @@ bool tmsBringupStage8Discard(const char* prefix) {
 bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
 #if !TMS_ENABLE_APUPDATE_WRITER
     (void)config;
-    LOG_TRACE("TMS FULL: APUPDATE writer is disabled");
+    LOG_TMS("TMS FULL: APUPDATE writer is disabled");
     return false;
 #else
     if (!config || !config->host || !config->identity ||
@@ -294,29 +296,29 @@ bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
         fullUpgrade.stage == TMS_FULL_PREPARING ||
         fullUpgrade.stage == TMS_FULL_ACTIVATION_QUEUED ||
         fullUpgrade.stage == TMS_FULL_REBOOT_REQUESTED) {
-        LOG_TRACE("TMS FULL: start rejected (arguments or operation busy)");
+        LOG_TMS("TMS FULL: start rejected (arguments or operation busy)");
         return false;
     }
 
     const size_t length = strlen(config->stagingPrefix);
     if (length == 0u || length >= sizeof(fullUpgrade.stagingPrefix)) {
-        LOG_TRACE("TMS FULL: invalid staging prefix");
+        LOG_TMS("TMS FULL: invalid staging prefix");
         return false;
     }
     PnaTmsStageStatus staged = pnaTmsStageInspect(config->stagingPrefix, NULL);
     if (staged == PNA_TMS_STAGE_READY_UNTRUSTED &&
         config->discardExistingReady) {
-        LOG_TRACE("TMS FULL DEV: explicit discard of existing READY staging");
+        LOG_TMS("TMS FULL DEV: explicit discard of existing READY staging");
         if (!pnaTmsStageDiscard(config->stagingPrefix, true)) {
-            LOG_TRACE("TMS FULL: failed to discard old staging");
+            LOG_TMS("TMS FULL: failed to discard old staging");
             return false;
         }
         staged = pnaTmsStageInspect(config->stagingPrefix, NULL);
     }
     /* New online check/download must not silently replace a READY package. */
     if (staged != PNA_TMS_STAGE_EMPTY && staged != PNA_TMS_STAGE_INCOMPLETE) {
-        LOG_TRACE("TMS FULL: staging blocked status=%d (inspect/discard)",
-                  (int)staged);
+        LOG_TMS("TMS FULL: staging blocked status=%d (inspect/discard)",
+                (int)staged);
         return false;
     }
 
@@ -327,7 +329,7 @@ bool tmsBringupStartFullUpgrade(const TmsFullConfig* config) {
     fullUpgrade.authorizationContext = config->authorizationContext;
     fullUpgrade.stage                = TMS_FULL_CHECKING;
 
-    LOG_TRACE(
+    LOG_TMS(
         "TMS FULL: checking server -> download -> prepare -> flag -> reboot");
     if (!tmsBringupStartManagedReadyChecked(
             config->host, config->port, config->useTls, config->identity,
@@ -347,15 +349,15 @@ bool tmsBringupCancelFullUpgrade(void) {
         /* PNA's cancel guard rejects an in-flight protected-slot write.
          * No state change is made unless the backend accepts cancellation. */
         if (!tmsMgr()->isBusy()) {
-            LOG_TRACE("TMS FULL: cancel rejected; no active backend");
+            LOG_TMS("TMS FULL: cancel rejected; no active backend");
             return false;
         }
         if (!tmsMgr()->cancel()) {
-            LOG_TRACE("TMS FULL: cancel rejected by backend stage=%d",
-                      (int)fullUpgrade.stage);
+            LOG_TMS("TMS FULL: cancel rejected by backend stage=%d",
+                    (int)fullUpgrade.stage);
             return false;
         }
-        LOG_TRACE("TMS FULL: cancel request accepted");
+        LOG_TMS("TMS FULL: cancel request accepted");
         return true;
 
     case TMS_FULL_PREPARE_QUEUED:
@@ -372,7 +374,7 @@ bool tmsBringupCancelFullUpgrade(void) {
 
     case TMS_FULL_ACTIVATION_QUEUED:
     case TMS_FULL_REBOOT_REQUESTED:
-        LOG_TRACE("TMS FULL: cancel blocked after destination preparation");
+        LOG_TMS("TMS FULL: cancel blocked after destination preparation");
         return false;
 
     default:
@@ -395,12 +397,12 @@ bool tmsBringupAllowFullActivation(void) {
 #if TMS_ENABLE_APUPDATE_WRITER
     if (fullUpgrade.stage != TMS_FULL_ACTIVATION_QUEUED ||
         !updateActivationPending) {
-        LOG_TRACE("TMS FULL: activation acknowledgement rejected stage=%d",
-                  (int)fullUpgrade.stage);
+        LOG_TMS("TMS FULL: activation acknowledgement rejected stage=%d",
+                (int)fullUpgrade.stage);
         return false;
     }
     fullActivationUiAcknowledged = true;
-    LOG_TRACE("TMS FULL: reboot UI acknowledged; activation permitted");
+    LOG_TMS("TMS FULL: reboot UI acknowledged; activation permitted");
     return true;
 #else
     return false;
@@ -417,7 +419,7 @@ void tmsBringupProcess(void) {
         if (tmsMgr()->isBusy() || backend)
             return;
         fullUpgrade.stage = TMS_FULL_PREPARING;
-        LOG_TRACE("TMS FULL: beginning verified APUPDATE preparation");
+        LOG_TMS("TMS FULL: beginning verified APUPDATE preparation");
         if (!tmsBringupStartApupdatePrepare(fullUpgrade.stagingPrefix,
                                             fullUpgrade.authorizeReplace,
                                             fullUpgrade.authorizationContext)) {
@@ -442,7 +444,7 @@ void tmsBringupProcess(void) {
     /* No activation while an operation is active or its backend is allocated.
      * This is deliberately outside onDone(), after file/NTH cleanup. */
     if (tmsMgr()->isBusy() || backend) {
-        LOG_TRACE("TMS: activation deferred; backend still busy");
+        LOG_TMS("TMS: activation deferred; backend still busy");
         return;
     }
 
@@ -450,7 +452,7 @@ void tmsBringupProcess(void) {
     fullActivationUiAcknowledged = false;
     System* system               = sys();
     if (!system || !system->vtable.setUpdateFlag || !system->vtable.reboot) {
-        LOG_TRACE("TMS: activation failed; System HAL methods unavailable");
+        LOG_TMS("TMS: activation failed; System HAL methods unavailable");
         if (fullUpgrade.stage == TMS_FULL_ACTIVATION_QUEUED)
             fullFail(TMS_ERR_INSTALLATION, 0);
         return;
@@ -458,15 +460,15 @@ void tmsBringupProcess(void) {
 
     /* DEV integration: the tested HAL calls are currently assumed to take
      * no arguments. Confirm setUpdateFlag's return-value contract later. */
-    LOG_TRACE("TMS: APUPDATE ready; requesting update flag");
+    LOG_TMS("TMS: APUPDATE ready; requesting update flag");
     OOP_CALL(system, setUpdateFlag);
     if (fullUpgrade.stage == TMS_FULL_ACTIVATION_QUEUED)
         fullUpgrade.stage = TMS_FULL_REBOOT_REQUESTED;
-    LOG_TRACE("TMS: update flag requested; rebooting");
+    LOG_TMS("TMS: update flag requested; rebooting");
     OOP_CALL(system, reboot);
 
     /* The HAL may schedule the reboot and return. Do not attempt it twice. */
-    LOG_TRACE("TMS: reboot method returned (reboot may be pending)");
+    LOG_TMS("TMS: reboot method returned (reboot may be pending)");
 #endif
 }
 
@@ -491,11 +493,11 @@ bool tmsBringupProbeHeaderFirst(void) {
     /* Refuse collisions. T3Rtos open("wb+") does not truncate an existing file.
      */
     if (tmsMgr()->isBusy() || OOP_CALL(file(), exists, path)) {
-        LOG_TRACE("TMS HDR-FIRST: refused busy/file-exists");
+        LOG_TMS("TMS HDR-FIRST: refused busy/file-exists");
         return false;
     }
     phase = 1u;
-    LOG_TRACE("TMS HDR-FIRST: open disposable file");
+    LOG_TMS("TMS HDR-FIRST: open disposable file");
     handle = OOP_CALL(file(), open, path, "wb+");
     if (!handle)
         goto cleanup;
@@ -503,14 +505,14 @@ bool tmsBringupProbeHeaderFirst(void) {
 
     /* overwrite() maps to sdkFileWrite(), which starts at offset zero. */
     phase = 2u;
-    LOG_TRACE("TMS HDR-FIRST: overwrite header");
+    LOG_TMS("TMS HDR-FIRST: overwrite header");
     if (OOP_CALL(file(), overwrite, header, 1u, sizeof(header), handle) !=
         sizeof(header))
         goto cleanup;
 
     /* HAL overwrite() sets handle->pos to the header length. */
     phase = 3u;
-    LOG_TRACE("TMS HDR-FIRST: append payload at offset 16");
+    LOG_TMS("TMS HDR-FIRST: append payload at offset 16");
     if (OOP_CALL(file(), tell, handle) != (long)sizeof(header) ||
         OOP_CALL(file(), write, payload, 1u, sizeof(payload), handle) !=
             sizeof(payload))
@@ -526,7 +528,7 @@ bool tmsBringupProbeHeaderFirst(void) {
     handle = NULL;
 
     phase = 5u;
-    LOG_TRACE("TMS HDR-FIRST: reopen and verify");
+    LOG_TMS("TMS HDR-FIRST: reopen and verify");
     handle = OOP_CALL(file(), open, path, "rb");
     if (!handle)
         goto cleanup;
@@ -552,9 +554,9 @@ cleanup:
             OOP_CALL(file(), exists, path))
             passed = false;
     }
-    LOG_TRACE("TMS HDR-FIRST: pass=%d phase=%u size=%ld removed=%d",
-              (int)passed, phase, actualSize,
-              (int)(created && !OOP_CALL(file(), exists, path)));
+    LOG_TMS("TMS HDR-FIRST: pass=%d phase=%u size=%ld removed=%d", (int)passed,
+            phase, actualSize,
+            (int)(created && !OOP_CALL(file(), exists, path)));
     return passed;
 }
 #endif /* TMS_ENABLE_HEADER_FIRST_PROBE */

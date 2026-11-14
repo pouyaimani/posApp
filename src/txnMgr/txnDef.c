@@ -572,7 +572,7 @@ static const uint8_t isoFeildsKahrobaPurchase[] = {
  */
 static int composeKahroba(TxnFlow* flow) {
     if (!flow || !flow->data || !flow->userData) {
-        LOG_TRACE("Kahroba: compose invalid flow or session");
+        LOG_TXN("Kahroba: compose invalid flow or session");
         return ERR_NOK;
     }
 
@@ -582,34 +582,34 @@ static int composeKahroba(TxnFlow* flow) {
 
     if (txn->core.txnType != TXN_KAHROBA_PURCHASE &&
         txn->core.txnType != TXN_KAHROBA_BALANCE) {
-        LOG_TRACE("Kahroba: compose invalid transaction type");
+        LOG_TXN("Kahroba: compose invalid transaction type");
         return ERR_NOK;
     }
 
     /* PAN was populated by EMV, not the magnetic reader. */
     if (!memchr(txn->core.pan, '\0', sizeof(txn->core.pan)) ||
         txn->core.pan[0] == '\0') {
-        LOG_TRACE("Kahroba: compose PAN unavailable or unterminated");
+        LOG_TXN("Kahroba: compose PAN unavailable or unterminated");
         return ERR_NOK;
     }
 
     if (txn->core.amount != session->emv.authorizedAmount) {
-        LOG_TRACE("Kahroba: compose invalid authorization amount");
+        LOG_TXN("Kahroba: compose invalid authorization amount");
         return ERR_NOK;
     }
 
     if (!session->emvReady || session->field55Len == 0u ||
         session->field55Len > sizeof(session->field55)) {
 
-        LOG_TRACE("Kahroba: compose invalid Field55");
+        LOG_TXN("Kahroba: compose invalid Field55");
         return ERR_NOK;
     }
 
     /* Prepare transaction metadata without changing EMV values. */
     txn->dateTime = OOP_CALL(sys(), getPackedDateTime);
 
-    LOG_TRACE("Kahroba: compose successful, Field55 length=%lu",
-              (unsigned long)session->field55Len);
+    LOG_TXN("Kahroba: compose successful, Field55 length=%lu",
+            (unsigned long)session->field55Len);
 
     return ERR_OK;
 }
