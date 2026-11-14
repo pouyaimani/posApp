@@ -2,7 +2,7 @@
 #include "eventFactory.h"
 #include "eventIds.h"
 #include "state.h"
-#include "wifiPwdMgr/wifiAutoPort.h"
+#include "wifiMgr/wifiAutoPort.h"
 
 /* Generate the Wifi factory. */
 EVENT_DEFINE_FACTORY(WifiEvent);

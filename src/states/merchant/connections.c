@@ -15,8 +15,8 @@
 #include "inputMgr/inputMgr.h"
 #include "menuMgr/menuMgr.h"
 #include "infoMgr/infoMgr.h"
-#include "wifiPwdMgr/wifiPwdMgr.h"
-#include "wifiPwdMgr/wifiAutoConnector.h"
+#include "wifiMgr/wifiPwdMgr.h"
+#include "wifiMgr/wifiAutoConnector.h"
 
 static Cellular* cel;
 static Network*  net;

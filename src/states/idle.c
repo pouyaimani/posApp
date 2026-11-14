@@ -28,7 +28,7 @@
 #include "assets.h"
 #include "txnMgr.h"
 #include "infoMgr/infoMgr.h"
-#include "wifiPwdMgr/wifiAutoConnector.h"
+#include "wifiMgr/wifiAutoConnector.h"
 
 #define MENU_BAR_HEIGHT 46
 

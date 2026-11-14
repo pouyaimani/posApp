@@ -17,8 +17,8 @@
 #include "error.h"
 #include "record/txnRecs.h"
 #include "file/file.h"
-#include "wifiPwdMgr/wifiPwdMgr.h"
-#include "wifiPwdMgr/wifiAutoConnector.h"
+#include "wifiMgr/wifiPwdMgr.h"
+#include "wifiMgr/wifiAutoConnector.h"
 
 static lv_obj_t* startUpPage;
 static lv_obj_t* label;

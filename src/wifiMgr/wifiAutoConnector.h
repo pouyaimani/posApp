@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "oop.h"
-#include "wifiPwdMgr/wifiPwdMgr.h"
+#include "wifiMgr/wifiPwdMgr.h"
 
 /**
  * Automatic connection state.
