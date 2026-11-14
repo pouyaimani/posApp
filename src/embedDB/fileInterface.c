@@ -92,21 +92,48 @@ int8_t FILE_FLUSH(void* finfo) {
 }
 
 int8_t FILE_OPEN(void* finfo, uint8_t mode) {
-    FILE_INFO* fileInfo = (FILE_INFO*)finfo;
-    if (mode == EMBEDDB_FILE_MODE_W_PLUS_B) {
-        fileInfo->file = OOP_CALL(file(), open, fileInfo->filename, "w+b");
-    } else if (mode == EMBEDDB_FILE_MODE_R_PLUS_B) {
-        fileInfo->file = OOP_CALL(file(), open, fileInfo->filename, "r+b");
-    } else {
+    FILE_INFO*  fileInfo = (FILE_INFO*)finfo;
+    const char* openMode;
+
+    if (fileInfo == NULL) {
+        LOG_ERROR("FILE_OPEN: NULL file info");
         return 0;
     }
-    LOG_TRACE("file [%s] is opened", fileInfo->file->path);
+
+    if (fileInfo->filename == NULL || fileInfo->filename[0] == '\0') {
+        LOG_ERROR("FILE_OPEN: Invalid filename");
+        return 0;
+    }
+
+    switch (mode) {
+    case EMBEDDB_FILE_MODE_W_PLUS_B:
+        openMode = "w+b";
+        break;
+
+    case EMBEDDB_FILE_MODE_R_PLUS_B:
+        openMode = "r+b";
+        break;
+
+    default:
+        LOG_ERROR("FILE_OPEN: Unsupported mode=%u", (unsigned)mode);
+        return 0;
+    }
+
+    LOG_TRACE("FILE_OPEN: Opening path=%s mode=%s", fileInfo->filename,
+              openMode);
+
+    fileInfo->file = OOP_CALL(file(), open, fileInfo->filename, openMode);
+
     if (fileInfo->file == NULL) {
-        LOG_ERROR("fileInfo->file is NULL", fileInfo->file->path);
+        LOG_ERROR("FILE_OPEN: Failed path=%s mode=%s", fileInfo->filename,
+                  openMode);
         return 0;
-    } else {
-        return 1;
     }
+
+    LOG_TRACE("FILE_OPEN: Success path=%s mode=%s", fileInfo->file->path,
+              openMode);
+
+    return 1;
 }
 
 int8_t FILE_ERR(void* file) {
