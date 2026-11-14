@@ -68,6 +68,7 @@ static void ShiftMenuAdd(lv_obj_t* menu, const char* description,
     LV_SET_TEXT_FONT(value, FONT_16);
     LV_SET_TEXT_ALIGN(value, txtAlign);
     lv_label_set_long_mode(value, LV_LABEL_LONG_SCROLL);
+    lv_obj_set_style_base_dir(value, LV_BASE_DIR_LTR, 0);
 
     LV_SET_TEXT(value, val);
 }
@@ -223,6 +224,7 @@ STATE_DEF_HANDLE(CreateShift, KeypadEvent) {
         data.startDate = sdate;
         data.startTime = stime;
         shifts()->keep(&data);
+        settings()->save();
     }
 }
 
@@ -312,9 +314,7 @@ STATE_DEF_EXIT(HandleReports) {
 }
 
 STATE_DEF_HANDLE(HandleReports, KeypadEvent) {
-    if (ev->key == KEY_ESC) {
-        SM_GOTO(state->parent);
-    } else {
+    if (ev->key == KEY_ESC || ev->key == KEY_ENTER) {
         SM_GOTO(state->parent);
     }
 }

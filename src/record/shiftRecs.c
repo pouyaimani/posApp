@@ -63,7 +63,6 @@ static void extractLatestIdx() { CALL_ONCE(getLatestFirstTime(&latestIdx);); }
 static int8_t shiftInsert(ShiftData* shift) {
     if (!shift || !state)
         return ERR_NOK;
-    extractLatestIdx();
     if (latestIdx >= MAX_SHIFT_COUNT) {
         return ERR_NOK;
     }
@@ -84,7 +83,6 @@ static int8_t shiftInsert(ShiftData* shift) {
 static int8_t shiftGet(uint32_t index, ShiftData* shift) {
     if (!shift || !state)
         return ERR_NOK;
-    extractLatestIdx();
     if (index < 0 || index > latestIdx)
         return ERR_NOK;
     bool found = false;
@@ -155,6 +153,7 @@ static int8_t init() {
         LOG_ERROR("Error in setuping embedDB.");
         return ERR_NOK;
     }
+    extractLatestIdx();
     return ERR_OK;
 }
 

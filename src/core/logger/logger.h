@@ -157,72 +157,72 @@ Logger* logger();
  *
  *=====================================================*/
 
-#define LOGGER_PED_ENABLE     0
-#define LOGGER_FILE_ENABLE    0
-#define LOGGER_ISO8583_ENABLE 0
-#define LOGGER_NFC_ENABLE     0
-#define LOGGER_TMS_ENABLE     0
-#define LOGGER_TXN_ENABLE     0
-#define LOGGER_EMV_ENABLE     0
-#define LOGGER_EVL_ENABLE     0
-#define LOGGER_WIFI_AC_ENABLE 0
-#define LOGGER_EDB_ENABLE     0
+#define LOGGER_ENABLE_PED     0
+#define LOGGER_ENABLE_FILE    0
+#define LOGGER_ENABLE_ISO8583 0
+#define LOGGER_ENABLE_NFC     0
+#define LOGGER_ENABLE_TMS     0
+#define LOGGER_ENABLE_TXN     0
+#define LOGGER_ENABLE_EMV     0
+#define LOGGER_ENABLE_EVL     0
+#define LOGGER_ENABLE_WAC     0
+#define LOGGER_ENABLE_EDB     1
 
-#if LOGGER_PED_ENABLE
+#if LOGGER_ENABLE_PED
 #define LOG_PED(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_PED(...) ;
 #endif
 
-#if LOGGER_FILE_ENABLE
+#if LOGGER_ENABLE_FILE
 #define LOG_FILE(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_FILE(...) ;
 #endif
 
-#if LOGGER_ISO8583_ENABLE
+#if LOGGER_ENABLE_ISO8583
 #define LOG_ISO(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_ISO(...) ;
 #endif
 
-#if LOGGER_NFC_ENABLE
+#if LOGGER_ENABLE_NFC
 #define LOG_NFC(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_NFC(...) ;
 #endif
 
-#if LOGGER_TMS_ENABLE
+#if LOGGER_ENABLE_TMS
 #define LOG_TMS(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_TMS(...) ;
 #endif
 
-#if LOGGER_TXN_ENABLE
+#if LOGGER_ENABLE_TXN
 #define LOG_TXN(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_TXN(...) ;
 #endif
 
-#if LOGGER_EMV_ENABLE
+#if LOGGER_ENABLE_EMV
 #define LOG_EMV(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_EMV(...) ;
 #endif
 
-#if LOGGER_EVL_ENABLE
+#if LOGGER_ENABLE_EVL
 #define LOG_EVL(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_EVL(...) ;
 #endif
 
-#if LOGGER_WIFI_AC_ENABLE
+#if LOGGER_ENABLE_WAC
 #define LOG_WAC(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_WAC(...) ;
 #endif
 
-#if LOGGER_EDB_ENABLE
+#if LOGGER_ENABLE_EDB
 #define LOG_EDB(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_EDB(...) ;

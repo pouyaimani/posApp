@@ -357,17 +357,18 @@ static size_t write(File* self, const void* buffer, size_t size, size_t count,
      */
     if ((handle->modeFlags & T3_FILE_APPEND) != 0u) {
         handle->pos = fileSize;
-    } else if (handle->pos != fileSize) {
-        /*
-         * sdkFileInsert may shift existing data rather than
-         * overwrite it. Reject this operation until a verified
-         * positional-overwrite implementation is available.
-         */
-        LOG_ERROR("FILE WRITE: Positional overwrite unsupported: "
-                  "path=%s pos=%u fileSize=%u",
-                  handle->path, (unsigned)handle->pos, (unsigned)fileSize);
-        return 0u;
     }
+    // else if (handle->pos != fileSize) {
+    //     /*
+    //      * sdkFileInsert may shift existing data rather than
+    //      * overwrite it. Reject this operation until a verified
+    //      * positional-overwrite implementation is available.
+    //      */
+    //     LOG_ERROR("FILE WRITE: Positional overwrite unsupported: "
+    //               "path=%s pos=%u fileSize=%u",
+    //               handle->path, (unsigned)handle->pos, (unsigned)fileSize);
+    //     return 0u;
+    // }
 
     if (bytesToWrite > UINT32_MAX - handle->pos) {
         LOG_ERROR("FILE WRITE: Position overflow: %s", handle->path);
