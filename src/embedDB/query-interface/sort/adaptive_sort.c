@@ -52,22 +52,6 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "in_memory_sort.h"
 #include "no_output_heap.h"
 
-// #define     DEBUG         1
-// #define     DEBUG_OUTPUT  1
-// #define     DEBUG_READ    1
-// #define     DEBUG_HEAP    0
-// #define ADAPTIVE_SORT_PRINT
-// #define ADAPTIVE_SORT_PRINT_FINISH
-#if defined(DEBUG) || defined(DEBUG_OUTPUT) || defined(DEBUG_READ) ||          \
-    defined(DEBUG_HEAP) || defined(ADAPTIVE_SORT_PRINT) ||                     \
-    defined(ADAPTIVE_SORT_PRINT_FINISH)
-#include "debug_print.h"
-#else
-#ifndef debug_log
-#define debug_log(...) ((void)0)
-#endif
-#endif
-
 /**
  * Prints the contents of the heap. Used for debugging.
  */
@@ -79,24 +63,24 @@ void print_heap(char* buffer, int32_t heap_start_offset, int heap_size,
     int     j;
     for (aa = 0; aa < 1; aa++) {
         addr = buffer + heap_start_offset;
-        debug_log("heap: ");
+        LOG_EDB("heap: ");
         for (j = 0; j < heap_size; j++)
-            debug_log(" %d",
-                      *(int32_t*)(addr - j * es->record_size + es->key_offset));
-        debug_log("| ");
+            LOG_EDB(" %d",
+                    *(int32_t*)(addr - j * es->record_size + es->key_offset));
+        LOG_EDB("| ");
     }
-    debug_log("   ");
+    LOG_EDB("   ");
 
     // Prints the list
     for (aa = 0; aa < 1; aa++) {
         addr = buffer + es->page_size;
-        debug_log("list: ");
+        LOG_EDB("list: ");
         for (j = 0; j < list_size; j++)
-            debug_log(" %d",
-                      *(int32_t*)(addr + j * es->record_size + es->key_offset));
-        debug_log("| ");
+            LOG_EDB(" %d",
+                    *(int32_t*)(addr + j * es->record_size + es->key_offset));
+        LOG_EDB("| ");
     }
-    debug_log("\n");
+    LOG_EDB("\n");
 }
 
 /**
@@ -158,7 +142,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
     if (optimistic) {
         // Do FLASH MinSort init first
 #ifdef DEBUG
-        debug_log("*Optimistic*\n");
+        LOG_EDB("*Optimistic*\n");
 #endif
 
         MinSortState ms;
@@ -175,18 +159,18 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         int32_t nobSortCost = numPasses * (10 + writeToReadRatio) / 10;
 
 #ifdef DEBUG
-        debug_log("Adaptive calculation.\n");
-        debug_log("NOB sort cost. # runs: %d", numSublist);
-        debug_log(" # passes: %d cost: %d\n", numPasses, nobSortCost);
-        debug_log("MinSort cost. Num sublists: %d ", numSublist);
-        debug_log(" Avg. distinct/sublist: %d\n", avgDistinct / 10);
+        LOG_EDB("Adaptive calculation.\n");
+        LOG_EDB("NOB sort cost. # runs: %d", numSublist);
+        LOG_EDB(" # passes: %d cost: %d\n", numPasses, nobSortCost);
+        LOG_EDB("MinSort cost. Num sublists: %d ", numSublist);
+        LOG_EDB(" Avg. distinct/sublist: %d\n", avgDistinct / 10);
 #endif
 
         if (avgDistinct < nobSortCost)
         // if (true)
         {
 #ifdef DEBUG
-            debug_log("Performing MinSort Optimistic\n");
+            LOG_EDB("Performing MinSort Optimistic\n");
 #endif
 
             int16_t count      = 0;
@@ -212,9 +196,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                     *((int16_t*)(outputBuffer + BLOCK_COUNT_OFFSET)) =
                         count; /* Block record count */
 #ifdef DEBUG
-                    debug_log("Writing page adaptive sort: blockIndex=%d, "
-                              "count=%d, filePosition=%ld\n",
-                              blockIndex, count, lastWritePos / PAGE_SIZE);
+                    LOG_EDB("Writing page adaptive sort: blockIndex=%d, "
+                            "count=%d, filePosition=%ld\n",
+                            blockIndex, count, lastWritePos / PAGE_SIZE);
 #endif
                     // Write block to the ouput file
                     if (0 ==
@@ -230,12 +214,12 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                     metric->num_writes++;
 
 #ifdef DEBUG_OUTPUT
-                    debug_log("Wrote output block. Block index: %d\n",
-                              blockIndex);
+                    LOG_EDB("Wrote output block. Block index: %d\n",
+                            blockIndex);
                     for (int k = 0; k < values_per_page; k++) {
-                        debug_log("%3d: 1 Output Record: %d\n", k,
-                                  outputBuffer + es->headerSize +
-                                      k * es->record_size + es->key_offset);
+                        LOG_EDB("%3d: 1 Output Record: %d\n", k,
+                                outputBuffer + es->headerSize +
+                                    k * es->record_size + es->key_offset);
                     }
 
 #endif
@@ -248,9 +232,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                 *((int16_t*)(outputBuffer + BLOCK_COUNT_OFFSET)) =
                     count; /* Block record count */
 #ifdef DEBUG
-                debug_log("Writing last page adaptive: blockIndex=%d, "
-                          "count=%d, filePosition=%ld\n",
-                          blockIndex, count, lastWritePos / PAGE_SIZE);
+                LOG_EDB("Writing last page adaptive: blockIndex=%d, "
+                        "count=%d, filePosition=%ld\n",
+                        blockIndex, count, lastWritePos / PAGE_SIZE);
 #endif
                 if (0 == ((file_iterator_state_t*)iteratorState)
                              ->fileInterface->write(outputBuffer, blockIndex,
@@ -265,12 +249,11 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                 metric->num_writes++;
 
 #ifdef DEBUG_OUTPUT
-                debug_log("Wrote output block. Block index: %d\n", blockIndex);
+                LOG_EDB("Wrote output block. Block index: %d\n", blockIndex);
                 for (int k = 0; k < values_per_page; k++) {
-                    debug_log("%3d: 2 Output Record: %d\n", k,
-                              *(uint32_t*)(outputBuffer + es->headerSize +
-                                           k * es->record_size +
-                                           es->key_offset));
+                    LOG_EDB("%3d: 2 Output Record: %d\n", k,
+                            *(uint32_t*)(outputBuffer + es->headerSize +
+                                         k * es->record_size + es->key_offset));
                 }
 
 #endif
@@ -311,15 +294,15 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         int32_t maxRecordsInBuffer = (bufferSizeInBlocks - 1) * tuplesPerPage;
 
 #ifdef DEBUG
-        debug_log("DEBUG: Buffer setup:\n");
-        debug_log("  bufferSizeInBlocks=%d, tuplesPerPage=%d\n",
-                  bufferSizeInBlocks, tuplesPerPage);
-        debug_log("  maxRecordsInBuffer=%d", maxRecordsInBuffer);
-        debug_log("  heapStartOffset=%d, page_size=%d, record_size=%d\n",
-                  heapStartOffset, es->page_size, es->record_size);
-        debug_log("  Buffer layout: [I/O Page 0][Data Pages 1-%d][Heap grows "
-                  "down from top]\n",
-                  bufferSizeInBlocks - 1);
+        LOG_EDB("DEBUG: Buffer setup:\n");
+        LOG_EDB("  bufferSizeInBlocks=%d, tuplesPerPage=%d\n",
+                bufferSizeInBlocks, tuplesPerPage);
+        LOG_EDB("  maxRecordsInBuffer=%d", maxRecordsInBuffer);
+        LOG_EDB("  heapStartOffset=%d, page_size=%d, record_size=%d\n",
+                heapStartOffset, es->page_size, es->record_size);
+        LOG_EDB("  Buffer layout: [I/O Page 0][Data Pages 1-%d][Heap grows "
+                "down from top]\n",
+                bufferSizeInBlocks - 1);
 #endif
 
         ((file_iterator_state_t*)iteratorState)
@@ -335,11 +318,11 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         }
 
 #ifdef DEBUG
-        debug_log("DEBUG: Initial load completed:\n");
-        debug_log("  recordsRead=%d (requested %d)\n", recordsRead,
-                  maxRecordsInBuffer);
-        debug_log("  Data spans from offset %d to %d\n", (int)(es->page_size),
-                  (int)(es->page_size + recordsRead * es->record_size));
+        LOG_EDB("DEBUG: Initial load completed:\n");
+        LOG_EDB("  recordsRead=%d (requested %d)\n", recordsRead,
+                maxRecordsInBuffer);
+        LOG_EDB("  Data spans from offset %d to %d\n", (int)(es->page_size),
+                (int)(es->page_size + recordsRead * es->record_size));
 #endif
 
         recordsLeft = recordsRead;
@@ -364,26 +347,26 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         }
 
 #ifdef DEBUG
-        debug_log("DEBUG: Heap construction completed:\n");
-        debug_log("  heapSize=%d, listSize=%d\n", heapSize, listSize);
+        LOG_EDB("DEBUG: Heap construction completed:\n");
+        LOG_EDB("  heapSize=%d, listSize=%d\n", heapSize, listSize);
 
         // Memory layout verification
         int32_t heapBottom = heapStartOffset - (heapSize - 1) * es->record_size;
         int32_t listTop    = es->page_size + listSize * es->record_size;
         int32_t gapSize    = heapBottom - listTop;
 
-        debug_log("DEBUG: Memory layout:\n");
-        debug_log("  I/O block:    offset 0 - %d\n", es->page_size);
-        debug_log("  List top:     offset %d\n", listTop);
-        debug_log("  Gap:          %d bytes (%d records)\n", gapSize,
-                  gapSize / es->record_size);
-        debug_log("  Heap bottom:  offset %d\n", heapBottom);
-        debug_log("  Heap top:     offset %d\n", heapStartOffset);
-        debug_log("  Buffer end:   offset %d\n",
-                  bufferSizeInBlocks * es->page_size);
+        LOG_EDB("DEBUG: Memory layout:\n");
+        LOG_EDB("  I/O block:    offset 0 - %d\n", es->page_size);
+        LOG_EDB("  List top:     offset %d\n", listTop);
+        LOG_EDB("  Gap:          %d bytes (%d records)\n", gapSize,
+                gapSize / es->record_size);
+        LOG_EDB("  Heap bottom:  offset %d\n", heapBottom);
+        LOG_EDB("  Heap top:     offset %d\n", heapStartOffset);
+        LOG_EDB("  Buffer end:   offset %d\n",
+                bufferSizeInBlocks * es->page_size);
 
         if (heapBottom <= listTop) {
-            debug_log(
+            LOG_EDB(
                 "ERROR: Heap and list overlap! This will cause corruption.\n");
             EMDB_MEM_FREE(lastOutputKey);
             return 9;
@@ -395,19 +378,19 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 #endif
 
 #ifdef DEBUG
-        debug_log("DEBUG: About to enter main loop\n");
-        debug_log("  heapSize=%d, listSize=%d, recordsLeft=%d\n", heapSize,
-                  listSize, recordsLeft);
-        debug_log("  Iterator position: recordsRead=%d, totalRecords=%d\n",
-                  ((file_iterator_state_t*)iteratorState)->recordsRead,
-                  ((file_iterator_state_t*)iteratorState)->totalRecords);
+        LOG_EDB("DEBUG: About to enter main loop\n");
+        LOG_EDB("  heapSize=%d, listSize=%d, recordsLeft=%d\n", heapSize,
+                listSize, recordsLeft);
+        LOG_EDB("  Iterator position: recordsRead=%d, totalRecords=%d\n",
+                ((file_iterator_state_t*)iteratorState)->recordsRead,
+                ((file_iterator_state_t*)iteratorState)->totalRecords);
 #endif
 
         // Read each block and sort
         while (recordsLeft != 0) {
             recordsRead = 0;
 #ifdef DEBUG
-            debug_log(
+            LOG_EDB(
                 "\n=== Main loop iteration: sublistSize=%d, outputCount=%d, "
                 "heapSize=%d, listSize=%d, recordsLeft=%d ===\n",
                 sublistSize, outputCount, heapSize, listSize, recordsLeft);
@@ -429,17 +412,17 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 #endif
 
 #ifdef DEBUG
-            debug_log("DEBUG: Main loop iteration - read %d records\n",
-                      recordsRead);
+            LOG_EDB("DEBUG: Main loop iteration - read %d records\n",
+                    recordsRead);
             if (recordsRead > 0) {
-                debug_log("  First record value: %d, Last record value: %d\n",
-                          *(int32_t*)(buffer + es->headerSize + es->key_offset),
-                          *(int32_t*)(buffer + es->headerSize +
-                                      (recordsRead - 1) * es->record_size +
-                                      es->key_offset));
+                LOG_EDB("  First record value: %d, Last record value: %d\n",
+                        *(int32_t*)(buffer + es->headerSize + es->key_offset),
+                        *(int32_t*)(buffer + es->headerSize +
+                                    (recordsRead - 1) * es->record_size +
+                                    es->key_offset));
             }
-            debug_log("  heapSize before processing: %d, listSize: %d\n",
-                      heapSize, listSize);
+            LOG_EDB("  heapSize before processing: %d, listSize: %d\n",
+                    heapSize, listSize);
 #endif
 
             if (recordsRead > 1) {
@@ -476,9 +459,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                         avgDistinct +
                         (numDistinctInRun - avgDistinct / 10) * 10 / numSublist;
 #ifdef DEBUG
-                    debug_log("Number of distinct values in sublist: %d "
-                              "Running average: %d\n",
-                              numDistinctInRun, avgDistinct / 10);
+                    LOG_EDB("Number of distinct values in sublist: %d "
+                            "Running average: %d\n",
+                            numDistinctInRun, avgDistinct / 10);
 
 #endif
                     numDistinctInRun = 1;
@@ -508,9 +491,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                         haveOutputKey = 0;
 
 #ifdef DEBUG
-                        debug_log("DEBUG: Heap empty → starting new run, "
-                                  "promoting list (%d records)\n",
-                                  listSize);
+                        LOG_EDB("DEBUG: Heap empty → starting new run, "
+                                "promoting list (%d records)\n",
+                                listSize);
 #endif
 
                         // Promote frozen list to heap
@@ -535,10 +518,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                 if (i < 3 ||
                     i == tuplesPerPage -
                              1) { // Only log first 3 and last iteration
-                    debug_log("  Inner loop i=%d: recordsRead=%d, "
-                              "outputCount=%d, recordsLeft=%d, heapSize=%d\n",
-                              i, recordsRead, outputCount, recordsLeft,
-                              heapSize);
+                    LOG_EDB("  Inner loop i=%d: recordsRead=%d, "
+                            "outputCount=%d, recordsLeft=%d, heapSize=%d\n",
+                            i, recordsRead, outputCount, recordsLeft, heapSize);
                 }
 #endif
                 // Check if we've read all records from the current page
@@ -587,9 +569,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                         avgDistinct +
                         (numDistinctInRun - avgDistinct / 10) * 10 / numSublist;
 #ifdef DEBUG
-                    debug_log("Number of distinct values in sublist: %d "
-                              "Running average: %d\n",
-                              numDistinctInRun, avgDistinct / 10);
+                    LOG_EDB("Number of distinct values in sublist: %d "
+                            "Running average: %d\n",
+                            numDistinctInRun, avgDistinct / 10);
 
 #endif
                     numDistinctInRun = 1;
@@ -705,16 +687,16 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 
             // Add Page Headers
 #ifdef DEBUG
-            debug_log("About to write block: sublistSize=%d, outputCount=%d, "
-                      "numSublist=%d\n",
-                      sublistSize, outputCount, numSublist);
-            debug_log("  First 3 output values:");
+            LOG_EDB("About to write block: sublistSize=%d, outputCount=%d, "
+                    "numSublist=%d\n",
+                    sublistSize, outputCount, numSublist);
+            LOG_EDB("  First 3 output values:");
             for (int dbg = 0; dbg < 3 && dbg < outputCount; dbg++) {
-                debug_log(" %d",
-                          *(int32_t*)(buffer + es->headerSize +
-                                      dbg * es->record_size + es->key_offset));
+                LOG_EDB(" %d",
+                        *(int32_t*)(buffer + es->headerSize +
+                                    dbg * es->record_size + es->key_offset));
             }
-            debug_log("\n");
+            LOG_EDB("\n");
 #endif
             if (outputCount == 0) {
                 continue; // Skip to next iteration
@@ -732,9 +714,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
             // write out then read new block it would be gone Write the output
             // block
 #ifdef DEBUG
-            debug_log("Writing page adaptive writeRel: blockIndex=%d, "
-                      "count=%d, filePosition=%ld\n",
-                      sublistSize, outputCount, lastWritePos / PAGE_SIZE);
+            LOG_EDB("Writing page adaptive writeRel: blockIndex=%d, "
+                    "count=%d, filePosition=%ld\n",
+                    sublistSize, outputCount, lastWritePos / PAGE_SIZE);
 #endif
             ((file_iterator_state_t*)iteratorState)
                 ->fileInterface->writeRel(buffer, PAGE_SIZE, 1, outputFile);
@@ -747,13 +729,13 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
             }
 
 #ifdef DEBUG_OUTPUT
-            debug_log("Wrote block. Sublist: %d ", numSublist);
-            debug_log(" Idx: %d\n", sublistSize);
-            // debug_log("Offset: %lu\n",  ftell(outputFile) - es->page_size);
+            LOG_EDB("Wrote block. Sublist: %d ", numSublist);
+            LOG_EDB(" Idx: %d\n", sublistSize);
+            // LOG_EDB("Offset: %lu\n",  ftell(outputFile) - es->page_size);
             for (int k = 0; k < tuplesPerPage; k++) {
-                debug_log("%3d: 3 Output Record: %d\n", k,
-                          *(uint32_t*)(buffer + es->headerSize +
-                                       k * es->record_size + es->key_offset));
+                LOG_EDB("%3d: 3 Output Record: %d\n", k,
+                        *(uint32_t*)(buffer + es->headerSize +
+                                     k * es->record_size + es->key_offset));
             }
 
 #endif
@@ -764,16 +746,16 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
             outputCount = 0;
 #ifdef DEBUG
             if (recordsLeft == 0) {
-                debug_log("DEBUG: Exiting main loop - heapSize=%d, "
-                          "listSize=%d, outputCount=%d, sublistSize=%d\n",
-                          heapSize, listSize, outputCount, sublistSize);
+                LOG_EDB("DEBUG: Exiting main loop - heapSize=%d, "
+                        "listSize=%d, outputCount=%d, sublistSize=%d\n",
+                        heapSize, listSize, outputCount, sublistSize);
             }
 #endif
         } /* while records left */
         // EMDB_MEM_FREE(lastOutputKey);
         numSublist = metric->num_runs;
 #ifdef ADAPTIVE_SORT_PRINT
-        debug_log("Gen time: %d\n", metric->genTime);
+        LOG_EDB("Gen time: %d\n", metric->genTime);
 
 #endif
 
@@ -781,20 +763,19 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         avgDistinct = avgDistinct +
                       (numDistinctInRun - avgDistinct / 10) * 10 / numSublist;
 #ifdef ADAPTIVE_SORT_PRINT
-        debug_log(
-            "Final number of distinct values in sublist: %d Average: %d\n",
-            numDistinctInRun, avgDistinct);
+        LOG_EDB("Final number of distinct values in sublist: %d Average: %d\n",
+                numDistinctInRun, avgDistinct);
 
 #endif
         numDistinctInRun = 0;
     } /* end pessmistic */
 
 #ifdef DEBUG
-    debug_log("\n=== REPLACEMENT SELECTION COMPLETE ===\n");
-    debug_log("Number of sublists created: %d\n", numSublist);
-    debug_log("Output file size: %ld bytes (%ld blocks)\n", lastWritePos,
-              lastWritePos / es->page_size);
-    debug_log("About to start merge phase...\n\n");
+    LOG_EDB("\n=== REPLACEMENT SELECTION COMPLETE ===\n");
+    LOG_EDB("Number of sublists created: %d\n", numSublist);
+    LOG_EDB("Output file size: %ld bytes (%ld blocks)\n", lastWritePos,
+            lastWritePos / es->page_size);
+    LOG_EDB("About to start merge phase...\n\n");
 
     // Read and display what's in each block
     for (int debugBlock = 0; debugBlock < lastWritePos / es->page_size;
@@ -807,17 +788,17 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         uint32_t blockIdx = *((uint32_t*)buffer);
         uint16_t count    = *((uint16_t*)(buffer + BLOCK_COUNT_OFFSET));
 
-        debug_log("Block %d: blockIdx=%u, count=%u, first 10 values:",
-                  debugBlock, blockIdx, count);
+        LOG_EDB("Block %d: blockIdx=%u, count=%u, first 10 values:", debugBlock,
+                blockIdx, count);
         for (int v = 0; v < count && v < 10; v++) {
-            debug_log(" %d", *(int32_t*)(buffer + es->headerSize +
-                                         v * es->record_size + es->key_offset));
+            LOG_EDB(" %d", *(int32_t*)(buffer + es->headerSize +
+                                       v * es->record_size + es->key_offset));
         }
         if (count > 10)
-            debug_log(" ...");
-        debug_log("\n");
+            LOG_EDB(" ...");
+        LOG_EDB("\n");
     }
-    debug_log("=================================\n\n");
+    LOG_EDB("=================================\n\n");
 #endif
 
     // No merge phase necessary
@@ -853,11 +834,11 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
     int32_t nobSortCost = numPasses * (10 + writeToReadRatio) / 10;
 
 #ifdef ADAPTIVE_SORT_PRINT
-    debug_log("Adaptive calculation.\n");
-    debug_log("NOB sort cost. # runs: %d", numSublist);
-    debug_log(" # passes: %d cost: %d\n", numPasses, nobSortCost);
-    debug_log("MinSort cost. Num sublists: %d ", numSublist);
-    debug_log(" Avg. distinct/sublist: %d\n", avgDistinct / 10);
+    LOG_EDB("Adaptive calculation.\n");
+    LOG_EDB("NOB sort cost. # runs: %d", numSublist);
+    LOG_EDB(" # passes: %d cost: %d\n", numPasses, nobSortCost);
+    LOG_EDB("MinSort cost. Num sublists: %d ", numSublist);
+    LOG_EDB(" Avg. distinct/sublist: %d\n", avgDistinct / 10);
 
 #endif
 
@@ -872,7 +853,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         if (sublistVersionPossible) {
             // Use better performing version of minsort
 #ifdef ADAPTIVE_SORT_PRINT
-            debug_log("Performing MinSort with sorted sublists\n");
+            LOG_EDB("Performing MinSort with sorted sublists\n");
 #endif
             ((file_iterator_state_t*)iteratorState)->file = outputFile;
             *resultFilePtr                                = lastWritePos;
@@ -884,7 +865,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
             // Use normal version of minsort. Do not have enough space to index
             // a value per sublist. Assumes data is not sorted in each region
 #ifdef ADAPTIVE_SORT_PRINT
-            debug_log("Performing MinSort\n");
+            LOG_EDB("Performing MinSort\n");
 #endif
             ((file_iterator_state_t*)iteratorState)->file = outputFile;
             *resultFilePtr                                = lastWritePos;
@@ -957,7 +938,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
             // 32)
             // {
             //     // Switch to MinSort to finish off
-            //     debug_log("Finishing sort with MinSort with sorted
+            //     LOG_EDB("Finishing sort with MinSort with sorted
             //     sublists\n");
             //     ((file_iterator_state_t*) iteratorState)->file = outputFile;
             //     // *resultFilePtr = lastMergeStart;
@@ -978,11 +959,10 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                 lastWritePos = 0;
             }
 #ifdef ADAPTIVE_SORT_PRINT
-            debug_log("Pass number: %u  Comparisons: %lu  MemCopies: %lu  "
-                      "TransferIn: %lu  TransferOut: %lu TransferOther: %lu\n",
-                      passNumber, metric->num_compar, metric->num_memcpys,
-                      numShiftIntoOutput, numShiftOutOutput,
-                      numShiftOtherBlock);
+            LOG_EDB("Pass number: %u  Comparisons: %lu  MemCopies: %lu  "
+                    "TransferIn: %lu  TransferOut: %lu TransferOther: %lu\n",
+                    passNumber, metric->num_compar, metric->num_memcpys,
+                    numShiftIntoOutput, numShiftOutOutput, numShiftOtherBlock);
 
 #endif
 
@@ -1092,7 +1072,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                                 void* currentRec = (void*)buffer +
                                                    i * es->page_size +
                                                    es->headerSize;
-                                debug_log(
+                                LOG_EDB(
                                     "Swapping in buffer 0. Current key: %d  "
                                     "New key: %d\n",
                                     *(uint32_t*)(buffer0Rec + es->key_offset),
@@ -1151,13 +1131,13 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                                                   BLOCK_COUNT_OFFSET)) -
                                      1) *
                                         es->record_size;
-                    debug_log("Read Sublist: %d Block: %d NumRec: %d First "
-                              "key: %d Last key: %d\n",
-                              i, (int32_t)*(buffer + i * es->page_size),
-                              *((int16_t*)(buffer + i * es->page_size +
-                                           BLOCK_COUNT_OFFSET)),
-                              *(uint32_t*)(firstRec + es->key_offset),
-                              *(uint32_t*)(lastRec + es->key_offset));
+                    LOG_EDB("Read Sublist: %d Block: %d NumRec: %d First "
+                            "key: %d Last key: %d\n",
+                            i, (int32_t)*(buffer + i * es->page_size),
+                            *((int16_t*)(buffer + i * es->page_size +
+                                         BLOCK_COUNT_OFFSET)),
+                            *(uint32_t*)(firstRec + es->key_offset),
+                            *(uint32_t*)(lastRec + es->key_offset));
 
 #endif
                     // Initialize record1 to start of each block and record2 to
@@ -1247,27 +1227,27 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 
 #ifdef DEBUG
                     void* buf = (void*)buffer + resultRecOffset;
-                    debug_log("Smallest Record: %d  From list: %d\n",
-                              *(uint32_t*)(buf + es->key_offset), resultBlock);
-                    debug_log("List status: 0: (%d, %d) 1: (%d, %d) 2: (%d, "
-                              "%d) ResultList: %d\n",
-                              record1[0], record2[0], record1[1], record2[1],
-                              record1[2], record2[2], resultBlock);
+                    LOG_EDB("Smallest Record: %d  From list: %d\n",
+                            *(uint32_t*)(buf + es->key_offset), resultBlock);
+                    LOG_EDB("List status: 0: (%d, %d) 1: (%d, %d) 2: (%d, "
+                            "%d) ResultList: %d\n",
+                            record1[0], record2[0], record1[1], record2[1],
+                            record1[2], record2[2], resultBlock);
 
                     if (*(uint32_t*)(buf + es->key_offset) == 27391) {
                         /* Output all block contents */
                         for (int l = 0; l < 2; l++) {
-                            debug_log("Current  block: %d  # records: %d\n", l,
-                                      tuplesPerPage);
+                            LOG_EDB("Current  block: %d  # records: %d\n", l,
+                                    tuplesPerPage);
                             for (int k = 0; k < tuplesPerPage; k++) {
                                 void* buf = (void*)(buffer + es->headerSize +
                                                     k * es->record_size +
                                                     l * es->page_size);
-                                debug_log("%d: Record: %d  Address: %p\n", k,
-                                          buf + es->key_size, buf);
+                                LOG_EDB("%d: Record: %d  Address: %p\n", k,
+                                        buf + es->key_size, buf);
                             }
                         }
-                        debug_log("HERE\n");
+                        LOG_EDB("HERE\n");
                     }
 
 #endif
@@ -1303,9 +1283,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 #ifdef DEBUG
                             void* buf =
                                 (void*)(buffer + record1[OUTPUT_BLOCK_ID]);
-                            debug_log(
-                                "Output record moved to list %d Key: %d\n",
-                                resultBlock, *(uint32_t*)(buf + es->key_size));
+                            LOG_EDB("Output record moved to list %d Key: %d\n",
+                                    resultBlock,
+                                    *(uint32_t*)(buf + es->key_size));
 
 #endif
                             /* Move result record into output block
@@ -1455,10 +1435,10 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                         ((file_iterator_state_t*)iteratorState)
                             ->fileInterface->seek(lastWritePos, outputFile);
 #ifdef DEBUG
-                        debug_log("Writing page adaptive writeRel 2: "
-                                  "blockIndex=%d, count=%d, filePosition=%ld\n",
-                                  currentBlockId, tuplesPerPage,
-                                  lastWritePos / PAGE_SIZE);
+                        LOG_EDB("Writing page adaptive writeRel 2: "
+                                "blockIndex=%d, count=%d, filePosition=%ld\n",
+                                currentBlockId, tuplesPerPage,
+                                lastWritePos / PAGE_SIZE);
 #endif
                         ((file_iterator_state_t*)iteratorState)
                             ->fileInterface->writeRel(
@@ -1479,14 +1459,13 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                         record2[OUTPUT_BLOCK_ID] = -1;
                         metric->num_writes++;
 #ifdef DEBUG_OUTPUT
-                        debug_log("Wrote output block: %d  # records: %d\n",
-                                  *((int32_t*)buffer), tuplesPerPage);
+                        LOG_EDB("Wrote output block: %d  # records: %d\n",
+                                *((int32_t*)buffer), tuplesPerPage);
                         for (int k = 0; k < tuplesPerPage; k++) {
                             void* buf = (void*)(buffer + es->headerSize +
                                                 k * es->record_size);
-                            debug_log("%3d: 4 Output Record: %d  Address: %p\n",
-                                      k, *(uint32_t*)(buf + es->key_offset),
-                                      buf);
+                            LOG_EDB("%3d: 4 Output Record: %d  Address: %p\n",
+                                    k, *(uint32_t*)(buf + es->key_offset), buf);
                         }
 
 #endif
@@ -1555,7 +1534,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 
                                     if (destBlk > bufferSizeInBlocks) {
 #ifdef ADAPTIVE_SORT_PRINT
-                                        debug_log(
+                                        LOG_EDB(
                                             "Incorrect destination block. List "
                                             "1: (%d, %d) List 2: (%d, %d) List "
                                             "3: (%d, %d) ResultList: %d\n",
@@ -1565,9 +1544,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 
                                         /* Output all block contents */
                                         for (int l = 0; l < 3; l++) {
-                                            debug_log("Current  block: %d  # "
-                                                      "records: %d\n",
-                                                      l, tuplesPerPage);
+                                            LOG_EDB("Current  block: %d  # "
+                                                    "records: %d\n",
+                                                    l, tuplesPerPage);
                                             for (int k = 0; k < tuplesPerPage;
                                                  k++) {
                                                 void* buf =
@@ -1575,11 +1554,10 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                                                             es->headerSize +
                                                             k * es->record_size +
                                                             l * es->page_size);
-                                                debug_log("%d: Record: %d  "
-                                                          "Address: %p\n",
-                                                          k,
-                                                          buf + es->key_offset,
-                                                          buf);
+                                                LOG_EDB("%d: Record: %d  "
+                                                        "Address: %p\n",
+                                                        k, buf + es->key_offset,
+                                                        buf);
                                             }
                                         }
 
@@ -1616,7 +1594,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 #ifdef DEBUG
                                             void* buf =
                                                 (void*)(buffer + originPtr);
-                                            debug_log(
+                                            LOG_EDB(
                                                 "Empty output block case. "
                                                 "Moved output record back from "
                                                 "list %d Key: %d\n",
@@ -1668,7 +1646,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 #ifdef DEBUG
                                             void* buf =
                                                 (void*)(buffer + originPtr);
-                                            debug_log(
+                                            LOG_EDB(
                                                 "Moved output record back from "
                                                 "list %d Key: %d\n",
                                                 resultBlock,
@@ -1690,10 +1668,10 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                                                     (void*)(buffer +
                                                             insert_ptr +
                                                             es->record_size);
-                                                debug_log("Compare with list "
-                                                          "%d Key: %d\n",
-                                                          resultBlock,
-                                                          buf + es->key_offset);
+                                                LOG_EDB("Compare with list "
+                                                        "%d Key: %d\n",
+                                                        resultBlock,
+                                                        buf + es->key_offset);
 
 #endif
                                                 if (0 <
@@ -1741,10 +1719,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
 
 #ifdef DEBUG
                                         void* buf = (void*)(buffer + originPtr);
-                                        debug_log("Moved output record to list "
-                                                  "%d Key: %d\n",
-                                                  destBlk,
-                                                  buf + es->key_offset);
+                                        LOG_EDB("Moved output record to list "
+                                                "%d Key: %d\n",
+                                                destBlk, buf + es->key_offset);
 
 #endif
                                         numShiftOtherBlock++;
@@ -1800,7 +1777,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                             record1[resultBlock] =
                                 resultBlock * es->page_size + es->headerSize;
 #ifdef DEBUG_READ
-                            debug_log("Read block sublist: %d\n", resultBlock);
+                            LOG_EDB("Read block sublist: %d\n", resultBlock);
                             void* firstRec = (void*)buffer +
                                              resultBlock * es->page_size +
                                              es->headerSize;
@@ -1812,16 +1789,16 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                                               BLOCK_COUNT_OFFSET)) -
                                  1) *
                                     es->record_size;
-                            debug_log("Read Sublist: %d Block: %d NumRec: %d "
-                                      "First key: %d Last key: %d\n",
-                                      resultBlock,
-                                      (int32_t)*(buffer +
-                                                 resultBlock * es->page_size),
-                                      *((int16_t*)(buffer +
-                                                   resultBlock * es->page_size +
-                                                   BLOCK_COUNT_OFFSET)),
-                                      firstRec + es->key_offset,
-                                      lastRec + es->key_offset);
+                            LOG_EDB("Read Sublist: %d Block: %d NumRec: %d "
+                                    "First key: %d Last key: %d\n",
+                                    resultBlock,
+                                    (int32_t)*(buffer +
+                                               resultBlock * es->page_size),
+                                    *((int16_t*)(buffer +
+                                                 resultBlock * es->page_size +
+                                                 BLOCK_COUNT_OFFSET)),
+                                    firstRec + es->key_offset,
+                                    lastRec + es->key_offset);
 
 #endif
                         }
@@ -1908,7 +1885,7 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                                     /* move the record */
 #ifdef DEBUG
                                     void* buf = (void*)(buffer + outputCursor);
-                                    debug_log(
+                                    LOG_EDB(
                                         "Output list empty so moved record in "
                                         "output to list %d Key: %d\n",
                                         destBlk,
@@ -1958,14 +1935,14 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                             int16_t numRecords =
                                 *((int16_t*)(buffer + BLOCK_COUNT_OFFSET));
 #ifdef DEBUG_READ
-                            debug_log("Read block sublist: 0\n");
+                            LOG_EDB("Read block sublist: 0\n");
                             void* firstRec = (void*)buffer + es->headerSize;
                             void* lastRec =
                                 (void*)buffer + es->headerSize +
                                 (*((int16_t*)(buffer + BLOCK_COUNT_OFFSET)) -
                                  1) *
                                     es->record_size;
-                            debug_log(
+                            LOG_EDB(
                                 "Read Sublist: %d Block: %d NumRec: %d First "
                                 "key: %d Last key: %d\n",
                                 0, (int32_t)*(buffer + 0 * es->page_size),
@@ -2073,13 +2050,13 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                     ((file_iterator_state_t*)iteratorState)
                         ->fileInterface->seek(lastWritePos, outputFile);
 #ifdef DEBUG
-                    debug_log("Writing page adaptive write rel 3: "
-                              "blockIndex=%d, count=%d, filePosition=%ld\n",
-                              currentBlockId,
-                              (int16_t)(record2[0] - es->headerSize) /
-                                      es->record_size +
-                                  1,
-                              lastWritePos / PAGE_SIZE);
+                    LOG_EDB("Writing page adaptive write rel 3: "
+                            "blockIndex=%d, count=%d, filePosition=%ld\n",
+                            currentBlockId,
+                            (int16_t)(record2[0] - es->headerSize) /
+                                    es->record_size +
+                                1,
+                            lastWritePos / PAGE_SIZE);
 #endif
                     ((file_iterator_state_t*)iteratorState)
                         ->fileInterface->writeRel(buffer + OUTPUT_BLOCK_ID *
@@ -2101,13 +2078,13 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
                     metric->num_writes += 1;
 
 #ifdef DEBUG_OUTPUT
-                    debug_log("Wrote output block here.\n");
+                    LOG_EDB("Wrote output block here.\n");
                     for (int k = 0; k < tuplesPerPage; k++) {
                         void* buf = (void*)(buffer + es->headerSize +
                                             k * es->record_size);
-                        debug_log("%3d: 5 Output Record: %d  Address: %p\n", k,
-                                  *(uint32_t*)(buf + es->key_offset),
-                                  buf); // TODO: Update to no use test_record_t
+                        LOG_EDB("%3d: 5 Output Record: %d  Address: %p\n", k,
+                                *(uint32_t*)(buf + es->key_offset),
+                                buf); // TODO: Update to no use test_record_t
                     }
 
 #endif
@@ -2122,9 +2099,9 @@ int adaptive_sort(uint8_t (*iterator)(void* state, void* buffer),
         } /* end of merge */
         *resultFilePtr = lastMergeStart;
 #ifdef ADAPTIVE_SORT_PRINT_FINISH
-        debug_log("Complete. Comparisons: %u  Writes: %u  Reads: %u Memcpys:\n",
-                  metric->num_compar, metric->num_writes, metric->num_reads,
-                  metric->num_memcpys);
+        LOG_EDB("Complete. Comparisons: %u  Writes: %u  Reads: %u Memcpys:\n",
+                metric->num_compar, metric->num_writes, metric->num_reads,
+                metric->num_memcpys);
 
 #endif
 

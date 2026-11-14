@@ -6,18 +6,6 @@
 // #include "unistd.h"
 #endif
 
-// #define PRINT_METRIC
-// #define DEBUG
-// #define PRINT_ERRORS
-#if defined(DEBUG) || defined(PRINT_METRIC) || defined(PRINT_ERRORS)
-#include "debug_print.h"
-#else
-#ifndef debug_log
-#define debug_log(...) ((void)0)
-#endif
-
-#endif
-
 /**
  * @brief Pure in-memory sort that avoids file I/O completely for very small
  * datasets
@@ -29,27 +17,26 @@
 file_iterator_state_t* startPureMemorySort(sortData*        data,
                                            embedDBOperator* op) {
 #ifdef DEBUG
-    debug_log("DEBUG: Starting pure in-memory sort\n");
+    LOG_EDB("DEBUG: Starting pure in-memory sort\n");
 #endif
     int record_count = 0;
     while (exec(op->input)) {
         record_count++;
         if (record_count > 10) { // Safety limit
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Too many records for pure in-memory sort\n");
+            LOG_EDB("ERROR: Too many records for pure in-memory sort\n");
 #endif
             return NULL;
         }
     }
 
 #ifdef DEBUG
-    debug_log("DEBUG: Found %d records for pure in-memory sort\n",
-              record_count);
+    LOG_EDB("DEBUG: Found %d records for pure in-memory sort\n", record_count);
 #endif
 
     if (record_count == 0) {
 #ifdef DEBUG
-        debug_log("DEBUG: No records to sort\n");
+        LOG_EDB("DEBUG: No records to sort\n");
 #endif
         file_iterator_state_t* iteratorState =
             EMDB_MEM_ALLOC(sizeof(file_iterator_state_t));
@@ -70,7 +57,7 @@ file_iterator_state_t* startPureMemorySort(sortData*        data,
     void* buffer = EMDB_MEM_ALLOC(record_count * data->recordSize);
     if (buffer == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate memory for pure in-memory sort\n");
+        LOG_EDB("ERROR: Failed to allocate memory for pure in-memory sort\n");
 #endif
         return NULL;
     }
@@ -86,7 +73,7 @@ file_iterator_state_t* startPureMemorySort(sortData*        data,
     }
 
 #ifdef DEBUG
-    debug_log("DEBUG: Read %d records into memory buffer\n", records_read);
+    LOG_EDB("DEBUG: Read %d records into memory buffer\n", records_read);
 #endif
 
     // Sort the records in memory using quicksort
@@ -97,21 +84,21 @@ file_iterator_state_t* startPureMemorySort(sortData*        data,
 
     if (sort_result != 0) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: In-memory sort failed\n");
+        LOG_EDB("ERROR: In-memory sort failed\n");
 #endif
         EMDB_MEM_FREE(buffer);
         return NULL;
     }
 
 #ifdef DEBUG
-    debug_log("DEBUG: Pure in-memory sort completed successfully\n");
+    LOG_EDB("DEBUG: Pure in-memory sort completed successfully\n");
 #endif
 
     file_iterator_state_t* iteratorState =
         EMDB_MEM_ALLOC(sizeof(file_iterator_state_t));
     if (iteratorState == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate iterator state\n");
+        LOG_EDB("ERROR: Failed to allocate iterator state\n");
 #endif
         EMDB_MEM_FREE(buffer);
         return NULL;
@@ -152,7 +139,7 @@ int8_t writePageWithHeader(void* buffer, const uint32_t blockIndex,
     fileInterface->write(buffer, blockIndex, pageSize, file);
     if (fileInterface->error(file)) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: SORT: Failed to write unsorted data");
+        LOG_EDB("ERROR: SORT: Failed to write unsorted data");
 #endif
         return 1;
     }
@@ -179,16 +166,16 @@ uint32_t loadRowData(sortData* data, embedDBOperator* op, void* unsortedFile) {
     uint16_t valuesPerPage = (PAGE_SIZE - BLOCK_HEADER_SIZE) / data->recordSize;
 
 #ifdef DEBUG
-    debug_log("DEBUG loadRowData: PAGE_SIZE=%d, BLOCK_HEADER_SIZE=%d, "
-              "recordSize=%d, valuesPerPage=%d\n",
-              PAGE_SIZE, BLOCK_HEADER_SIZE, data->recordSize, valuesPerPage);
+    LOG_EDB("DEBUG loadRowData: PAGE_SIZE=%d, BLOCK_HEADER_SIZE=%d, "
+            "recordSize=%d, valuesPerPage=%d\n",
+            PAGE_SIZE, BLOCK_HEADER_SIZE, data->recordSize, valuesPerPage);
 #endif
 
     void* buffer = EMDB_MEM_ALLOC(PAGE_SIZE);
 
     if (buffer == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: SORT: buffer EMDB_MEM_ALLOC failed");
+        LOG_EDB("ERROR: SORT: buffer EMDB_MEM_ALLOC failed");
 #endif
         return 1;
     }
@@ -213,7 +200,7 @@ uint32_t loadRowData(sortData* data, embedDBOperator* op, void* unsortedFile) {
 
         if (rowOffset + data->recordSize > PAGE_SIZE) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: SORT: error calculating row offset");
+            LOG_EDB("ERROR: SORT: error calculating row offset");
 #endif
             EMDB_MEM_FREE(buffer);
             buffer = NULL;
@@ -225,24 +212,24 @@ uint32_t loadRowData(sortData* data, embedDBOperator* op, void* unsortedFile) {
                data->recordSize);
 #ifdef DEBUG
         if (count < 10) {
-            debug_log("DEBUG loadRowData record %d: ", count);
+            LOG_EDB("DEBUG loadRowData record %d: ", count);
             for (int i = 0; i < data->recordSize; i++) {
-                debug_log("%02x ", ((uint8_t*)op->input->recordBuffer)[i]);
+                LOG_EDB("%02x ", ((uint8_t*)op->input->recordBuffer)[i]);
             }
-            debug_log("\n");
+            LOG_EDB("\n");
 
             // Also show what we wrote to the buffer
-            debug_log("DEBUG wrote to buffer at offset %d: ", rowOffset);
+            LOG_EDB("DEBUG wrote to buffer at offset %d: ", rowOffset);
             for (int i = 0; i < data->recordSize; i++) {
-                debug_log("%02x ", ((uint8_t*)buffer)[rowOffset + i]);
+                LOG_EDB("%02x ", ((uint8_t*)buffer)[rowOffset + i]);
             }
-            debug_log("\n");
+            LOG_EDB("\n");
         }
         if (count < 10 || count % 1000 == 0) {
             int32_t* keyPtr =
                 (int32_t*)(op->input->recordBuffer + data->keyOffset);
-            debug_log("DEBUG loadRowData: count=%d, rowOffset=%d, key=%d\n",
-                      count, rowOffset, *keyPtr);
+            LOG_EDB("DEBUG loadRowData: count=%d, rowOffset=%d, key=%d\n",
+                    count, rowOffset, *keyPtr);
         }
 #endif
 
@@ -266,7 +253,7 @@ uint32_t loadRowData(sortData* data, embedDBOperator* op, void* unsortedFile) {
     data->fileInterface->flush(unsortedFile);
 
 #ifdef DEBUG
-    debug_log("DEBUG loadRowData: finished, totalRecords=%d\n", count);
+    LOG_EDB("DEBUG loadRowData: finished, totalRecords=%d\n", count);
 #endif
 
     // Clean up
@@ -287,13 +274,12 @@ void prepareSort(embedDBOperator* op) {
     data->recordSize = getRecordSizeFromSchema(op->schema);
     data->keySize    = op->schema->columnSizes[data->colNum];
 #ifdef DEBUG
-    debug_log("DEBUG prepareSort: recordSize=%d, keySize=%d, keyOffset=%d, "
-              "colNum=%d\n",
-              data->recordSize, data->keySize, data->keyOffset, data->colNum);
-    debug_log("DEBUG prepareSort: schema has %d columns\n",
-              op->schema->numCols);
+    LOG_EDB("DEBUG prepareSort: recordSize=%d, keySize=%d, keyOffset=%d, "
+            "colNum=%d\n",
+            data->recordSize, data->keySize, data->keyOffset, data->colNum);
+    LOG_EDB("DEBUG prepareSort: schema has %d columns\n", op->schema->numCols);
     for (int i = 0; i < op->schema->numCols; i++) {
-        debug_log("  Column %d: size=%d\n", i, op->schema->columnSizes[i]);
+        LOG_EDB("  Column %d: size=%d\n", i, op->schema->columnSizes[i]);
     }
 #endif
 
@@ -304,8 +290,8 @@ void prepareSort(embedDBOperator* op) {
     }
     if (data->fileInterface == NULL || data->fileInterface->setup == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: File interface or setup function not provided while "
-                  "initializing ORDER BY operator\n");
+        LOG_EDB("ERROR: File interface or setup function not provided while "
+                "initializing ORDER BY operator\n");
 #endif
         return;
     }
@@ -320,8 +306,8 @@ void prepareSort(embedDBOperator* op) {
 
     if (unsortedFile == NULL || sortedFile == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Failed to allocate file handles while initializing "
-                  "ORDER BY operator\n");
+        LOG_EDB("ERROR: Failed to allocate file handles while initializing "
+                "ORDER BY operator\n");
 #endif
         return;
     }
@@ -332,7 +318,7 @@ void prepareSort(embedDBOperator* op) {
 
     if (!unsortedOpen || !sortedOpen) {
 #ifdef PRINT_ERRORS
-        debug_log(
+        LOG_EDB(
             "ERROR: Failed to open files while initializing ORDER BY operator");
 #endif
         return;
@@ -345,7 +331,7 @@ void prepareSort(embedDBOperator* op) {
         startSort(data, unsortedFile, sortedFile);
     if (iteratorState == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Sort failed");
+        LOG_EDB("ERROR: Sort failed");
 #endif
         return;
     }
@@ -393,7 +379,7 @@ file_iterator_state_t* startSort(sortData* data, void* unsortedFile,
 
     if (buffer == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: SORT: buffer EMDB_MEM_ALLOC failed m\n");
+        LOG_EDB("ERROR: SORT: buffer EMDB_MEM_ALLOC failed m\n");
 #endif
         return NULL;
     }
@@ -403,7 +389,7 @@ file_iterator_state_t* startSort(sortData* data, void* unsortedFile,
         EMDB_MEM_ALLOC(sizeof(file_iterator_state_t));
     if (iteratorState == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("Error: SORT: iterator EMDB_MEM_ALLOC failed\n");
+        LOG_EDB("Error: SORT: iterator EMDB_MEM_ALLOC failed\n");
 #endif
         EMDB_MEM_FREE(buffer);
         buffer = NULL;
@@ -436,21 +422,20 @@ file_iterator_state_t* startSort(sortData* data, void* unsortedFile,
                       data->compareFn, runGenOnly, writeReadRatio, data);
 
 #ifdef PRINT_METRIC
-    debug_log(
-        "\tComplete. Comparisons: %d  Writes: %d  Reads: %d Memcpys: %d\n",
-        metrics.num_compar, metrics.num_writes, metrics.num_reads,
-        metrics.num_memcpys);
+    LOG_EDB("\tComplete. Comparisons: %d  Writes: %d  Reads: %d Memcpys: %d\n",
+            metrics.num_compar, metrics.num_writes, metrics.num_reads,
+            metrics.num_memcpys);
 #endif
 
     iteratorState->resultFile = result_file_ptr;
 
 #ifdef PRINT_ERRORS
     if (8 == err) {
-        debug_log("Out of memory!\n");
+        LOG_EDB("Out of memory!\n");
     } else if (10 == err) {
-        debug_log("File Read Error!\n");
+        LOG_EDB("File Read Error!\n");
     } else if (9 == err) {
-        debug_log("File Write Error!\n");
+        LOG_EDB("File Write Error!\n");
     }
 #endif
 
@@ -495,16 +480,16 @@ uint8_t readNextRecord(void* data, void* buffer) {
 #ifdef DEBUG
         if (iteratorState->recordsRead == 0 ||
             iteratorState->recordsRead % 1000 == 0) {
-            debug_log("DEBUG readNextRecord: pageNum=%d, seekOffset=%d, "
-                      "recordsRead=%d\n",
-                      iteratorState->currentRecord / recordPerPage, seekOffset,
-                      iteratorState->recordsRead);
+            LOG_EDB("DEBUG readNextRecord: pageNum=%d, seekOffset=%d, "
+                    "recordsRead=%d\n",
+                    iteratorState->currentRecord / recordPerPage, seekOffset,
+                    iteratorState->recordsRead);
         }
 #endif
 
         if (((sortData*)data)->fileInterface->error(iteratorState->file)) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: SORT: next record read failed");
+            LOG_EDB("ERROR: SORT: next record read failed");
 #endif
             return 2;
         }
@@ -531,17 +516,17 @@ uint8_t readNextRecord(void* data, void* buffer) {
     if (iteratorState->recordsRead < 10 ||
         iteratorState->recordsRead % 1000 == 0) {
         int32_t* keyPtr = (int32_t*)(buffer + ((sortData*)data)->keyOffset);
-        debug_log("DEBUG readNextRecord: recordsRead=%d, currentRecord=%d, "
-                  "pageIdx=%d, recordInPage=%d, copyOffset=%d, key=%d\n",
-                  iteratorState->recordsRead, iteratorState->currentRecord,
-                  iteratorState->currentRecord / recordPerPage,
-                  recordIndexInPage, copyOffset, *keyPtr);
+        LOG_EDB("DEBUG readNextRecord: recordsRead=%d, currentRecord=%d, "
+                "pageIdx=%d, recordInPage=%d, copyOffset=%d, key=%d\n",
+                iteratorState->recordsRead, iteratorState->currentRecord,
+                iteratorState->currentRecord / recordPerPage, recordIndexInPage,
+                copyOffset, *keyPtr);
         uint32_t blockIdx;
         memcpy(&blockIdx, ((sortData*)data)->readBuffer, sizeof(uint32_t));
-        debug_log("READ PAGE hdr: blockIdx=%u values=%u\n", blockIdx,
-                  valuesInPage);
-        debug_log("PAGE HEADER: page=%d values=%d\n",
-                  iteratorState->currentRecord / recordPerPage, valuesInPage);
+        LOG_EDB("READ PAGE hdr: blockIdx=%u values=%u\n", blockIdx,
+                valuesInPage);
+        LOG_EDB("PAGE HEADER: page=%d values=%d\n",
+                iteratorState->currentRecord / recordPerPage, valuesInPage);
         int32_t* key0 =
             (int32_t*)(((sortData*)data)->readBuffer + BLOCK_HEADER_SIZE +
                        ((sortData*)data)->keyOffset);
@@ -549,8 +534,8 @@ uint8_t readNextRecord(void* data, void* buffer) {
             (int32_t*)(((sortData*)data)->readBuffer + BLOCK_HEADER_SIZE +
                        (recordPerPage - 1) * iteratorState->recordSize +
                        ((sortData*)data)->keyOffset);
-        debug_log("  First key on page: %d, Last key on page: %d\n", *key0,
-                  *keyLast);
+        LOG_EDB("  First key on page: %d, Last key on page: %d\n", *key0,
+                *keyLast);
     }
 #endif
 
@@ -558,12 +543,12 @@ uint8_t readNextRecord(void* data, void* buffer) {
     iteratorState->currentRecord++;
 
     // #ifdef DEBUG
-    //         debug_log("DEBUG: ROWDATA from file:\n");
+    //         LOG_EDB("DEBUG: ROWDATA from file:\n");
     //         for (int i = 0; i < iteratorState->recordSize - SORT_KEY_SIZE;
     //         i++) {
-    //             debug_log("%2x ", ((uint8_t *)buffer)[i]);
+    //             LOG_EDB("%2x ", ((uint8_t *)buffer)[i]);
     //         }
-    //         debug_log("\n");
+    //         LOG_EDB("\n");
     // #endif
     return 0;
 }

@@ -1,6 +1,5 @@
 #include "activeRules.h"
 #include "embedDB_mem.h"
-#include "debug_print.h"
 
 activeRule* IF(activeRule* rule, uint8_t colNum, ActiveQueryType type) {
     rule->type   = type;
@@ -78,7 +77,7 @@ void executeRules(embedDBState* state, void* key, void* data) {
             break;
         default:
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Unsupported rule type\n");
+            LOG_EDB("ERROR: Unsupported rule type\n");
 #endif
         }
     }
@@ -163,7 +162,7 @@ embedDBOperator* createOperator(embedDBState* state, activeRule* rule,
         }
     } else {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Unsupported key size\n");
+        LOG_EDB("ERROR: Unsupported key size\n");
 #endif
         return NULL;
     }
@@ -191,7 +190,7 @@ embedDBOperator* createOperator(embedDBState* state, activeRule* rule,
         break;
     default:
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Unsupported rule type\n");
+        LOG_EDB("ERROR: Unsupported rule type\n");
 #endif
     }
 
@@ -244,7 +243,7 @@ void executeComparison(activeRule* rule, void* aggregateValue,
         break;
     default:
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Unsupported operation\n");
+        LOG_EDB("ERROR: Unsupported operation\n");
 #endif
     }
 }
@@ -267,7 +266,7 @@ void handleGetMinMax(embedDBState* state, activeRule* rule, void* key,
         executeComparison(rule, &minmax, int64Comparator, data);
     } else {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Unsupported column size\n");
+        LOG_EDB("ERROR: Unsupported column size\n");
 #endif
     }
 }
@@ -290,7 +289,7 @@ void handleCustomQuery(embedDBState* state, activeRule* rule, void* key,
         break;
     default:
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: Unsupported return type\n");
+        LOG_EDB("ERROR: Unsupported return type\n");
 #endif
     }
 }

@@ -166,6 +166,7 @@ Logger* logger();
 #define LOGGER_EMV_ENABLE     0
 #define LOGGER_EVL_ENABLE     0
 #define LOGGER_WIFI_AC_ENABLE 0
+#define LOGGER_EDB_ENABLE     0
 
 #if LOGGER_PED_ENABLE
 #define LOG_PED(...) LOG_TRACE(__VA_ARGS__)
@@ -219,6 +220,12 @@ Logger* logger();
 #define LOG_WAC(...) LOG_TRACE(__VA_ARGS__)
 #else
 #define LOG_WAC(...) ;
+#endif
+
+#if LOGGER_EDB_ENABLE
+#define LOG_EDB(...) LOG_TRACE(__VA_ARGS__)
+#else
+#define LOG_EDB(...) ;
 #endif
 
 #endif

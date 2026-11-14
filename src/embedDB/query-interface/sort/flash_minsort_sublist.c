@@ -49,17 +49,6 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "in_memory_sort.h"
 
-// #define DEBUG 1
-// #define DEBUG_OUTPUT 1
-// #define DEBUG_READ 1
-#if defined(DEBUG) || defined(DEBUG_OUTPUT) || defined(DEBUG_READ)
-#include "debug_print.h"
-#else
-#ifndef debug_log
-#define debug_log(...) ((void)0)
-#endif
-#endif
-
 int8_t readPage_sublist(MinSortStateSublist* ms, int pageNum,
                         external_sort_t* es, metrics_t* metric) {
     file_iterator_state_t* is = (file_iterator_state_t*)ms->iteratorState;
@@ -68,7 +57,7 @@ int8_t readPage_sublist(MinSortStateSublist* ms, int pageNum,
     // Read page into the buffer
     if (0 == is->fileInterface->read(ms->buffer, pageNum, es->page_size, fp)) {
 #ifdef DEBUG
-        debug_log("MINSORT SUBLIST: Failed to read block.\n");
+        LOG_EDB("MINSORT SUBLIST: Failed to read block.\n");
 #endif
         return 0;
     }
@@ -78,11 +67,11 @@ int8_t readPage_sublist(MinSortStateSublist* ms, int pageNum,
     ms->lastBlockIdx = pageNum;
 
 #ifdef DEBUG_READ
-    debug_log("Reading block: %d Offset: %lu\n", pageNum, es->key_offset);
+    LOG_EDB("Reading block: %d Offset: %lu\n", pageNum, es->key_offset);
     for (int k = 0; k < 31; k++) {
         test_record_t* buf =
             (void*)(ms->buffer + es->headerSize + k * es->record_size);
-        debug_log("%d: Record: %d\n", k, buf->key);
+        LOG_EDB("%d: Record: %d\n", k, buf->key);
     }
 #endif
     return 1;
@@ -122,8 +111,8 @@ void init_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
     // j = (ms->memoryAvailable - 2 * SORT_KEY_SIZE - INT_SIZE) / SORT_KEY_SIZE;
     j = (ms->memoryAvailable) / (SORT_KEY_SIZE + sizeof(uint8_t));
 #ifdef FLASH_MINSORT_PRINT
-    debug_log("Memory overhead: %d  Max regions: %d\r\n",
-              2 * SORT_KEY_SIZE + INT_SIZE, j);
+    LOG_EDB("Memory overhead: %d  Max regions: %d\r\n",
+            2 * SORT_KEY_SIZE + INT_SIZE, j);
 #endif
     // Memory allocation
     // Allocate minimum index in separate memory space (block 0 is input buffer,
@@ -141,10 +130,10 @@ void init_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
     ms->min_set = EMDB_MEM_ALLOC(ms->numRegions * sizeof(uint8_t));
     ms->offset  = EMDB_MEM_ALLOC(ms->numRegions * sizeof(long));
 #ifdef FLASH_MINSORT_PRINT
-    debug_log("Page size: %d, Memory size: %d Record size: %d, Number of "
-              "records: %lu, Number of blocks: %d, Regions: %d\r\n",
-              es->page_size, ms->memoryAvailable, ms->record_size,
-              ms->num_records, ms->numBlocks, ms->numRegions);
+    LOG_EDB("Page size: %d, Memory size: %d Record size: %d, Number of "
+            "records: %lu, Number of blocks: %d, Regions: %d\r\n",
+            es->page_size, ms->memoryAvailable, ms->record_size,
+            ms->num_records, ms->numBlocks, ms->numRegions);
 #endif
 
     for (i = 0; i < ms->numRegions; i++)
@@ -163,13 +152,13 @@ void init_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
                                       compute count of blocks in sublist */
 
 #if DEBUG
-        debug_log("Read block: %d", lastBlock);
-        debug_log(" Num: %d\n", numBlocksSublist);
+        LOG_EDB("Read block: %d", lastBlock);
+        LOG_EDB(" Num: %d\n", numBlocksSublist);
 
         for (int k = 0; k < 31; k++) {
             test_record_t* buf =
                 (void*)(ms->buffer + es->headerSize + k * es->record_size);
-            debug_log("%d: Record: %d\n", k, buf->key);
+            LOG_EDB("%d: Record: %d\n", k, buf->key);
         }
 #endif
         lastBlock = lastBlock - numBlocksSublist;
@@ -183,20 +172,20 @@ void init_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
         ms->min_set[regionIdx] = true;
         ms->offset[regionIdx]  = lastBlock * es->page_size + es->headerSize;
 #if DEBUG
-        debug_log("New min. Index: %d", regionIdx);
-        debug_log(" Min: %u", ms->min[regionIdx]);
-        debug_log(" Offset: %lu\n", ms->offset[regionIdx]);
+        LOG_EDB("New min. Index: %d", regionIdx);
+        LOG_EDB(" Min: %u", ms->min[regionIdx]);
+        LOG_EDB(" Offset: %lu\n", ms->offset[regionIdx]);
 #endif
         regionIdx--;
         lastBlock--;
     }
 
 #ifdef DEBUG
-    debug_log("Region summary\n");
+    LOG_EDB("Region summary\n");
     for (i = 0; i < ms->numRegions; i++) {
-        debug_log("Reg: %d", i);
-        debug_log(" Min: %u", ms->min[i]);
-        debug_log(" Offset: %lu\n", ms->offset[i]);
+        LOG_EDB("Reg: %d", i);
+        LOG_EDB(" Min: %u", ms->min[i]);
+        LOG_EDB(" Offset: %lu\n", ms->offset[i]);
     }
 
 #endif
@@ -277,7 +266,7 @@ char* next_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
     test_record_t* buf =
         (test_record_t*)(ms->buffer + es->headerSize + i * es->record_size);
     buf = (test_record_t*)tupleBuffer;
-    debug_log("Returning tuple: %d\n", buf->key);
+    LOG_EDB("Returning tuple: %d\n", buf->key);
 #endif
 
     // Advance to next tuple in block
@@ -327,7 +316,7 @@ char* next_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
     }
 
 #ifdef DEBUG
-    debug_log("Updated minimum in block to: %d\r\n", ms->min[ms->regionIdx]);
+    LOG_EDB("Updated minimum in block to: %d\r\n", ms->min[ms->regionIdx]);
 #endif
 
     return tupleBuffer;
@@ -335,10 +324,10 @@ char* next_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es,
 
 void close_MinSort_sublist(MinSortStateSublist* ms, external_sort_t* es) {
     /*
-    debug_log("Tuples out:  %lu\r\n", ms->op.tuples_out);
-    debug_log("Blocks read: %lu\r\n", ms->op.blocks_read);
-    debug_log("Tuples read: %lu\r\n", ms->op.tuples_read);
-    debug_log("Bytes read:  %lu\r\n", ms->op.bytes_read);
+    LOG_EDB("Tuples out:  %lu\r\n", ms->op.tuples_out);
+    LOG_EDB("Blocks read: %lu\r\n", ms->op.blocks_read);
+    LOG_EDB("Tuples read: %lu\r\n", ms->op.tuples_read);
+    LOG_EDB("Bytes read:  %lu\r\n", ms->op.bytes_read);
     */
 }
 
@@ -374,7 +363,7 @@ int flash_minsort_sublist(void* iteratorState, void* tupleBuffer,
                           int8_t (*compareFn)(void* a, void* b),
                           long numSubList) {
 #ifdef FLASH_MINSORT_PRINT
-    debug_log("*Flash Minsort (sorted sublist version)*\n");
+    LOG_EDB("*Flash Minsort (sorted sublist version)*\n");
 #endif
 
     MinSortStateSublist ms;
@@ -414,9 +403,9 @@ int flash_minsort_sublist(void* iteratorState, void* tupleBuffer,
             // Write the block to the output file using the file interface's
             // write method
 #ifdef DEBUG
-            debug_log("Writing page flash minsort sublist: blockIndex=%d, "
-                      "count=%d, filePosition=%ld\n",
-                      blockIndex, count, lastWritePos / PAGE_SIZE);
+            LOG_EDB("Writing page flash minsort sublist: blockIndex=%d, "
+                    "count=%d, filePosition=%ld\n",
+                    blockIndex, count, lastWritePos / PAGE_SIZE);
 #endif
             if (0 == ((file_iterator_state_t*)iteratorState)
                          ->fileInterface->writeRel(outputBuffer, es->page_size,
@@ -428,17 +417,17 @@ int flash_minsort_sublist(void* iteratorState, void* tupleBuffer,
             lastWritePos += es->page_size;
             metric->num_writes += 1;
             /*
-            debug_log("Loc2: %lu\n", ftell(outputFile));
+            LOG_EDB("Loc2: %lu\n", ftell(outputFile));
                          if (blockIndex % 16 == 0)
-                            debug_log("Last write pos: %lu Block: %d\n",
+                            LOG_EDB("Last write pos: %lu Block: %d\n",
             lastWritePos, blockIndex);
                             */
 #ifdef DEBUG_OUTPUT
-            debug_log("Wrote output block. Block index: %d\n", blockIndex);
+            LOG_EDB("Wrote output block. Block index: %d\n", blockIndex);
             for (int k = 0; k < values_per_page; k++) {
                 test_record_t* buf = (void*)(outputBuffer + es->headerSize +
                                              k * es->record_size);
-                debug_log("%d: Output Record: %d\n", k, buf->key);
+                LOG_EDB("%d: Output Record: %d\n", k, buf->key);
             }
 #endif
             blockIndex++;
@@ -454,9 +443,9 @@ int flash_minsort_sublist(void* iteratorState, void* tupleBuffer,
         *((int16_t*)(outputBuffer + BLOCK_COUNT_OFFSET)) =
             count; /* Block record count */
 #ifdef DEBUG
-        debug_log("Writing last page minsort sublist: blockIndex=%d, count=%d, "
-                  "filePosition=%ld\n",
-                  blockIndex, count, lastWritePos / PAGE_SIZE);
+        LOG_EDB("Writing last page minsort sublist: blockIndex=%d, count=%d, "
+                "filePosition=%ld\n",
+                blockIndex, count, lastWritePos / PAGE_SIZE);
 #endif
         if (0 == ((file_iterator_state_t*)iteratorState)
                      ->fileInterface->writeRel(outputBuffer, es->page_size, 1,
@@ -478,7 +467,7 @@ int flash_minsort_sublist(void* iteratorState, void* tupleBuffer,
     EMDB_MEM_FREE(ms.current);
     EMDB_MEM_FREE(ms.next);
 
-    //    debug_log("Complete. Comparisons: %d  MemCopies: %d  TransferIn: %d
+    //    LOG_EDB("Complete. Comparisons: %d  MemCopies: %d  TransferIn: %d
     //    TransferOut: %d TransferOther: %d\n", metric->num_compar,
     //    metric->num_memcpys, numShiftIntoOutput, numShiftOutOutput,
     //    numShiftOtherBlock);

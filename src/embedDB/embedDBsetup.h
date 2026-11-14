@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "embedDB.h"
 #include "embedDB_mem.h"
-#include "embedDB/debug_print.h"
 #include "EmbedDB_Utility/embedDBUtility.h"
 
 #define EMBEDDB_TUNE_FINE       8

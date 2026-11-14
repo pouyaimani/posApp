@@ -53,17 +53,6 @@ moving tuples in other blocks.
 
 #include "in_memory_sort.h"
 
-// #define DEBUG 1
-// #define DEBUG_OUTPUT 1
-// #define DEBUG_READ 1
-#if defined(DEBUG) || defined(DEBUG_OUTPUT) || defined(DEBUG_READ)
-#include "debug_print.h"
-#else
-#ifndef debug_log
-#define debug_log(...) ((void)0)
-#endif
-#endif
-
 #ifndef INT_MAX
 #define INT_MAX 0xFFFFFFFF
 #endif
@@ -80,13 +69,13 @@ int8_t readPageMinSort(MinSortState* ms, int pageNum, external_sort_t* es,
     file_iterator_state_t* is = (file_iterator_state_t*)ms->iteratorState;
     void*                  fp = is->file;
 #ifdef DEBUG
-    debug_log("DEBUG: READ_PAGE %d (Offset %d)\n", pageNum,
-              pageNum * es->page_size);
+    LOG_EDB("DEBUG: READ_PAGE %d (Offset %d)\n", pageNum,
+            pageNum * es->page_size);
 #endif
     // Read page into the buffer
     if (0 == is->fileInterface->read(ms->buffer, pageNum, es->page_size, fp)) {
 #ifdef DEBUG
-        debug_log("MINSORT: Failed to read block.\n");
+        LOG_EDB("MINSORT: Failed to read block.\n");
 #endif
         return 0;
     }
@@ -96,11 +85,11 @@ int8_t readPageMinSort(MinSortState* ms, int pageNum, external_sort_t* es,
     ms->lastBlockIdx = pageNum;
 
 #ifdef DEBUG_READ
-    debug_log("Reading block: %d\n", pageNum);
+    LOG_EDB("Reading block: %d\n", pageNum);
     for (int k = 0; k < 31; k++) {
         test_record_t* buf =
             (void*)(ms->buffer + es->headerSize + k * es->record_size);
-        debug_log("%d: Record: %d\n", k, buf->key);
+        LOG_EDB("%d: Record: %d\n", k, buf->key);
     }
 #endif
     return 1;
@@ -161,8 +150,8 @@ void init_MinSort(MinSortState* ms, external_sort_t* es, metrics_t* metric,
          INT_SIZE) /
         (es->key_size + sizeof(uint8_t));
 #ifdef FLASH_MINSORT_PRINT
-    debug_log("Memory overhead: %d  Max regions: %d\r\n",
-              2 * es->key_size + INT_SIZE, j);
+    LOG_EDB("Memory overhead: %d  Max regions: %d\r\n",
+            2 * es->key_size + INT_SIZE, j);
 #endif
     ms->blocks_per_region = (uint32_t)ceil((double)ms->numBlocks / j);
     ms->numRegions =
@@ -175,9 +164,9 @@ void init_MinSort(MinSortState* ms, external_sort_t* es, metrics_t* metric,
     ms->min_initialized = (int8_t*)(ms->min + es->key_size * ms->numRegions);
 
 #ifdef DEBUG
-    // debug_log("Memory overhead: %d  Max regions: %d\r\n", 2 * SORT_KEY_SIZE +
+    // LOG_EDB("Memory overhead: %d  Max regions: %d\r\n", 2 * SORT_KEY_SIZE +
     // INT_SIZE, j);
-    debug_log(
+    LOG_EDB(
         "Page size: %d, Memory size: %d Record size: %d, Number of records: "
         "%lu, Number of blocks: %d, Blocks per region: %d  Regions: %d\r\n",
         es->page_size, ms->memoryAvailable, ms->record_size, ms->num_records,
@@ -215,8 +204,8 @@ void init_MinSort(MinSortState* ms, external_sort_t* es, metrics_t* metric,
 
 #ifdef DEBUG
     for (i = 0; i < ms->numRegions; i++)
-        debug_log("Region: %d  Min: %d\r\n", i,
-                  *(int*)getMinRegionPtr(ms, i, es));
+        LOG_EDB("Region: %d  Min: %d\r\n", i,
+                *(int*)getMinRegionPtr(ms, i, es));
 #endif
 
     /* Allocate memory for current and next keys */
@@ -326,7 +315,7 @@ char* next_MinSort(MinSortState* ms, external_sort_t* es, void* tupleBuffer,
                     (test_record_t*)(ms->buffer + es->headerSize +
                                      i * es->record_size);
                 buf = (test_record_t*)tupleBuffer;
-                debug_log("Returning tuple: %d\n", buf->key);
+                LOG_EDB("Returning tuple: %d\n", buf->key);
 #endif
                 i++; // Move to the next record
                 ms->tuplesOut++;
@@ -349,7 +338,7 @@ char* next_MinSort(MinSortState* ms, external_sort_t* es, void* tupleBuffer,
 
 done:
 #ifdef DEBUG
-    debug_log("Updating minimum in region\r\n");
+    LOG_EDB("Updating minimum in region\r\n");
 #endif
 
     // After processing the current block, scan the rest of the region to find a
@@ -382,8 +371,8 @@ done:
             if (compareFn(dataVal, ms->current) == 0) {
                 ms->nextIdx = k * ms->records_per_block + i;
 #ifdef DEBUG
-                debug_log("Next tuple at: %d  k: %d  i: %d\r\n", ms->nextIdx, k,
-                          i);
+                LOG_EDB("Next tuple at: %d  k: %d  i: %d\r\n", ms->nextIdx, k,
+                        i);
 #endif
                 goto done2;
             }
@@ -417,8 +406,7 @@ done2:
         }
 
 #ifdef DEBUG
-        debug_log("Updated minimum in block to: %d\r\n",
-                  ms->min[ms->regionIdx]);
+        LOG_EDB("Updated minimum in block to: %d\r\n", ms->min[ms->regionIdx]);
 #endif
     }
 
@@ -427,10 +415,10 @@ done2:
 
 void close_MinSort(MinSortState* ms, external_sort_t* es) {
     /*
-    debug_log("Tuples out:  %lu\r\n", ms->op.tuples_out);
-    debug_log("Blocks read: %lu\r\n", ms->op.blocks_read);
-    debug_log("Tuples read: %lu\r\n", ms->op.tuples_read);
-    debug_log("Bytes read:  %lu\r\n", ms->op.bytes_read);
+    LOG_EDB("Tuples out:  %lu\r\n", ms->op.tuples_out);
+    LOG_EDB("Blocks read: %lu\r\n", ms->op.blocks_read);
+    LOG_EDB("Tuples read: %lu\r\n", ms->op.tuples_read);
+    LOG_EDB("Bytes read:  %lu\r\n", ms->op.bytes_read);
     */
 
     if (ms->current) {
@@ -471,7 +459,7 @@ int flash_minsort(void* iteratorState, void* tupleBuffer, void* outputFile,
                   long* resultFilePtr, metrics_t* metric,
                   int8_t (*compareFn)(void* a, void* b)) {
 #ifdef DEBUG
-    debug_log("*Flash Minsort*\n");
+    LOG_EDB("*Flash Minsort*\n");
 #endif
 #ifndef ARDUINO
     clock_t start = clock();
@@ -511,9 +499,9 @@ int flash_minsort(void* iteratorState, void* tupleBuffer, void* outputFile,
             ((file_iterator_state_t*)iteratorState)
                 ->fileInterface->seek(lastWritePos, outputFile);
 #ifdef DEBUG
-            debug_log("Writing page flash minsort: blockIndex=%d, count=%d, "
-                      "filePosition=%ld\n",
-                      blockIndex, count, count / PAGE_SIZE);
+            LOG_EDB("Writing page flash minsort: blockIndex=%d, count=%d, "
+                    "filePosition=%ld\n",
+                    blockIndex, count, count / PAGE_SIZE);
 #endif
             if (0 == ((file_iterator_state_t*)iteratorState)
                          ->fileInterface->writeRel(outputBuffer, es->page_size,
@@ -523,11 +511,11 @@ int flash_minsort(void* iteratorState, void* tupleBuffer, void* outputFile,
             }
 
 #ifdef DEBUG
-            debug_log("Wrote output block. Block index: %d\n", blockIndex);
+            LOG_EDB("Wrote output block. Block index: %d\n", blockIndex);
             for (int k = 0; k < values_per_page; k++) {
                 test_record_t* buf = (void*)(outputBuffer + es->headerSize +
                                              k * es->record_size);
-                debug_log("%d: Output Record: %d\n", k, buf->key);
+                LOG_EDB("%d: Output Record: %d\n", k, buf->key);
             }
 #endif
             metric->num_writes++;
@@ -545,9 +533,9 @@ int flash_minsort(void* iteratorState, void* tupleBuffer, void* outputFile,
         *((int16_t*)(outputBuffer + BLOCK_COUNT_OFFSET)) =
             count; /* Block record count */
 #ifdef DEBUG
-        debug_log("Writing page flash minsort: blockIndex=%d, count=%d, "
-                  "filePosition=%ld\n",
-                  blockIndex, count, count / PAGE_SIZE);
+        LOG_EDB("Writing page flash minsort: blockIndex=%d, count=%d, "
+                "filePosition=%ld\n",
+                blockIndex, count, count / PAGE_SIZE);
 #endif
         if (0 == ((file_iterator_state_t*)iteratorState)
                      ->fileInterface->writeRel(outputBuffer, es->page_size, 1,
@@ -560,7 +548,7 @@ int flash_minsort(void* iteratorState, void* tupleBuffer, void* outputFile,
     }
 
 #ifdef DEBUG
-    debug_log("Number of sorted records: %d", ms.num_records);
+    LOG_EDB("Number of sorted records: %d", ms.num_records);
 #endif
 
     ((file_iterator_state_t*)iteratorState)->fileInterface->flush(outputFile);
@@ -571,8 +559,8 @@ int flash_minsort(void* iteratorState, void* tupleBuffer, void* outputFile,
 #endif
 
 #ifdef DEBUG
-    debug_log("Complete. Comparisons: %d  MemCopies: %d\n", metric->num_compar,
-              metric->num_memcpys);
+    LOG_EDB("Complete. Comparisons: %d  MemCopies: %d\n", metric->num_compar,
+            metric->num_memcpys);
 #endif
 
     return 0; // Successful completion

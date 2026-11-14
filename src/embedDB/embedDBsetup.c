@@ -226,37 +226,36 @@ static void closeAfterInitAttempt(embedDBState* state) {
 
 /** @brief Print initialized EmbedDB configuration and capacity information. */
 static logDetails(embedDBState* state) {
-    debug_log("====================== Database details ======================");
-    debug_log("|##  buffer size in blocks               ##|    = (%lu)",
-              state->bufferSizeInBlocks);
-    debug_log("|##  page size                           ##|    = (%lu)",
-              state->pageSize);
-    debug_log("|##  record size                         ##|    = (%lu)",
-              state->recordSize);
-    debug_log("|##  key size                            ##|    = (%lu)",
-              state->keySize);
-    debug_log("|##  data size                           ##|    = (%lu)",
-              state->dataSize);
-    debug_log("|##  number of data pages                ##|    = (%lu)",
-              state->numDataPages);
-    debug_log("|##  number of index pages               ##|    = (%lu)",
-              state->numIndexPages);
-    debug_log("|##  max records per page                ##|    = (%lu)",
-              state->maxRecordsPerPage);
-    debug_log("|##  max records                         ##|    = (%lu)",
-              state->maxRecordsPerPage * state->numDataPages);
-    debug_log("|##  number of available data Pages      ##|    = (%lu)",
-              state->maxRecordsPerPage * state->numAvailDataPages);
-    debug_log("|##  use bitmab                          ##|    = (%lu)",
-              EMBEDDB_USING_BMAP(state->parameters));
-    debug_log("|##  use index                           ##|    = (%lu)",
-              EMBEDDB_USING_INDEX(state->parameters));
-    debug_log("|##  bitmap size                         ##|    = (%lu)",
-              state->bitmapSize);
-    debug_log("|##  header size                         ##|    = (%lu)",
-              state->headerSize);
-    debug_log(
-        "===============================================================");
+    LOG_EDB("====================== Database details ======================");
+    LOG_EDB("|##  buffer size in blocks               ##|    = (%lu)",
+            state->bufferSizeInBlocks);
+    LOG_EDB("|##  page size                           ##|    = (%lu)",
+            state->pageSize);
+    LOG_EDB("|##  record size                         ##|    = (%lu)",
+            state->recordSize);
+    LOG_EDB("|##  key size                            ##|    = (%lu)",
+            state->keySize);
+    LOG_EDB("|##  data size                           ##|    = (%lu)",
+            state->dataSize);
+    LOG_EDB("|##  number of data pages                ##|    = (%lu)",
+            state->numDataPages);
+    LOG_EDB("|##  number of index pages               ##|    = (%lu)",
+            state->numIndexPages);
+    LOG_EDB("|##  max records per page                ##|    = (%lu)",
+            state->maxRecordsPerPage);
+    LOG_EDB("|##  max records                         ##|    = (%lu)",
+            state->maxRecordsPerPage * state->numDataPages);
+    LOG_EDB("|##  number of available data Pages      ##|    = (%lu)",
+            state->maxRecordsPerPage * state->numAvailDataPages);
+    LOG_EDB("|##  use bitmab                          ##|    = (%lu)",
+            EMBEDDB_USING_BMAP(state->parameters));
+    LOG_EDB("|##  use index                           ##|    = (%lu)",
+            EMBEDDB_USING_INDEX(state->parameters));
+    LOG_EDB("|##  bitmap size                         ##|    = (%lu)",
+            state->bitmapSize);
+    LOG_EDB("|##  header size                         ##|    = (%lu)",
+            state->headerSize);
+    LOG_EDB("===============================================================");
 }
 
 /**
@@ -335,8 +334,8 @@ int8_t embedDBSetup(embedDBState* state, const char* dbPath,
     else
         effectiveParams &= ~EMBEDDB_RESET_DATA;
 
-    LOG_TRACE("EmbedDB: setup data=%s exists=%d indexExists=%d reset=%d",
-              dbPath, (int)dataExists, (int)indexExists, (int)createNew);
+    LOG_EDB("EmbedDB: setup data=%s exists=%d indexExists=%d reset=%d", dbPath,
+            (int)dataExists, (int)indexExists, (int)createNew);
 
     /* This function takes a FRESH state. Resetting a live state here without
      * closing it would leak handles; use embedDBreset() for an active state. */
@@ -404,8 +403,7 @@ int8_t embedDBSetup(embedDBState* state, const char* dbPath,
      * when state->parameters is later reused for configuration/reset calls. */
     state->parameters &= ~EMBEDDB_RESET_DATA;
 
-    LOG_TRACE("EmbedDB: initialized data=%s created=%d", dbPath,
-              (int)createNew);
+    LOG_EDB("EmbedDB: initialized data=%s created=%d", dbPath, (int)createNew);
     logDetails(state);
     return 0;
 
@@ -457,7 +455,7 @@ int8_t embedDBreset(embedDBState* state, const char* dbPath,
     pageNum    = (uint16_t)(configuredPages - EMBEDDB_SAFETY_MARGIN_PAGES);
     parameters = (uint16_t)(state->parameters | EMBEDDB_RESET_DATA);
 
-    LOG_TRACE("EmbedDB: Reset requested data=%s", dbPath);
+    LOG_EDB("EmbedDB: Reset requested data=%s", dbPath);
     embedDBClose(state);
     embedDBtearDown(state);
 
@@ -467,6 +465,6 @@ int8_t embedDBreset(embedDBState* state, const char* dbPath,
         return -1;
     }
 
-    LOG_TRACE("EmbedDB: Reset completed: %s", dbPath);
+    LOG_EDB("EmbedDB: Reset completed: %s", dbPath);
     return 0;
 }

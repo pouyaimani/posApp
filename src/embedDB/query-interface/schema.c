@@ -40,7 +40,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "debug_print.h"
 
 #if defined(ARDUINO)
 #include "serial_c_iface.h"
@@ -74,9 +73,9 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes,
         totalSize += colSize;
         if (colSize <= 0) {
 #ifdef PRINT_ERRORS
-            debug_log("ERROR: Column size must be greater than zero. column "
-                      "number = %d, size = %d",
-                      i, colSize);
+            LOG_EDB("ERROR: Column size must be greater than zero. column "
+                    "number = %d, size = %d",
+                    i, colSize);
 #endif
             return NULL;
         }
@@ -86,9 +85,8 @@ embedDBSchema* embedDBCreateSchema(uint8_t numCols, int8_t* colSizes,
             schema->columnSizes[i] = colSizes[i];
         } else {
 #ifdef PRINT_ERRORS
-            debug_log(
-                "ERROR: Must only use embedDB_COLUMN_SIGNED or "
-                "embedDB_COLUMN_UNSIGNED to describe column signedness\n");
+            LOG_EDB("ERROR: Must only use embedDB_COLUMN_SIGNED or "
+                    "embedDB_COLUMN_UNSIGNED to describe column signedness\n");
 #endif
             return NULL;
         }
@@ -133,7 +131,7 @@ embedDBSchema* copySchema(const embedDBSchema* schema) {
     embedDBSchema* copy = EMDB_MEM_ALLOC(sizeof(embedDBSchema));
     if (copy == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
+        LOG_EDB("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
 #endif
         return NULL;
     }
@@ -142,7 +140,7 @@ embedDBSchema* copySchema(const embedDBSchema* schema) {
     copy->columnTypes = EMDB_MEM_ALLOC(schema->numCols * sizeof(ColumnType));
     if (copy->columnSizes == NULL || copy->columnTypes == NULL) {
 #ifdef PRINT_ERRORS
-        debug_log("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
+        LOG_EDB("ERROR: EMDB_MEM_ALLOC failed while copying schema\n");
 #endif
         return NULL;
     }
@@ -178,10 +176,10 @@ uint16_t getRecordSizeFromSchema(embedDBSchema* schema) {
 void printSchema(embedDBSchema* schema) {
     for (uint8_t i = 0; i < schema->numCols; i++) {
         if (i) {
-            debug_log(", ");
+            LOG_EDB(", ");
         }
         int8_t col = schema->columnSizes[i];
-        debug_log("%sint%d", embedDB_IS_COL_SIGNED(col) ? "" : "u", abs(col));
+        LOG_EDB("%sint%d", embedDB_IS_COL_SIGNED(col) ? "" : "u", abs(col));
     }
-    debug_log("\n");
+    LOG_EDB("\n");
 }

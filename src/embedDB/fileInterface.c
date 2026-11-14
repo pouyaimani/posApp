@@ -3,7 +3,6 @@
 #include "sys/sys.h"
 #include "file/file.h"
 #include "logger.h"
-#include "debug_print.h"
 
 typedef struct {
     char*       filename;
@@ -119,8 +118,7 @@ int8_t FILE_OPEN(void* finfo, uint8_t mode) {
         return 0;
     }
 
-    LOG_TRACE("FILE_OPEN: Opening path=%s mode=%s", fileInfo->filename,
-              openMode);
+    LOG_EDB("FILE_OPEN: Opening path=%s mode=%s", fileInfo->filename, openMode);
 
     fileInfo->file = OOP_CALL(file(), open, fileInfo->filename, openMode);
 
@@ -130,8 +128,8 @@ int8_t FILE_OPEN(void* finfo, uint8_t mode) {
         return 0;
     }
 
-    LOG_TRACE("FILE_OPEN: Success path=%s mode=%s", fileInfo->file->path,
-              openMode);
+    LOG_EDB("FILE_OPEN: Success path=%s mode=%s", fileInfo->file->path,
+            openMode);
 
     return 1;
 }
@@ -172,8 +170,8 @@ int32_t FILE_TELL(void* finfo) {
 
 char* tempFilePath(void) {
     static char tempPathBuffer[256];
-    debug_log(tempPathBuffer, sizeof(tempPathBuffer), "embeddb_%lu.tmp",
-              (unsigned long)rand());
+    LOG_EDB(tempPathBuffer, sizeof(tempPathBuffer), "embeddb_%lu.tmp",
+            (unsigned long)rand());
 
     char* out = EMDB_MEM_ALLOC(strlen(tempPathBuffer) + 1);
     if (out) {
